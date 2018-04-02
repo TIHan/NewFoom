@@ -189,6 +189,8 @@ let loadMap mapName (camera: Camera) (renderer: IRenderer) =
     let wad = Wad.FromFile("../../../../../Foom-deps/testwads/doom1.wad")
     let map = wad.FindMap mapName
 
+    let music = wad.FindMusic "d_e1m1"
+
     let player1Start = map.TryFindPlayer1Start()
     player1Start |> Option.iter(fun doomThing ->
         let position = Vector3 (single doomThing.X, single doomThing.Y, 28.f)

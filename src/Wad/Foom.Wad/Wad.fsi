@@ -24,6 +24,8 @@ type Wad =
 
     member FindMap : name: string -> Map
 
+    member FindMusic : name: string -> unit
+
     member OverrideFromFile : fileName: string -> unit
 
     static member FromFile : fileName: string -> Wad
