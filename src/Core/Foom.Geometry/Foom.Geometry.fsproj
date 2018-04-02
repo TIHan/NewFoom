@@ -1,0 +1,25 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="BoundingBox2D.fsi" />
+    <Compile Include="BoundingBox2D.fs" />
+    <Compile Include="Circle2D.fsi" />
+    <Compile Include="Circle2D.fs" />
+    <Compile Include="LineSegment2D.fsi" />
+    <Compile Include="LineSegment2D.fs" />
+    <Compile Include="Triangle2D.fsi" />
+    <Compile Include="Triangle2D.fs" />
+    <Compile Include="Polygon2D.fsi" />
+    <Compile Include="Polygon2D.fs" />
+    <Compile Include="Polygon2DTree.fsi" />
+    <Compile Include="Polygon2DTree.fs" />
+    <Compile Include="EarClipping.fsi" />
+    <Compile Include="EarClipping.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="System.Numerics.Vectors" Version="4.4.0" />
+    <PackageReference Include="System.Collections.Immutable" Version="1.4.0" />
+  </ItemGroup>
+</Project>

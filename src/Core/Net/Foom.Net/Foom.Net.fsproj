@@ -1,0 +1,29 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Udp.fsi" />
+    <Compile Include="Udp.fs" />
+    <Compile Include="SenderReceiver.fs" />
+    <Compile Include="CommonMessages.fs" />
+    <Compile Include="ChannelLookupFactory.fs" />
+    <Compile Include="MessageFactory.fs" />
+    <Compile Include="Peer.fs" />
+    <Compile Include="Client.fs" />
+    <Compile Include="ConnectedClient.fs" />
+    <Compile Include="Server.fs" />
+    <Compile Include="IBackgroundClient.fs" />
+    <Compile Include="BackgroundClient.fs" />
+    <Compile Include="BackgroundServer.fs" />
+    <Compile Include="Network.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="System.Memory" Version="4.4.0-preview1-25305-02" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\IO\Foom.IO.Message\Foom.IO.Message.fsproj" />
+    <ProjectReference Include="..\..\IO\Foom.IO.Packet\Foom.IO.Packet.fsproj" />
+    <ProjectReference Include="..\..\IO\Foom.IO.Serializer\Foom.IO.Serializer.fsproj" />
+  </ItemGroup>
+</Project>

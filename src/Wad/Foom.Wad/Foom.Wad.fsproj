@@ -1,0 +1,27 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Unpickler.fs" />
+    <Compile Include="Types.fs" />
+    <Compile Include="Unpickle.fsi" />
+    <Compile Include="Unpickle.fs" />
+    <Compile Include="Wad.fsi" />
+    <Compile Include="Wad.fs" />
+    <Compile Include="LinedefTracer.fsi" />
+    <Compile Include="LinedefTracer.fs" />
+    <Compile Include="GeometryTypes.fs" />
+    <Compile Include="WallHelpers.fs" />
+    <Compile Include="Extensions.fsi" />
+    <Compile Include="Extensions.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="System.Numerics.Vectors" Version="4.4.0" />
+    <PackageReference Include="System.Collections.Immutable" Version="1.4.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\Core\Foom.Geometry\Foom.Geometry.fsproj" />
+    <ProjectReference Include="..\..\Core\Foom.Math\Foom.Math.fsproj" />
+  </ItemGroup>
+</Project>

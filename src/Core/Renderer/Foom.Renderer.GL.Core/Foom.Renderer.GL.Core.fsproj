@@ -1,0 +1,27 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\Foom.Math\Foom.Math.fsproj" />
+    <ProjectReference Include="..\Foom.Renderer\Foom.Renderer.fsproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="System.Numerics.Vectors" Version="4.4.0" />
+    <PackageReference Include="System.Collections.Immutable" Version="1.4.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="IGL.fsi" />
+    <Compile Include="IGL.fs" />
+    <Compile Include="Buffers.fsi" />
+    <Compile Include="Buffers.fs" />
+    <Compile Include="ShaderProgram.fsi" />
+    <Compile Include="ShaderProgram.fs" />
+    <Compile Include="Shader.fs" />
+    <Compile Include="Texture.fs" />
+    <Compile Include="Mesh.fs" />
+    <Compile Include="Primitives.fs" />
+    <Compile Include="SpriteBatch.fs" />
+    <Compile Include="Renderer.fs" />
+  </ItemGroup>
+</Project>
