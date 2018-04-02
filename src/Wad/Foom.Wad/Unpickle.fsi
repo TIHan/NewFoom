@@ -96,3 +96,5 @@ module Implementation =
     val uDoomPicture : LumpHeader -> PaletteData -> Unpickle<DoomPicture>
 
     val uMusHeader : LumpHeader -> Unpickle<MusHeader>
+
+    val uMusBody : MusHeader -> Unpickle<byte * byte * byte>

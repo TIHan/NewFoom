@@ -387,4 +387,24 @@ module Implementation =
                 |>> fun instruments -> 
                     { header with Instruments = instruments |> Array.map int }
         )
+
+    // http://www.shikadi.net/moddingwiki/MUS_Format
+    let uMusBody musHeader =
+        u_lookAhead (
+            u_skipBytes (int64 musHeader.ScoreStart) >>.
+            fun stream ->
+                let eventDescr = stream.ReadByte()
+
+                let last = (eventDescr) >>> 7
+                let eventType = ((eventDescr) <<< 1) >>> 5
+                let channel = ((eventDescr <<< 4) >>> 4)
+
+                match eventType with
+                | 0uy -> // Release Note
+                    let noteNumber = stream.ReadByte()
+                    (last, eventType, noteNumber)
+                | _ ->
+
+                    (last, eventType, channel)
+        )
       

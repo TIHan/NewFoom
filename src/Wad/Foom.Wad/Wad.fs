@@ -357,6 +357,8 @@ type Wad(stream: Stream) =
 
         let header = stream |> runUnpickle (uMusHeader lumpHeader)
         printfn "%A" header
+        let body = stream |> runUnpickle (uMusBody header)
+        printfn "%A" body
         ()
             
 
