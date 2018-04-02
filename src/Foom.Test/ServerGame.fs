@@ -71,7 +71,7 @@ type EmptyServerGame() =
 [<AutoOpen>]
 module private BestHelpers =
     let player1StartPosition () =
-        let wad = Wad.FromFile("doom1.wad")
+        let wad = Wad.FromFile("../../../../../Foom-deps/testwads/doom1.wad")
         let map = wad.FindMap "e1m1"
 
         let player1Start = map.TryFindPlayer1Start()

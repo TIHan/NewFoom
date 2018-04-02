@@ -186,7 +186,7 @@ let tryCreateLowerWall (wad: Wad) (map: Map) (sector: Sector) (linedef: Linedef)
         None
 
 let loadMap mapName (camera: Camera) (renderer: IRenderer) =
-    let wad = Wad.FromFile("doom1.wad")
+    let wad = Wad.FromFile("../../../../../Foom-deps/testwads/doom1.wad")
     let map = wad.FindMap mapName
 
     let player1Start = map.TryFindPlayer1Start()
