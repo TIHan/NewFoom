@@ -1,0 +1,3 @@
+[submodule "Foom-deps"]
+	path = Foom-deps
+	url = git@github.com:tihan/Foom-deps.git
