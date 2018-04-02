@@ -10,7 +10,7 @@ open Foom.Input
     "-F/Library/Frameworks -framework Cocoa -framework OpenGL -framework IOKit -framework SDL2"
 )>]
 [<GccLinux ("-I../include/SDL2", "-lSDL2")>]
-[<MsvcWin (""" /I %SDL2%\include %SDL2%\lib\x64\SDL2.lib %SDL2%\lib\x64\SDL2main.lib""")>]
+[<MsvcWin (""" /I ..\..\..\..\..\Foom-deps\libs\SDL2\include ..\..\..\..\..\Foom-deps\libs\SDL2\lib\x64\SDL2.lib ..\..\..\..\..\Foom-deps\libs\SDL2\lib\x64\SDL2main.lib""")>]
 [<Header ("""
 #include <stdio.h>
 #include "SDL.h"

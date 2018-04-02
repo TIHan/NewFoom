@@ -36,7 +36,7 @@ type RenderColor =
     "-F/Library/Frameworks -framework Cocoa -framework OpenGL -framework IOKit -framework SDL2"
 )>]
 [<GccLinux ("-I../include/SDL2", "-lSDL2")>]
-[<MsvcWin (""" /I %SDL2%\include /I %GLEW%\include %SDL2%\lib\x64\SDL2.lib %SDL2%\lib\x64\SDL2main.lib %GLEW%\lib\Release\x64\glew32.lib opengl32.lib """)>]
+[<MsvcWin (""" /I ..\..\..\..\..\Foom-deps\libs\SDL2\include /I ..\..\..\..\..\Foom-deps\libs\glew\include ..\..\..\..\..\Foom-deps\libs\SDL2\lib\x64\SDL2.lib ..\..\..\..\..\Foom-deps\libs\SDL2\lib\x64\SDL2main.lib ..\..\..\..\..\Foom-deps\libs\glew\lib\Release\x64\glew32.lib opengl32.lib """)>]
 [<Header ("""
 #include <stdio.h>
 #if defined(__GNUC__)

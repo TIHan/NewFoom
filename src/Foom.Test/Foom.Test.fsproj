@@ -14,10 +14,6 @@
     <Compile Include="ServerGame.fs" />
     <Compile Include="ClientGame.fs" />
     <Compile Include="Program.fs" />
-    <None Include="sunder.zip">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="win.bat" />
     <ProjectReference Include="..\Core\Foom.Geometry\Foom.Geometry.fsproj" />
     <ProjectReference Include="..\Core\Foom.Math\Foom.Math.fsproj" />
     <ProjectReference Include="..\Wad\Foom.Wad\Foom.Wad.fsproj" />
@@ -34,14 +30,9 @@
     <ProjectReference Include="..\Core\IO\Foom.IO.Message\Foom.IO.Message.fsproj" />
     <ProjectReference Include="..\Core\IO\Foom.IO.Serializer\Foom.IO.Serializer.fsproj" />
   </ItemGroup>
-  <Target Name="PreBuild" BeforeTargets="PreBuildEvent" Condition=" '$(OS)' == 'WINDOWS_NT'">
-    <Exec Command="&quot;$(MSBuildBinPath)\MSBuild.exe&quot; &quot;$(ProjectDir)..\Ferop\Ferop.Compiler\Ferop.Compiler.fsproj&quot;" />
-  </Target>
-  <Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition=" '$(OS)' == 'WINDOWS_NT'">
-    <Exec Command="call $(ProjectDir)win.bat $(OutDir)" />
-  </Target>
-  <Target Name="PreBuild" BeforeTargets="PreBuildEvent" Condition=" '$(OS)' == 'Unix'">
-    <Exec Command="&quot;msbuild&quot; &quot;$(ProjectDir)..\Ferop\Ferop.Compiler\Ferop.Compiler.fsproj&quot;" />
+  <Target Name="PreBuild" BeforeTargets="PreBuildEvent">
+    <Exec Command="&quot;$(MSBuildBinPath)\MSBuild.exe&quot; &quot;$(ProjectDir)..\Ferop\Ferop.Compiler\Ferop.Compiler.fsproj&quot;" Condition=" '$(OS)' == 'WINDOWS_NT'" />
+    <Exec Command="&quot;msbuild&quot; &quot;$(ProjectDir)..\Ferop\Ferop.Compiler\Ferop.Compiler.fsproj&quot;" Condition=" '$(OS)' == 'Unix'" />
   </Target>
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
     <Exec Command="$(ProjectDir)..\Ferop\Ferop.Compiler\bin\Debug\net462\Ferop.Compiler.exe $(OutDir)Foom.Renderer.GL.Desktop.dll $(OutDir)Foom.Input.Desktop.dll" />
