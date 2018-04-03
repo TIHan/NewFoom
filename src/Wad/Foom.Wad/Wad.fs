@@ -355,10 +355,8 @@ type Wad(stream: Stream) =
             | Some x -> x
             | _ -> failwithf "Unable to find lump header, %s." name
 
-        let header = stream |> runUnpickle (uMusHeader lumpHeader)
-        printfn "%A" header
-        let body = stream |> runUnpickle (uMusBody header)
-        printfn "%A" body
+        let mus = LumpMus.Parse lumpHeader stream
+        printfn "%A" mus
         ()
             
 

@@ -54,18 +54,10 @@ type DoomPicture =
         Data: Pixel [,]
     }
 
-type MusHeader =
-    {
-        ScoreLength: int
-        ScoreStart: int
-        PrimaryChannelCount: int
-        SecondaryChannelCount: int
-        InstrumentCount: int
-        Instruments: int []
-    }
-
 [<AutoOpen>]
 module Implementation =
+
+    val goToLump : LumpHeader -> Unpickle<'T> -> Unpickle<'T>
 
     val u_lumpHeader : Unpickle<LumpHeader>
 
@@ -94,7 +86,3 @@ module Implementation =
     val uPatchNames : LumpHeader -> Unpickle<string []>
 
     val uDoomPicture : LumpHeader -> PaletteData -> Unpickle<DoomPicture>
-
-    val uMusHeader : LumpHeader -> Unpickle<MusHeader>
-
-    val uMusBody : MusHeader -> Unpickle<byte * byte * byte>

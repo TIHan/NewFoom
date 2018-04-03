@@ -96,7 +96,7 @@ type ClientGame(input: IInput, renderer: IRenderer, client: IBackgroundClient) =
         // end events
         if sortedList.Count > 0 then
             let struct(playerStates, snapTime) = sortedList.Values.[0]
-            if time >= snapTime + TimeSpan.FromMilliseconds(500.) then
+            if time >= snapTime + TimeSpan.FromMilliseconds(500.) || clientId = 0 then
                 sortedList.RemoveAt(0)
                 for i = 0 to playerCount - 1 do
                     if clientId = i then

@@ -56,7 +56,9 @@ Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "Foom.Net.Tests", "src\Core\
 EndProject
 Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "Foom.EntityManager", "src\Core\Foom.Ecs\Foom.EntityManager.fsproj", "{B1C7CE6B-A191-4CCF-AAD5-3C4D18EEA808}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Foom.Core", "src\Core\Foom.Core\Foom.Core.fsproj", "{2A0B46A7-E99E-4086-B930-4B1BCB93F95C}"
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "Foom.Core", "src\Core\Foom.Core\Foom.Core.fsproj", "{2A0B46A7-E99E-4086-B930-4B1BCB93F95C}"
+EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Foom.Wad.MusicExtractor", "src\Wad\Foom.Wad.MusicExtractor\Foom.Wad.MusicExtractor.fsproj", "{FD59477F-EA33-4857-AFBC-292B400B41F0}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -144,6 +146,10 @@ Global
 		{2A0B46A7-E99E-4086-B930-4B1BCB93F95C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2A0B46A7-E99E-4086-B930-4B1BCB93F95C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2A0B46A7-E99E-4086-B930-4B1BCB93F95C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FD59477F-EA33-4857-AFBC-292B400B41F0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FD59477F-EA33-4857-AFBC-292B400B41F0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FD59477F-EA33-4857-AFBC-292B400B41F0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FD59477F-EA33-4857-AFBC-292B400B41F0}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -172,6 +178,7 @@ Global
 		{17B93037-B183-40F8-BCA7-4661AFF5FF0D} = {D8B7A307-B004-49C7-A5A2-8AE06FFA8E20}
 		{B1C7CE6B-A191-4CCF-AAD5-3C4D18EEA808} = {33DEB521-F18C-467E-95E2-710E37167FB5}
 		{2A0B46A7-E99E-4086-B930-4B1BCB93F95C} = {33DEB521-F18C-467E-95E2-710E37167FB5}
+		{FD59477F-EA33-4857-AFBC-292B400B41F0} = {61CB053F-DD1A-45E1-9713-5B0FD4D5531C}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {2782F051-7E65-4A50-AB2B-45D308458EA2}

@@ -63,16 +63,6 @@ type DoomPicture =
         Data: Pixel [,]
     }
 
-type MusHeader =
-    {
-        ScoreLength: int
-        ScoreStart: int
-        PrimaryChannelCount: int
-        SecondaryChannelCount: int
-        InstrumentCount: int
-        Instruments: int []
-    }
-
 [<AutoOpen>]
 module Implementation =
 
@@ -236,7 +226,7 @@ module Implementation =
     let u_lumpRaw size offset : Unpickle<byte []> =
         u_lookAhead (u_skipBytes offset >>. u_bytes size)
 
-    let inline goToLump lumpHeader u =
+    let goToLump lumpHeader u =
         u_lookAhead (u_skipBytes (int64 lumpHeader.Offset) >>. u)
 
     let uTextureHeader lumpHeader : Unpickle<TextureHeader> =
@@ -359,52 +349,5 @@ module Implementation =
                                 Data = data
                             }
 
-        )
-
-    let uMusHeader lumpHeader =
-        goToLump lumpHeader (
-            (
-                u_pipe7 
-                    (u_array 4 u_byte)
-                    u_uint16 // scoreLen
-                    u_uint16 // scoreStart
-                    u_uint16 // channels
-                    u_uint16 // sec_channels
-                    u_uint16 // instrCnt
-                    u_uint16 // dummy
-                <| fun _ scoreLen scoreStart channel secChannels instrCount _ ->
-                    {
-                        ScoreLength = int scoreLen
-                        ScoreStart = int scoreStart
-                        PrimaryChannelCount = int channel
-                        SecondaryChannelCount = int secChannels
-                        InstrumentCount = int instrCount
-                        Instruments = [||]
-                    }
-            )
-            >>= fun header ->
-                u_array header.InstrumentCount u_uint16 
-                |>> fun instruments -> 
-                    { header with Instruments = instruments |> Array.map int }
-        )
-
-    // http://www.shikadi.net/moddingwiki/MUS_Format
-    let uMusBody musHeader =
-        u_lookAhead (
-            u_skipBytes (int64 musHeader.ScoreStart) >>.
-            fun stream ->
-                let eventDescr = stream.ReadByte()
-
-                let last = (eventDescr) >>> 7
-                let eventType = ((eventDescr) <<< 1) >>> 5
-                let channel = ((eventDescr <<< 4) >>> 4)
-
-                match eventType with
-                | 0uy -> // Release Note
-                    let noteNumber = stream.ReadByte()
-                    (last, eventType, noteNumber)
-                | _ ->
-
-                    (last, eventType, channel)
         )
       

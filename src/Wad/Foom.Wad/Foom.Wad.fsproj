@@ -7,6 +7,8 @@
     <Compile Include="Types.fs" />
     <Compile Include="Unpickle.fsi" />
     <Compile Include="Unpickle.fs" />
+    <Compile Include="LumpMus.fsi" />
+    <Compile Include="LumpMus.fs" />
     <Compile Include="Wad.fsi" />
     <Compile Include="Wad.fs" />
     <Compile Include="LinedefTracer.fsi" />
@@ -16,6 +18,7 @@
     <Compile Include="Extensions.fsi" />
     <Compile Include="Extensions.fs" />
   </ItemGroup>
+  <ItemGroup />
   <ItemGroup>
     <PackageReference Include="System.Numerics.Vectors" Version="4.4.0" />
     <PackageReference Include="System.Collections.Immutable" Version="1.4.0" />
