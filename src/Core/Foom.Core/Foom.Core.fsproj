@@ -5,7 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="UnsafeResizeArray.fs" />
+    <Compile Include="UnmanagedResizeArray.fs" />
     <Compile Include="EventAggregator.fs" />
   </ItemGroup>
 

@@ -16,7 +16,7 @@ open Foom.Core
 
 type IEntityLookupData =
 
-    abstract Entities : Entity UnsafeResizeArray with get
+    abstract Entities : Entity UnmanagedResizeArray with get
 
     abstract GetIndex : int -> int
 
@@ -28,8 +28,8 @@ type EntityLookupData<'T when 'T : unmanaged and 'T :> IComponent> =
         RemoveComponent: Entity -> unit
 
         IndexLookup: int []
-        Entities: Entity UnsafeResizeArray
-        Components: 'T UnsafeResizeArray
+        Entities: Entity UnmanagedResizeArray
+        Components: 'T UnmanagedResizeArray
     }
 
     interface IEntityLookupData with
@@ -93,8 +93,8 @@ and [<ReferenceEquality>] EntityManager =
                     RemoveComponent = fun entity -> this.Remove<'T>(entity)
 
                     IndexLookup = Array.init this.MaxEntityAmount (fun _ -> -1) // -1 means that no component exists for that entity
-                    Entities = UnsafeResizeArray.Create this.MaxEntityAmount
-                    Components = UnsafeResizeArray<'T>.Create(this.MaxEntityAmount)
+                    Entities = new UnmanagedResizeArray<Entity>(this.MaxEntityAmount)
+                    Components = new UnmanagedResizeArray<'T>(this.MaxEntityAmount)
                 }
 
             this.Lookup.GetOrAdd(t, data :> IEntityLookupData) :?> EntityLookupData<'T>
@@ -104,13 +104,13 @@ and [<ReferenceEquality>] EntityManager =
         if this.Lookup.TryGetValue (typeof<'T>, &data) then
             let data = data :?> EntityLookupData<'T>
 
-            let entities = data.Entities.Buffer
-            let components = data.Components.Buffer
+            let entities = data.Entities
+            let components = data.Components
 
-            let inline iter i =
-                f.Invoke(entities.[i], &components.[i])
-
-            for i = 0 to data.Entities.Count - 1 do iter i
+            for i = 0 to data.Entities.Count - 1 do
+                let ent = entities.[i]
+                let comp = components.[i]
+                f.Invoke(ent, &comp)
 
     member inline this.Iterate<'T1, 'T2 when 'T1 : unmanaged and 'T2 : unmanaged and 'T1 :> IComponent and 'T2 :> IComponent> (f: ForEachDelegate<'T1, 'T2>) : unit =
         let mutable data1 = Unchecked.defaultof<IEntityLookupData>
@@ -120,22 +120,22 @@ and [<ReferenceEquality>] EntityManager =
             let data1 = data1 :?> EntityLookupData<'T1>
             let data2 = data2 :?> EntityLookupData<'T2>
 
-            let entities = data.Entities.Buffer
-            let components1 = data1.Components.Buffer
-            let components2 = data2.Components.Buffer
+            let entities = data.Entities
+            let components1 = data1.Components
+            let components2 = data2.Components
             let lookup1 = data1.IndexLookup
             let lookup2 = data2.IndexLookup
-
-            let inline iter i =
-                let entity = entities.[i]
     
-                let comp1Index = lookup1.[entity.Index]
-                let comp2Index = lookup2.[entity.Index]
+            for i = 0 to data.Entities.Count - 1 do
+                let ent = entities.[i]
+    
+                let comp1Index = lookup1.[ent.Index]
+                let comp2Index = lookup2.[ent.Index]
 
                 if comp1Index >= 0 && comp2Index >= 0 then
-                    f.Invoke(entity, &components1.[comp1Index], &components2.[comp2Index])
-    
-            for i = 0 to data.Entities.Count - 1 do iter i
+                    let comp1 = components1.[comp1Index]
+                    let comp2 = components2.[comp2Index]
+                    f.Invoke(ent, &comp1, &comp2)
 
     //member inline this.Iterate<'T1, 'T2, 'T3 when 'T1 :> Component and 'T2 :> Component and 'T3 :> Component> (f) : unit =
     //    let mutable data1 = Unchecked.defaultof<IEntityLookupData>
@@ -213,8 +213,8 @@ and [<ReferenceEquality>] EntityManager =
                 entity: Entity, 
                 comp : byref<'T>, 
                 indexLookup : int [], 
-                components : UnsafeResizeArray<'T>,
-                entities : UnsafeResizeArray<Entity>
+                components : UnmanagedResizeArray<'T>,
+                entities : UnmanagedResizeArray<Entity>
             ) =
         if indexLookup.[entity.Index] >= 0 then
             Debug.WriteLine (String.Format ("ECS WARNING: Component, {0}, already added to {1}.", typeof<'T>.Name, entity))
@@ -302,21 +302,22 @@ and [<ReferenceEquality>] EntityManager =
 
     //************************************************************************************************************************
 
-    member this.TryGet<'T when 'T : unmanaged and 'T :> IComponent> (entity: Entity, [<Out>] comp : byref<'T>) : bool =
-        let mutable data = Unchecked.defaultof<IEntityLookupData>
-        if this.Lookup.TryGetValue (typeof<'T>, &data) then
-            let data = data :?> EntityLookupData<'T>
-            if this.IsValidEntity entity then
-                let index = data.IndexLookup.[entity.Index]
-                if index >= 0 then
-                    comp <- data.Components.Buffer.[index]
-                    true
-                else
-                    false
-            else
-                false
-        else
-            false
+    //member this.TryGet<'T when 'T : unmanaged and 'T :> IComponent> (entity: Entity, [<Out>] comp : byref<'T>) : bool =
+        //let mutable data = Unchecked.defaultof<IEntityLookupData>
+        //if this.Lookup.TryGetValue (typeof<'T>, &data) then
+        //    let data = data :?> EntityLookupData<'T>
+        //    if this.IsValidEntity entity then
+        //        let index = data.IndexLookup.[entity.Index]
+        //        if index >= 0 then
+        //            let c = components2.[comp2Index]
+        //            comp <- &data.Components.[index]
+        //            true
+        //        else
+        //            false
+        //    else
+        //        false
+        //else
+            //false
 
     member this.IsValid entity =
         this.IsValidEntity entity
