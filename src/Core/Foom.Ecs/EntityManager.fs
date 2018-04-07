@@ -14,6 +14,7 @@ open Foom.Core
 
 #nowarn "9"
 
+[<AllowNullLiteral>]
 type IEntityLookupData =
 
     abstract Entities : Entity UnmanagedResizeArray with get
@@ -30,6 +31,8 @@ type EntityLookupData<'T when 'T : unmanaged and 'T :> IComponent> =
         IndexLookup: int []
         Entities: Entity UnmanagedResizeArray
         Components: 'T UnmanagedResizeArray
+
+        mutable dummy: 'T
     }
 
     interface IEntityLookupData with
@@ -51,10 +54,13 @@ and [<Sealed>] EntityManager(maxEntityAmount) =
 
     let maxEntityAmount = maxEntityAmount + 1
     let lookup = ConcurrentDictionary<Type, IEntityLookupData> ()
+    let lookupData = Array.init 64 
 
+    let masks = Array.zeroCreate maxEntityAmount
     let activeVersions = Array.init maxEntityAmount (fun _ -> 0u)
 
     let mutable nextEntityIndex = 1
+    let mutable nextCompBit = 0
     let removedEntityQueue = Queue<Entity> ()
 
     let entityComponents = Array.init maxEntityAmount (fun _ -> ResizeArray ())
@@ -63,22 +69,26 @@ and [<Sealed>] EntityManager(maxEntityAmount) =
     member inline this.IsValidEntity (entity: Entity) =
         not (entity.Index.Equals 0u) && activeVersions.[entity.Index].Equals entity.Version
 
+    member this.RegisterComponent<'T when 'T : unmanaged and 'T :> IComponent>() =
+        let data =
+            {
+                RemoveComponent = fun entity -> this.Remove<'T>(entity)
+
+                IndexLookup = Array.init maxEntityAmount (fun _ -> -1) // -1 means that no component exists for that entity
+                Entities = new UnmanagedResizeArray<Entity>(maxEntityAmount)
+                Components = new UnmanagedResizeArray<'T>(maxEntityAmount)
+
+                dummy = Unchecked.defaultof<'T>
+            }
+
+        lookup.GetOrAdd(typeof<'T>, data :> IEntityLookupData) |> ignore
+
     member this.GetEntityLookupData<'T when 'T : unmanaged and 'T :> IComponent> () : EntityLookupData<'T> =
         let t = typeof<'T>
         let mutable data = Unchecked.defaultof<IEntityLookupData>
         match lookup.TryGetValue(t, &data) with
         | true -> data :?> EntityLookupData<'T>
-        | _ ->
-            let data =
-                {
-                    RemoveComponent = fun entity -> this.Remove<'T>(entity)
-
-                    IndexLookup = Array.init maxEntityAmount (fun _ -> -1) // -1 means that no component exists for that entity
-                    Entities = new UnmanagedResizeArray<Entity>(maxEntityAmount)
-                    Components = new UnmanagedResizeArray<'T>(maxEntityAmount)
-                }
-
-            lookup.GetOrAdd(t, data :> IEntityLookupData) :?> EntityLookupData<'T>
+        | _ -> failwithf "Component, %s, not registered." typeof<'T>.Name
 
     member inline this.Iterate<'T when 'T : unmanaged and 'T :> IComponent> (f: ForEachDelegate<'T>) : unit =
         let mutable data = Unchecked.defaultof<IEntityLookupData>
@@ -191,34 +201,37 @@ and [<Sealed>] EntityManager(maxEntityAmount) =
 
     member inline this.AddInline2<'T when 'T : unmanaged and 'T :> IComponent> 
             (
-                entity: Entity, 
-                comp : byref<'T>, 
+                entity: Entity,
                 indexLookup : int [], 
                 components : UnmanagedResizeArray<'T>,
                 entities : UnmanagedResizeArray<Entity>
-            ) =
-        if indexLookup.[entity.Index] >= 0 then
+            ) : byref<'T> =
+        let existingI = indexLookup.[entity.Index]
+        if existingI >= 0 then
             Debug.WriteLine (String.Format ("ECS WARNING: Component, {0}, already added to {1}.", typeof<'T>.Name, entity))
+            components.[existingI]
         else
-            indexLookup.[entity.Index] <- entities.Count
+            let i = entities.Count
+            indexLookup.[entity.Index] <- i
 
-            components.Add comp
+            components.Add Unchecked.defaultof<'T>
             entities.Add entity
 
-    member inline this.AddInline<'T when 'T : unmanaged and 'T :> IComponent>(entity: Entity, comp: byref<'T>) =
-        let data = this.GetEntityLookupData<'T> ()
+            components.[i]
 
-        this.AddInline2<'T> (entity, &comp, data.IndexLookup, data.Components, data.Entities)
+    member inline this.AddInline<'T when 'T : unmanaged and 'T :> IComponent>(entity: Entity, data: EntityLookupData<'T>) =
+        if this.IsValidEntity entity then
+            this.AddInline2<'T> (entity, data.IndexLookup, data.Components, data.Entities)
+        else
+            &data.dummy
 
-    member this.Add<'T when 'T : unmanaged and 'T :> IComponent>(entity: Entity, comp: 'T) =
+    member this.Add<'T when 'T : unmanaged and 'T :> IComponent>(entity: Entity) =
+        let data = this.GetEntityLookupData<'T>()
         if currentIterations > 0 then
             failwith "Can't add while iterating"
+            &data.dummy
         else
-            if this.IsValidEntity entity then
-                let mutable comp = comp
-                this.AddInline<'T>(entity, &comp)
-            else
-                printfn "%s" (String.Format ("ECS WARNING: {0} is invalid. Cannot add component, {1}", entity, typeof<'T>.Name))
+            this.AddInline<'T>(entity, data)
 
     member this.Remove<'T when 'T : unmanaged and 'T :> IComponent>(entity: Entity) =
         if currentIterations > 0 then
@@ -282,23 +295,6 @@ and [<Sealed>] EntityManager(maxEntityAmount) =
     // Component Query
 
     //************************************************************************************************************************
-
-    //member this.TryGet<'T when 'T : unmanaged and 'T :> IComponent> (entity: Entity, [<Out>] comp : byref<'T>) : bool =
-        //let mutable data = Unchecked.defaultof<IEntityLookupData>
-        //if this.Lookup.TryGetValue (typeof<'T>, &data) then
-        //    let data = data :?> EntityLookupData<'T>
-        //    if this.IsValidEntity entity then
-        //        let index = data.IndexLookup.[entity.Index]
-        //        if index >= 0 then
-        //            let c = components2.[comp2Index]
-        //            comp <- &data.Components.[index]
-        //            true
-        //        else
-        //            false
-        //    else
-        //        false
-        //else
-            //false
 
     member this.IsValid entity =
         this.IsValidEntity entity

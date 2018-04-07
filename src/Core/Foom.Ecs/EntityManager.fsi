@@ -16,8 +16,7 @@ type EntityManager =
 
     //************************************************************************************************************************
 
-    ///// Attempts to find a component of type 'T based on the specified Entity.
-    //member TryGet<'T when 'T : unmanaged and 'T :> IComponent> : Entity * [<Out>] comp : byref<'T> -> bool
+    member RegisterComponent<'T when 'T : unmanaged and 'T :> IComponent> : unit -> unit
 
     /// Checks to see if the Entity is valid.
     member IsValid : Entity -> bool
@@ -41,7 +40,7 @@ type EntityManager =
 
     // Components
 
-    member Add<'T when 'T : unmanaged and 'T :> IComponent> : Entity * 'T -> unit
+    member Add<'T when 'T : unmanaged and 'T :> IComponent> : Entity -> byref<'T>
 
     // Entites
 
