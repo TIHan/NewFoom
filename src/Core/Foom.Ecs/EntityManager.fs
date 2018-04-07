@@ -43,65 +43,46 @@ type EntityLookupData<'T when 'T : unmanaged and 'T :> IComponent> =
 type ForEachDelegate<'T when 'T : unmanaged and 'T :> IComponent> = delegate of Entity * byref<'T> -> unit
 type ForEachDelegate<'T1, 'T2 when 'T1 : unmanaged and 'T2 : unmanaged and 'T1 :> IComponent and 'T2 :> IComponent> = delegate of Entity * byref<'T1> * byref<'T2> -> unit
 
-and [<ReferenceEquality>] EntityManager =
-    {
-        MaxEntityAmount: int
-        Lookup: ConcurrentDictionary<Type, IEntityLookupData>
-
-        ActiveVersions: uint32 []
-        EntityComponents : ResizeArray<struct (obj * (obj -> obj) * (Entity -> unit))> []
-
-        mutable nextEntityIndex: int
-        RemovedEntityQueue: Queue<Entity>
-
-        mutable CurrentIterations: int
-    }
-
-    static member Create(maxEntityAmount) =
+and [<Sealed>] EntityManager(maxEntityAmount) =
+    let maxEntityAmount =
         if maxEntityAmount <= 0 then
             failwith "Max entity amount must be greater than 0."
+        maxEntityAmount
 
-        let maxEntityAmount = maxEntityAmount + 1
-        let lookup = ConcurrentDictionary<Type, IEntityLookupData> ()
+    let maxEntityAmount = maxEntityAmount + 1
+    let lookup = ConcurrentDictionary<Type, IEntityLookupData> ()
 
-        let activeVersions = Array.init maxEntityAmount (fun _ -> 0u)
+    let activeVersions = Array.init maxEntityAmount (fun _ -> 0u)
 
-        let mutable nextEntityIndex = 1
-        let removedEntityQueue = Queue<Entity> () 
+    let mutable nextEntityIndex = 1
+    let removedEntityQueue = Queue<Entity> ()
 
-        {
-            MaxEntityAmount = maxEntityAmount
-            Lookup = lookup
-            ActiveVersions = activeVersions
-            EntityComponents = Array.init maxEntityAmount (fun _ -> ResizeArray ())
-            nextEntityIndex = nextEntityIndex
-            RemovedEntityQueue = removedEntityQueue
-            CurrentIterations = 0
-        }
+    let entityComponents = Array.init maxEntityAmount (fun _ -> ResizeArray ())
+    let mutable currentIterations = 0
 
     member inline this.IsValidEntity (entity: Entity) =
-        not (entity.Index.Equals 0u) && this.ActiveVersions.[entity.Index].Equals entity.Version
+        not (entity.Index.Equals 0u) && activeVersions.[entity.Index].Equals entity.Version
 
     member this.GetEntityLookupData<'T when 'T : unmanaged and 'T :> IComponent> () : EntityLookupData<'T> =
         let t = typeof<'T>
         let mutable data = Unchecked.defaultof<IEntityLookupData>
-        match this.Lookup.TryGetValue(t, &data) with
+        match lookup.TryGetValue(t, &data) with
         | true -> data :?> EntityLookupData<'T>
         | _ ->
             let data =
                 {
                     RemoveComponent = fun entity -> this.Remove<'T>(entity)
 
-                    IndexLookup = Array.init this.MaxEntityAmount (fun _ -> -1) // -1 means that no component exists for that entity
-                    Entities = new UnmanagedResizeArray<Entity>(this.MaxEntityAmount)
-                    Components = new UnmanagedResizeArray<'T>(this.MaxEntityAmount)
+                    IndexLookup = Array.init maxEntityAmount (fun _ -> -1) // -1 means that no component exists for that entity
+                    Entities = new UnmanagedResizeArray<Entity>(maxEntityAmount)
+                    Components = new UnmanagedResizeArray<'T>(maxEntityAmount)
                 }
 
-            this.Lookup.GetOrAdd(t, data :> IEntityLookupData) :?> EntityLookupData<'T>
+            lookup.GetOrAdd(t, data :> IEntityLookupData) :?> EntityLookupData<'T>
 
     member inline this.Iterate<'T when 'T : unmanaged and 'T :> IComponent> (f: ForEachDelegate<'T>) : unit =
         let mutable data = Unchecked.defaultof<IEntityLookupData>
-        if this.Lookup.TryGetValue (typeof<'T>, &data) then
+        if lookup.TryGetValue (typeof<'T>, &data) then
             let data = data :?> EntityLookupData<'T>
 
             let entities = data.Entities
@@ -115,7 +96,7 @@ and [<ReferenceEquality>] EntityManager =
     member inline this.Iterate<'T1, 'T2 when 'T1 : unmanaged and 'T2 : unmanaged and 'T1 :> IComponent and 'T2 :> IComponent> (f: ForEachDelegate<'T1, 'T2>) : unit =
         let mutable data1 = Unchecked.defaultof<IEntityLookupData>
         let mutable data2 = Unchecked.defaultof<IEntityLookupData>
-        if this.Lookup.TryGetValue (typeof<'T1>, &data1) && this.Lookup.TryGetValue (typeof<'T2>, &data2) then
+        if lookup.TryGetValue (typeof<'T1>, &data1) && lookup.TryGetValue (typeof<'T2>, &data2) then
             let data = [|data1;data2|] |> Array.minBy (fun x -> x.Entities.Count)
             let data1 = data1 :?> EntityLookupData<'T1>
             let data2 = data2 :?> EntityLookupData<'T2>
@@ -230,7 +211,7 @@ and [<ReferenceEquality>] EntityManager =
         this.AddInline2<'T> (entity, &comp, data.IndexLookup, data.Components, data.Entities)
 
     member this.Add<'T when 'T : unmanaged and 'T :> IComponent>(entity: Entity, comp: 'T) =
-        if this.CurrentIterations > 0 then
+        if currentIterations > 0 then
             failwith "Can't add while iterating"
         else
             if this.IsValidEntity entity then
@@ -240,7 +221,7 @@ and [<ReferenceEquality>] EntityManager =
                 printfn "%s" (String.Format ("ECS WARNING: {0} is invalid. Cannot add component, {1}", entity, typeof<'T>.Name))
 
     member this.Remove<'T when 'T : unmanaged and 'T :> IComponent>(entity: Entity) =
-        if this.CurrentIterations > 0 then
+        if currentIterations > 0 then
             failwith "Can't remove while iterating."
         else
             if this.IsValidEntity entity then
@@ -264,36 +245,36 @@ and [<ReferenceEquality>] EntityManager =
                 Debug.WriteLine (String.Format ("ECS WARNING: {0} is invalid. Cannot remove component, {1}", entity, typeof<'T>.Name))
 
     member this.Spawn () =                         
-        if this.RemovedEntityQueue.Count = 0 && this.nextEntityIndex >= this.MaxEntityAmount then
-            Debug.WriteLine (String.Format ("ECS WARNING: Unable to spawn entity. Max entity amount hit: {0}", (this.MaxEntityAmount - 1)))
+        if removedEntityQueue.Count = 0 && nextEntityIndex >= maxEntityAmount then
+            Debug.WriteLine (String.Format ("ECS WARNING: Unable to spawn entity. Max entity amount hit: {0}", (maxEntityAmount - 1)))
             Entity ()
         else
             let entity =
-                if this.RemovedEntityQueue.Count > 0 then
-                    let entity = this.RemovedEntityQueue.Dequeue ()
+                if removedEntityQueue.Count > 0 then
+                    let entity = removedEntityQueue.Dequeue ()
                     Entity (entity.Index, entity.Version + 1u)
                 else
-                    let index = this.nextEntityIndex
-                    this.nextEntityIndex <- index + 1
+                    let index = nextEntityIndex
+                    nextEntityIndex <- index + 1
                     Entity (index, 1u)
 
-            this.ActiveVersions.[entity.Index] <- entity.Version
+            activeVersions.[entity.Index] <- entity.Version
 
             entity
 
     member this.Destroy (entity: Entity) =
-        if this.CurrentIterations > 0 then
+        if currentIterations > 0 then
             failwith "Can't destroy while iterating."
         else
             if this.IsValidEntity entity then
-                let entComps = this.EntityComponents.[entity.Index]
+                let entComps = entityComponents.[entity.Index]
                 entComps |> Seq.iter (fun struct (_, _, remove) -> remove entity)
                 entComps.Clear ()
                 entComps.TrimExcess ()
 
-                this.RemovedEntityQueue.Enqueue entity  
+                removedEntityQueue.Enqueue entity  
 
-                this.ActiveVersions.[entity.Index] <- 0u
+                activeVersions.[entity.Index] <- 0u
 
             else
                 Debug.WriteLine (String.Format ("ECS WARNING: {0} is invalid. Cannot destroy.", entity))
@@ -324,7 +305,7 @@ and [<ReferenceEquality>] EntityManager =
 
     member this.Has<'T when 'T : unmanaged and 'T :> IComponent> (entity: Entity) =
         let mutable data = Unchecked.defaultof<IEntityLookupData>
-        if this.Lookup.TryGetValue (typeof<'T>, &data) then
+        if lookup.TryGetValue (typeof<'T>, &data) then
             let data = data :?> EntityLookupData<'T>
             data.IndexLookup.[entity.Index] >= 0
         else
@@ -333,11 +314,11 @@ and [<ReferenceEquality>] EntityManager =
     //************************************************************************************************************************
 
     member this.ForEach<'T when 'T : unmanaged and 'T :> IComponent>(f) : unit =
-        this.CurrentIterations <- this.CurrentIterations + 1
+        currentIterations <- currentIterations + 1
 
         this.Iterate<'T>(f)
 
-        this.CurrentIterations <- this.CurrentIterations - 1
+        currentIterations <- currentIterations - 1
 
     //member this.ForEach<'T1, 'T2 when 'T1 : unmanaged and 'T2 : unmanaged and 'T1 :> IComponent and 'T2 :> IComponent> (f : Entity -> 'T1 -> 'T2 -> unit) : unit =
     //    this.CurrentIterations <- this.CurrentIterations + 1
@@ -362,10 +343,10 @@ and [<ReferenceEquality>] EntityManager =
     //    this.CurrentIterations <- this.CurrentIterations - 1
     //    this.ResolvePendingQueues ()
 
-    member this.MaxNumberOfEntities = this.MaxEntityAmount - 1
+    member this.MaxNumberOfEntities = maxEntityAmount - 1
 
     member this.DestroyAll () =
-        this.ActiveVersions
+        activeVersions
         |> Array.iteri (fun index version ->
             if version > 0u then
                 this.Destroy (Entity (index, version))

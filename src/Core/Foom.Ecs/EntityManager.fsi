@@ -12,7 +12,7 @@ type ForEachDelegate<'T1, 'T2 when 'T1 : unmanaged and 'T2 : unmanaged and 'T1 :
 [<Sealed>]
 type EntityManager =
 
-    static member Create : maxEntityCount: int -> EntityManager
+    new : maxEntityCount: int -> EntityManager
 
     //************************************************************************************************************************
 
