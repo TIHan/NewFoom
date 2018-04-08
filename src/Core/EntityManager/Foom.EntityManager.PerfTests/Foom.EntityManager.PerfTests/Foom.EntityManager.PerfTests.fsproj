@@ -1,0 +1,17 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp2.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Program.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Foom.Core\Foom.Core.fsproj" />
+    <ProjectReference Include="..\..\..\Foom.Ecs\Foom.EntityManager.fsproj" />
+  </ItemGroup>
+
+</Project>
