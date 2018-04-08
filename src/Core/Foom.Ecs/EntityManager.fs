@@ -52,12 +52,11 @@ and [<Sealed>] EntityManager(maxEntityAmount) =
             failwith "Max entity amount must be greater than 0."
         maxEntityAmount
 
-    let maxEntityAmount = maxEntityAmount + 1
     let lookup = ConcurrentDictionary<Type, IEntityLookupData> ()
     let lookupData = Array.init 64 
 
     let masks = Array.zeroCreate maxEntityAmount
-    let activeVersions = Array.init maxEntityAmount (fun _ -> 0u)
+    let activeVersions = Array.init maxEntityAmount (fun _ -> 1u)
 
     let mutable nextEntityIndex = 1
     let mutable nextCompBit = 0
@@ -66,8 +65,8 @@ and [<Sealed>] EntityManager(maxEntityAmount) =
     let entityComponents = Array.init maxEntityAmount (fun _ -> ResizeArray ())
     let mutable currentIterations = 0
 
-    member inline this.IsValidEntity (entity: Entity) =
-        not (entity.Index.Equals 0u) && activeVersions.[entity.Index].Equals entity.Version
+    member inline this.IsValidEntity(entity: Entity) =
+        activeVersions.[entity.Index].Equals entity.Version
 
     member this.RegisterComponent<'T when 'T : unmanaged and 'T :> IComponent>() =
         let data =
@@ -214,8 +213,8 @@ and [<Sealed>] EntityManager(maxEntityAmount) =
             let i = entities.Count
             indexLookup.[entity.Index] <- i
 
-            components.Add Unchecked.defaultof<'T>
-            entities.Add entity
+            components.AddDefault()
+            entities.Add(entity)
 
             components.[i]
 
@@ -239,7 +238,10 @@ and [<Sealed>] EntityManager(maxEntityAmount) =
         else
             if this.IsValidEntity entity then
                 let data = this.GetEntityLookupData<'T> ()
-
+                let indexLookup = data.IndexLookup
+                let entities = data.Entities
+                let comps = data.Components
+                
                 if data.IndexLookup.[entity.Index] >= 0 then
                     let index = data.IndexLookup.[entity.Index]
                     let swappingEntity = data.Entities.LastItem
@@ -260,7 +262,7 @@ and [<Sealed>] EntityManager(maxEntityAmount) =
     member this.Spawn () =                         
         if removedEntityQueue.Count = 0 && nextEntityIndex >= maxEntityAmount then
             Debug.WriteLine (String.Format ("ECS WARNING: Unable to spawn entity. Max entity amount hit: {0}", (maxEntityAmount - 1)))
-            Entity ()
+            Entity()
         else
             let entity =
                 if removedEntityQueue.Count > 0 then

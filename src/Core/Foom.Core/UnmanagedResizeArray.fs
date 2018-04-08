@@ -33,11 +33,18 @@ type UnmanagedResizeArray<'T when 'T : unmanaged>(capacity) =
             Marshal.ReAllocHGlobal(NativePtr.toNativeInt buffer, NativePtr.toNativeInt &&length) 
             |> NativePtr.ofNativeInt
 
-    member this.Add item =
+    member this.Add(item) =
         if count >= length then
             this.IncreaseCapacity ()
         
         NativePtr.set buffer count item
+        count <- count + 1
+
+    member this.AddDefault() =
+        if count >= length then
+            this.IncreaseCapacity ()
+        
+        NativePtr.set buffer count (Unchecked.defaultof<'T>)
         count <- count + 1
 
     member __.LastItem = NativePtr.get buffer (count - 1)
@@ -47,9 +54,7 @@ type UnmanagedResizeArray<'T when 'T : unmanaged>(capacity) =
             failwith "Index out of bounds"
 
         let lastIndex = count - 1
-
         NativePtr.set buffer index (NativePtr.get buffer lastIndex)
-        NativePtr.set buffer lastIndex Unchecked.defaultof<'T>
         count <- lastIndex
 
     member __.Item
