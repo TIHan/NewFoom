@@ -51,4 +51,4 @@ type EntityManager =
 
     member MaxNumberOfEntities : int
 
-    member internal DestroyAll : unit -> unit
+   // member internal DestroyAll : unit -> unit

@@ -66,3 +66,33 @@ type UnmanagedResizeArray<'T when 'T : unmanaged>(capacity) =
 
         member __.Dispose() =
             Marshal.FreeHGlobal(NativePtr.toNativeInt buffer)
+
+[<Struct>]
+type UnmanagedArray<'T when 'T : unmanaged> =
+
+    val Buffer : nativeptr<'T>
+    val Length : int
+
+    new (length) =
+        let size = sizeof<'T> * length
+        {
+            Buffer = Marshal.AllocHGlobal(size) |> NativePtr.ofNativeInt<'T>
+            Length = length
+        }
+
+    member this.Item
+        with get index = NativePtrExtension.toByref (NativePtr.add this.Buffer index)
+
+    static member Create(length, init) =
+        let arr = new UnmanagedArray<_>(length)
+
+        for i = 0 to arr.Length do
+            let ref = arr.[i]
+            ref <- init i
+
+        arr
+
+    interface IDisposable with
+
+        member this.Dispose() =
+            Marshal.FreeHGlobal(NativePtr.toNativeInt this.Buffer)

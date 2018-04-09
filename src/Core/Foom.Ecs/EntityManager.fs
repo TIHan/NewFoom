@@ -73,7 +73,7 @@ and [<Sealed>] EntityManager(maxEntityAmount) =
 
     let lookup = ConcurrentDictionary<Type, int> ()
     let lookupType = Array.zeroCreate 64
-    let activeVersions = Array.init maxEntityAmount (fun _ -> 1u)
+    let activeVersions = UnmanagedArray<uint32>.Create(maxEntityAmount, fun _ -> 1u) //Array.init maxEntityAmount (fun _ -> 1u)
     let compMasks = Array.zeroCreate maxEntityAmount
 
     let mutable nextEntityIndex = 1
@@ -83,7 +83,8 @@ and [<Sealed>] EntityManager(maxEntityAmount) =
     let mutable currentIterations = 0
 
     member inline this.IsValidEntity(entity: Entity) =
-        activeVersions.[entity.Index].Equals entity.Version
+        let ref = activeVersions.[entity.Index]
+        ref.Equals entity.Version
 
     member this.RegisterComponent<'T when 'T : unmanaged and 'T :> IComponent>() =
         if nextCompBit >= 64 then
@@ -274,7 +275,8 @@ and [<Sealed>] EntityManager(maxEntityAmount) =
                     nextEntityIndex <- index + 1
                     Entity (index, 1u)
 
-            activeVersions.[entity.Index] <- entity.Version
+            let ref = activeVersions.[entity.Index]
+            ref <- entity.Version
 
             entity
 
@@ -286,13 +288,15 @@ and [<Sealed>] EntityManager(maxEntityAmount) =
 
                 let compMask : uint64 = compMasks.[ent.Index]
 
-                for i = 0 to 63 do
-                    if (compMask &&& (1UL <<< i)) <> 0UL then
-                        let data = lookupType.[i]
-                        data.TryRemoveComponent ent |> ignore
+                for i = 1 to 4 do
+                    for i = 0 to 63 do
+                        if (compMask &&& (1UL <<< i)) <> 0UL then
+                            let data = lookupType.[i]
+                            data.TryRemoveComponent ent |> ignore
 
                 removedEntityQueue.Enqueue ent  
-                activeVersions.[ent.Index] <- 0u
+                let ref = activeVersions.[ent.Index] 
+                ref <- 0u
 
             else
                 Debug.WriteLine (String.Format ("ECS WARNING: {0} is invalid. Cannot destroy.", ent))
@@ -346,9 +350,9 @@ and [<Sealed>] EntityManager(maxEntityAmount) =
 
     member this.MaxNumberOfEntities = maxEntityAmount - 1
 
-    member this.DestroyAll () =
-        activeVersions
-        |> Array.iteri (fun index version ->
-            if version > 0u then
-                this.Destroy (Entity (index, version))
-        )
+    //member this.DestroyAll () =
+    //    activeVersions
+    //    |> Array.iteri (fun index version ->
+    //        if version > 0u then
+    //            this.Destroy (Entity (index, version))
+    //    )
