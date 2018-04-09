@@ -5,6 +5,7 @@ open System.Diagnostics
 open System.Reflection
 open System.Collections.Generic
 open System.Collections.Concurrent
+open System.Runtime.CompilerServices
 open System.Threading.Tasks
 open System.Runtime.InteropServices
 open System.Runtime.Serialization

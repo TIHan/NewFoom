@@ -42,6 +42,8 @@ type EntityManager =
 
     member Add<'T when 'T : unmanaged and 'T :> IComponent> : Entity -> byref<'T>
 
+    member Remove<'T when 'T : unmanaged and 'T :> IComponent> : Entity -> unit
+
     // Entites
 
     member Spawn : unit -> Entity

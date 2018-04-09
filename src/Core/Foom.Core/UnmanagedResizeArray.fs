@@ -86,7 +86,7 @@ type UnmanagedArray<'T when 'T : unmanaged> =
     static member Create(length, init) =
         let arr = new UnmanagedArray<_>(length)
 
-        for i = 0 to arr.Length do
+        for i = 0 to arr.Length - 1 do
             let ref = arr.[i]
             ref <- init i
 

@@ -61,7 +61,7 @@ type TestComponent5 =
 [<EntryPoint>]
 let main argv =
     
-    let em = new EntityManager(65536)
+    let em = new EntityManager(10000)
     em.RegisterComponent<TestComponent>()
     em.RegisterComponent<TestComponent2>()
     em.RegisterComponent<TestComponent3>()
@@ -84,6 +84,7 @@ let main argv =
         let destroyEntityTime = Stopwatch.StartNew()
         while queue.Count > 0 do
             let ent = queue.Dequeue()
+           // em.Remove<TestComponent5>(ent)
             em.Destroy(ent)
         destroyEntityTime.Stop()
 
