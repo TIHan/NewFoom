@@ -65,6 +65,65 @@ type EntityLookupData<'T when 'T : unmanaged and 'T :> IComponent> =
 type ForEachDelegate<'T when 'T : unmanaged and 'T :> IComponent> = delegate of Entity * byref<'T> -> unit
 type ForEachDelegate<'T1, 'T2 when 'T1 : unmanaged and 'T2 : unmanaged and 'T1 :> IComponent and 'T2 :> IComponent> = delegate of Entity * byref<'T1> * byref<'T2> -> unit
 
+[<Struct>]
+type EntityComponents =
+    {
+        [<DefaultValue>] mutable v1: uint16
+        [<DefaultValue>] mutable v2: uint16
+        [<DefaultValue>] mutable v3: uint16
+        [<DefaultValue>] mutable v4: uint16
+        [<DefaultValue>] mutable v5: uint16
+        [<DefaultValue>] mutable v6: uint16
+        [<DefaultValue>] mutable v7: uint16
+        [<DefaultValue>] mutable v8: uint16
+        [<DefaultValue>] mutable v9: uint16
+        [<DefaultValue>] mutable v10: uint16
+        [<DefaultValue>] mutable v11: uint16
+        [<DefaultValue>] mutable v12: uint16
+        [<DefaultValue>] mutable v13: uint16
+        [<DefaultValue>] mutable v14: uint16
+        [<DefaultValue>] mutable v15: uint16
+        [<DefaultValue>] mutable v16: uint16
+
+        mutable count: int
+    }
+
+    member inline this.Get(i) =
+        match i with
+        | 0 -> &this.v1
+        | 1 -> &this.v2
+        | 2 -> &this.v3
+        | 3 -> &this.v4
+        | 4 -> &this.v5
+        | 5 -> &this.v6
+        | 6 -> &this.v7
+        | 7 -> &this.v8
+        | 8 -> &this.v9
+        | 9 -> &this.v10
+        | 10 -> &this.v11
+        | 11 -> &this.v12
+        | 12 -> &this.v13
+        | 13 -> &this.v14
+        | 14 -> &this.v15
+        | 15 -> &this.v16
+        | _ -> 
+            failwith "Too many components attached to entity."
+            &this.v1
+
+    member this.AddComponentId(compId: uint16) =
+        let v = this.Get(this.count)
+        v <- compId
+        this.count <- this.count + 1
+
+    member this.RemoveComponentId(compId: uint16) =
+        if this.count > 0 then
+            for i = 0 to this.count - 1 do
+                let v = this.Get(i)
+                if v = compId then
+                    let lastV = this.Get(this.count - 1)
+                    v <- lastV
+            this.count <- this.count - 1
+
 and [<Sealed>] EntityManager(maxEntityAmount) =
     let maxEntityAmount =
         if maxEntityAmount <= 0 then
@@ -74,7 +133,7 @@ and [<Sealed>] EntityManager(maxEntityAmount) =
     let lookup = ConcurrentDictionary<Type, int> ()
     let lookupType = Array.zeroCreate 64
     let activeVersions = UnmanagedArray<uint32>.Create(maxEntityAmount, fun _ -> 1u) //Array.init maxEntityAmount (fun _ -> 1u)
-    let compMasks = Array.zeroCreate maxEntityAmount
+    let entComps = UnmanagedArray<EntityComponents>.Create(maxEntityAmount, fun _ -> { count = 0 })
 
     let mutable nextEntityIndex = 1
     let mutable nextCompBit = 0
@@ -242,7 +301,9 @@ and [<Sealed>] EntityManager(maxEntityAmount) =
                     components.AddDefault()
                     entities.Add(entity)
 
-                    compMasks.[entity.Index] <- compMasks.[entity.Index] ||| (1UL <<< bit)
+                    let ec = entComps.[entity.Index]
+                    ec.AddComponentId(uint16 bit)
+                   // compMasks.[entity.Index] <- compMasks.[entity.Index] ||| (1UL <<< bit)
 
                     components.[index]
             else
@@ -255,7 +316,8 @@ and [<Sealed>] EntityManager(maxEntityAmount) =
         else
             if this.IsValidEntity entity then
                 if (data :> IEntityLookupData).TryRemoveComponent(entity) then
-                    compMasks.[entity.Index] <- compMasks.[entity.Index] &&&  ~~~(1UL <<< bit)
+                    let ec = entComps.[entity.Index]
+                    ec.RemoveComponentId(uint16 bit)
                 else
                     Debug.WriteLine (String.Format ("ECS WARNING: Component, {0}, does not exist on {1}", typeof<'T>.Name, entity))
             else
@@ -286,13 +348,13 @@ and [<Sealed>] EntityManager(maxEntityAmount) =
         else
             if this.IsValidEntity ent then
 
-                let compMask : uint64 = compMasks.[ent.Index]
+                let ec = entComps.[ent.Index]
 
-                for i = 1 to 4 do
-                    for i = 0 to 63 do
-                        if (compMask &&& (1UL <<< i)) <> 0UL then
-                            let data = lookupType.[i]
-                            data.TryRemoveComponent ent |> ignore
+                for i = 0 to ec.count - 1 do
+                    let v = ec.Get(i)
+                    let data = lookupType.[int v]
+                    data.TryRemoveComponent(ent) |> ignore
+                    ec.RemoveComponentId(v)
 
                 removedEntityQueue.Enqueue ent  
                 let ref = activeVersions.[ent.Index] 

@@ -61,7 +61,7 @@ type TestComponent5 =
 [<EntryPoint>]
 let main argv =
     
-    let em = new EntityManager(10000000)
+    let em = new EntityManager(65536)
     em.RegisterComponent<TestComponent>()
     em.RegisterComponent<TestComponent2>()
     em.RegisterComponent<TestComponent3>()
@@ -87,7 +87,7 @@ let main argv =
             em.Destroy(ent)
         destroyEntityTime.Stop()
 
-        printfn "Spawn 10M: %A" spawnEntityTime.Elapsed.TotalMilliseconds
-        printfn "Destroy 10M: %A" destroyEntityTime.Elapsed.TotalMilliseconds
+        printfn "Spawn 1000: %A" spawnEntityTime.Elapsed.TotalMilliseconds
+        printfn "Destroy 1000: %A" destroyEntityTime.Elapsed.TotalMilliseconds
 
     0
