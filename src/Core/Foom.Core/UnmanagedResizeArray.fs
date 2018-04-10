@@ -23,6 +23,8 @@ type UnmanagedResizeArray<'T when 'T : unmanaged>(capacity) =
         Marshal.AllocHGlobal(length)
         |> NativePtr.ofNativeInt<'T>
 
+    member __.Buffer = buffer
+
     member __.IncreaseCapacity () =
         let mutable newLength = uint32 length * 2u
         if newLength >= uint32 Int32.MaxValue then
@@ -57,7 +59,7 @@ type UnmanagedResizeArray<'T when 'T : unmanaged>(capacity) =
         NativePtr.set buffer index (NativePtr.get buffer lastIndex)
         count <- lastIndex
 
-    member __.Item
+    member this.Item
         with get index = NativePtrExtension.toByref (NativePtr.add buffer index)
 
     member __.Count = count

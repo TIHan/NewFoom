@@ -68,7 +68,7 @@ let main argv =
     em.RegisterComponent<TestComponent4>()
     em.RegisterComponent<TestComponent5>()
 
-    for i = 1 to 10 do
+    for i = 1 to 15 do
         let queue = Queue()
         let spawnEntityTime = Stopwatch.StartNew()
         for i = 1 to 1000 do

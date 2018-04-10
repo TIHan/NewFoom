@@ -18,6 +18,8 @@ type EntityManager =
 
     member RegisterComponent<'T when 'T : unmanaged and 'T :> IComponent> : unit -> unit
 
+    member GetComponentId<'T when 'T : unmanaged and 'T :> IComponent> : unit -> int
+
     /// Checks to see if the Entity is valid.
     member IsValid : Entity -> bool
 

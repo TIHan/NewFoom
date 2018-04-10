@@ -28,7 +28,7 @@ type IEntityLookupData =
 [<ReferenceEquality>]
 type EntityLookupData<'T when 'T : unmanaged and 'T :> IComponent> =
     {
-        IndexLookup: int []
+        IndexLookup: int UnmanagedArray
         Entities: Entity UnmanagedResizeArray
         Components: 'T UnmanagedResizeArray
 
@@ -39,7 +39,9 @@ type EntityLookupData<'T when 'T : unmanaged and 'T :> IComponent> =
 
         member this.Entities = this.Entities
 
-        member this.GetIndex id = this.IndexLookup.[id]
+        member this.GetIndex id = 
+            let res = this.IndexLookup.[id]
+            res
 
         member this.TryRemoveComponent(ent) =
             let indexLookup = this.IndexLookup
@@ -53,10 +55,12 @@ type EntityLookupData<'T when 'T : unmanaged and 'T :> IComponent> =
                 entities.SwapRemoveAt index
                 components.SwapRemoveAt index
 
-                indexLookup.[ent.Index] <- -1
+                let refIndexLookup = indexLookup.[ent.Index]
+                refIndexLookup <- -1
 
                 if not (ent.Index.Equals swappingEntity.Index) then
-                    indexLookup.[swappingEntity.Index] <- index
+                    let refIndexLookup = indexLookup.[swappingEntity.Index]
+                    refIndexLookup <- index
 
                 true
             else
@@ -66,50 +70,29 @@ type EntityLookupData<'T when 'T : unmanaged and 'T :> IComponent> =
 type ForEachDelegate<'T when 'T : unmanaged and 'T :> IComponent> = delegate of Entity * byref<'T> -> unit
 type ForEachDelegate<'T1, 'T2 when 'T1 : unmanaged and 'T2 : unmanaged and 'T1 :> IComponent and 'T2 :> IComponent> = delegate of Entity * byref<'T1> * byref<'T2> -> unit
 
+
+[<Struct>]
+[<StructLayout(LayoutKind.Sequential, Size = 510)>]
+type EntityComponentsInternal =
+
+    val mutable fixedValues : uint16
+
 [<Struct>]
 type EntityComponents =
     {
-        [<DefaultValue>] mutable v1: uint16
-        [<DefaultValue>] mutable v2: uint16
-        [<DefaultValue>] mutable v3: uint16
-        [<DefaultValue>] mutable v4: uint16
-        [<DefaultValue>] mutable v5: uint16
-        [<DefaultValue>] mutable v6: uint16
-        [<DefaultValue>] mutable v7: uint16
-        [<DefaultValue>] mutable v8: uint16
-        [<DefaultValue>] mutable v9: uint16
-        [<DefaultValue>] mutable v10: uint16
-        [<DefaultValue>] mutable v11: uint16
-        [<DefaultValue>] mutable v12: uint16
-        [<DefaultValue>] mutable v13: uint16
-        [<DefaultValue>] mutable v14: uint16
-        [<DefaultValue>] mutable v15: uint16
-        [<DefaultValue>] mutable v16: uint16
+        [<DefaultValue>] mutable values : EntityComponentsInternal
 
         mutable count: int
     }
 
     member inline this.Get(i) =
-        match i with
-        | 0 -> &this.v1
-        | 1 -> &this.v2
-        | 2 -> &this.v3
-        | 3 -> &this.v4
-        | 4 -> &this.v5
-        | 5 -> &this.v6
-        | 6 -> &this.v7
-        | 7 -> &this.v8
-        | 8 -> &this.v9
-        | 9 -> &this.v10
-        | 10 -> &this.v11
-        | 11 -> &this.v12
-        | 12 -> &this.v13
-        | 13 -> &this.v14
-        | 14 -> &this.v15
-        | 15 -> &this.v16
-        | _ -> 
-            failwith "Too many components attached to entity."
-            &this.v1
+        if i >= 252 then
+            failwith "Invalid index to find component."
+            let ptr = &&this.values.fixedValues |> NativePtr.toNativeInt |> NativePtr.ofNativeInt<uint16>
+            NativePtrExtension.toByref (NativePtr.add ptr 0)
+        else
+            let ptr = &&this.values.fixedValues |> NativePtr.toNativeInt |> NativePtr.ofNativeInt<uint16>
+            NativePtrExtension.toByref (NativePtr.add ptr i)
 
     member this.AddComponentId(compId: uint16) =
         let v = this.Get(this.count)
@@ -118,6 +101,7 @@ type EntityComponents =
 
     member this.RemoveComponentId(compId: uint16) =
         if this.count > 0 then
+            // TODO: We could probably optimize this by providing more book keeping.
             for i = 0 to this.count - 1 do
                 let v = this.Get(i)
                 if v = compId then
@@ -142,26 +126,27 @@ and [<Sealed>] EntityManager(maxEntityAmount) =
 
     let mutable currentIterations = 0
 
-    member inline this.IsValidEntity(entity: Entity) =
+    member inline __.IsValidEntity(entity: Entity) =
         let ref = activeVersions.[entity.Index]
         ref.Equals entity.Version
 
-    member this.RegisterComponent<'T when 'T : unmanaged and 'T :> IComponent>() =
-        if nextCompBit >= 64 then
-            failwith "Too many registered components."
-
+    member __.RegisterComponent<'T when 'T : unmanaged and 'T :> IComponent>() =
         let data =
             {
-                IndexLookup = Array.init maxEntityAmount (fun _ -> -1) // -1 means that no component exists for that entity
+                IndexLookup = UnmanagedArray<int>.Create(maxEntityAmount, fun _ -> -1) // -1 means that no component exists for that entity
                 Entities = new UnmanagedResizeArray<Entity>(maxEntityAmount)
                 Components = new UnmanagedResizeArray<'T>(maxEntityAmount)
 
                 dummy = Unchecked.defaultof<'T>
             }
 
-        lookup.GetOrAdd(typeof<'T>, nextCompBit) |> ignore
-        lookupType.[nextCompBit] <- data :> IEntityLookupData
+        let compId = nextCompBit
+        lookup.GetOrAdd(typeof<'T>, compId) |> ignore
+        lookupType.[compId] <- data :> IEntityLookupData
         nextCompBit <- nextCompBit + 1
+
+    member __.GetComponentId<'T when 'T : unmanaged and 'T :> IComponent>() =
+        lookup.[typeof<'T>]
 
     member this.GetEntityLookupData<'T when 'T : unmanaged and 'T :> IComponent> () =
         let t = typeof<'T>
@@ -296,15 +281,16 @@ and [<Sealed>] EntityManager(maxEntityAmount) =
                     Debug.WriteLine (String.Format ("ECS WARNING: Component, {0}, already added to {1}.", typeof<'T>.Name, entity))
                     components.[index]
                 else
-                    let index = entities.Count
-                    indexLookup.[entity.Index] <- index
+                    let mutable index = entities.Count
+
+                    let refIndexLookup = indexLookup.[entity.Index]
+                    refIndexLookup <- index
 
                     components.AddDefault()
                     entities.Add(entity)
 
                     let ec = entComps.[entity.Index]
                     ec.AddComponentId(uint16 bit)
-                   // compMasks.[entity.Index] <- compMasks.[entity.Index] ||| (1UL <<< bit)
 
                     components.[index]
             else
