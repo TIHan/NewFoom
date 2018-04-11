@@ -134,8 +134,8 @@ and [<Sealed>] EntityManager(maxEntityAmount) =
         let data =
             {
                 IndexLookup = UnmanagedArray<int>.Create(maxEntityAmount, fun _ -> -1) // -1 means that no component exists for that entity
-                Entities = new UnmanagedResizeArray<Entity>(maxEntityAmount)
-                Components = new UnmanagedResizeArray<'T>(maxEntityAmount)
+                Entities = new UnmanagedResizeArray<Entity>(1)
+                Components = new UnmanagedResizeArray<'T>(1)
 
                 dummy = Unchecked.defaultof<'T>
             }

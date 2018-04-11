@@ -31,19 +31,20 @@ type UnmanagedResizeArray<'T when 'T : unmanaged>(capacity) =
             failwith "Length is bigger than the maximum number of elements in the array"
 
         length <- int newLength
-        buffer <- 
-            Marshal.ReAllocHGlobal(NativePtr.toNativeInt buffer, NativePtr.toNativeInt &&length) 
-            |> NativePtr.ofNativeInt
+
+        let newBuffer = Marshal.ReAllocHGlobal(NativePtr.toNativeInt buffer, nativeint length) 
+                        |> NativePtr.ofNativeInt
+        buffer <- newBuffer
 
     member this.Add(item) =
-        if count >= length then
+        if count * sizeof<'T> >= length then
             this.IncreaseCapacity ()
         
         NativePtr.set buffer count item
         count <- count + 1
 
     member this.AddDefault() =
-        if count >= length then
+        if count * sizeof<'T> >= length then
             this.IncreaseCapacity ()
         
         NativePtr.set buffer count (Unchecked.defaultof<'T>)
