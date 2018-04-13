@@ -187,6 +187,23 @@ let rec tryLookupCType env = function
         match tryLookupCType env elType with
         | None -> None
         | Some x -> Some <| Pointer (Some x)
+    | x when x.IsValueType && x.GetMethod("Invoke") <> null ->
+        x.GetMethod "Invoke" |> ignore // make sure there is a method named "Invoke"
+
+        //match 
+        //    x.CustomAttributes
+        //    |> Seq.tryFind (fun attr -> attr.AttributeType = typeof<System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute>) with
+        //| None -> failwithf "Delegate, %s, must have the attribute, UnmanagedFunctionPointer, from System.Runtime.InteropServices with CallingConvention.Cdecl." x.Name
+        //| Some attr ->
+        //    let attr = Seq.exactlyOne attr.ConstructorArguments
+        //    let attr = attr.Value :?> System.Runtime.InteropServices.CallingConvention
+        //    if attr <> System.Runtime.InteropServices.CallingConvention.Cdecl
+        //    then failwithf "Delegate, %s, must have CallingConvention.Cdecl." x.Name
+        //    else ()
+
+        match tryLookupFunction env x with
+        | None -> None
+        | Some x -> Some <| CType.Function x
     | x when x.IsEnum ->
         match tryLookupEnum env x with
         | None -> None
@@ -195,28 +212,11 @@ let rec tryLookupCType env = function
         match tryLookupStruct env x with
         | None -> None
         | Some x -> Some <| CType.Struct x
-    | x when x.BaseType = typeof<MulticastDelegate> ->
-        x.GetMethod "Invoke" |> ignore // make sure there is a method named "Invoke"
-
-        match 
-            x.CustomAttributes
-            |> Seq.tryFind (fun attr -> attr.AttributeType = typeof<System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute>) with
-        | None -> failwithf "Delegate, %s, must have the attribute, UnmanagedFunctionPointer, from System.Runtime.InteropServices with CallingConvention.Cdecl." x.Name
-        | Some attr ->
-            let attr = Seq.exactlyOne attr.ConstructorArguments
-            let attr = attr.Value :?> System.Runtime.InteropServices.CallingConvention
-            if attr <> System.Runtime.InteropServices.CallingConvention.Cdecl
-            then failwithf "Delegate, %s, must have CallingConvention.Cdecl." x.Name
-            else ()
-
-        match tryLookupFunction env x with
-        | None -> None
-        | Some x -> Some <| CType.Function x
     | _ -> None
 
 let lookupCType env typ =
     match tryLookupCType env typ with
-    | None -> failwithf "%A is not supported." typ.FullName
+    | None -> failwithf "%A is not supported. %A" typ.FullName typ
     | Some x -> x
 
 let makeCField typ name = { CField.Type = typ; Name = name }
@@ -241,7 +241,7 @@ let makeParameterTypes env infos = infos |> List.ofArray |> List.map (makeParame
 
 let makeCExprFallback (env: CEnv) (meth: MethodInfo) =
     match meth.GetParameters () with
-    | [|x|] when x.ParameterType.BaseType = typeof<MulticastDelegate> && meth.Name.Contains("__ferop_set_exported__") ->
+    | [|x|] when x.ParameterType.BaseType = typeof<ValueType> && meth.Name.Contains("__ferop_set_exported__") ->
         let typ = x.ParameterType
         let name = sprintf "%s_%s" env.Name (typ.Name.Replace ("__ferop_exported__", ""))
         Text <| sprintf "%s = ptr;" name
@@ -460,7 +460,7 @@ let makeCDecls (env: CEnv) info =
         |> List.map (fun x -> x.GetParameters () |> List.ofArray)
         |> List.reduce (fun x y -> x @ y)
         |> List.map (fun x -> x.ParameterType)
-        |> List.filter (fun x -> x.BaseType = typeof<MulticastDelegate>)
+        |> List.filter (fun x -> x.IsValueType && x.GetMethod("Invoke") <> null)
 
     // If the delegate is compiler generated, we are creating
     // an extern function.
@@ -473,7 +473,7 @@ let makeCDecls (env: CEnv) info =
         |> List.map (fun x -> (x.GetParameters () |> Array.map (fun x -> x.ParameterType) |> List.ofArray) @ [x.ReturnType])
         |> List.reduce (fun x y -> x @ y)
         |> List.map (fun x -> if isTypePointer x && x.GetElementType () <> null then x.GetElementType () else x)
-        |> List.filter (fun x -> not (x = typeof<Void>) && not x.IsPrimitive && not x.IsEnum && isTypeBlittable x)
+        |> List.filter (fun x -> not (x = typeof<Void>) && not x.IsPrimitive && not x.IsEnum && isTypeBlittable x && x.GetMethod("Invoke") = null)
 
     let enums =
         funcs @ exportedFuncs

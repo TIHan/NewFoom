@@ -38,6 +38,7 @@ let processModule(m: ModuleDefinition) =
     let objType = m.ImportReference(typeof<obj>)
     let nativeintType = m.ImportReference(typeof<nativeint>)
     let delType = m.ImportReference(typeof<MulticastDelegate>)
+    let valType = m.ImportReference(typeof<ValueType>)
     let unmanagedFnPtrCtor = m.ImportReference(typeof<UnmanagedFunctionPointerAttribute>.GetConstructor([|typeof<CallingConvention>|]))
     let callingConvType = m.ImportReference(typeof<CallingConvention>)
     let importAttrCtor = m.ImportReference(typeof<ImportAttribute>.GetConstructor(Array.empty))
@@ -73,24 +74,37 @@ let processModule(m: ModuleDefinition) =
         |> Array.filter (fun x -> methodHasAttribute typeof<ImportAttribute> x || methodHasAttribute typeof<ExportAttribute> x)
         |> Array.iter (fun meth ->
             if methodHasAttribute typeof<ExportAttribute> meth then
-                let del = TypeDefinition ("", meth.Name + "__ferop_exported__", TypeAttributes.Sealed ||| TypeAttributes.Serializable, delType)
+                let del = TypeDefinition ("", meth.Name + "__ferop_exported__", TypeAttributes.SequentialLayout ||| TypeAttributes.Sealed ||| TypeAttributes.Serializable, valType)
+
+                let fld = FieldDefinition("_beef", FieldAttributes.Private, nativeintType)
 
                 let ctordel = MethodDefinition (".ctor", MethodAttributes.Public ||| MethodAttributes.CompilerControlled ||| MethodAttributes.RTSpecialName ||| MethodAttributes.SpecialName ||| MethodAttributes.HideBySig, voidType)
-                ctordel.Parameters.Add (ParameterDefinition ("'object'", ParameterAttributes.None, objType))
                 ctordel.Parameters.Add (ParameterDefinition ("'method'", ParameterAttributes.None, nativeintType))
-                ctordel.ImplAttributes <- ctordel.ImplAttributes ||| MethodImplAttributes.Runtime
 
+                del.Fields.Add(fld)
                 del.Methods.Add (ctordel)
 
-                let delmeth = MethodDefinition ("Invoke", MethodAttributes.Public ||| MethodAttributes.Virtual ||| MethodAttributes.HideBySig, meth.ReturnType)
-                delmeth.ImplAttributes <- delmeth.ImplAttributes ||| MethodImplAttributes.Runtime
+                ctordel.Body.Instructions.Add(Cil.Instruction.Create(Cil.OpCodes.Ldarg_0))
+                ctordel.Body.Instructions.Add(Cil.Instruction.Create(Cil.OpCodes.Ldarg_1))
+                ctordel.Body.Instructions.Add(Cil.Instruction.Create(Cil.OpCodes.Stfld, fld))
+                ctordel.Body.Instructions.Add(Cil.Instruction.Create(Cil.OpCodes.Ret))
 
-                let customAttr = CustomAttribute (unmanagedFnPtrCtor)
-                customAttr.ConstructorArguments.Add (CustomAttributeArgument (callingConvType, CallingConvention.Cdecl))
-                del.CustomAttributes.Add (customAttr)
+                let delmeth = MethodDefinition ("Invoke", MethodAttributes.Public ||| MethodAttributes.HideBySig, meth.ReturnType)
+
+                let delmethsig = CallSite(meth.ReturnType)
+                delmethsig.CallingConvention <- MethodCallingConvention.C
 
                 meth.Parameters
-                |> Seq.iter delmeth.Parameters.Add
+                |> Seq.iteri (fun i p -> 
+                    delmeth.Parameters.Add(p)
+                    delmethsig.Parameters.Add(p)
+                    delmeth.Body.Instructions.Add(Cil.Instruction.Create(Cil.OpCodes.Ldarg, delmeth.Parameters.Item i))
+                )
+
+                delmeth.Body.Instructions.Add(Cil.Instruction.Create(Cil.OpCodes.Ldarg_0))
+                delmeth.Body.Instructions.Add(Cil.Instruction.Create(Cil.OpCodes.Ldfld, fld))
+                delmeth.Body.Instructions.Add(Cil.Instruction.Create(Cil.OpCodes.Calli, delmethsig))
+                delmeth.Body.Instructions.Add(Cil.Instruction.Create(Cil.OpCodes.Ret))
 
                 del.Methods.Add (delmeth)
 
@@ -147,7 +161,6 @@ let processModule(m: ModuleDefinition) =
                 edel.Methods
                 |> Seq.find (fun x -> x.IsConstructor)
 
-            meth.Body.Instructions.Add (Cil.Instruction.Create (Cil.OpCodes.Ldnull))
             meth.Body.Instructions.Add (Cil.Instruction.Create (Cil.OpCodes.Ldftn, emeth))
             meth.Body.Instructions.Add (Cil.Instruction.Create (Cil.OpCodes.Newobj, edelctor))
             meth.Body.Instructions.Add (Cil.Instruction.Create (Cil.OpCodes.Stsfld, field))

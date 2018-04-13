@@ -176,7 +176,7 @@ module Backend =
         C """
         glDrawArrays (GL_TRIANGLES, first, count);
         """
-
+    
     [<Export>]
     let printFSharp (bytes: nativeptr<sbyte>) =
         let str = String (bytes)
@@ -242,6 +242,7 @@ module Backend =
 
         /******************************************************/
 
+        Backend_printFSharp("Greetings from C.");
         return ProgramID;
         """
 
