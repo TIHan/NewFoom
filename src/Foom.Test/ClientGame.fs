@@ -68,7 +68,6 @@ type ClientGame(input: IInput, renderer: IRenderer, client: IBackgroundClient) =
             | ClientMessage.Message(msg) -> 
                 match msg with
                 | :? Snapshot as snapshotMsg ->
-                //    printfn "snapshot seqid %A - time %A" snapshotMsg.SequenceId time
                     playerCount <- snapshotMsg.PlayerCount
 
                     latestSnap <- (latestSnap + 1us) % 32us
@@ -79,7 +78,6 @@ type ClientGame(input: IInput, renderer: IRenderer, client: IBackgroundClient) =
                         playerStates.[i] <- snapshotMsg.PlayerState.[i]
 
                     sortedList.Add(snapshotMsg.SnapshotId, struct(playerStates, time))
-                   // queue.Enqueue struct(playerStates, time)
 
                 | _ -> ()
         )

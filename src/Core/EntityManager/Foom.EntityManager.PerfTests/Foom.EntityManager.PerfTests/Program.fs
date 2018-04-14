@@ -77,10 +77,10 @@ let main argv =
         for i = 1 to 1000 do
             let ent = em.Spawn()
             em.Add<TestComponent>(ent)
-            //em.Add<TestComponent2>(ent)
-            //em.Add<TestComponent3>(ent)
-            //em.Add<TestComponent4>(ent)
-            //em.Add<TestComponent5>(ent)
+            em.Add<TestComponent2>(ent)
+            em.Add<TestComponent3>(ent)
+            em.Add<TestComponent4>(ent)
+            em.Add<TestComponent5>(ent)
             queue.Enqueue(ent)
         spawnEntityTime.Stop()
 

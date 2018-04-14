@@ -155,20 +155,22 @@ type Server(msgReg, channelLookupFactory, port: int, maxClients) as this =
                 match clients.TryGetClient(endPoint) with
                 | Some client -> client.OnReceivePacket packet
                 | _ -> 
+
                     let client = clients.AddClient(udpServerOpt.Value, currentTime, endPoint)
 
-                    client.OnReceivePacket packet
+                    try
+                        client.OnReceivePacket packet
 
-                    client.TryReceiveMessages(fun clientId msg -> 
-                        if msg :? ConnectionRequested then
-                            this.Publish(msg, clientId)
-                        else
-                            failwith "Client sent an invalid message before it was connected."
-                    )
-                    // TODO: Do something here.
-                //    if not didSucceed then
-                  //      clients.RemoveClient(client.ClientId)
-                        // BAN CLIENT
+                        client.TryReceiveMessages(fun clientId msg -> 
+                            if msg :? ConnectionRequested then
+                                this.Publish(msg, clientId)
+                            else
+                                failwith "Client sent an invalid message before it was connected."
+                        )
+                    with | _ ->
+                        // TODO: ban client
+                        printfn "Client connection refused."
+                        clients.RemoveClient(client.ClientId)
 
     member __.PumpMessages() =
         clients.ReceiveMessages(fun clientId msg -> this.Publish(msg, clientId))
