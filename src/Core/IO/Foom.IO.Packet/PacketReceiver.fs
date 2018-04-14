@@ -36,9 +36,31 @@ type internal PacketReceiver(acks: AckManager) =
             printfn "resending ack: %A" seqId
             acks.ResendAck(seqId)
 
+    let process' (f: SpanDelegate) =
+        while queue.Count > 0 do
+            let seqId = queue.Dequeue()
+
+            let packet = pool.TryGet(seqId)
+            if packet.IsEmpty then ()
+            else
+
+            let header = Reader().Read<PacketHeader> (Span.op_Implicit packet)
+            if not packet.IsEmpty then
+                let packetData = packet.Slice(sizeof<PacketHeader>)
+                let packetData = packetData.Slice(0, packetData.Length - pool.GetRemainingLength(seqId))
+                if header.IsFragmented then
+                    packetData.CopyTo(Span(buffer, bufferPosition, packetData.Length))
+                    bufferPosition <- bufferPosition + packetData.Length
+                    if header.IsLastFragment then
+                        f.Invoke(Span(buffer, 0, bufferPosition))
+                        bufferPosition <- 0
+                else
+                    f.Invoke(packetData)
+        bufferPosition <- 0
+
     // TODO: We need to validate this packet to make sure it isn't malicious. 
     //     e.g. older packets, duplicate packets
-    member this.Receive(incomingPacket: ReadOnlySpan<byte>) =
+    member this.Receive(incomingPacket: ReadOnlySpan<byte>, f) =
         let mutable header = Reader().Read<PacketHeader> incomingPacket
         let packetType' = header.PacketType
         let seqId = header.SequenceId
@@ -79,24 +101,4 @@ type internal PacketReceiver(acks: AckManager) =
         else
             queue.Enqueue(seqId)        
 
-    member this.Process (f: SpanDelegate) = 
-        while queue.Count > 0 do
-            let seqId = queue.Dequeue()
-
-            let packet = pool.TryGet(seqId)
-            if packet.IsEmpty then ()
-            else
-
-            let header = Reader().Read<PacketHeader> (Span.op_Implicit packet)
-            if not packet.IsEmpty then
-                let packetData = packet.Slice(sizeof<PacketHeader>)
-                let packetData = packetData.Slice(0, packetData.Length - pool.GetRemainingLength(seqId))
-                if header.IsFragmented then
-                    packetData.CopyTo(Span(buffer, bufferPosition, packetData.Length))
-                    bufferPosition <- bufferPosition + packetData.Length
-                    if header.IsLastFragment then
-                        f.Invoke(Span(buffer, 0, bufferPosition))
-                        bufferPosition <- 0
-                else
-                    f.Invoke(packetData)
-        bufferPosition <- 0
+        process' f

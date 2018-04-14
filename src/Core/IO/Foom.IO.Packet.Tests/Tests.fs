@@ -26,16 +26,14 @@ let ``Unreliable - Basic Test`` () =
     let outputBufferSpan = Span outputBuffer
     let run () =
         stream.ProcessSending(fun packet ->
-            clientStream.Receive(Span.op_Implicit(packet))
-        )
-
-        clientStream.ProcessReceiving(fun data ->
-            data.CopyTo(Span(outputBuffer, start))
-            start <- start + data.Length
+            clientStream.Receive(Span.op_Implicit(packet), fun data ->
+                data.CopyTo(Span(outputBuffer, start))
+                start <- start + data.Length
+            )
         )
 
         clientStream.Send(Span([||]), PacketDeliveryType.Unreliable) |> ignore
-        clientStream.ProcessSending(fun packet -> stream.Receive(Span.op_Implicit(packet)))
+    //    clientStream.ProcessSending(fun packet -> stream.Receive(Span.op_Implicit(packet)))
 
     run ()
     Assert.True(start > 0)
@@ -63,14 +61,11 @@ let ``Reliable - Basic Test`` () =
     let outputBuffer = Array.zeroCreate<byte> 65536
     let outputBufferSpan = Span outputBuffer
 
-    stream.ProcessSending(fun packet ->
-        stream.Receive(Span.op_Implicit(packet))
-    )
-
     let mutable start = 0
-    stream.ProcessReceiving(fun data ->
-        data.CopyTo(Span(outputBuffer, start))
-        start <- start + data.Length
+    stream.ProcessSending(fun packet ->
+        stream.Receive(Span.op_Implicit(packet), fun data ->
+            data.CopyTo(Span(outputBuffer, start))
+            start <- start + data.Length)
     )
 
     Assert.True(start > 0)
@@ -103,12 +98,9 @@ let ``Unreliable - Packet Loss - No Recovery`` () =
         let outputBufferSpan = Span outputBuffer
 
         stream.ProcessSending(fun packet ->
-            stream.Receive(Span.op_Implicit(packet))
-        )
-
-        stream.ProcessReceiving(fun data ->
-            data.CopyTo(Span(outputBuffer, start))
-            start <- start + data.Length
+            stream.Receive(Span.op_Implicit(packet), fun data ->
+                data.CopyTo(Span(outputBuffer, start))
+                start <- start + data.Length)
         )
 
     run ()
@@ -143,16 +135,17 @@ let ``Reliable - Packet Loss - Recovery - Soak`` () =
         let outputBufferSpan = Span outputBuffer
         let run () =
             stream.ProcessSending(fun packet ->
-                clientStream.Receive(Span.op_Implicit(packet))
-            )
-
-            clientStream.ProcessReceiving(fun data ->
-                data.CopyTo(Span(outputBuffer, 0))
-                start <- start + data.Length
+                clientStream.Receive(Span.op_Implicit(packet), fun data ->
+                    data.CopyTo(Span(outputBuffer, 0))
+                    start <- start + data.Length)
             )
 
             clientStream.Send(Span([||]), PacketDeliveryType.Unreliable) |> ignore
-            clientStream.ProcessSending(fun packet -> stream.Receive(Span.op_Implicit(packet)))
+            clientStream.ProcessSending(fun packet ->
+                stream.Receive(Span.op_Implicit(packet), fun data ->
+                    data.CopyTo(Span(outputBuffer, 0))
+                    start <- start + data.Length)
+            )
 
         run ()
         Assert.Equal(0, start)

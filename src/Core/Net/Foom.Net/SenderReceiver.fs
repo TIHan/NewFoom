@@ -29,9 +29,7 @@ type Sender(stream: PacketStream, channelLookup: Dictionary<byte, struct(Abstrac
 type Receiver(stream: PacketStream, channelLookup: Dictionary<byte, struct(AbstractChannel * PacketDeliveryType)>) =
     member this.EnqueuePacket(packet: ReadOnlySpan<byte>) =
 
-        // TODO: Perhaps these two should be combined?
-        stream.Receive(packet)
-        stream.ProcessReceiving(fun data -> 
+        stream.Receive(packet, fun data -> 
             let mutable data = data
             while data.Length > 0 do
                 let struct(channel, _) = channelLookup.[Message.GetChannelId(Span.op_Implicit data)]
