@@ -58,7 +58,6 @@ type ServerGame(server: BackgroundServer) =
         )
 
         server.ProcessMessages(fun struct(clientId, msg) ->
-            printfn "ClientId: %A" clientId
             match playerLookup.TryGetValue(clientId) with
             | true, (player, movement) ->
                 match msg with

@@ -68,7 +68,6 @@ type ClientGame(input: IInput, renderer: IRenderer, client: IBackgroundClient) =
             | ClientMessage.Message(msg) -> 
                 match msg with
                 | :? Snapshot as snapshotMsg ->
-                    printfn "Snapshot Id: %A" snapshotMsg.SnapshotId
                     playerCount <- snapshotMsg.PlayerCount
 
                     latestSnap <- (latestSnap + 1us) % 32us
@@ -107,6 +106,8 @@ type ClientGame(input: IInput, renderer: IRenderer, client: IBackgroundClient) =
 
                     if zombiemanSpriteBatchOpt.IsSome then
                         zombiemanSpriteBatchOpt.Value.SetSpritePosition(sprite, playerStates.[i].translation)
+
+                    // TODO: Check for right player camera
                     camera.Translation <- player.translation
                     camera.Rotation <- player.rotation
 
