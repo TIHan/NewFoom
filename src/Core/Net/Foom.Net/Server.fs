@@ -8,87 +8,6 @@ open Foom.IO.Packet
 open Foom.IO.Message
 
 [<Sealed>]
-type ClientManager(msgFactory, channelLookupFactory: ChannelLookupFactory, maxClients: int) =
-    let endPointLookup = Dictionary<EndPoint, int>()
-    let clientLookup = Array.init (maxClients + 1) (fun _ -> -1)
-    let clients = ResizeArray(maxClients)
-
-    // 0 is reserved
-    let clientIdQueue = Queue([1..maxClients])
-
-    member __.AddClient(udpServer, currentTime, endPoint) =
-        let clientId = clientIdQueue.Dequeue()
-
-        let client = ConnectedClient(msgFactory, channelLookupFactory.CreateChannelLookup(msgFactory.PoolLookup), udpServer, endPoint, clientId)
-        client.Time <- currentTime
-
-        let index = clients.Count
-        endPointLookup.Add(endPoint, clientId)
-        clientLookup.[clientId] <- index
-        clients.Add(struct(clientId, client))
-
-        client
-
-    member __.RemoveClient(clientId) =
-        if clientLookup.[clientId] <> -1 then
-            let swappingIndex = clients.Count - 1
-            let struct(swappingClientId, swappingClient) = clients.[swappingIndex]
-
-            let index = clientLookup.[clientId]
-            let struct(_, client) = clients.[index]
-            clients.[index] <- struct(swappingClientId, swappingClient)
-            clientLookup.[swappingClientId] <- index
-
-            clients.RemoveAt(swappingIndex)
-            endPointLookup.Remove(client.EndPoint) |> ignore
-
-            clientLookup.[clientId] <- -1
-            clientIdQueue.Enqueue(clientId)
-
-    member __.Clear() =
-        endPointLookup.Clear()
-        for i = 0 to clientLookup.Length - 1 do clientLookup.[i] <- -1
-        clients.Clear()
-
-    member __.TryGetClient(endPoint) =
-        match endPointLookup.TryGetValue(endPoint) with
-        | true, clientId ->
-            let struct(_, client) = clients.[clientLookup.[clientId]]
-            Some client
-        | _ -> None
-
-    member __.SendMessage(msg, channelId, clientId, willRecycle) =
-        let struct(_, client) = clients.[clientLookup.[clientId]]
-        client.SendMessage(msg, channelId, willRecycle)
-
-    member __.SendMessage(msg, channelId, willRecycle) =
-        // TODO: We could optimize this by serializing the msg once.
-        for i = 0 to clients.Count - 1 do
-            let struct(_, client) = clients.[i]
-            client.SendMessage(msg, channelId, willRecycle)
-
-    member __.SendMessages() =
-        for i = 0 to clients.Count - 1 do
-            let struct(_, client) = clients.[i]
-            client.SendMessages()
-
-    member this.ReceiveMessages(f) =
-        for i = 0 to clients.Count - 1 do
-            let struct(_, client) = clients.[i]     
-            client.TryReceiveMessages(f)
-            // TODO: Do something here.
-            //if not didSucceed then
-              //  this.RemoveClient(client.ClientId)
-                // TODO: Add Ban client or something for malformed packet.
-
-    member this.IsClientConnected(clientId) = clientLookup.[clientId] <> -1
-
-    member this.SetAllClientsTime(time) =
-         for i = 0 to clients.Count - 1 do
-            let struct(_, client) = clients.[i]
-            client.Time <- time
-
-[<Sealed>]
 type Server(msgReg, channelLookupFactory, port: int, maxClients) as this =
     inherit Peer(msgReg, maxClients / 4) // conversative, perhaps revisit
 
@@ -131,7 +50,7 @@ type Server(msgReg, channelLookupFactory, port: int, maxClients) as this =
 
     member __.SendMessage(msg: Message, channelId, clientId, willRecycle) =
         if udpServerOpt.IsSome then
-            clients.SendMessage(msg, channelId, clientId, willRecycle)
+            clients.SendMessage(clientId, msg, channelId, willRecycle)
 
     member this.SendMessage(msg: Message, channelId, willRecycle) =
         if udpServerOpt.IsSome then
@@ -139,7 +58,7 @@ type Server(msgReg, channelLookupFactory, port: int, maxClients) as this =
 
     member __.SendMessages() = // TODO: Rename to SendPackets
         if udpServerOpt.IsSome then
-            clients.SendMessages()
+            clients.SendPackets()
 
     member this.ReceivePackets() =
         match udpServerOpt with
@@ -152,28 +71,22 @@ type Server(msgReg, channelLookupFactory, port: int, maxClients) as this =
 
                 // NEED TO ADD CHECKS TO PREVENT MANY CLIENTS TRYING TO CONNECT
 
-                match clients.TryGetClient(endPoint) with
-                | Some client -> client.OnReceivePacket packet
+                match clients.TryGetClientId(endPoint) with
+                | Some client -> 
+                    clients.ReceivePacket(client, packet)
                 | _ -> 
 
-                    let client = clients.AddClient(udpServerOpt.Value, currentTime, endPoint)
+                    let clientId = clients.AddClient(udpServerOpt.Value, currentTime, endPoint)
 
                     try
-                        client.OnReceivePacket packet
-
-                        client.TryReceiveMessages(fun clientId msg -> 
-                            if msg :? ConnectionRequested then
-                                this.Publish(msg, clientId)
-                            else
-                                failwith "Client sent an invalid message before it was connected."
-                        )
+                        clients.ReceivePacket(clientId, packet)
                     with | _ ->
                         // TODO: ban client
                         printfn "Client connection refused."
-                        clients.RemoveClient(client.ClientId)
+                        clients.RemoveClient(clientId)
 
     member __.PumpMessages() =
-        clients.ReceiveMessages(fun clientId msg -> this.Publish(msg, clientId))
+        clients.ProcessReceivedMessages(fun clientId msg -> this.Publish(msg, clientId))
 
     member this.DisconnectClient(clientId) =
         if clients.IsClientConnected(clientId) then

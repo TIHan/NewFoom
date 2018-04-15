@@ -12,6 +12,7 @@
     <Compile Include="Peer.fs" />
     <Compile Include="Client.fs" />
     <Compile Include="ConnectedClient.fs" />
+    <Compile Include="ClientManager.fs" />
     <Compile Include="Server.fs" />
     <Compile Include="IBackgroundClient.fs" />
     <Compile Include="BackgroundClient.fs" />

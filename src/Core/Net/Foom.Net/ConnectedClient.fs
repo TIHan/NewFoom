@@ -14,13 +14,13 @@ type ConnectedClient(msgFactory: MessageFactory, channelLookup, udpServer: UdpSe
     member __.SendMessage(msg: Message, channelId, willRecycle) =
         sender.EnqueueMessage(msg, channelId, willRecycle)
 
-    member __.OnReceivePacket(packet) =
+    member __.ReceivePacket(packet) =
         receiver.EnqueuePacket(packet)
 
-    member __.TryReceiveMessages(f) =
+    member __.ProcessReceivedMessages(f) =
         receiver.ProcessMessages(fun msg -> f clientId msg)
 
-    member __.SendMessages() =
+    member __.SendPackets() =
         let msg = msgFactory.CreateMessage<Heartbeat>()
         sender.EnqueueMessage(msg, DefaultChannelIds.Heartbeat, willRecycle = true)
 
