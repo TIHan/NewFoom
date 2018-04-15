@@ -16,8 +16,8 @@ type Server(msgReg, channelLookupFactory, port: int, maxClients) as this =
 
     let clients = ClientManager(this.MessageFactory, channelLookupFactory, maxClients)
 
-    let clientConnected = Event<int>()
-    let clientDisconnected = Event<int>()
+    let clientConnected = Event<ClientId>()
+    let clientDisconnected = Event<ClientId>()
 
     do
         this.MessageReceived<ConnectionRequested>().Add(fun (struct(clientId, msg)) ->
@@ -42,13 +42,13 @@ type Server(msgReg, channelLookupFactory, port: int, maxClients) as this =
     member __.Stop() =
         match udpServerOpt with
         | Some udpServer -> 
-            clients.Clear()
+          //  clients.Clear()
             udpServer.Close()
             udpServerOpt <- None
         | _ ->
             () // Server not started
 
-    member __.SendMessage(msg: Message, channelId, clientId, willRecycle) =
+    member __.SendMessage(msg: Message, channelId, clientId: ClientId, willRecycle) =
         if udpServerOpt.IsSome then
             clients.SendMessage(clientId, msg, channelId, willRecycle)
 
@@ -72,8 +72,8 @@ type Server(msgReg, channelLookupFactory, port: int, maxClients) as this =
                 // NEED TO ADD CHECKS TO PREVENT MANY CLIENTS TRYING TO CONNECT
 
                 match clients.TryGetClientId(endPoint) with
-                | Some client -> 
-                    clients.ReceivePacket(client, packet)
+                | Some clientId -> 
+                    clients.ReceivePacket(clientId, packet)
                 | _ -> 
 
                     let clientId = clients.AddClient(udpServerOpt.Value, currentTime, endPoint)

@@ -6,87 +6,72 @@ open System.Net
 open System
 open Foom.IO.Packet
 open Foom.IO.Message
+open Foom.Core
+
+[<Struct>]
+type ClientId =
+    internal {
+        id: Id
+    }
+
+    member this.IsLocal = this.id.IsZero
+
+    static member Local = Unchecked.defaultof<ClientId>
 
 [<Sealed>]
 type ClientManager(msgFactory, channelLookupFactory: ChannelLookupFactory, maxClients: int) =
-    let endPointLookup = Dictionary<EndPoint, int>()
-    let clientLookup = Array.init (maxClients + 1) (fun _ -> -1)
-    let clients = ResizeArray(maxClients)
+    let endPointLookup = Dictionary<EndPoint, ClientId>()
 
-    // 0 is reserved
-    let clientIdQueue = Queue([1..maxClients])
+    let manager = Manager<ConnectedClient>(maxClients)
 
     member __.AddClient(udpServer, currentTime, endPoint) =
-        let clientId = clientIdQueue.Dequeue()
-
-        let client = ConnectedClient(msgFactory, channelLookupFactory.CreateChannelLookup(msgFactory.PoolLookup), udpServer, endPoint, clientId)
+        let client = ConnectedClient(msgFactory, channelLookupFactory.CreateChannelLookup(msgFactory.PoolLookup), udpServer, endPoint)
         client.Time <- currentTime
 
-        let index = clients.Count
+        let clientId = { id = manager.Add(client) }
+
         endPointLookup.Add(endPoint, clientId)
-        clientLookup.[clientId] <- index
-        clients.Add(struct(clientId, client))
 
         clientId
 
     member __.RemoveClient(clientId) =
-        if clientLookup.[clientId] <> -1 then
-            let swappingIndex = clients.Count - 1
-            let struct(swappingClientId, swappingClient) = clients.[swappingIndex]
-
-            let index = clientLookup.[clientId]
-            let struct(_, client) = clients.[index]
-            clients.[index] <- struct(swappingClientId, swappingClient)
-            clientLookup.[swappingClientId] <- index
-
-            clients.RemoveAt(swappingIndex)
-            endPointLookup.Remove(client.EndPoint) |> ignore
-
-            clientLookup.[clientId] <- -1
-            clientIdQueue.Enqueue(clientId)
-
-    member __.Clear() =
-        endPointLookup.Clear()
-        for i = 0 to clientLookup.Length - 1 do clientLookup.[i] <- -1
-        clients.Clear()
+        manager.Remove(clientId.id)
 
     member __.TryGetClientId(endPoint) =
         match endPointLookup.TryGetValue(endPoint) with
-        | true, clientId ->
-            Some clientId
+        | true, clientId -> Some clientId
         | _ -> None
 
     member __.SendMessage(clientId, msg, channelId, willRecycle) =
-        let struct(_, client) = clients.[clientLookup.[clientId]]
+        let client = manager.Get(clientId.id)
         client.SendMessage(msg, channelId, willRecycle)
 
     member __.SendMessage(msg, channelId, willRecycle) =
-        // TODO: We could optimize this by serializing the msg once.
-        for i = 0 to clients.Count - 1 do
-            let struct(_, client) = clients.[i]
+        manager.ForEach(fun _ client ->
             client.SendMessage(msg, channelId, willRecycle)
+        )
 
     member __.ReceivePacket(clientId, packet) =
-        let struct(_, client) = clients.[clientLookup.[clientId]]
+        let client = manager.Get(clientId.id)
         client.ReceivePacket(packet)
 
     member __.SendPackets() =
-        for i = 0 to clients.Count - 1 do
-            let struct(_, client) = clients.[i]
+        manager.ForEach(fun _ client ->
             client.SendPackets()
+        )
 
     member this.ProcessReceivedMessages(f) =
-        for i = 0 to clients.Count - 1 do
-            let struct(_, client) = clients.[i]     
-            client.ProcessReceivedMessages(f)
+        manager.ForEach(fun id client ->
+            client.ProcessReceivedMessages(fun msg -> f { id = id } msg)
+        )
             // TODO: Do something here.
             //if not didSucceed then
               //  this.RemoveClient(client.ClientId)
                 // TODO: Add Ban client or something for malformed packet.
 
-    member this.IsClientConnected(clientId) = clientLookup.[clientId] <> -1
+    member this.IsClientConnected(clientId) = manager.IsValid(clientId.id)
 
     member this.SetAllClientsTime(time) =
-         for i = 0 to clients.Count - 1 do
-            let struct(_, client) = clients.[i]
+        manager.ForEach(fun _ client ->
             client.Time <- time
+        )

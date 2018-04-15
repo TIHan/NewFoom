@@ -97,6 +97,10 @@ type Writer =
         Span((NativePtr.toNativeInt &&value).ToPointer(), size).CopyTo(data.Slice(this.position, size))
         this.position <- this.position + size
 
+    member inline this.Write<'T when 'T : unmanaged>(data: Span<byte>, value: 'T) =
+        let mutable value = value
+        this.Write(data, &value)
+
     member this.WriteString(data: Span<byte>, str: string) =
         let bytes = System.Text.Encoding.Unicode.GetBytes(str)
         this.WriteInt(data, bytes.Length)

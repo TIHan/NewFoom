@@ -32,16 +32,16 @@ type ConnectionRequested() =
 type ConnectionAccepted() =
     inherit Message()
 
-    member val ClientId = -1 with get, set
+    member val ClientId = Unchecked.defaultof<ClientId> with get, set
 
     override this.Serialize(writer, stream) =
-        writer.WriteInt(stream, this.ClientId)
+        writer.Write(stream, this.ClientId)
 
     override this.Deserialize(reader, stream) =
-        this.ClientId <- reader.ReadInt(stream)
+        this.ClientId <- reader.Read(stream)
 
     override this.Reset() =
-        this.ClientId <- -1
+        this.ClientId <- Unchecked.defaultof<ClientId>
 
     static member DefaultTypeId = UInt16.MaxValue - 2us
 

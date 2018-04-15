@@ -86,19 +86,7 @@ type ServerGame(server: BackgroundServer) =
 
     let eventQueue = ConcurrentQueue()
 
-    let playerLookup = Array.zeroCreate 64
-    let mutable playerId = 0
-    let playerIdQueue = Queue()
-    let getNextPlayerId () =
-        if playerIdQueue.Count > 0 then
-            playerIdQueue.Dequeue()
-        else
-            let id = playerId
-            playerId <- playerId + 1
-            id
-
-    let playerStates = UnsafeResizeArray<Player>.Create(64)
-    let playerMovStates = UnsafeResizeArray<Movement>.Create(64)
+    let playerLookup = Dictionary<ClientId, Player ref * Movement ref>()
 
     let player1StartPosition = player1StartPosition ()
 
@@ -109,37 +97,44 @@ type ServerGame(server: BackgroundServer) =
 
     override __.Update(time, interval) =
         server.ProcessClientConnected(fun clientId ->
-            let index = playerStates.Count
             let mutable player = Unchecked.defaultof<Player>
 
             match player1StartPosition with
             | Some pos -> player.translation <- pos
             | _ -> ()
 
-            playerStates.Add(player)
-            playerLookup.[clientId] <- index
+            let player = ref player
+            let movement = ref (Unchecked.defaultof<Movement>)
 
-            printfn "Client Connected: %i" clientId
+            playerLookup.Add(clientId, (player, movement))
+
+            printfn "Client Connected: %A" clientId
         )
 
         server.ProcessMessages(fun struct(clientId, msg) ->
-            match msg with
-            | :? UserInfo as userInfoMsg ->
-                let mov = userInfoMsg.Movement
-                let mutable player = playerStates.Buffer.[playerLookup.[clientId]]
-                playerMovStates.Buffer.[playerLookup.[clientId]] <- mov
-                playerStates.Buffer.[playerLookup.[clientId]] <- player
-            |  _ -> ()
+            match playerLookup.TryGetValue(clientId) with
+            | true, (player, movement) ->
+                match msg with
+                | :? UserInfo as userInfoMsg ->
+                    movement.contents <- userInfoMsg.Movement
+                |  _ -> ()
+            | _ -> ()
         )
 
-        for i = 0 to playerStates.Count - 1 do
-            updatePlayer playerMovStates.Buffer.[i] &playerStates.Buffer.[i]
+        playerLookup
+        |> Seq.iter (fun pair ->
+            let (player, movement) = pair.Value
+            updatePlayer movement.contents &player.contents
+        )
 
         let snapshotMsg = server.CreateMessage<Snapshot>()
-        snapshotMsg.PlayerCount <- playerStates.Count;
+        snapshotMsg.PlayerCount <- playerLookup.Count;
 
-        for i = 0 to playerStates.Count - 1 do
-            snapshotMsg.PlayerState.[i] <- playerStates.Buffer.[i]
+        playerLookup
+        |> Seq.iteri (fun i pair ->
+            let (player, _) = pair.Value
+            snapshotMsg.PlayerState.[i] <- player.contents
+        )
 
         snapshotMsg.SnapshotId <- snapshotId
         snapshotId <- snapshotId + 1L

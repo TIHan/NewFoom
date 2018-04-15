@@ -6,7 +6,7 @@ open Foom.IO.Packet
 
 [<Struct;RequireQualifiedAccess>]
 type ClientMessage =
-    | ConnectionAccepted of clientId: int
+    | ConnectionAccepted of clientId: ClientId
     | DisconnectAccepted
     | Message of Message
     

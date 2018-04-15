@@ -6,7 +6,7 @@ open Foom.IO.Message
 open Foom.IO.Packet
 
 [<Sealed>]
-type ConnectedClient(msgFactory: MessageFactory, channelLookup, udpServer: UdpServer, endPoint: IPEndPoint, clientId: int) =
+type ConnectedClient(msgFactory: MessageFactory, channelLookup, udpServer: UdpServer, endPoint: IPEndPoint) =
     let stream = PacketStream()
     let sender = Sender(stream, channelLookup)
     let receiver = Receiver(stream, channelLookup)
@@ -18,12 +18,9 @@ type ConnectedClient(msgFactory: MessageFactory, channelLookup, udpServer: UdpSe
         receiver.EnqueuePacket(packet)
 
     member __.ProcessReceivedMessages(f) =
-        receiver.ProcessMessages(fun msg -> f clientId msg)
+        receiver.ProcessMessages(fun msg -> f msg)
 
     member __.SendPackets() =
-        let msg = msgFactory.CreateMessage<Heartbeat>()
-        sender.EnqueueMessage(msg, DefaultChannelIds.Heartbeat, willRecycle = true)
-
         sender.SendPackets(fun packet ->
             udpServer.Send(Span.op_Implicit packet, endPoint)
         )
@@ -33,5 +30,3 @@ type ConnectedClient(msgFactory: MessageFactory, channelLookup, udpServer: UdpSe
         and set value = stream.Time <- value
 
     member val EndPoint = endPoint
-
-    member val ClientId = clientId

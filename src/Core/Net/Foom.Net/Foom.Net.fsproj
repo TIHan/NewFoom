@@ -6,13 +6,13 @@
     <Compile Include="Udp.fsi" />
     <Compile Include="Udp.fs" />
     <Compile Include="SenderReceiver.fs" />
-    <Compile Include="CommonMessages.fs" />
     <Compile Include="ChannelLookupFactory.fs" />
     <Compile Include="MessageFactory.fs" />
-    <Compile Include="Peer.fs" />
-    <Compile Include="Client.fs" />
     <Compile Include="ConnectedClient.fs" />
     <Compile Include="ClientManager.fs" />
+    <Compile Include="CommonMessages.fs" />
+    <Compile Include="Peer.fs" />
+    <Compile Include="Client.fs" />
     <Compile Include="Server.fs" />
     <Compile Include="IBackgroundClient.fs" />
     <Compile Include="BackgroundClient.fs" />
@@ -26,5 +26,6 @@
     <ProjectReference Include="..\..\IO\Foom.IO.Message\Foom.IO.Message.fsproj" />
     <ProjectReference Include="..\..\IO\Foom.IO.Packet\Foom.IO.Packet.fsproj" />
     <ProjectReference Include="..\..\IO\Foom.IO.Serializer\Foom.IO.Serializer.fsproj" />
+    <ProjectReference Include="..\..\Foom.Core\Foom.Core.fsproj" />
   </ItemGroup>
 </Project>

@@ -90,7 +90,7 @@ let ``Udp Client and Server Simple Big Message`` () =
     use client = network.CreateClient()
 
     let mutable finalText = ""
-    let mutable clientId = -1
+    let mutable clientId = ClientId.Local
 
     server.ClientConnected.Add(fun x -> clientId <- x)
 
@@ -136,7 +136,7 @@ let ``Udp Client and Server Simple Big Message`` () =
     client.SendPackets()
 
     Assert.True(client.IsConnected)
-    Assert.NotEqual(-1, clientId)
+    Assert.NotEqual(ClientId.Local, clientId)
 
     //
 

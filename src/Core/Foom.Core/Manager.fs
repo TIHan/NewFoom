@@ -78,6 +78,9 @@ type Manager<'T>(max: int) =
         else
             failwithf "Not a valid Id, %A." id
 
+    member __.Get(id: Id) =
+        data.[dataLookup.[id.Index]]
+
     member this.IsValid(id: Id) =
         versions.[id.Index] = id.Version && dataLookup.[id.Index] <> -1
 

@@ -33,7 +33,7 @@ type ClientGame(input: IInput, renderer: IRenderer, client: IBackgroundClient) =
 
     let mutable playerCount = 0
     let spriteStates = Array.zeroCreate<int> 64
-    let mutable clientId = -1
+    let mutable clientId = ClientId.Local
 
     let mutable latestSnap = 31us
     let snapshotHistory = Array.init 32 (fun _ -> Array.zeroCreate<Player> 64)
@@ -94,20 +94,19 @@ type ClientGame(input: IInput, renderer: IRenderer, client: IBackgroundClient) =
         // end events
         if sortedList.Count > 0 then
             let struct(playerStates, snapTime) = sortedList.Values.[0]
-            if time >= snapTime + TimeSpan.FromMilliseconds(500.) || clientId = 0 then
+            if time >= snapTime + TimeSpan.FromMilliseconds(500.) || clientId.IsLocal then
                 sortedList.RemoveAt(0)
                 for i = 0 to playerCount - 1 do
-                    if clientId = i then
-                        let player = &playerStates.[i]
+                    let player = &playerStates.[i]
 
-                        let sprite = &spriteStates.[i]
-                        if sprite = 0 && zombiemanSpriteBatchOpt.IsSome then
-                            sprite <- zombiemanSpriteBatchOpt.Value.CreateSprite(size = Vector2(64.f, 64.f))
+                    let sprite = &spriteStates.[i]
+                    if sprite = 0 && zombiemanSpriteBatchOpt.IsSome then
+                        sprite <- zombiemanSpriteBatchOpt.Value.CreateSprite(size = Vector2(64.f, 64.f))
 
-                        if zombiemanSpriteBatchOpt.IsSome then
-                            zombiemanSpriteBatchOpt.Value.SetSpritePosition(sprite, playerStates.[i].translation)
-                        camera.Translation <- player.translation
-                        camera.Rotation <- player.rotation
+                    if zombiemanSpriteBatchOpt.IsSome then
+                        zombiemanSpriteBatchOpt.Value.SetSpritePosition(sprite, playerStates.[i].translation)
+                    camera.Translation <- player.translation
+                    camera.Rotation <- player.rotation
 
         inputState.Events
         |> List.exists (function KeyReleased '\027' -> true | _ -> false)
