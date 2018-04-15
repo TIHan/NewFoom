@@ -359,11 +359,13 @@ type Snapshot() =
     member val PlayerState = Array.zeroCreate<Player> 64
 
     override this.Serialize(writer, stream) =
+        writer.WriteInt64(stream, this.SnapshotId)
         writer.WriteInt(stream, this.PlayerCount)
         for i = 0 to this.PlayerCount - 1 do
             writer.Write(stream, &this.PlayerState.[i])
 
     override this.Deserialize(reader, stream) =
+        this.SnapshotId <- reader.ReadInt64(stream)
         this.PlayerCount <- reader.ReadInt(stream)
         for i = 0 to this.PlayerCount - 1 do
             this.PlayerState.[i] <- reader.Read(stream)

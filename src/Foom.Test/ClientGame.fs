@@ -68,6 +68,7 @@ type ClientGame(input: IInput, renderer: IRenderer, client: IBackgroundClient) =
             | ClientMessage.Message(msg) -> 
                 match msg with
                 | :? Snapshot as snapshotMsg ->
+                    printfn "Snapshot Id: %A" snapshotMsg.SnapshotId
                     playerCount <- snapshotMsg.PlayerCount
 
                     latestSnap <- (latestSnap + 1us) % 32us
@@ -77,7 +78,8 @@ type ClientGame(input: IInput, renderer: IRenderer, client: IBackgroundClient) =
                     for i = 0 to playerCount - 1 do
                         playerStates.[i] <- snapshotMsg.PlayerState.[i]
 
-                    sortedList.Add(snapshotMsg.SnapshotId, struct(playerStates, time))
+                    if sortedList.ContainsKey(snapshotMsg.SnapshotId) |> not then
+                        sortedList.Add(snapshotMsg.SnapshotId, struct(playerStates, time))
 
                 | _ -> ()
         )
@@ -101,7 +103,7 @@ type ClientGame(input: IInput, renderer: IRenderer, client: IBackgroundClient) =
 
                     let sprite = &spriteStates.[i]
                     if sprite = 0 && zombiemanSpriteBatchOpt.IsSome then
-                        sprite <- zombiemanSpriteBatchOpt.Value.CreateSprite(size = Vector2(64.f, 64.f))
+                        sprite <- zombiemanSpriteBatchOpt.Value.CreateSprite()
 
                     if zombiemanSpriteBatchOpt.IsSome then
                         zombiemanSpriteBatchOpt.Value.SetSpritePosition(sprite, playerStates.[i].translation)

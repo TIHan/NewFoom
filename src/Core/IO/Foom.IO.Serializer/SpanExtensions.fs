@@ -30,6 +30,16 @@ module internal LittleEndian =
         data.[offset + 2] <-- byte (value >>> 16)
         data.[offset + 3] <-- byte (value >>> 24)
 
+    let inline write64 (data: Span<byte>) offset value =
+        data.[offset] <-- byte value
+        data.[offset + 1] <-- byte (value >>> 8)
+        data.[offset + 2] <-- byte (value >>> 16)
+        data.[offset + 3] <-- byte (value >>> 24)
+        data.[offset + 4] <-- byte (value >>> 32)
+        data.[offset + 5] <-- byte (value >>> 40)
+        data.[offset + 6] <-- byte (value >>> 48)
+        data.[offset + 7] <-- byte (value >>> 56)
+
     let inline read8 (data: ReadOnlySpan<byte>) offset =
         data.[offset]
 
@@ -42,6 +52,16 @@ module internal LittleEndian =
         ((uint32 data.[offset + 1]) <<< 8) |||
         ((uint32 data.[offset + 2]) <<< 16) |||
         ((uint32 data.[offset + 3]) <<< 24)
+
+    let inline read64 (data: ReadOnlySpan<byte>) offset =
+        (uint64 data.[offset]) |||
+        ((uint64 data.[offset + 1]) <<< 8) |||
+        ((uint64 data.[offset + 2]) <<< 16) |||
+        ((uint64 data.[offset + 3]) <<< 24) |||
+        ((uint64 data.[offset + 4]) <<< 32) |||
+        ((uint64 data.[offset + 5]) <<< 40) |||
+        ((uint64 data.[offset + 6]) <<< 48) |||
+        ((uint64 data.[offset + 7]) <<< 56)
 
 [<Struct; StructLayout (LayoutKind.Explicit)>]
 type internal SingleUnion =
@@ -86,6 +106,10 @@ type Writer =
         let result = LittleEndian.write32 data this.position value
         this.position <- this.position + 4
         result
+
+    member inline this.WriteInt64(data: Span<byte>, value: int64) =
+        LittleEndian.write64 data this.position value
+        this.position <- this.position + 8
 
     member this.WriteSingle(data, value: single) =
         let mutable s = SingleUnion ()
@@ -141,6 +165,11 @@ type Reader =
         let value = LittleEndian.read32 data this.position
         this.position <- this.position + 4
         uint32 value
+
+    member inline this.ReadInt64 data =
+        let value = LittleEndian.read64 data this.position
+        this.position <- this.position + 8
+        int64 value
 
     member this.ReadSingle data =
         let value = this.ReadUInt32 data
