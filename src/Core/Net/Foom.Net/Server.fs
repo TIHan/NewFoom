@@ -48,11 +48,11 @@ type Server(msgReg, channelLookupFactory, port: int, maxClients) as this =
         | _ ->
             () // Server not started
 
-    member __.SendMessage(msg: Message, channelId, clientId: ClientId, willRecycle) =
+    member __.SendMessage(msg: NetMessage, channelId, clientId: ClientId, willRecycle) =
         if udpServerOpt.IsSome then
             clients.SendMessage(clientId, msg, channelId, willRecycle)
 
-    member this.SendMessage(msg: Message, channelId, willRecycle) =
+    member this.SendMessage(msg, channelId, willRecycle) =
         if udpServerOpt.IsSome then
             clients.SendMessage(msg, channelId, willRecycle)
 

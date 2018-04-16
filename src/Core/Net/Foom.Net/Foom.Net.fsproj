@@ -5,7 +5,7 @@
   <ItemGroup>
     <Compile Include="Udp.fsi" />
     <Compile Include="Udp.fs" />
-    <Compile Include="SenderReceiver.fs" />
+    <Compile Include="NetChannel.fs" />
     <Compile Include="ChannelLookupFactory.fs" />
     <Compile Include="MessageFactory.fs" />
     <Compile Include="ConnectedClient.fs" />

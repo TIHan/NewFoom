@@ -10,6 +10,25 @@ open Foom.IO.Serializer
 open Foom.Net
 open System.Collections.Generic
 
+
+[<Sealed>]
+type TextMessage() =
+    inherit NetMessage()
+
+    member val Text = String.Empty with get, set
+
+    override this.Serialize(writer, stream) =
+        base.Serialize(&writer, stream)
+        writer.WriteString(stream, this.Text)
+
+    override this.Deserialize(reader, stream) =
+        base.Deserialize(&reader, stream)
+        this.Text <- reader.ReadString stream
+
+    override this.Reset() =
+        base.Reset()
+        this.Text <- String.Empty
+
 [<Fact>]
 let ``Udp Client and Server`` () =
     use udpServer = new UdpServer(27015)

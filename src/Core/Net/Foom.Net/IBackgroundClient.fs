@@ -9,11 +9,11 @@ type IBackgroundClient =
 
     abstract Disconnect : unit -> unit
 
-    abstract SendMessage : Message * channelId: byte -> unit
+    abstract SendMessage : NetMessage * channelId: byte -> unit
 
-    abstract CreateMessage<'T when 'T :> Message and 'T : (new : unit -> 'T)> : unit -> 'T
+    abstract CreateMessage<'T when 'T :> NetMessage and 'T : (new : unit -> 'T)> : unit -> 'T
 
-    abstract ListenForMessage<'T when 'T :> Message> : unit -> unit
+    abstract ListenForMessage<'T when 'T :> NetMessage> : unit -> unit
 
     abstract ProcessMessages : (ClientMessage -> unit) -> unit
 

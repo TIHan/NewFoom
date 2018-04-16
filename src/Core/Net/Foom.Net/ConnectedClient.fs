@@ -8,20 +8,19 @@ open Foom.IO.Packet
 [<Sealed>]
 type ConnectedClient(msgFactory: MessageFactory, channelLookup, udpServer: UdpServer, endPoint: IPEndPoint) =
     let stream = PacketStream()
-    let sender = Sender(stream, channelLookup)
-    let receiver = Receiver(stream, channelLookup)
+    let netChannel = NetChannel(stream, channelLookup)
 
-    member __.SendMessage(msg: Message, channelId, willRecycle) =
-        sender.EnqueueMessage(msg, channelId, willRecycle)
+    member __.SendMessage(msg, channelId, willRecycle) =
+        netChannel.SendMessage(msg, channelId, willRecycle)
 
     member __.ReceivePacket(packet) =
-        receiver.EnqueuePacket(packet)
+        netChannel.ReceivePacket(packet)
 
     member __.ProcessReceivedMessages(f) =
-        receiver.ProcessMessages(fun msg -> f msg)
+        netChannel.ProcessReceivedMessages(f)
 
     member __.SendPackets() =
-        sender.SendPackets(fun packet ->
+        netChannel.SendPackets(fun packet ->
             udpServer.Send(Span.op_Implicit packet, endPoint)
         )
 

@@ -9,8 +9,8 @@ open Foom.IO.Message
 type BackgroundServerInternalMessage =
     | Start
     | Stop
-    | SendMessageAll of Message * channelId: byte * willRecycle: bool
-    | SendMessage of Message * channelId: byte * clientId: ClientId * willRecycle: bool
+    | SendMessageAll of NetMessage * channelId: byte * willRecycle: bool
+    | SendMessage of NetMessage * channelId: byte * clientId: ClientId * willRecycle: bool
     | Dispose of AsyncReplyChannel<unit>
 
 type BackgroundServer(msgReg, channelLookupFactory, port, maxClients) =
@@ -153,7 +153,7 @@ type BackgroundServer(msgReg, channelLookupFactory, port, maxClients) =
                 member __.CreateMessage() =
                     localClient.CreateMessage()
 
-                member __.ListenForMessage<'T when 'T :> Message>() =
+                member __.ListenForMessage<'T when 'T :> NetMessage>() =
                     if localClientReceiveHash.Add(typeof<'T>) then
                         localClient.MessageReceived<'T>().Add(fun _ -> ())
 

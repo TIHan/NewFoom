@@ -6,6 +6,21 @@ open Xunit
 open Foom.IO.Message
 open Foom.IO.Message.Channel
 
+[<Sealed>]
+type TextMessage() =
+    inherit Message()
+
+    member val Text = String.Empty with get, set
+
+    override this.Serialize(writer, stream) =
+        writer.WriteString(stream, this.Text)
+
+    override this.Deserialize(reader, stream) =
+        this.Text <- reader.ReadString stream
+
+    override this.Reset() =
+        this.Text <- String.Empty
+
 [<Fact>]
 let ``Normal`` () =
     let pool = MessagePool<TextMessage>(0us, 64) :> MessagePoolBase
@@ -21,8 +36,8 @@ let ``Normal`` () =
     let msg2 = pool.Create() :?> TextMessage
     msg2.Text <- "BEEF2"
 
-    channel.SerializeMessage(msg2, fun data -> channel.Receive(Span.op_Implicit data) |> ignore)
-    channel.SerializeMessage(msg, fun data -> channel.Receive(Span.op_Implicit data) |> ignore)
+    channel.SerializeMessage(msg2, true, fun data -> channel.Receive(Span.op_Implicit data) |> ignore)
+    channel.SerializeMessage(msg, true, fun data -> channel.Receive(Span.op_Implicit data) |> ignore)
 
     let results = ResizeArray()
     channel.ProcessReceived(fun msg ->
@@ -51,12 +66,12 @@ let ``Sequenced`` () =
     let msg2 = pool.Create() :?> TextMessage
     msg2.Text <- "BEEF2"
 
-    channel.SerializeMessage(msg2, fun data -> 
+    channel.SerializeMessage(msg2, true, fun data -> 
         // This modifies the bytes to set the sequence id for testing
         let x = data.[2]
         x <- 1uy
         channel.Receive(Span.op_Implicit data) |> ignore)
-    channel.SerializeMessage(msg, fun data -> 
+    channel.SerializeMessage(msg, true, fun data -> 
         // This modifies the bytes to set the sequence id for testing
         let x = data.[2]
         x <- 0uy
@@ -88,12 +103,12 @@ let ``Ordered`` () =
     let msg2 = pool.Create() :?> TextMessage
     msg2.Text <- "BEEF2"
 
-    channel.SerializeMessage(msg2, fun data -> 
+    channel.SerializeMessage(msg2, true, fun data -> 
         // This modifies the bytes to set the sequence id for testing
         let x = data.[2]
         x <- 1uy
         channel.Receive(Span.op_Implicit data) |> ignore)
-    channel.SerializeMessage(msg, fun data -> 
+    channel.SerializeMessage(msg, true, fun data -> 
         // This modifies the bytes to set the sequence id for testing
         let x = data.[2]
         x <- 0uy

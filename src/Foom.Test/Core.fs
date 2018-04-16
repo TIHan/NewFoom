@@ -30,6 +30,7 @@ open Foom.Renderer.GL
 open Foom.Renderer.GL.Desktop
 open Foom.Input
 open Foom.Input.Desktop
+open Foom.Net
 
 let createBitmap (pixels: Pixel [,]) =
     let mutable isTransparent = false
@@ -335,7 +336,7 @@ let updatePlayer (mov: Movement) (player: byref<Player>) =
     player.translation <- player.translation + acc
 
 type UserInfo() =
-    inherit Message()
+    inherit NetMessage()
 
     let mutable movement = Unchecked.defaultof<Movement>
 
@@ -344,13 +345,15 @@ type UserInfo() =
         and set value = movement <- value
 
     override this.Serialize(writer, stream) =
+        base.Serialize(&writer, stream)
         writer.Write(stream, &movement)
 
     override this.Deserialize(reader, stream) =
+        base.Deserialize(&reader, stream)
         movement <- reader.Read(stream)
 
 type Snapshot() =
-    inherit Message()
+    inherit NetMessage()
 
     member val SnapshotId = 0L with get, set
 
@@ -359,12 +362,14 @@ type Snapshot() =
     member val PlayerState = Array.zeroCreate<Player> 64
 
     override this.Serialize(writer, stream) =
+        base.Serialize(&writer, stream)
         writer.WriteInt64(stream, this.SnapshotId)
         writer.WriteInt(stream, this.PlayerCount)
         for i = 0 to this.PlayerCount - 1 do
             writer.Write(stream, &this.PlayerState.[i])
 
     override this.Deserialize(reader, stream) =
+        base.Deserialize(&reader, stream)
         this.SnapshotId <- reader.ReadInt64(stream)
         this.PlayerCount <- reader.ReadInt(stream)
         for i = 0 to this.PlayerCount - 1 do

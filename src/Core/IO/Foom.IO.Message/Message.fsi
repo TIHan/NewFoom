@@ -8,21 +8,14 @@ open System.Collections.Concurrent
 [<Struct>]
 type internal MessageHeader =
     {
-        ChannelId: byte
-        SequenceId: uint16
         TypeId: uint16
+        SequenceId: uint16
     }
    
 [<AbstractClass;AllowNullLiteral>]
 type Message =
 
     new : unit -> Message
-
-    static member GetChannelId : ReadOnlySpan<byte> -> byte
-
-    member ChannelId : byte with get
-
-    member ChannelId : byte with set // TODO: Don't make this public if we can.
 
     member SequenceId : uint16 with get
 
@@ -70,11 +63,3 @@ type MessagePool<'T when 'T :> Message and 'T : (new : unit -> 'T)> =
     inherit MessagePoolBase
 
     new : typeId: uint16 * poolAmount: int -> MessagePool<'T>
-
-[<Sealed>]
-type TextMessage =
-    inherit Message
-
-    new : unit -> TextMessage
-
-    member Text : string with get, set

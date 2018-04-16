@@ -8,18 +8,12 @@ open System.Collections.Concurrent
 [<Struct>]
 type MessageHeader =
     {
-        ChannelId: byte
-        SequenceId: uint16
         TypeId: uint16
+        SequenceId: uint16
     }
 
 [<AbstractClass;AllowNullLiteral>]
 type Message() =
-
-    static member GetChannelId(data: ReadOnlySpan<byte>) =
-        data.[0]
-
-    member val ChannelId = 0uy with get, set
 
     member val SequenceId = 0us with get, set
 
@@ -34,7 +28,6 @@ type Message() =
 
         let mutable header = 
             {
-                ChannelId = this.ChannelId
                 SequenceId = this.SequenceId
                 TypeId = uint16 this.TypeId
             }
@@ -48,7 +41,6 @@ type Message() =
         let mutable reader = Reader()
 
         let header = reader.Read<MessageHeader> stream
-        this.ChannelId <- header.ChannelId
         this.SequenceId <- header.SequenceId
         this.TypeId <- header.TypeId
 
@@ -57,7 +49,6 @@ type Message() =
         reader.position
 
     member this.MainReset() =
-        this.ChannelId <- 0uy
         this.SequenceId <- 0us
         this.TypeId <- 0us
         this.IsRecyclable <- false
@@ -110,18 +101,3 @@ type MessagePool<'T when 'T :> Message and 'T : (new : unit -> 'T)>(typeId: uint
         if msg.IsRecyclable && (not msg.IsRecycled) then
             msg.MainReset()
             msgs.Push(msg :?> 'T)
-
-[<Sealed>]
-type TextMessage() =
-    inherit Message()
-
-    member val Text = String.Empty with get, set
-
-    override this.Serialize(writer, stream) =
-        writer.WriteString(stream, this.Text)
-
-    override this.Deserialize(reader, stream) =
-        this.Text <- reader.ReadString stream
-
-    override this.Reset() =
-        this.Text <- String.Empty
