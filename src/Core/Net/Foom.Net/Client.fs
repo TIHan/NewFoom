@@ -8,7 +8,7 @@ open Foom.IO.Packet
 type ClientMessage =
     | ConnectionAccepted of clientId: ClientId
     | DisconnectAccepted
-    | Message of Message
+    | Message of NetMessage
     
 [<Sealed>]
 type Client(msgReg, channelLookupFactory: ChannelLookupFactory) as this =
@@ -84,6 +84,8 @@ type Client(msgReg, channelLookupFactory: ChannelLookupFactory) as this =
                 isConnected <- false
                 udpClient.Disconnect()
                 f ClientMessage.DisconnectAccepted
+
+            | :? Heartbeat -> ()
 
             | _ -> 
                 f (ClientMessage.Message(msg))

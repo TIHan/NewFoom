@@ -46,7 +46,7 @@ type Receiver(stream: PacketStream, channelLookup: Dictionary<byte, struct(Abstr
         stream.Receive(packet, fun data -> 
             let mutable data = data
             while data.Length > 0 do
-                let channelId = data.[4]
+                let channelId = data.[4] // This gets the channelId - don't change.
                 let struct(channel, _) = channelLookup.[channelId]
                 let numBytesRead = channel.Receive(Span.op_Implicit data)
 
@@ -57,11 +57,15 @@ type Receiver(stream: PacketStream, channelLookup: Dictionary<byte, struct(Abstr
         )
 
     /// Thread safe
-    member this.ProcessMessages(f) =
+    member this.ProcessMessages(f: NetMessage -> unit) =
         channelLookup
         |> Seq.iter (fun pair -> 
             let struct(channel, _) = pair.Value
-            channel.ProcessReceived(f)
+            channel.ProcessReceived(fun msg ->
+                match msg with
+                | :? NetMessage as msg -> f msg
+                | _ -> failwith "Invalid NetMessage"
+            )
         )
 
 [<Sealed>]

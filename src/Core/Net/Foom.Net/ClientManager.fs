@@ -24,18 +24,24 @@ type ClientManager(msgFactory, channelLookupFactory: ChannelLookupFactory, maxCl
 
     let manager = Manager<ConnectedClient>(maxClients)
 
+    let lockObj = obj ()
+
     member __.AddClient(udpServer, currentTime, endPoint) =
         let client = ConnectedClient(msgFactory, channelLookupFactory.CreateChannelLookup(msgFactory.PoolLookup), udpServer, endPoint)
         client.Time <- currentTime
 
         let clientId = { id = manager.Add(client) }
 
-        endPointLookup.Add(endPoint, clientId)
+        lock lockObj
+        |> fun _ ->
+            endPointLookup.Add(endPoint, clientId)
 
         clientId
 
     member __.RemoveClient(clientId) =
-        manager.Remove(clientId.id)
+        lock lockObj
+        |> fun _ ->
+            manager.Remove(clientId.id)
 
     member __.TryGetClientId(endPoint) =
         match endPointLookup.TryGetValue(endPoint) with
@@ -60,10 +66,13 @@ type ClientManager(msgFactory, channelLookupFactory: ChannelLookupFactory, maxCl
             client.SendPackets()
         )
 
+    /// Thread safe
     member this.ProcessReceivedMessages(f) =
-        manager.ForEach(fun id client ->
-            client.ProcessReceivedMessages(fun msg -> f { id = id } msg)
-        )
+        lock lockObj
+        |> fun _ ->
+            manager.ForEach(fun id client ->
+                client.ProcessReceivedMessages(fun msg -> f { id = id } msg)
+            )
             // TODO: Do something here.
             //if not didSucceed then
               //  this.RemoveClient(client.ClientId)
