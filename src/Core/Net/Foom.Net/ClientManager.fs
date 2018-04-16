@@ -20,15 +20,13 @@ type ClientManager(msgFactory, channelLookupFactory: ChannelLookupFactory, maxCl
         let client = ConnectedClient(msgFactory, channelLookupFactory.CreateChannelLookup(msgFactory.PoolLookup), udpServer, endPoint)
         client.Time <- currentTime
 
-        let clientId = { id = manager.Add(client) }
-
-        lock lockObj
-        |> fun _ ->
-            endPointLookup.Add(endPoint, clientId)
-
+        let clientId = lock lockObj |> fun _ -> { id = manager.Add(client) }
+        endPointLookup.Add(endPoint, clientId)
         clientId
 
     member __.RemoveClient(clientId) =
+        let endPoint = manager.Get(clientId.id).EndPoint
+        endPointLookup.Remove(endPoint) |> ignore
         lock lockObj
         |> fun _ ->
             manager.Remove(clientId.id)
