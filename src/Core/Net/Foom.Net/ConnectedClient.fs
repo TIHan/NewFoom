@@ -10,6 +10,10 @@ type ConnectedClient(msgFactory: MessageFactory, channelLookup, udpServer: UdpSe
     let stream = PacketStream()
     let netChannel = NetChannel(stream, channelLookup)
 
+    let heartbeat () =
+        let msg = msgFactory.CreateMessage<Heartbeat>()
+        netChannel.SendMessage(msg, DefaultChannelIds.Heartbeat, willRecycle = true)
+
     member __.SendMessage(msg, channelId, willRecycle) =
         netChannel.SendMessage(msg, channelId, willRecycle)
 
@@ -20,6 +24,7 @@ type ConnectedClient(msgFactory: MessageFactory, channelLookup, udpServer: UdpSe
         netChannel.ProcessReceivedMessages(f)
 
     member __.SendPackets() =
+        heartbeat ()
         netChannel.SendPackets(fun packet ->
             udpServer.Send(Span.op_Implicit packet, endPoint)
         )

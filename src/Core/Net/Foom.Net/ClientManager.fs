@@ -8,16 +8,6 @@ open Foom.IO.Packet
 open Foom.IO.Message
 open Foom.Core
 
-[<Struct>]
-type ClientId =
-    internal {
-        id: Id
-    }
-
-    member this.IsLocal = this.id.IsZero
-
-    static member Local = Unchecked.defaultof<ClientId>
-
 [<Sealed>]
 type ClientManager(msgFactory, channelLookupFactory: ChannelLookupFactory, maxClients: int) =
     let endPointLookup = Dictionary<EndPoint, ClientId>()
