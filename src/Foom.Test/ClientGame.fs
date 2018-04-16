@@ -88,10 +88,10 @@ type ClientGame(input: IInput, renderer: IRenderer, client: IBackgroundClient) =
             match evt with
             | LoadMap name ->
                 camera.Rotation <- Quaternion.CreateFromAxisAngle (Vector3.UnitX, 90.f * (float32 Math.PI / 180.f))
-                zombiemanSpriteBatchOpt <- Some <| loadMap name camera renderer
+                zombiemanSpriteBatchOpt <- Some(loadMap name camera renderer)
                 client.Connect("localhost", 27015)
             | _ -> ()
-
+        
         // end events
         if sortedList.Count > 0 then
             let struct(playerStates, snapTime) = sortedList.Values.[0]
@@ -107,9 +107,9 @@ type ClientGame(input: IInput, renderer: IRenderer, client: IBackgroundClient) =
                     if zombiemanSpriteBatchOpt.IsSome then
                         zombiemanSpriteBatchOpt.Value.SetSpritePosition(sprite, playerStates.[i].translation)
 
-                    // TODO: Check for right player camera
-                    camera.Translation <- player.translation
-                    camera.Rotation <- player.rotation
+                    if player.clientId = clientId then
+                        camera.Translation <- player.translation
+                        camera.Rotation <- player.rotation
 
         inputState.Events
         |> List.exists (function KeyReleased '\027' -> true | _ -> false)

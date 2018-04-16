@@ -290,6 +290,7 @@ let getMovement (input: InputState) mov =
 [<Struct>]
 type Player =
     {
+        mutable clientId: ClientId
         mutable translation: Vector3
         mutable rotation: Quaternion
     }

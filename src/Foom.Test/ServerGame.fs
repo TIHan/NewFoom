@@ -44,7 +44,7 @@ type ServerGame(server: BackgroundServer) =
     override __.Update(time, interval) =
         server.ProcessClientConnected(fun clientId ->
             let mutable player = Unchecked.defaultof<Player>
-
+            player.clientId <- clientId
             match player1StartPosition with
             | Some pos -> player.translation <- pos
             | _ -> ()
