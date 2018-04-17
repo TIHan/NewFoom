@@ -33,7 +33,7 @@ type ClientGame(input: IInput, renderer: IRenderer, client: IBackgroundClient) =
 
     let mutable playerCount = 0
     let spriteStates = Array.zeroCreate<int> 64
-    let mutable clientId = -1
+    let mutable clientId = ClientId.Local
 
     let mutable latestSnap = 31us
     let snapshotHistory = Array.init 32 (fun _ -> Array.zeroCreate<Player> 64)
@@ -68,7 +68,6 @@ type ClientGame(input: IInput, renderer: IRenderer, client: IBackgroundClient) =
             | ClientMessage.Message(msg) -> 
                 match msg with
                 | :? Snapshot as snapshotMsg ->
-                //    printfn "snapshot seqid %A - time %A" snapshotMsg.SequenceId time
                     playerCount <- snapshotMsg.PlayerCount
 
                     latestSnap <- (latestSnap + 1us) % 32us
@@ -78,8 +77,8 @@ type ClientGame(input: IInput, renderer: IRenderer, client: IBackgroundClient) =
                     for i = 0 to playerCount - 1 do
                         playerStates.[i] <- snapshotMsg.PlayerState.[i]
 
-                    sortedList.Add(snapshotMsg.SnapshotId, struct(playerStates, time))
-                   // queue.Enqueue struct(playerStates, time)
+                    if sortedList.ContainsKey(snapshotMsg.SnapshotId) |> not then
+                        sortedList.Add(snapshotMsg.SnapshotId, struct(playerStates, time))
 
                 | _ -> ()
         )
@@ -89,25 +88,26 @@ type ClientGame(input: IInput, renderer: IRenderer, client: IBackgroundClient) =
             match evt with
             | LoadMap name ->
                 camera.Rotation <- Quaternion.CreateFromAxisAngle (Vector3.UnitX, 90.f * (float32 Math.PI / 180.f))
-                zombiemanSpriteBatchOpt <- Some <| loadMap name camera renderer
+                zombiemanSpriteBatchOpt <- Some(loadMap name camera renderer)
                 client.Connect("localhost", 27015)
             | _ -> ()
-
+        
         // end events
         if sortedList.Count > 0 then
             let struct(playerStates, snapTime) = sortedList.Values.[0]
-            if time >= snapTime + TimeSpan.FromMilliseconds(500.) || clientId = 0 then
+            if time >= snapTime + TimeSpan.FromMilliseconds(500.) || clientId.IsLocal then
                 sortedList.RemoveAt(0)
                 for i = 0 to playerCount - 1 do
-                    if clientId = i then
-                        let player = &playerStates.[i]
+                    let player = &playerStates.[i]
 
-                        let sprite = &spriteStates.[i]
-                        if sprite = 0 && zombiemanSpriteBatchOpt.IsSome then
-                            sprite <- zombiemanSpriteBatchOpt.Value.CreateSprite(size = Vector2(64.f, 64.f))
+                    let sprite = &spriteStates.[i]
+                    if sprite = 0 && zombiemanSpriteBatchOpt.IsSome then
+                        sprite <- zombiemanSpriteBatchOpt.Value.CreateSprite()
 
-                        if zombiemanSpriteBatchOpt.IsSome then
-                            zombiemanSpriteBatchOpt.Value.SetSpritePosition(sprite, playerStates.[i].translation)
+                    if zombiemanSpriteBatchOpt.IsSome then
+                        zombiemanSpriteBatchOpt.Value.SetSpritePosition(sprite, playerStates.[i].translation)
+
+                    if player.clientId = clientId then
                         camera.Translation <- player.translation
                         camera.Rotation <- player.rotation
 

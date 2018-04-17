@@ -2,14 +2,7 @@
 
 open System
 open System.Diagnostics
-open System.Reflection
 open System.Collections.Generic
-open System.Collections.Concurrent
-open System.Runtime.CompilerServices
-open System.Threading.Tasks
-open System.Runtime.InteropServices
-open System.Runtime.Serialization
-open System.Linq
 open System.Runtime.InteropServices
 open FSharp.NativeInterop
 open Foom.Core
@@ -115,7 +108,7 @@ and [<Sealed>] EntityManager(maxEntityAmount) =
             failwith "Max entity amount must be greater than 0."
         maxEntityAmount
 
-    let lookup = ConcurrentDictionary<Type, int> ()
+    let lookup = Dictionary<Type, int> ()
     let lookupType = Array.zeroCreate 64
     let activeVersions = UnmanagedArray<uint32>.Create(maxEntityAmount, fun _ -> 1u) //Array.init maxEntityAmount (fun _ -> 1u)
     let entComps = UnmanagedArray<EntityComponents>.Create(maxEntityAmount, fun _ -> { count = 0 })
@@ -141,7 +134,7 @@ and [<Sealed>] EntityManager(maxEntityAmount) =
             }
 
         let compId = nextCompBit
-        lookup.GetOrAdd(typeof<'T>, compId) |> ignore
+        lookup.Add(typeof<'T>, compId) |> ignore
         lookupType.[compId] <- data :> IEntityLookupData
         nextCompBit <- nextCompBit + 1
 

@@ -16,9 +16,7 @@ type PacketStream =
 
     member ProcessSending : SpanDelegate -> unit
 
-    member Receive : ReadOnlySpan<byte> -> unit
-
-    member ProcessReceiving : SpanDelegate -> unit
+    member Receive : ReadOnlySpan<byte> * SpanDelegate -> unit
 
     member LoseEveryOtherPacket : bool with get, set
 

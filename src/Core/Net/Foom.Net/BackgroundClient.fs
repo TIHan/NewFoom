@@ -65,7 +65,7 @@ type internal BackgroundClient(msgReg, channelLookupFactory) =
         member __.CreateMessage() =
             client.CreateMessage()
 
-        member __.ListenForMessage<'T when 'T :> Message>() =
+        member __.ListenForMessage<'T when 'T :> NetMessage>() =
             if msgHash.Add(typeof<'T>) then
                 client.MessageReceived<'T>().Add(fun (struct(_, msg) as x) ->
                     () // TODO: Remove all of this

@@ -31,16 +31,12 @@ type PacketStream() =
         reliableSender.Process(f)
         unreliableSender.Process(f)
 
-    member __.Receive(packet: ReadOnlySpan<byte>) =
+    member __.Receive(packet: ReadOnlySpan<byte>, f) =
         match packet.[0] with
-        | 0uy -> unreliableReceiver.Receive(packet)
-        | 1uy -> reliableReceiver.Receive(packet)
-        | 2uy -> unreliableReceiver.Receive(packet)
+        | 0uy -> unreliableReceiver.Receive(packet, f)
+        | 1uy -> reliableReceiver.Receive(packet, f)
+        | 2uy -> unreliableReceiver.Receive(packet, f)
         | _ -> failwith "Invalid packet type."
-
-    member __.ProcessReceiving(f) =
-        reliableReceiver.Process(f)
-        unreliableReceiver.Process(f)
 
     member __.LoseEveryOtherPacket
         with get () = unreliableSender.LoseEveryOtherPacket

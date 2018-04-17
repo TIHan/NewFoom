@@ -10,6 +10,25 @@ open Foom.IO.Serializer
 open Foom.Net
 open System.Collections.Generic
 
+
+[<Sealed>]
+type TextMessage() =
+    inherit NetMessage()
+
+    member val Text = String.Empty with get, set
+
+    override this.Serialize(writer, stream) =
+        base.Serialize(&writer, stream)
+        writer.WriteString(stream, this.Text)
+
+    override this.Deserialize(reader, stream) =
+        base.Deserialize(&reader, stream)
+        this.Text <- reader.ReadString stream
+
+    override this.Reset() =
+        base.Reset()
+        this.Text <- String.Empty
+
 [<Fact>]
 let ``Udp Client and Server`` () =
     use udpServer = new UdpServer(27015)
@@ -90,7 +109,7 @@ let ``Udp Client and Server Simple Big Message`` () =
     use client = network.CreateClient()
 
     let mutable finalText = ""
-    let mutable clientId = -1
+    let mutable clientId = ClientId.Local
 
     server.ClientConnected.Add(fun x -> clientId <- x)
 
@@ -136,7 +155,7 @@ let ``Udp Client and Server Simple Big Message`` () =
     client.SendPackets()
 
     Assert.True(client.IsConnected)
-    Assert.NotEqual(-1, clientId)
+    Assert.NotEqual(ClientId.Local, clientId)
 
     //
 

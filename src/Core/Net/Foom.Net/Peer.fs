@@ -4,7 +4,7 @@ open Foom.IO.Message
 
 type Peer internal (msgReg: MessageRegistration, poolMultiply) =
     let msgFactory = MessageFactory(msgReg, poolMultiply)
-    let lookupEvent = Array.zeroCreate<Event<struct(int * Message)>> 65536
+    let lookupEvent = Array.zeroCreate<Event<struct(ClientId * Message)>> 65536
     let lookupEventLock = obj ()
 
     member __.MessageFactory = msgFactory
@@ -13,7 +13,7 @@ type Peer internal (msgReg: MessageRegistration, poolMultiply) =
         let evt = this.GetEvent<'T>()
         evt.Publish
 
-    member private __.GetEvent<'T when 'T :> Message>() : Event<struct(int * Message)> =
+    member private __.GetEvent<'T when 'T :> Message>() : Event<struct(ClientId * Message)> =
         let t = typeof<'T>
         let index = int msgReg.LookupTypeId.[t]
         let evt =
@@ -21,7 +21,7 @@ type Peer internal (msgReg: MessageRegistration, poolMultiply) =
             lock lookupEventLock (fun () ->
                 match lookupEvent.[index] with
                 | evt when obj.ReferenceEquals(evt, null) ->
-                    let evt = Event<struct(int * Message)>()
+                    let evt = Event<struct(ClientId * Message)>()
                     lookupEvent.[index] <- evt
                     evt
                 | evt -> evt

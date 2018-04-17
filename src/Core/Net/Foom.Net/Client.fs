@@ -6,9 +6,9 @@ open Foom.IO.Packet
 
 [<Struct;RequireQualifiedAccess>]
 type ClientMessage =
-    | ConnectionAccepted of clientId: int
+    | ConnectionAccepted of clientId: ClientId
     | DisconnectAccepted
-    | Message of Message
+    | Message of NetMessage
     
 [<Sealed>]
 type Client(msgReg, channelLookupFactory: ChannelLookupFactory) as this =
@@ -55,7 +55,7 @@ type Client(msgReg, channelLookupFactory: ChannelLookupFactory) as this =
         if udpClient.IsConnected && isConnected then
             disconnectRequest ()
 
-    member this.SendMessage(msg: Message, channelId, willRecycle) =
+    member this.SendMessage(msg, channelId, willRecycle) =
         if udpClient.IsConnected && isConnected then
             sender.EnqueueMessage(msg, channelId, willRecycle)
 
@@ -84,6 +84,8 @@ type Client(msgReg, channelLookupFactory: ChannelLookupFactory) as this =
                 isConnected <- false
                 udpClient.Disconnect()
                 f ClientMessage.DisconnectAccepted
+
+            | :? Heartbeat -> ()
 
             | _ -> 
                 f (ClientMessage.Message(msg))

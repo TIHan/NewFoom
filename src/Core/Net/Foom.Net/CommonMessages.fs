@@ -14,7 +14,7 @@ module DefaultChannelIds =
 
 [<Sealed>]
 type Heartbeat() =
-    inherit Message()
+    inherit NetMessage()
 
     static member DefaultTypeId = UInt16.MaxValue
 
@@ -22,7 +22,7 @@ type Heartbeat() =
 
 [<Sealed>]
 type ConnectionRequested() =
-    inherit Message()
+    inherit NetMessage()
 
     static member DefaultTypeId = UInt16.MaxValue - 1us
 
@@ -30,18 +30,21 @@ type ConnectionRequested() =
 
 [<Sealed>]
 type ConnectionAccepted() =
-    inherit Message()
+    inherit NetMessage()
 
-    member val ClientId = -1 with get, set
+    member val ClientId = Unchecked.defaultof<ClientId> with get, set
 
     override this.Serialize(writer, stream) =
-        writer.WriteInt(stream, this.ClientId)
+        base.Serialize(&writer, stream)
+        writer.Write(stream, this.ClientId)
 
     override this.Deserialize(reader, stream) =
-        this.ClientId <- reader.ReadInt(stream)
+        base.Deserialize(&reader, stream)
+        this.ClientId <- reader.Read(stream)
 
     override this.Reset() =
-        this.ClientId <- -1
+        base.Reset()
+        this.ClientId <- Unchecked.defaultof<ClientId>
 
     static member DefaultTypeId = UInt16.MaxValue - 2us
 
@@ -49,7 +52,7 @@ type ConnectionAccepted() =
 
 [<Sealed>]
 type DisconnectRequested() =
-    inherit Message()
+    inherit NetMessage()
 
     static member DefaultTypeId = UInt16.MaxValue - 3us
 
@@ -57,7 +60,7 @@ type DisconnectRequested() =
 
 [<Sealed>]
 type DisconnectAccepted() =
-    inherit Message()
+    inherit NetMessage()
 
     static member DefaultTypeId = UInt16.MaxValue - 4us
 
@@ -65,17 +68,20 @@ type DisconnectAccepted() =
 
 [<Sealed>]
 type ClientDisconnected() =
-    inherit Message()
+    inherit NetMessage()
 
     member val Reason = String.Empty with get, set
 
     override this.Serialize(writer, stream) =
+        base.Serialize(&writer, stream)
         writer.WriteString(stream, this.Reason)
     
     override this.Deserialize(reader, stream) =
+        base.Deserialize(&reader, stream)
         this.Reason <- reader.ReadString(stream)
 
     override this.Reset() =
+        base.Reset()
         this.Reason <- String.Empty
 
     static member DefaultTypeId = UInt16.MaxValue - 5us

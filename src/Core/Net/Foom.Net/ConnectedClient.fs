@@ -6,25 +6,26 @@ open Foom.IO.Message
 open Foom.IO.Packet
 
 [<Sealed>]
-type ConnectedClient(msgFactory: MessageFactory, channelLookup, udpServer: UdpServer, endPoint: IPEndPoint, clientId: int) =
+type ConnectedClient(msgFactory: MessageFactory, channelLookup, udpServer: UdpServer, endPoint: IPEndPoint) =
     let stream = PacketStream()
-    let sender = Sender(stream, channelLookup)
-    let receiver = Receiver(stream, channelLookup)
+    let netChannel = NetChannel(stream, channelLookup)
 
-    member __.SendMessage(msg: Message, channelId, willRecycle) =
-        sender.EnqueueMessage(msg, channelId, willRecycle)
-
-    member __.OnReceivePacket(packet) =
-        receiver.EnqueuePacket(packet)
-
-    member __.TryReceiveMessages(f) =
-        receiver.ProcessMessages(fun msg -> f clientId msg)
-
-    member __.SendMessages() =
+    let heartbeat () =
         let msg = msgFactory.CreateMessage<Heartbeat>()
-        sender.EnqueueMessage(msg, DefaultChannelIds.Heartbeat, willRecycle = true)
+        netChannel.SendMessage(msg, DefaultChannelIds.Heartbeat, willRecycle = true)
 
-        sender.SendPackets(fun packet ->
+    member __.SendMessage(msg, channelId, willRecycle) =
+        netChannel.SendMessage(msg, channelId, willRecycle)
+
+    member __.ReceivePacket(packet) =
+        netChannel.ReceivePacket(packet)
+
+    member __.ProcessReceivedMessages(f) =
+        netChannel.ProcessReceivedMessages(f)
+
+    member __.SendPackets() =
+        heartbeat ()
+        netChannel.SendPackets(fun packet ->
             udpServer.Send(Span.op_Implicit packet, endPoint)
         )
 
@@ -33,5 +34,3 @@ type ConnectedClient(msgFactory: MessageFactory, channelLookup, udpServer: UdpSe
         and set value = stream.Time <- value
 
     member val EndPoint = endPoint
-
-    member val ClientId = clientId
