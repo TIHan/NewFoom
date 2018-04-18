@@ -357,8 +357,7 @@ type Snapshot =
 
     new () = { snapshotId = 0L; playerCount = 0; playerState = Array.zeroCreate<Player> 64 }
 
-    override this.Serialize(writer, stream) =
-        base.Serialize(&writer, stream)
+    override this.NetSerialize(writer, stream) =
         writer.WriteInt64(stream, &this.snapshotId)
         writer.WriteInt(stream, &this.playerCount)
         for i = 0 to this.playerCount - 1 do
