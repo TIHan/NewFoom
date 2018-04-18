@@ -17,7 +17,7 @@ let ``Unreliable - Basic Test`` () =
     let mutable writer = Writer()
 
     for i = 0 to 7000 do
-        writer.WriteInt(bufferSpan, i)
+        writer.WriteInt(bufferSpan, ref i)
 
     stream.Send(bufferSpan.Slice(0, writer.position), PacketDeliveryType.Unreliable) |> ignore
 
@@ -26,7 +26,7 @@ let ``Unreliable - Basic Test`` () =
     let outputBufferSpan = Span outputBuffer
     let run () =
         stream.ProcessSending(fun packet ->
-            clientStream.Receive(Span.op_Implicit(packet), fun data ->
+            clientStream.Receive(packet, fun data ->
                 data.CopyTo(Span(outputBuffer, start))
                 start <- start + data.Length
             )
@@ -54,7 +54,7 @@ let ``Reliable - Basic Test`` () =
     let mutable writer = Writer()
 
     for i = 0 to 7000 do
-        writer.WriteInt(bufferSpan, i)
+        writer.WriteInt(bufferSpan, ref i)
 
     stream.Send(bufferSpan.Slice(0, writer.position), PacketDeliveryType.Reliable) |> ignore
 
@@ -63,7 +63,7 @@ let ``Reliable - Basic Test`` () =
 
     let mutable start = 0
     stream.ProcessSending(fun packet ->
-        stream.Receive(Span.op_Implicit(packet), fun data ->
+        stream.Receive(packet, fun data ->
             data.CopyTo(Span(outputBuffer, start))
             start <- start + data.Length)
     )
@@ -86,7 +86,7 @@ let ``Unreliable - Packet Loss - No Recovery`` () =
     let mutable writer = Writer()
 
     for i = 0 to 7000 do
-        writer.WriteInt(bufferSpan, i)
+        writer.WriteInt(bufferSpan, ref i)
 
     stream.Send(bufferSpan.Slice(0, writer.position), PacketDeliveryType.Unreliable) |> ignore
 
@@ -98,7 +98,7 @@ let ``Unreliable - Packet Loss - No Recovery`` () =
         let outputBufferSpan = Span outputBuffer
 
         stream.ProcessSending(fun packet ->
-            stream.Receive(Span.op_Implicit(packet), fun data ->
+            stream.Receive(packet, fun data ->
                 data.CopyTo(Span(outputBuffer, start))
                 start <- start + data.Length)
         )
@@ -122,7 +122,7 @@ let ``Reliable - Packet Loss - Recovery - Soak`` () =
     let mutable writer = Writer()
 
     for i = 0 to 7000 do
-        writer.WriteInt(bufferSpan, i)
+        writer.WriteInt(bufferSpan, ref i)
 
     for iteration = 0 to 10000 do
         GC.Collect(2, GCCollectionMode.Forced)
@@ -135,14 +135,14 @@ let ``Reliable - Packet Loss - Recovery - Soak`` () =
         let outputBufferSpan = Span outputBuffer
         let run () =
             stream.ProcessSending(fun packet ->
-                clientStream.Receive(Span.op_Implicit(packet), fun data ->
+                clientStream.Receive(packet, fun data ->
                     data.CopyTo(Span(outputBuffer, 0))
                     start <- start + data.Length)
             )
 
             clientStream.Send(Span([||]), PacketDeliveryType.Unreliable) |> ignore
             clientStream.ProcessSending(fun packet ->
-                stream.Receive(Span.op_Implicit(packet), fun data ->
+                stream.Receive(packet, fun data ->
                     data.CopyTo(Span(outputBuffer, 0))
                     start <- start + data.Length)
             )
