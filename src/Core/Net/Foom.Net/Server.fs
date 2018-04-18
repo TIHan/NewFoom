@@ -25,7 +25,7 @@ type Server(msgReg, channelLookupFactory, port: int, maxClients) as this =
             clientConnected.Trigger(clientId)
 
             let msg = this.CreateMessage<ConnectionAccepted>()
-            msg.ClientId <- clientId
+            msg.clientId <- clientId
 
             this.SendMessage(msg, DefaultChannelIds.Connection, clientId, willRecycle = true)
         )
@@ -94,7 +94,7 @@ type Server(msgReg, channelLookupFactory, port: int, maxClients) as this =
             clientDisconnected.Trigger(clientId)
 
             let msg = this.CreateMessage<ClientDisconnected>()
-            msg.Reason <- "Client timed out."
+            msg.reason <- "Client timed out."
             this.SendMessage(msg, DefaultChannelIds.Connection, willRecycle = true)
 
     member __.Time

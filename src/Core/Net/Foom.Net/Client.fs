@@ -78,7 +78,7 @@ type Client(msgReg, channelLookupFactory: ChannelLookupFactory) as this =
             match msg with
             | :? ConnectionAccepted as msg -> 
                 isConnected <- true
-                f (ClientMessage.ConnectionAccepted(msg.ClientId))
+                f (ClientMessage.ConnectionAccepted(msg.clientId))
 
             | :? DisconnectAccepted ->
                 isConnected <- false

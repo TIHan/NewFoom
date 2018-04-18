@@ -41,7 +41,8 @@ module internal LittleEndian =
         data.[offset + 7] <-- byte (value >>> 56)
 
     let inline read8 (data: Span<byte>) offset =
-        data.[offset]
+        let x0 = data.[offset]
+        x0
 
     let inline read16 (data: Span<byte>) offset =
         let x0 = data.[offset]
@@ -89,61 +90,89 @@ type internal SingleUnion =
 [<Struct>]
 type Writer =
 
+    val isReading : bool
     val mutable position : int
 
-    member inline this.WriteByte(data: Span<byte>, value: byte) =
-        let result = LittleEndian.write8 data this.position value
-        this.position <- this.position + 1
-        result
+    member inline this.WriteByte(data: Span<byte>, value: byref<byte>) =
+        let p = this.position
+        this.position <- p + 1
+        if this.isReading then
+            value <- LittleEndian.read8 data p
+        else
+            LittleEndian.write8 data p value
 
-    member inline this.WriteSByte(data: Span<byte>, value: sbyte) =
-        let result = LittleEndian.write8 data this.position value
-        this.position <- this.position + 1
-        result
+    member inline this.WriteSByte(data: Span<byte>, value: byref<sbyte>) =
+        let p = this.position
+        this.position <- p + 1
+        if this.isReading then
+            value <- LittleEndian.read8 data p |> sbyte
+        else
+            LittleEndian.write8 data p value
 
-    member inline this.WriteInt16(data: Span<byte>, value: int16) =
-        let result = LittleEndian.write16 data this.position value
-        this.position <- this.position + 2
-        result
+    member inline this.WriteUInt16(data: Span<byte>, value: byref<uint16>) =
+        let p = this.position
+        this.position <- p + 2
+        if this.isReading then
+            value <- LittleEndian.read16 data p
+        else
+            LittleEndian.write16 data p value
 
-    member inline this.WriteUInt16(data: Span<byte>, value: uint16) =
-        let result = LittleEndian.write16 data this.position value
-        this.position <- this.position + 2
-        result
+    member inline this.WriteInt(data: Span<byte>, value: byref<int>) =
+        let p = this.position
+        this.position <- p + 4
+        if this.isReading then
+            value <- LittleEndian.read32 data p |> int
+        else
+            LittleEndian.write32 data p value
 
-    member inline this.WriteInt(data: Span<byte>, value: int) =
-        let result = LittleEndian.write32 data this.position value
-        this.position <- this.position + 4
-        result
+    member inline this.WriteUInt32(data: Span<byte>, value: byref<uint32>) =
+        let p = this.position
+        this.position <- p + 4
+        if this.isReading then
+            value <- LittleEndian.read32 data p
+        else
+            LittleEndian.write32 data p value
 
-    member inline this.WriteUInt32(data: Span<byte>, value: uint32) =
-        let result = LittleEndian.write32 data this.position value
-        this.position <- this.position + 4
-        result
+    member inline this.WriteInt64(data: Span<byte>, value: byref<int64>) =
+        let p = this.position
+        this.position <- p + 8
+        if this.isReading then
+            value <- LittleEndian.read64 data p |> int64
+        else
+            LittleEndian.write64 data p value
 
-    member inline this.WriteInt64(data: Span<byte>, value: int64) =
-        LittleEndian.write64 data this.position value
-        this.position <- this.position + 8
-
-    member this.WriteSingle(data, value: single) =
+    member this.WriteSingle(data, value: byref<single>) =
         let mutable s = SingleUnion ()
-        s.SingleValue <- value
-        this.WriteUInt32(data, s.Value)
+        if not this.isReading then
+            s.SingleValue <- value
+        this.WriteUInt32(data, &s.Value)
+        if this.isReading then
+            value <- s.SingleValue
 
     member this.Write<'T when 'T : unmanaged>(data: Span<byte>, value: byref<'T>) =
         let size = sizeof<'T>
-        Span((NativePtr.toNativeInt &&value).ToPointer(), size).CopyTo(data.Slice(this.position, size))
-        this.position <- this.position + size
+        if this.isReading then
+            data.Slice(this.position, size).CopyTo(Span((NativePtr.toNativeInt &&value).ToPointer(), size))
+            this.position <- this.position + size
+        else
+            Span((NativePtr.toNativeInt &&value).ToPointer(), size).CopyTo(data.Slice(this.position, size))
+            this.position <- this.position + size
 
-    member inline this.Write<'T when 'T : unmanaged>(data: Span<byte>, value: 'T) =
-        let mutable value = value
-        this.Write(data, &value)
+    member this.WriteString(data: Span<byte>, str: byref<string>) =
+        if this.isReading then
+            let mutable length = 0
+            this.WriteInt(data, &length)
+            let mutable ptr = data.Slice(this.position).DangerousGetPinnableReference()
+            this.position <- this.position + length
+            str <- System.Text.Encoding.Unicode.GetString(&&ptr, length)
+        else
+            let bytes = System.Text.Encoding.Unicode.GetBytes(str)
+            let mutable length = bytes.Length
+            this.WriteInt(data, &length)
+            Span(bytes).CopyTo(data.Slice(this.position))
+            this.position <- this.position + bytes.Length
 
-    member this.WriteString(data: Span<byte>, str: string) =
-        let bytes = System.Text.Encoding.Unicode.GetBytes(str)
-        this.WriteInt(data, bytes.Length)
-        Span(bytes).CopyTo(data.Slice(this.position))
-        this.position <- this.position + bytes.Length
+    new (isReading) = { isReading = isReading; position = 0 }
 
 [<Struct>]
 type Reader =

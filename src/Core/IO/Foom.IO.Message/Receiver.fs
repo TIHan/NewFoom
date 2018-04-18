@@ -33,7 +33,7 @@ type internal Receiver(receiverType: ReceiverType, lookup: MessagePoolBase []) =
     let receive data (pool: MessagePoolBase) =
         let msg = pool.Create()
 
-        let numBytesRead = msg.MainDeserialize data
+        let numBytesRead = msg.StartDeserialize(data)
         let seqId = msg.SequenceId
 
         match receiverType with

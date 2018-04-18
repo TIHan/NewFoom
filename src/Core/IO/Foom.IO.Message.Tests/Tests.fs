@@ -7,19 +7,18 @@ open Foom.IO.Message
 open Foom.IO.Message.Channel
 
 [<Sealed>]
-type TextMessage() =
-    inherit Message()
+type TextMessage =
+    inherit Message
 
-    member val Text = String.Empty with get, set
+    val mutable text : string
+
+    new () = { text = String.Empty }
 
     override this.Serialize(writer, stream) =
-        writer.WriteString(stream, this.Text)
-
-    override this.Deserialize(reader, stream) =
-        this.Text <- reader.ReadString stream
+        writer.WriteString(stream, &this.text)
 
     override this.Reset() =
-        this.Text <- String.Empty
+        this.text <- String.Empty
 
 [<Fact>]
 let ``Normal`` () =
@@ -31,10 +30,10 @@ let ``Normal`` () =
     let channel = Channel(lookup)
 
     let msg = pool.Create() :?> TextMessage
-    msg.Text <- "BEEF"
+    msg.text <- "BEEF"
 
     let msg2 = pool.Create() :?> TextMessage
-    msg2.Text <- "BEEF2"
+    msg2.text <- "BEEF2"
 
     channel.SerializeMessage(msg2, true, fun data -> channel.Receive(data) |> ignore)
     channel.SerializeMessage(msg, true, fun data -> channel.Receive(data) |> ignore)
@@ -43,7 +42,7 @@ let ``Normal`` () =
     channel.ProcessReceived(fun msg ->
         match msg with
         | :? TextMessage as msg ->
-            results.Add(msg.Text)
+            results.Add(msg.text)
         | _ -> ()
     )
 
@@ -61,10 +60,10 @@ let ``Sequenced`` () =
     let channel = SequencedChannel(lookup)
 
     let msg = pool.Create() :?> TextMessage
-    msg.Text <- "BEEF"
+    msg.text <- "BEEF"
 
     let msg2 = pool.Create() :?> TextMessage
-    msg2.Text <- "BEEF2"
+    msg2.text <- "BEEF2"
 
     channel.SerializeMessage(msg2, true, fun data -> 
         // This modifies the bytes to set the sequence id for testing
@@ -81,7 +80,7 @@ let ``Sequenced`` () =
     channel.ProcessReceived(fun msg ->
         match msg with
         | :? TextMessage as msg ->
-            results.Add(msg.Text)
+            results.Add(msg.text)
         | _ -> ()
     )
 
@@ -98,10 +97,10 @@ let ``Ordered`` () =
     let channel = OrderedChannel(lookup)
 
     let msg = pool.Create() :?> TextMessage
-    msg.Text <- "BEEF"
+    msg.text <- "BEEF"
 
     let msg2 = pool.Create() :?> TextMessage
-    msg2.Text <- "BEEF2"
+    msg2.text <- "BEEF2"
 
     channel.SerializeMessage(msg2, true, fun data -> 
         // This modifies the bytes to set the sequence id for testing
@@ -118,7 +117,7 @@ let ``Ordered`` () =
     channel.ProcessReceived(fun msg ->
         match msg with
         | :? TextMessage as msg ->
-            results.Add(msg.Text)
+            results.Add(msg.text)
         | _ -> ()
     )
 

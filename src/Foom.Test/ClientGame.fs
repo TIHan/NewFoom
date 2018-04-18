@@ -68,17 +68,17 @@ type ClientGame(input: IInput, renderer: IRenderer, client: IBackgroundClient) =
             | ClientMessage.Message(msg) -> 
                 match msg with
                 | :? Snapshot as snapshotMsg ->
-                    playerCount <- snapshotMsg.PlayerCount
+                    playerCount <- snapshotMsg.playerCount
 
                     latestSnap <- (latestSnap + 1us) % 32us
 
                     let playerStates = snapshotHistory.[int latestSnap]
 
                     for i = 0 to playerCount - 1 do
-                        playerStates.[i] <- snapshotMsg.PlayerState.[i]
+                        playerStates.[i] <- snapshotMsg.playerState.[i]
 
-                    if sortedList.ContainsKey(snapshotMsg.SnapshotId) |> not then
-                        sortedList.Add(snapshotMsg.SnapshotId, struct(playerStates, time))
+                    if sortedList.ContainsKey(snapshotMsg.snapshotId) |> not then
+                        sortedList.Add(snapshotMsg.snapshotId, struct(playerStates, time))
 
                 | _ -> ()
         )

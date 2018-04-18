@@ -20,24 +20,24 @@ type ClientManager(msgFactory, channelLookupFactory: ChannelLookupFactory, maxCl
         let client = ConnectedClient(msgFactory, channelLookupFactory.CreateChannelLookup(msgFactory.PoolLookup), udpServer, endPoint)
         client.Time <- currentTime
 
-        let clientId = lock lockObj |> fun _ -> { id = manager.Add(client) }
+        let clientId = lock lockObj |> fun _ -> ClientId(manager.Add(client))
         endPointLookup.Add(endPoint, clientId)
         clientId
 
-    member __.RemoveClient(clientId) =
-        let endPoint = manager.Get(clientId.id).EndPoint
+    member __.RemoveClient(clientId: ClientId) =
+        let endPoint = manager.Get(clientId.Id).EndPoint
         endPointLookup.Remove(endPoint) |> ignore
         lock lockObj
         |> fun _ ->
-            manager.Remove(clientId.id)
+            manager.Remove(clientId.Id)
 
     member __.TryGetClientId(endPoint) =
         match endPointLookup.TryGetValue(endPoint) with
         | true, clientId -> Some clientId
         | _ -> None
 
-    member __.SendMessage(clientId, msg, channelId, willRecycle) =
-        let client = manager.Get(clientId.id)
+    member __.SendMessage(clientId: ClientId, msg, channelId, willRecycle) =
+        let client = manager.Get(clientId.Id)
         client.SendMessage(msg, channelId, willRecycle)
 
     member __.SendMessage(msg, channelId, willRecycle) =
@@ -45,8 +45,8 @@ type ClientManager(msgFactory, channelLookupFactory: ChannelLookupFactory, maxCl
             client.SendMessage(msg, channelId, willRecycle)
         )
 
-    member __.ReceivePacket(clientId, packet) =
-        let client = manager.Get(clientId.id)
+    member __.ReceivePacket(clientId: ClientId, packet) =
+        let client = manager.Get(clientId.Id)
         client.ReceivePacket(packet)
 
     member __.SendPackets() =
@@ -59,14 +59,14 @@ type ClientManager(msgFactory, channelLookupFactory: ChannelLookupFactory, maxCl
         lock lockObj
         |> fun _ ->
             manager.ForEach(fun id client ->
-                client.ProcessReceivedMessages(fun msg -> f { id = id } msg)
+                client.ProcessReceivedMessages(fun msg -> f (ClientId(id)) msg)
             )
             // TODO: Do something here.
             //if not didSucceed then
               //  this.RemoveClient(client.ClientId)
                 // TODO: Add Ban client or something for malformed packet.
 
-    member this.IsClientConnected(clientId) = manager.IsValid(clientId.id)
+    member this.IsClientConnected(clientId: ClientId) = manager.IsValid(clientId.Id)
 
     member this.SetAllClientsTime(time) =
         manager.ForEach(fun _ client ->

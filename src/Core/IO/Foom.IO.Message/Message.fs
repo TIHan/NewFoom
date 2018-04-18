@@ -15,42 +15,39 @@ type MessageHeader =
 [<AbstractClass;AllowNullLiteral>]
 type Message() =
 
-    member val SequenceId = 0us with get, set
+    [<DefaultValue>] val mutable sequenceId : uint16
 
-    member val TypeId = 0us with get, set
+    [<DefaultValue>] val mutable typeId : uint16
+
+    member this.SequenceId = this.sequenceId
+
+    member this.TypeId = this.typeId
 
     member val IsRecyclable = false with get, set
 
     member val IsRecycled = true with get, set
 
-    member this.MainSerialize(stream: Span<byte>) =
+    member this.StartSerialize(stream: Span<byte>) =
         let mutable writer = Writer()
 
-        let mutable header = 
-            {
-                SequenceId = this.SequenceId
-                TypeId = uint16 this.TypeId
-            }
-        writer.Write(stream, &header)
+        this.MainSerialize(&writer, stream)
+
+    member this.StartDeserialize(stream: Span<byte>) =
+        let mutable writer = Writer(true)
+
+        this.MainSerialize(&writer, stream)
+
+    member this.MainSerialize(writer: byref<Writer>, stream: Span<byte>) =
+        writer.Write(stream, &this.typeId)
+        writer.Write(stream, &this.sequenceId)
 
         this.Serialize(&writer, stream)
 
         writer.position
 
-    member this.MainDeserialize(stream: Span<byte>) =
-        let mutable reader = Reader()
-
-        let header = reader.Read<MessageHeader> stream
-        this.SequenceId <- header.SequenceId
-        this.TypeId <- header.TypeId
-
-        this.Deserialize(&reader, stream)
-
-        reader.position
-
     member this.MainReset() =
-        this.SequenceId <- 0us
-        this.TypeId <- 0us
+        this.sequenceId <- 0us
+        this.typeId <- 0us
         this.IsRecyclable <- false
         this.IsRecycled <- true
 
@@ -59,10 +56,6 @@ type Message() =
     abstract Serialize : byref<Writer> * Span<byte> -> unit
 
     default __.Serialize(_writer, _stream) = ()
-
-    abstract Deserialize : byref<Reader> * Span<byte> -> unit
-
-    default __.Deserialize(_reader, _stream) = ()
 
     abstract Reset : unit -> unit
 
@@ -93,7 +86,7 @@ type MessagePool<'T when 'T :> Message and 'T : (new : unit -> 'T)>(typeId: uint
                 let msg = new 'T() :> Message
                 msg.IsRecyclable <- false
                 msg
-        msg.TypeId <- typeId
+        msg.typeId <- typeId
         msg.IsRecycled <- false
         msg
 

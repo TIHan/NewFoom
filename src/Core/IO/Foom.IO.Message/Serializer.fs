@@ -14,10 +14,10 @@ type internal Serializer(lookup: MessagePoolBase []) =
         match lookup.[int msg.TypeId] with
         | null -> failwith "Invalid message type."
         | pool ->
-            msg.SequenceId <- nextSeqId
+            msg.sequenceId <- nextSeqId
             nextSeqId <- nextSeqId + 1us
 
-            let numBytesWritten = msg.MainSerialize(Span(buffer))
+            let numBytesWritten = msg.StartSerialize(Span(buffer))
             f.Invoke(Span(buffer, 0, numBytesWritten))
 
             if willRecycle then

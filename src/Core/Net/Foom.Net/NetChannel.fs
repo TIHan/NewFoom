@@ -6,21 +6,31 @@ open System.Collections.Concurrent
 open Foom.IO.Packet
 open Foom.IO.Message
 open Foom.IO.Message.Channel
+open Foom.IO.Serializer
 
 [<AbstractClass>]
-type NetMessage() =
-    inherit Message()
+type NetMessage =
+    inherit Message
 
-    member val ChannelId = 0uy with get, set
+    val mutable channelId : byte
+
+    new () = { channelId = 0uy }
 
     override this.Serialize(writer, stream) =
-        writer.WriteByte(stream, this.ChannelId) 
-
-    override this.Deserialize(reader, stream) =
-        this.ChannelId <- reader.ReadByte(stream)
+        writer.WriteByte(stream, &this.channelId) 
+        this.NetSerialize(&writer, stream)
 
     override this.Reset() =
-        this.ChannelId <- 0uy
+        this.channelId <- 0uy
+        this.NetReset()
+
+    abstract NetSerialize : byref<Writer> * Span<byte> -> unit
+
+    default __.NetSerialize(_, _) = ()
+
+    abstract NetReset : unit -> unit
+
+    default __.NetReset() = ()
 
 [<Sealed>]
 type Sender(stream: PacketStream, channelLookup: Dictionary<byte, struct(AbstractChannel * PacketDeliveryType)>) =
@@ -28,14 +38,14 @@ type Sender(stream: PacketStream, channelLookup: Dictionary<byte, struct(Abstrac
     let queue = ConcurrentQueue()
 
     member __.EnqueueMessage(msg: NetMessage, channelId, willRecycle) =
-        msg.ChannelId <- channelId
+        msg.channelId <- channelId
         queue.Enqueue struct(msg, willRecycle)
 
     member __.SendPackets(f) =
         let mutable msg = Unchecked.defaultof<struct(NetMessage * bool)>
         while queue.TryDequeue(&msg) do
             let struct(msg, willRecycle) = msg
-            let struct(channel, packetDeliveryType) = channelLookup.[msg.ChannelId]
+            let struct(channel, packetDeliveryType) = channelLookup.[msg.channelId]
             channel.SerializeMessage(msg, willRecycle, fun data -> stream.Send(data, packetDeliveryType) |> ignore)
         stream.ProcessSending(f)
 
