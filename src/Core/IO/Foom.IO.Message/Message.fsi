@@ -17,13 +17,13 @@ type Message =
 
     new : unit -> Message
 
+    [<DefaultValue>] val mutable internal sequenceId : uint16
+
+    [<DefaultValue>] val mutable internal typeId : uint16
+
     member SequenceId : uint16 with get
 
-    member internal SequenceId : uint16 with set
-
     member TypeId : uint16 with get
-
-    member internal TypeId : uint16 with set
 
     member IsRecycled : bool with get
 
@@ -31,19 +31,17 @@ type Message =
 
     member internal IsRecyclable : bool with get, set
 
-    member internal MainSerialize : Span<byte> -> int
+    member internal StartSerialize : Span<byte> -> int
 
-    member internal MainDeserialize : ReadOnlySpan<byte> -> int
+    member internal StartDeserialize : Span<byte> -> int
+
+    member internal MainSerialize : byref<Writer> * Span<byte> -> int
 
     member internal MainReset : unit -> unit
 
     abstract Serialize : byref<Writer> * Span<byte> -> unit
 
     default Serialize : byref<Writer> * Span<byte> -> unit
-
-    abstract Deserialize : byref<Reader> * ReadOnlySpan<byte> -> unit
-
-    default Deserialize : byref<Reader> * ReadOnlySpan<byte> -> unit
 
     abstract Reset : unit -> unit
 

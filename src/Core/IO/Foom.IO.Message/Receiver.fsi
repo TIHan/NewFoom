@@ -13,6 +13,6 @@ type internal Receiver =
 
     new : ReceiverType * lookup: MessagePoolBase [] -> Receiver
 
-    member Enqueue : ReadOnlySpan<byte> -> int
+    member Enqueue : Span<byte> -> int
 
     member Process : (Message -> unit) -> unit

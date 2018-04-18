@@ -29,22 +29,18 @@ type ConnectionRequested() =
     static member DefaultPoolAmount = 20
 
 [<Sealed>]
-type ConnectionAccepted() =
-    inherit NetMessage()
+type ConnectionAccepted =
+    inherit NetMessage
 
-    member val ClientId = Unchecked.defaultof<ClientId> with get, set
+    val mutable clientId : ClientId
 
-    override this.Serialize(writer, stream) =
-        base.Serialize(&writer, stream)
-        writer.Write(stream, this.ClientId)
+    new () = { clientId = ClientId() }
 
-    override this.Deserialize(reader, stream) =
-        base.Deserialize(&reader, stream)
-        this.ClientId <- reader.Read(stream)
+    override this.NetSerialize(writer, stream) =
+        writer.Write(stream, &this.clientId)
 
-    override this.Reset() =
-        base.Reset()
-        this.ClientId <- Unchecked.defaultof<ClientId>
+    override this.NetReset() =
+        this.clientId <- ClientId()
 
     static member DefaultTypeId = UInt16.MaxValue - 2us
 
@@ -67,22 +63,18 @@ type DisconnectAccepted() =
     static member DefaultPoolAmount = 20
 
 [<Sealed>]
-type ClientDisconnected() =
-    inherit NetMessage()
+type ClientDisconnected =
+    inherit NetMessage
 
-    member val Reason = String.Empty with get, set
+    val mutable reason : string
 
-    override this.Serialize(writer, stream) =
-        base.Serialize(&writer, stream)
-        writer.WriteString(stream, this.Reason)
-    
-    override this.Deserialize(reader, stream) =
-        base.Deserialize(&reader, stream)
-        this.Reason <- reader.ReadString(stream)
+    new () = { reason = String.Empty }
 
-    override this.Reset() =
-        base.Reset()
-        this.Reason <- String.Empty
+    override this.NetSerialize(writer, stream) =
+        writer.WriteString(stream, &this.reason)
+
+    override this.NetReset() =
+        this.reason <- String.Empty
 
     static member DefaultTypeId = UInt16.MaxValue - 5us
 

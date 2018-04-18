@@ -30,9 +30,9 @@ type UdpClient =
 
     member RemoteEndPoint : IPEndPoint
 
-    member Receive : unit -> ReadOnlySpan<byte>
+    member Receive : unit -> Span<byte>
 
-    member Send : payload: ReadOnlySpan<byte> -> unit
+    member Send : payload: Span<byte> -> unit
 
     member IsConnected : bool
 
@@ -42,9 +42,9 @@ type UdpServer =
 
     new : port: int -> UdpServer
 
-    member Send : payload: ReadOnlySpan<byte> * remoteEndPoint: IPEndPoint -> unit
+    member Send : payload: Span<byte> * remoteEndPoint: IPEndPoint -> unit
 
-    member Receive : remoteEndPoint: byref<IPEndPoint> -> ReadOnlySpan<byte>
+    member Receive : remoteEndPoint: byref<IPEndPoint> -> Span<byte>
 
     member BytesSentSinceLastCall : unit -> int
 

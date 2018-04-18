@@ -12,22 +12,18 @@ open System.Collections.Generic
 
 
 [<Sealed>]
-type TextMessage() =
-    inherit NetMessage()
+type TextMessage =
+    inherit NetMessage
 
-    member val Text = String.Empty with get, set
+    val mutable text : string
 
-    override this.Serialize(writer, stream) =
-        base.Serialize(&writer, stream)
-        writer.WriteString(stream, this.Text)
+    new () = { text = String.Empty }
 
-    override this.Deserialize(reader, stream) =
-        base.Deserialize(&reader, stream)
-        this.Text <- reader.ReadString stream
+    override this.NetSerialize(writer, stream) =
+        writer.WriteString(stream, &this.text)
 
-    override this.Reset() =
-        base.Reset()
-        this.Text <- String.Empty
+    override this.NetReset() =
+        this.text <- String.Empty
 
 [<Fact>]
 let ``Udp Client and Server`` () =
@@ -44,14 +40,14 @@ let ``Udp Client and Server`` () =
     let channel = Channel(lookup)
 
     let msg = pool.Create() :?> TextMessage
-    msg.Text <- "BEEF"
+    msg.text <- "BEEF"
 
     let msg2 = pool.Create() :?> TextMessage
-    msg2.Text <- "BEEF2"
+    msg2.text <- "BEEF2"
 
     let mutable text = ""
 
-    let data = channel.SerializeMessage(msg2, true, fun data -> udpClient.Send(Span.op_Implicit data))
+    let data = channel.SerializeMessage(msg2, true, fun data -> udpClient.Send(data))
 
     System.Threading.Thread.Sleep(100)
 
@@ -63,7 +59,7 @@ let ``Udp Client and Server`` () =
     channel.ProcessReceived(fun msg ->
         match msg with
         | :? TextMessage as msg ->
-            text <- msg.Text
+            text <- msg.text
         | _ -> ()
     )
 
@@ -116,7 +112,7 @@ let ``Udp Client and Server Simple Big Message`` () =
     client.MessageReceived<TextMessage>().Add(fun struct(_, msg) ->
         match msg with
         | :? TextMessage as msg ->
-            finalText <- msg.Text
+            finalText <- msg.text
         | _ -> ()
     )
 
@@ -125,7 +121,7 @@ let ``Udp Client and Server Simple Big Message`` () =
         | ClientMessage.Message(msg) ->
             match msg with
             | :? TextMessage as msg ->
-                finalText <- msg.Text
+                finalText <- msg.text
             |  _ -> ()
         | _ -> ()
 
@@ -161,7 +157,7 @@ let ``Udp Client and Server Simple Big Message`` () =
 
     let expectedText = String(Array.init 5000 (fun i -> char i))
     let msg = server.CreateMessage<TextMessage>()
-    msg.Text <- expectedText
+    msg.text <- expectedText
 
     server.SendMessage(msg, 0uy, clientId, willRecycle = true)
 
@@ -211,7 +207,7 @@ let ``Udp Client and Server Simple - Background`` () =
     for i = 0 to 31 do
         text <- String.Empty
         let msg = client.CreateMessage<TextMessage>()
-        msg.Text <- String.init 15000 (fun _ -> "c")
+        msg.text <- String.init 15000 (fun _ -> "c")
 
         client.ProcessMessages(fun _ -> ())
         client.SendMessage(msg, 0uy)
@@ -220,7 +216,7 @@ let ``Udp Client and Server Simple - Background`` () =
         server.ProcessMessages(fun struct(_, msg) ->
             match msg with
             | :? TextMessage as msg ->
-                text <- msg.Text
+                text <- msg.text
             | _ -> ()
         )
 

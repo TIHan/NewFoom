@@ -31,8 +31,9 @@ type PacketStream() =
         reliableSender.Process(f)
         unreliableSender.Process(f)
 
-    member __.Receive(packet: ReadOnlySpan<byte>, f) =
-        match packet.[0] with
+    member __.Receive(packet: Span<byte>, f) =
+        let typ = packet.[0]
+        match typ with
         | 0uy -> unreliableReceiver.Receive(packet, f)
         | 1uy -> reliableReceiver.Receive(packet, f)
         | 2uy -> unreliableReceiver.Receive(packet, f)

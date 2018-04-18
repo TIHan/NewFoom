@@ -345,33 +345,20 @@ type UserInfo() =
         with get () = movement
         and set value = movement <- value
 
-    override this.Serialize(writer, stream) =
-        base.Serialize(&writer, stream)
+    override this.NetSerialize(writer, stream) =
         writer.Write(stream, &movement)
 
-    override this.Deserialize(reader, stream) =
-        base.Deserialize(&reader, stream)
-        movement <- reader.Read(stream)
+type Snapshot =
+    inherit NetMessage
 
-type Snapshot() =
-    inherit NetMessage()
+    val mutable snapshotId : int64
+    val mutable playerCount : int
+    val mutable playerState : Player []
 
-    member val SnapshotId = 0L with get, set
+    new () = { snapshotId = 0L; playerCount = 0; playerState = Array.zeroCreate<Player> 64 }
 
-    member val PlayerCount = 0 with get, set
-
-    member val PlayerState = Array.zeroCreate<Player> 64
-
-    override this.Serialize(writer, stream) =
-        base.Serialize(&writer, stream)
-        writer.WriteInt64(stream, this.SnapshotId)
-        writer.WriteInt(stream, this.PlayerCount)
-        for i = 0 to this.PlayerCount - 1 do
-            writer.Write(stream, &this.PlayerState.[i])
-
-    override this.Deserialize(reader, stream) =
-        base.Deserialize(&reader, stream)
-        this.SnapshotId <- reader.ReadInt64(stream)
-        this.PlayerCount <- reader.ReadInt(stream)
-        for i = 0 to this.PlayerCount - 1 do
-            this.PlayerState.[i] <- reader.Read(stream)
+    override this.NetSerialize(writer, stream) =
+        writer.WriteInt64(stream, &this.snapshotId)
+        writer.WriteInt(stream, &this.playerCount)
+        for i = 0 to this.playerCount - 1 do
+            writer.Write(stream, &this.playerState.[i])

@@ -32,7 +32,7 @@ type Client(msgReg, channelLookupFactory: ChannelLookupFactory) as this =
 
     // Internal client messages
     let sendPackets () =
-        sender.SendPackets(fun packet -> udpClient.Send(Span.op_Implicit packet))
+        sender.SendPackets(fun packet -> udpClient.Send(packet))
 
     let heartbeat () =
         let msg = this.CreateMessage<Heartbeat>()
@@ -78,7 +78,7 @@ type Client(msgReg, channelLookupFactory: ChannelLookupFactory) as this =
             match msg with
             | :? ConnectionAccepted as msg -> 
                 isConnected <- true
-                f (ClientMessage.ConnectionAccepted(msg.ClientId))
+                f (ClientMessage.ConnectionAccepted(msg.clientId))
 
             | :? DisconnectAccepted ->
                 isConnected <- false

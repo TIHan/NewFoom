@@ -74,15 +74,15 @@ type ServerGame(server: BackgroundServer) =
         )
 
         let snapshotMsg = server.CreateMessage<Snapshot>()
-        snapshotMsg.PlayerCount <- playerLookup.Count;
+        snapshotMsg.playerCount <- playerLookup.Count;
 
         playerLookup
         |> Seq.iteri (fun i pair ->
             let (player, _) = pair.Value
-            snapshotMsg.PlayerState.[i] <- player.contents
+            snapshotMsg.playerState.[i] <- player.contents
         )
 
-        snapshotMsg.SnapshotId <- snapshotId
+        snapshotMsg.snapshotId <- snapshotId
         snapshotId <- snapshotId + 1L
         server.SendMessage(snapshotMsg, 1uy)
         false
