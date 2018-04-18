@@ -51,7 +51,7 @@ let ``Udp Client and Server`` () =
 
     let mutable text = ""
 
-    let data = channel.SerializeMessage(msg2, true, fun data -> udpClient.Send(Span.op_Implicit data))
+    let data = channel.SerializeMessage(msg2, true, fun data -> udpClient.Send(data))
 
     System.Threading.Thread.Sleep(100)
 

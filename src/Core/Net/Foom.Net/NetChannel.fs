@@ -41,14 +41,14 @@ type Sender(stream: PacketStream, channelLookup: Dictionary<byte, struct(Abstrac
 
 [<Sealed>]
 type Receiver(stream: PacketStream, channelLookup: Dictionary<byte, struct(AbstractChannel * PacketDeliveryType)>) =
-    member this.EnqueuePacket(packet: ReadOnlySpan<byte>) =
+    member this.EnqueuePacket(packet: Span<byte>) =
 
         stream.Receive(packet, fun data -> 
             let mutable data = data
             while data.Length > 0 do
                 let channelId = data.[4] // This gets the channelId - don't change.
                 let struct(channel, _) = channelLookup.[channelId]
-                let numBytesRead = channel.Receive(Span.op_Implicit data)
+                let numBytesRead = channel.Receive(data)
 
                 if numBytesRead = 0 then
                     failwith "Unable to receive message."
@@ -81,7 +81,7 @@ type NetChannel(stream, channelLookup) =
     member __.SendPackets(f) =
         sender.SendPackets(f)
 
-    member __.ReceivePacket(packet: ReadOnlySpan<byte>) =
+    member __.ReceivePacket(packet: Span<byte>) =
         receiver.EnqueuePacket(packet)
 
     /// Thread safe

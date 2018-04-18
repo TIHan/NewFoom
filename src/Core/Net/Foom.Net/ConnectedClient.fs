@@ -26,7 +26,7 @@ type ConnectedClient(msgFactory: MessageFactory, channelLookup, udpServer: UdpSe
     member __.SendPackets() =
         heartbeat ()
         netChannel.SendPackets(fun packet ->
-            udpServer.Send(Span.op_Implicit packet, endPoint)
+            udpServer.Send(packet, endPoint)
         )
 
     member __.Time

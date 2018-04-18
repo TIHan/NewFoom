@@ -36,8 +36,8 @@ let ``Normal`` () =
     let msg2 = pool.Create() :?> TextMessage
     msg2.Text <- "BEEF2"
 
-    channel.SerializeMessage(msg2, true, fun data -> channel.Receive(Span.op_Implicit data) |> ignore)
-    channel.SerializeMessage(msg, true, fun data -> channel.Receive(Span.op_Implicit data) |> ignore)
+    channel.SerializeMessage(msg2, true, fun data -> channel.Receive(data) |> ignore)
+    channel.SerializeMessage(msg, true, fun data -> channel.Receive(data) |> ignore)
 
     let results = ResizeArray()
     channel.ProcessReceived(fun msg ->
@@ -70,12 +70,12 @@ let ``Sequenced`` () =
         // This modifies the bytes to set the sequence id for testing
         let x = data.[2]
         x <- 1uy
-        channel.Receive(Span.op_Implicit data) |> ignore)
+        channel.Receive(data) |> ignore)
     channel.SerializeMessage(msg, true, fun data -> 
         // This modifies the bytes to set the sequence id for testing
         let x = data.[2]
         x <- 0uy
-        channel.Receive(Span.op_Implicit data) |> ignore)
+        channel.Receive(data) |> ignore)
 
     let results = ResizeArray()
     channel.ProcessReceived(fun msg ->
@@ -107,12 +107,12 @@ let ``Ordered`` () =
         // This modifies the bytes to set the sequence id for testing
         let x = data.[2]
         x <- 1uy
-        channel.Receive(Span.op_Implicit data) |> ignore)
+        channel.Receive(data) |> ignore)
     channel.SerializeMessage(msg, true, fun data -> 
         // This modifies the bytes to set the sequence id for testing
         let x = data.[2]
         x <- 0uy
-        channel.Receive(Span.op_Implicit data) |> ignore)
+        channel.Receive(data) |> ignore)
 
     let results = ResizeArray()
     channel.ProcessReceived(fun msg ->

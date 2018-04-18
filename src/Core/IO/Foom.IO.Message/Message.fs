@@ -37,7 +37,7 @@ type Message() =
 
         writer.position
 
-    member this.MainDeserialize(stream: ReadOnlySpan<byte>) =
+    member this.MainDeserialize(stream: Span<byte>) =
         let mutable reader = Reader()
 
         let header = reader.Read<MessageHeader> stream
@@ -60,7 +60,7 @@ type Message() =
 
     default __.Serialize(_writer, _stream) = ()
 
-    abstract Deserialize : byref<Reader> * ReadOnlySpan<byte> -> unit
+    abstract Deserialize : byref<Reader> * Span<byte> -> unit
 
     default __.Deserialize(_reader, _stream) = ()
 

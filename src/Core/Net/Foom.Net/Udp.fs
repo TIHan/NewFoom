@@ -96,8 +96,8 @@ type Udp =
 
             let result =
                 match this.UdpClient.Client.ReceiveFrom(this.Buffer, 0, this.Buffer.Length, SocketFlags.None, &endPoint) with
-                | 0 -> ReadOnlySpan.Empty
-                | byteCount -> ReadOnlySpan(this.Buffer, 0, byteCount)
+                | 0 -> Span.Empty
+                | byteCount -> Span(this.Buffer, 0, byteCount)
 
             remoteEndPoint <- endPoint :?> IPEndPoint
             result
@@ -109,15 +109,15 @@ type Udp =
 
             let result =
                 match this.UdpClientV6.Client.ReceiveFrom(this.Buffer, 0, this.Buffer.Length, SocketFlags.None, &endPoint) with
-                | 0 -> ReadOnlySpan.Empty
-                | byteCount -> ReadOnlySpan(this.Buffer, 0, byteCount)
+                | 0 -> Span.Empty
+                | byteCount -> Span(this.Buffer, 0, byteCount)
 
             remoteEndPoint <- endPoint :?> IPEndPoint
             result
 
         else 
             remoteEndPoint <- IPEndPoint(IPAddress.None, 0)
-            ReadOnlySpan.Empty
+            Span.Empty
 
     interface IDisposable with
 
@@ -186,7 +186,7 @@ type UdpClient () =
         let mutable remoteEndPoint = Unchecked.defaultof<IPEndPoint>
         this.Receive(&remoteEndPoint)
 
-    member this.Send(payload: ReadOnlySpan<byte>) =
+    member this.Send(payload: Span<byte>) =
         if not isConnected then
             failwith "Send is invalid because we haven't tried to connect."
 
@@ -207,7 +207,7 @@ type UdpServer (port) =
 
     let mutable dataLossEveryOtherCall = false
 
-    member this.Send(payload: ReadOnlySpan<byte>, remoteEndPoint: IPEndPoint) =
+    member this.Send(payload: Span<byte>, remoteEndPoint: IPEndPoint) =
 
         payload.CopyTo(Span(this.Buffer, 0, payload.Length))
 

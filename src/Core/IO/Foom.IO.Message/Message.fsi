@@ -33,7 +33,7 @@ type Message =
 
     member internal MainSerialize : Span<byte> -> int
 
-    member internal MainDeserialize : ReadOnlySpan<byte> -> int
+    member internal MainDeserialize : Span<byte> -> int
 
     member internal MainReset : unit -> unit
 
@@ -41,9 +41,9 @@ type Message =
 
     default Serialize : byref<Writer> * Span<byte> -> unit
 
-    abstract Deserialize : byref<Reader> * ReadOnlySpan<byte> -> unit
+    abstract Deserialize : byref<Reader> * Span<byte> -> unit
 
-    default Deserialize : byref<Reader> * ReadOnlySpan<byte> -> unit
+    default Deserialize : byref<Reader> * Span<byte> -> unit
 
     abstract Reset : unit -> unit
 

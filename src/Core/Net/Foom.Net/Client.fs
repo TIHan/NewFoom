@@ -32,7 +32,7 @@ type Client(msgReg, channelLookupFactory: ChannelLookupFactory) as this =
 
     // Internal client messages
     let sendPackets () =
-        sender.SendPackets(fun packet -> udpClient.Send(Span.op_Implicit packet))
+        sender.SendPackets(fun packet -> udpClient.Send(packet))
 
     let heartbeat () =
         let msg = this.CreateMessage<Heartbeat>()

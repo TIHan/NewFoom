@@ -25,7 +25,7 @@ module PacketSenderHelpers =
         if packet.IsEmpty then 
             failwith (ErrorStrings.PacketOverflow())
         else
-            let header = Reader().Read<PacketHeader> (Span.op_Implicit packet)
+            let header = Reader().Read<PacketHeader> (packet)
             if not packet.IsEmpty then
                 if not (loseEveryOtherPacket && (seqId % 2us = 0us)) then
                     f.Invoke (packet.Slice(0, packet.Length - pool.GetRemainingLength seqId))

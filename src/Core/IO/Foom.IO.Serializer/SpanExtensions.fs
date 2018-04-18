@@ -40,28 +40,42 @@ module internal LittleEndian =
         data.[offset + 6] <-- byte (value >>> 48)
         data.[offset + 7] <-- byte (value >>> 56)
 
-    let inline read8 (data: ReadOnlySpan<byte>) offset =
+    let inline read8 (data: Span<byte>) offset =
         data.[offset]
 
-    let inline read16 (data: ReadOnlySpan<byte>) offset =
-        (uint16 data.[offset]) |||
-        ((uint16 data.[offset + 1]) <<< 8)
+    let inline read16 (data: Span<byte>) offset =
+        let x0 = data.[offset]
+        let x1 = data.[offset + 1]
+        (uint16 x0) |||
+        ((uint16 x1) <<< 8)
 
-    let inline read32 (data: ReadOnlySpan<byte>) offset =
-        (uint32 data.[offset]) |||
-        ((uint32 data.[offset + 1]) <<< 8) |||
-        ((uint32 data.[offset + 2]) <<< 16) |||
-        ((uint32 data.[offset + 3]) <<< 24)
+    let inline read32 (data: Span<byte>) offset =
+        let x0 = data.[offset]
+        let x1 = data.[offset + 1]
+        let x2 = data.[offset + 2]
+        let x3 = data.[offset + 3]
+        (uint32 x0) |||
+        ((uint32 x1) <<< 8) |||
+        ((uint32 x2) <<< 16) |||
+        ((uint32 x3) <<< 24)
 
-    let inline read64 (data: ReadOnlySpan<byte>) offset =
-        (uint64 data.[offset]) |||
-        ((uint64 data.[offset + 1]) <<< 8) |||
-        ((uint64 data.[offset + 2]) <<< 16) |||
-        ((uint64 data.[offset + 3]) <<< 24) |||
-        ((uint64 data.[offset + 4]) <<< 32) |||
-        ((uint64 data.[offset + 5]) <<< 40) |||
-        ((uint64 data.[offset + 6]) <<< 48) |||
-        ((uint64 data.[offset + 7]) <<< 56)
+    let inline read64 (data: Span<byte>) offset =
+        let x0 = data.[offset]
+        let x1 = data.[offset + 1]
+        let x2 = data.[offset + 2]
+        let x3 = data.[offset + 3]
+        let x4 = data.[offset + 4]
+        let x5 = data.[offset + 5]
+        let x6 = data.[offset + 6]
+        let x7 = data.[offset + 7]
+        (uint64 x0) |||
+        ((uint64 x1) <<< 8) |||
+        ((uint64 x2) <<< 16) |||
+        ((uint64 x3) <<< 24) |||
+        ((uint64 x4) <<< 32) |||
+        ((uint64 x5) <<< 40) |||
+        ((uint64 x6) <<< 48) |||
+        ((uint64 x7) <<< 56)
 
 [<Struct; StructLayout (LayoutKind.Explicit)>]
 type internal SingleUnion =
@@ -177,14 +191,14 @@ type Reader =
         s.Value <- value
         s.SingleValue
 
-    member this.Read<'T when 'T : unmanaged>(data: ReadOnlySpan<byte>) : 'T =
+    member this.Read<'T when 'T : unmanaged>(data: Span<byte>) : 'T =
         let size = sizeof<'T>
         let mutable value = Unchecked.defaultof<'T>
         data.Slice(this.position, size).CopyTo(Span((NativePtr.toNativeInt &&value).ToPointer(), size))
         this.position <- this.position + size
         value
 
-    member this.ReadString(data: ReadOnlySpan<byte>) : string =
+    member this.ReadString(data: Span<byte>) : string =
         let length = this.ReadInt data
         let mutable ptr = data.Slice(this.position).DangerousGetPinnableReference()
         this.position <- this.position + length

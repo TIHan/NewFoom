@@ -8,4 +8,4 @@ type internal PacketReceiver =
 
     new : AckManager -> PacketReceiver
 
-    member Receive : ReadOnlySpan<byte> * SpanDelegate -> unit
+    member Receive : Span<byte> * SpanDelegate -> unit
