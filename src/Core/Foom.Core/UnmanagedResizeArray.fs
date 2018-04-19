@@ -60,8 +60,8 @@ type UnmanagedResizeArray<'T when 'T : unmanaged>(capacity) =
         NativePtr.set buffer index (NativePtr.get buffer lastIndex)
         count <- lastIndex
 
-    member this.Item
-        with get index = NativePtrExtension.toByref (NativePtr.add buffer index)
+    member inline this.Item
+        with get index = NativePtrExtension.toByref (NativePtr.add this.Buffer index)
 
     member __.Count = count
 
@@ -83,7 +83,7 @@ type UnmanagedArray<'T when 'T : unmanaged> =
             Length = length
         }
 
-    member this.Item
+    member inline this.Item
         with get index = NativePtrExtension.toByref (NativePtr.add this.Buffer index)
 
     static member Create(length, init) =

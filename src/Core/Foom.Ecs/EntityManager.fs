@@ -48,12 +48,12 @@ type EntityLookupData<'T when 'T : unmanaged and 'T :> IComponent> =
                 entities.SwapRemoveAt index
                 components.SwapRemoveAt index
 
-                let refIndexLookup = indexLookup.[ent.Index]
-                refIndexLookup <- -1
-
                 if not (ent.Index.Equals swappingEntity.Index) then
                     let refIndexLookup = indexLookup.[swappingEntity.Index]
                     refIndexLookup <- index
+
+                let refIndexLookup = indexLookup.[ent.Index]
+                refIndexLookup <- -1
 
                 true
             else
@@ -109,11 +109,11 @@ and [<Sealed>] EntityManager(maxEntityAmount) =
         maxEntityAmount
 
     let lookup = Dictionary<Type, int> ()
-    let lookupType = Array.zeroCreate 64
+    let lookupType = Array.zeroCreate 256
     let activeVersions = UnmanagedArray<uint32>.Create(maxEntityAmount, fun _ -> 1u) //Array.init maxEntityAmount (fun _ -> 1u)
     let entComps = UnmanagedArray<EntityComponents>.Create(maxEntityAmount, fun _ -> { count = 0 })
 
-    let mutable nextEntityIndex = 1
+    let mutable nextEntityIndex = 0
     let mutable nextCompBit = 0
     let removedEntityQueue = Queue<Entity> ()
 
