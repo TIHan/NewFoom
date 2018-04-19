@@ -26,61 +26,69 @@ module private BestHelpers =
             Vector3(single doomThing.X, single doomThing.Y, 28.f)
         )
 
+open Foom.EntityManager
+
 [<Sealed>]
 type ServerGame(server: BackgroundServer) =
     inherit AbstractServerGame()
 
     let eventQueue = ConcurrentQueue()
 
-    let playerLookup = Dictionary<ClientId, Player ref * Movement ref>()
+    let playerLookup = Dictionary<ClientId, Entity>()
 
     let player1StartPosition = player1StartPosition ()
 
     let mutable snapshotId = 0L
 
+
+    let em = new EntityManager(32768)
+
     do
         server.ListenForMessage<UserInfo>()
+        em.RegisterComponent<Player>()
+        em.RegisterComponent<Movement>()
 
     override __.Update(time, interval) =
         server.ProcessClientConnected(fun clientId ->
-            let mutable player = Unchecked.defaultof<Player>
+
+            let ent = em.Spawn()
+
+            let player = em.Add<Player>(ent)
+            let movement = em.Add<Movement>(ent)
+
             player.clientId <- clientId
             match player1StartPosition with
             | Some pos -> player.translation <- pos
             | _ -> ()
 
-            let player = ref player
-            let movement = ref (Unchecked.defaultof<Movement>)
-
-            playerLookup.Add(clientId, (player, movement))
+            playerLookup.Add(clientId, ent)
 
             printfn "Client Connected: %A" clientId
         )
 
         server.ProcessMessages(fun struct(clientId, msg) ->
-            match playerLookup.TryGetValue(clientId) with
-            | true, (player, movement) ->
-                match msg with
-                | :? UserInfo as userInfoMsg ->
-                    movement.contents <- userInfoMsg.Movement
-                |  _ -> ()
+            match msg with
+            | :? UserInfo as userInfoMsg when playerLookup.ContainsKey(clientId) ->
+                em.TryGetComponent<Movement>(playerLookup.[clientId], fun movement ->
+                    movement <- userInfoMsg.Movement
+                )
             | _ -> ()
         )
 
-        playerLookup
-        |> Seq.iter (fun pair ->
-            let (player, movement) = pair.Value
-            updatePlayer movement.contents &player.contents
+        em.ForEach<Player, Movement>(fun _ player movement ->
+            updatePlayer movement &player
         )
 
         let snapshotMsg = server.CreateMessage<Snapshot>()
-        snapshotMsg.playerCount <- playerLookup.Count;
 
-        playerLookup
-        |> Seq.iteri (fun i pair ->
-            let (player, _) = pair.Value
-            snapshotMsg.playerState.[i] <- player.contents
+        let mutable i = 0
+
+        em.ForEach<Player>(fun _ player ->
+            snapshotMsg.playerState.[i] <- player
+            i <- i + 1
         )
+
+        snapshotMsg.playerCount <- i
 
         snapshotMsg.snapshotId <- snapshotId
         snapshotId <- snapshotId + 1L

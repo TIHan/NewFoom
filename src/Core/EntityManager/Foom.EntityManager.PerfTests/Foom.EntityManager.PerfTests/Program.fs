@@ -61,7 +61,7 @@ type TestComponent5 =
 [<EntryPoint>]
 let main argv =
     
-    let em = new EntityManager(10000)
+    let em = new EntityManager(1000000)
     em.RegisterComponent<TestComponent>()
     em.RegisterComponent<TestComponent2>()
     em.RegisterComponent<TestComponent3>()
@@ -74,7 +74,7 @@ let main argv =
     for i = 1 to 15 do
         let queue = Queue()
         let spawnEntityTime = Stopwatch.StartNew()
-        for i = 1 to 1000 do
+        for i = 1 to 100000 do
             let ent = em.Spawn()
             em.Add<TestComponent>(ent)
             em.Add<TestComponent2>(ent)
@@ -84,6 +84,10 @@ let main argv =
             queue.Enqueue(ent)
         spawnEntityTime.Stop()
 
+        let forEachEntityTime = Stopwatch.StartNew()
+        em.ForEach<TestComponent3>(fun _ _ -> ())
+        forEachEntityTime.Stop()
+
         let destroyEntityTime = Stopwatch.StartNew()
         while queue.Count > 0 do
             let ent = queue.Dequeue()
@@ -92,6 +96,7 @@ let main argv =
         destroyEntityTime.Stop()
 
         printfn "Spawn 1000: %A" spawnEntityTime.Elapsed.TotalMilliseconds
+        printfn "Iterate 1000 (2 comps): %A" forEachEntityTime.Elapsed.TotalMilliseconds
         printfn "Destroy 1000: %A" destroyEntityTime.Elapsed.TotalMilliseconds
 
     0

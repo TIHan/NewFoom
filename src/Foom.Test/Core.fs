@@ -31,6 +31,7 @@ open Foom.Renderer.GL.Desktop
 open Foom.Input
 open Foom.Input.Desktop
 open Foom.Net
+open Foom.EntityManager
 
 let createBitmap (pixels: Pixel [,]) =
     let mutable isTransparent = false
@@ -254,6 +255,8 @@ type Movement =
         IsMovingRight: bool
     }
 
+    interface IComponent
+
     static member Default =
         {
             Yaw = 0.f
@@ -294,6 +297,8 @@ type Player =
         mutable translation: Vector3
         mutable rotation: Quaternion
     }
+
+    interface IComponent
 
 let updatePlayer (mov: Movement) (player: byref<Player>) =
     let isMovingForward = mov.IsMovingForward

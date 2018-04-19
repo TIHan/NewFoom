@@ -62,7 +62,7 @@ type EntityLookupData<'T when 'T : unmanaged and 'T :> IComponent> =
     
 type ForEachDelegate<'T when 'T : unmanaged and 'T :> IComponent> = delegate of Entity * byref<'T> -> unit
 type ForEachDelegate<'T1, 'T2 when 'T1 : unmanaged and 'T2 : unmanaged and 'T1 :> IComponent and 'T2 :> IComponent> = delegate of Entity * byref<'T1> * byref<'T2> -> unit
-
+type TryGetDelegate<'T when 'T : unmanaged and 'T :> IComponent> = delegate of byref<'T> -> unit
 
 [<Struct>]
 [<StructLayout(LayoutKind.Sequential, Size = 510)>]
@@ -156,7 +156,7 @@ and [<Sealed>] EntityManager(maxEntityAmount) =
             let entities = data.Entities
             let components = data.Components
 
-            for i = 0 to data.Entities.Count - 1 do
+            for i = 0 to entities.Count - 1 do
                 let ent = entities.[i]
                 let comp = components.[i]
                 f.Invoke(ent, &comp)
@@ -367,12 +367,20 @@ and [<Sealed>] EntityManager(maxEntityAmount) =
 
         currentIterations <- currentIterations - 1
 
-    //member this.ForEach<'T1, 'T2 when 'T1 : unmanaged and 'T2 : unmanaged and 'T1 :> IComponent and 'T2 :> IComponent> (f : Entity -> 'T1 -> 'T2 -> unit) : unit =
-    //    this.CurrentIterations <- this.CurrentIterations + 1
+    member this.ForEach<'T1, 'T2 when 'T1 : unmanaged and 'T2 : unmanaged and 'T1 :> IComponent and 'T2 :> IComponent> (f) : unit =
+        currentIterations <- currentIterations + 1
 
-    //    this.Iterate<'T1, 'T2> (f)
+        this.Iterate<'T1, 'T2>(f)
 
-    //    this.CurrentIterations <- this.CurrentIterations - 1
+        currentIterations <- currentIterations - 1
+
+    member this.TryGetComponent<'T when 'T : unmanaged and 'T :> IComponent>(ent: Entity, tryGetF: TryGetDelegate<'T>) =
+        let struct(bit, data) = this.GetEntityLookupData<'T>()
+
+        let indexRef = data.IndexLookup.[ent.Index]
+        if indexRef <> -1 then
+            let compRef = data.Components.[indexRef]
+            tryGetF.Invoke(&compRef)
 
     //member this.ForEach<'T1, 'T2, 'T3 when 'T1 :> Component and 'T2 :> Component and 'T3 :> Component> f : unit =
     //    this.CurrentIterations <- this.CurrentIterations + 1
