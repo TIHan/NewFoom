@@ -10,4 +10,8 @@
     <Compile Include="Manager.fs" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="System.Memory" Version="4.4.0-preview1-25305-02" />
+  </ItemGroup>
+
 </Project>

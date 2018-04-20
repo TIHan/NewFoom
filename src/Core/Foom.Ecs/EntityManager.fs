@@ -153,10 +153,11 @@ and [<Sealed>] EntityManager(maxEntityAmount) =
         if lookup.TryGetValue (typeof<'T>, &bit) then
             let data = lookupType.[bit] :?> EntityLookupData<'T>
 
-            let entities = data.Entities
-            let components = data.Components
+            let count = data.Entities.Count
+            let entities = data.Entities.Span
+            let components = data.Components.Span
 
-            for i = 0 to entities.Count - 1 do
+            for i = 0 to count - 1 do
                 let ent = entities.[i]
                 let comp = components.[i]
                 f.Invoke(ent, &comp)

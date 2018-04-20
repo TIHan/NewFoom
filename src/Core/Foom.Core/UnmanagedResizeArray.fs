@@ -17,11 +17,11 @@ type UnmanagedResizeArray<'T when 'T : unmanaged>(capacity) =
 
     let mutable length = sizeof<'T> * capacity
     let mutable count = 0
-    let mutable buffer = 
+    let ptr =
         if capacity <= 0 then
             failwith "Capacity must be greater than 0"
         Marshal.AllocHGlobal(length)
-        |> NativePtr.ofNativeInt<'T>
+    let mutable buffer = NativePtr.ofNativeInt<'T> ptr
 
     member __.Buffer = buffer
 
@@ -64,6 +64,8 @@ type UnmanagedResizeArray<'T when 'T : unmanaged>(capacity) =
         with get index = NativePtrExtension.toByref (NativePtr.add this.Buffer index)
 
     member __.Count = count
+
+    member __.Span = Span<'T>(ptr.ToPointer(), count)
 
     interface IDisposable with
 
