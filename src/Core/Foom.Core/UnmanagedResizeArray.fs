@@ -88,6 +88,9 @@ type UnmanagedArray<'T when 'T : unmanaged> =
         with get index = NativePtr.read (NativePtr.add this.Buffer index)
         and set index value = NativePtr.set this.Buffer index value
 
+    member inline this.GetByRef(index) =
+        NativePtrExtension.toByref (NativePtr.add this.Buffer index)
+
     static member Create(length, init) =
         let arr = new UnmanagedArray<_>(length)
 

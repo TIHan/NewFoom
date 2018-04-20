@@ -271,7 +271,7 @@ and [<Sealed>] EntityManager(maxEntityAmount) =
 
                 let index = indexLookup.[entity.Index]
                 if index >= 0 then
-                    Debug.WriteLine (String.Format ("ECS WARNING: Component, {0}, already added to {1}.", typeof<'T>.Name, entity))
+                    Console.WriteLine (String.Format ("ECS WARNING: Component, {0}, already added to {1}.", typeof<'T>.Name, entity))
                     components.[index]
                 else
                     let mutable index = entities.Count
@@ -281,7 +281,7 @@ and [<Sealed>] EntityManager(maxEntityAmount) =
                     components.AddDefault()
                     entities.Add(entity)
 
-                    let ec = entComps.[entity.Index]
+                    let ec = entComps.GetByRef(entity.Index)
                     ec.AddComponentId(uint16 bit)
 
                     components.[index]
@@ -295,12 +295,12 @@ and [<Sealed>] EntityManager(maxEntityAmount) =
         else
             if this.IsValidEntity entity then
                 if (data :> IEntityLookupData).TryRemoveComponent(entity) then
-                    let ec = entComps.[entity.Index]
+                    let ec = entComps.GetByRef(entity.Index)
                     ec.RemoveComponentId(uint16 bit)
                 else
-                    Debug.WriteLine (String.Format ("ECS WARNING: Component, {0}, does not exist on {1}", typeof<'T>.Name, entity))
+                    Console.WriteLine (String.Format ("ECS WARNING: Component, {0}, does not exist on {1}", typeof<'T>.Name, entity))
             else
-                Debug.WriteLine (String.Format ("ECS WARNING: {0} is invalid. Cannot remove component, {1}", entity, typeof<'T>.Name))
+                Console.WriteLine (String.Format ("ECS WARNING: {0} is invalid. Cannot remove component, {1}", entity, typeof<'T>.Name))
 
     member this.Spawn () =                         
         if removedEntityQueue.Count = 0 && nextEntityIndex >= maxEntityAmount then
@@ -326,7 +326,7 @@ and [<Sealed>] EntityManager(maxEntityAmount) =
         else
             if this.IsValidEntity ent then
 
-                let ec = entComps.[ent.Index]
+                let ec = entComps.GetByRef(ent.Index)
 
                 for i = 0 to ec.count - 1 do
                     let v = ec.Get(i)
