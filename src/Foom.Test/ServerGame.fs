@@ -49,30 +49,30 @@ type ServerGame(server: BackgroundServer) =
         em.RegisterComponent<Movement>()
 
     override __.Update(time, interval) =
-        server.ProcessClientConnected(fun clientId ->
+        server.ProcessMessages(function
+            | ServerMessage.ClientConnected(clientId) ->
+                let ent = em.Spawn()
 
-            let ent = em.Spawn()
+                let player = em.Add<Player>(ent)
+                let _movement = em.Add<Movement>(ent)
 
-            let player = em.Add<Player>(ent)
-            let movement = em.Add<Movement>(ent)
+                player.clientId <- clientId
+                match player1StartPosition with
+                | Some pos -> player.translation <- pos
+                | _ -> ()
 
-            player.clientId <- clientId
-            match player1StartPosition with
-            | Some pos -> player.translation <- pos
-            | _ -> ()
+                playerLookup.Add(clientId, ent)
 
-            playerLookup.Add(clientId, ent)
+                printfn "Client Connected: %A" clientId
 
-            printfn "Client Connected: %A" clientId
-        )
-
-        server.ProcessMessages(fun struct(clientId, msg) ->
-            match msg with
-            | :? UserInfo as userInfoMsg when playerLookup.ContainsKey(clientId) ->
-                em.TryGetComponent<Movement>(playerLookup.[clientId], fun movement ->
-                    movement <- userInfoMsg.Movement
-                )
-            | _ -> ()
+            | ServerMessage.ClientDisconnected(_) -> () // TODO:
+            | ServerMessage.Message(clientId, msg) ->
+                match msg with
+                | :? UserInfo as userInfoMsg when playerLookup.ContainsKey(clientId) ->
+                    em.TryGetComponent<Movement>(playerLookup.[clientId], fun movement ->
+                        movement <- userInfoMsg.Movement
+                    )
+                | _ -> ()
         )
 
         em.ForEach<Player, Movement>(fun _ player movement ->

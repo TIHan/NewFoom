@@ -82,8 +82,8 @@ let ``Udp Client and Server Simple`` () =
 
     System.Threading.Thread.Sleep(100)
     server.ReceivePackets()
-    server.PumpMessages()
-    server.SendMessages()
+    server.ProcessMessages(fun _ -> ())
+    server.SendPackets()
 
     System.Threading.Thread.Sleep(100)
     client.ReceivePackets()
@@ -107,14 +107,11 @@ let ``Udp Client and Server Simple Big Message`` () =
     let mutable finalText = ""
     let mutable clientId = ClientId.Local
 
-    server.ClientConnected.Add(fun x -> clientId <- x)
-
-    client.MessageReceived<TextMessage>().Add(fun struct(_, msg) ->
-        match msg with
-        | :? TextMessage as msg ->
-            finalText <- msg.text
-        | _ -> ()
-    )
+    let serverProcess = function
+        | ServerMessage.ClientConnected(clientId') ->
+            clientId <- clientId'
+        | ServerMessage.ClientDisconnected(_) -> ()
+        | ServerMessage.Message(_) -> ()
 
     let clientProcess msg =
         match msg with
@@ -141,8 +138,8 @@ let ``Udp Client and Server Simple Big Message`` () =
     System.Threading.Thread.Sleep(100)
     server.Time <- (stopwatch.Elapsed)
     server.ReceivePackets()
-    server.PumpMessages()
-    server.SendMessages()
+    server.ProcessMessages serverProcess
+    server.SendPackets()
 
     System.Threading.Thread.Sleep(100)
     client.Time <- (stopwatch.Elapsed)
@@ -163,8 +160,8 @@ let ``Udp Client and Server Simple Big Message`` () =
 
     server.Time <- (stopwatch.Elapsed)
     server.ReceivePackets()
-    server.PumpMessages()
-    server.SendMessages()
+    server.ProcessMessages serverProcess
+    server.SendPackets()
 
     System.Threading.Thread.Sleep(100)
     client.Time <- (stopwatch.Elapsed)
@@ -213,10 +210,13 @@ let ``Udp Client and Server Simple - Background`` () =
         client.SendMessage(msg, 0uy)
 
         System.Threading.Thread.Sleep(700)
-        server.ProcessMessages(fun struct(_, msg) ->
+        server.ProcessMessages(fun msg ->
             match msg with
-            | :? TextMessage as msg ->
-                text <- msg.text
+            | ServerMessage.Message(_, msg) ->
+                match msg with
+                | :? TextMessage as msg ->
+                    text <- msg.text
+                | _ -> ()
             | _ -> ()
         )
 

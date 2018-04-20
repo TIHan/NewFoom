@@ -9,38 +9,29 @@ open Foom.IO.Message
 type BackgroundServerInternalMessage =
     | Start
     | Stop
-    | SendMessageAll of NetMessage * channelId: byte * willRecycle: bool
-    | SendMessage of NetMessage * channelId: byte * clientId: ClientId * willRecycle: bool
     | Dispose of AsyncReplyChannel<unit>
 
 type BackgroundServer(msgReg, channelLookupFactory, port, maxClients) =
-    let clientConnectedQueue = ConcurrentQueue()
     let msgHash = HashSet()
-    let msgQueue = ConcurrentQueue()
 
     let server = new Server(msgReg, channelLookupFactory, port, maxClients)
     let exceptionEvent = Event<Exception>()
 
     let mutable localClientOpt : (Peer * ConcurrentQueue<struct(ClientId * ClientMessage)>) option = None
 
+    let mutable receivedLocalClientMsgsOpt : ConcurrentQueue<ServerMessage> option = None
+
     let mp = MailboxProcessor<BackgroundServerInternalMessage>.Start(fun inbox -> 
 
         let rec start (stopwatch: Stopwatch) =
-            let sendRate = TimeSpan.FromMilliseconds(10.)
             let mutable sendTime = TimeSpan.Zero
             async {
                 let mutable replyDispose = Unchecked.defaultof<AsyncReplyChannel<unit>>
                 let mutable willDispose = false
                 while not willDispose do
-                    let time = stopwatch.Elapsed
-
                     try 
                         server.ReceivePackets()
-
-                        if time > sendTime + sendRate then
-                            server.PumpMessages()
-                            server.SendMessages()
-                            sendTime <- sendTime + sendRate
+                        server.SendPackets()
 
                         if inbox.CurrentQueueLength > 0 then
                             let! msg = inbox.Receive()
@@ -49,15 +40,11 @@ type BackgroundServer(msgReg, channelLookupFactory, port, maxClients) =
                                 server.Start()
                             | Stop -> 
                                 server.Stop()
-                            | SendMessageAll(msg, channelId, willRecycle) -> 
-                                server.SendMessage(msg, channelId, willRecycle)
-                            | SendMessage(msg, channelId, clientId, willRecycle) ->
-                                server.SendMessage(msg, channelId, clientId, willRecycle)
                             | Dispose(reply) ->
                                 replyDispose <- reply
                                 willDispose <- true
                         else
-                            do! Async.Sleep(1)
+                            do! Async.Sleep(10)
                     with
                     | ex -> 
                         server.Stop()
@@ -70,9 +57,6 @@ type BackgroundServer(msgReg, channelLookupFactory, port, maxClients) =
 
         start (Stopwatch.StartNew())
     )
-
-    do
-        server.ClientConnected.Add(clientConnectedQueue.Enqueue)
 
     member __.Start() =
         mp.Post(Start)
@@ -91,41 +75,32 @@ type BackgroundServer(msgReg, channelLookupFactory, port, maxClients) =
                 false
             | _ ->
                 true
-          
-        mp.Post(SendMessageAll(msg, channelId, willRecycle))
+
+        server.SendMessage(msg, channelId, willRecycle)
 
     member __.SendMessage(msg, channelId, clientId: ClientId) =
         match localClientOpt with
         | Some(_, localClientReceiveQueue) when clientId.IsLocal ->
             localClientReceiveQueue.Enqueue struct(ClientId.Local, ClientMessage.Message(msg))
         | _ ->
-            mp.Post(SendMessage(msg, channelId, clientId, willRecycle = true))
+            server.SendMessage(msg, channelId, clientId, willRecycle = true)
 
     member __.ListenForMessage<'T when 'T :> Message>() =
         if msgHash.Add(typeof<'T>) then
-            server.MessageReceived<'T>().Add(msgQueue.Enqueue)
-           
-    member __.ProcessClientConnected(f) =
-        let mutable clientId = Unchecked.defaultof<ClientId>
-        while clientConnectedQueue.TryDequeue(&clientId) do
-            f clientId
+            server.MessageReceived<'T>().Add(fun _ -> ())
 
     member __.ProcessMessages(f) =
-        let mutable fullMsg = Unchecked.defaultof<_>
-        while msgQueue.TryDequeue(&fullMsg) do
-            let struct(clientId, msg) = fullMsg
+        let mutable msg = Unchecked.defaultof<_>
+        match receivedLocalClientMsgsOpt with
+        | Some(receivedLocalClientMsgs) ->
+            while receivedLocalClientMsgs.TryDequeue(&msg) do
+                f msg
+                match msg, localClientOpt with
+                | ServerMessage.Message(_, msg), Some(localClient, _) -> localClient.RecycleMessage(msg)
+                | _ -> ()
+        | _ -> ()
 
-            if clientId.IsLocal then
-                match localClientOpt with
-                | Some(localClient, _) ->
-                    f fullMsg
-                    // We received a message from the client directly, cleanup from the client.
-                    localClient.RecycleMessage(msg)
-                | _ ->
-                    failwith "Should not happen. Local client doesn't exist yet we received a message with client id, 0."
-            else
-                f fullMsg
-                server.RecycleMessage(msg)
+        server.ProcessMessages(f)
 
     member __.OnException = exceptionEvent.Publish
 
@@ -133,22 +108,25 @@ type BackgroundServer(msgReg, channelLookupFactory, port, maxClients) =
         let localClient = Peer(msgReg, 1)
         let localClientReceiveHash = HashSet()
         let localClientReceiveQueue = ConcurrentQueue()
+        let receivedLocalClientMsgs = ConcurrentQueue()
         let onLocalClientException = Event<Exception>()
 
         let mutable connectedQueue = None
 
         localClientOpt <- Some(localClient, localClientReceiveQueue)
+        receivedLocalClientMsgsOpt <- Some(receivedLocalClientMsgs)
         {
             new IBackgroundClient with
 
                 member __.Connect(_, _) =
                     localClientReceiveQueue.Enqueue(struct(Unchecked.defaultof<ClientId>, ClientMessage.ConnectionAccepted(Unchecked.defaultof<ClientId>)))
-                    clientConnectedQueue.Enqueue(Unchecked.defaultof<ClientId>)
+                    receivedLocalClientMsgs.Enqueue(ServerMessage.ClientConnected(ClientId()))
 
-                member __.Disconnect() = ()
+                member __.Disconnect() = 
+                    receivedLocalClientMsgs.Enqueue(ServerMessage.ClientDisconnected(ClientId()))
 
                 member __.SendMessage(msg, _) =
-                    server.Publish(msg, Unchecked.defaultof<ClientId>)
+                    receivedLocalClientMsgs.Enqueue(ServerMessage.Message(ClientId(), msg))
 
                 member __.CreateMessage() =
                     localClient.CreateMessage()

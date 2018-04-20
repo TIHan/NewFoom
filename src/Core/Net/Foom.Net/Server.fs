@@ -7,6 +7,12 @@ open System
 open Foom.IO.Packet
 open Foom.IO.Message
 
+[<RequireQualifiedAccess>]
+type ServerMessage =
+    | ClientConnected of ClientId
+    | ClientDisconnected of ClientId
+    | Message of ClientId * NetMessage
+
 [<Sealed>]
 type Server(msgReg, channelLookupFactory, port: int, maxClients) as this =
     inherit Peer(msgReg, maxClients / 4) // conversative, perhaps revisit
@@ -15,22 +21,6 @@ type Server(msgReg, channelLookupFactory, port: int, maxClients) as this =
     let mutable currentTime = TimeSpan.Zero
 
     let clients = ClientManager(this.MessageFactory, channelLookupFactory, maxClients)
-
-    let clientConnected = Event<ClientId>()
-    let clientDisconnected = Event<ClientId>()
-
-    do
-        this.MessageReceived<ConnectionRequested>().Add(fun (struct(clientId, msg)) ->
-            // TODO: We need to handle this differently.
-            clientConnected.Trigger(clientId)
-
-            let msg = this.CreateMessage<ConnectionAccepted>()
-            msg.clientId <- clientId
-
-            this.SendMessage(msg, DefaultChannelIds.Connection, clientId, willRecycle = true)
-        )
-
-        this.MessageReceived<Heartbeat>().Add(fun struct(_, msg) -> this.RecycleMessage(msg))
 
     member val UdpServerOption : UdpServer option = udpServerOpt
 
@@ -56,7 +46,7 @@ type Server(msgReg, channelLookupFactory, port: int, maxClients) as this =
         if udpServerOpt.IsSome then
             clients.SendMessage(msg, channelId, willRecycle)
 
-    member __.SendMessages() = // TODO: Rename to SendPackets
+    member __.SendPackets() =
         if udpServerOpt.IsSome then
             clients.SendPackets()
 
@@ -85,13 +75,31 @@ type Server(msgReg, channelLookupFactory, port: int, maxClients) as this =
                         printfn "Client connection refused."
                         clients.RemoveClient(clientId)
 
-    member __.PumpMessages() =
-        clients.ProcessReceivedMessages(fun clientId msg -> this.Publish(msg, clientId))
+    member this.ProcessMessages(f) =
+        clients.ProcessReceivedMessages(fun clientId msg ->
+            match msg with
+            | :? ConnectionRequested -> 
+                let msg = this.CreateMessage<ConnectionAccepted>()
+                msg.clientId <- clientId
+
+                this.SendMessage(msg, DefaultChannelIds.Connection, clientId, willRecycle = true)
+                f (ServerMessage.ClientConnected(clientId))
+
+            | :? DisconnectRequested ->
+                // TODO: Revisit
+                f (ServerMessage.ClientDisconnected(clientId))
+
+            | :? Heartbeat -> ()
+
+            | _ -> 
+                f (ServerMessage.Message(clientId, msg))
+
+            this.RecycleMessage(msg)
+        )
 
     member this.DisconnectClient(clientId) =
         if clients.IsClientConnected(clientId) then
             clients.RemoveClient(clientId)
-            clientDisconnected.Trigger(clientId)
 
             let msg = this.CreateMessage<ClientDisconnected>()
             msg.reason <- "Client timed out."
@@ -102,10 +110,6 @@ type Server(msgReg, channelLookupFactory, port: int, maxClients) as this =
         and set value =
             currentTime <- value
             clients.SetAllClientsTime(currentTime)
-
-    member __.ClientConnected = clientConnected.Publish
-
-    member __.ClientDisconnected = clientDisconnected.Publish
 
     interface IDisposable with
 
