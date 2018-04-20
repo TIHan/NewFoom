@@ -44,7 +44,7 @@ type BackgroundServer(msgReg, channelLookupFactory, port, maxClients) =
                                 replyDispose <- reply
                                 willDispose <- true
                         else
-                            do! Async.Sleep(10)
+                            do! Async.Sleep(1)
                     with
                     | ex -> 
                         server.Stop()

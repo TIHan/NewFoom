@@ -40,7 +40,7 @@ open Foom.Game
 let main argv =
     let network = Network()
 
-    network.RegisterChannel(0uy, ChannelType.UnreliableSequenced)
+    network.RegisterChannel(0uy, ChannelType.Unreliable)
     network.RegisterChannel(1uy, ChannelType.Unreliable)
     network.RegisterMessage<Snapshot>(0us, 20)
     network.RegisterMessage<UserInfo>(1us, 20)

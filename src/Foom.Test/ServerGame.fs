@@ -41,7 +41,7 @@ type ServerGame(server: BackgroundServer) =
     let mutable snapshotId = 0L
 
 
-    let em = new EntityManager(100)
+    let em = new EntityManager(32000)
 
     do
         server.ListenForMessage<UserInfo>()
