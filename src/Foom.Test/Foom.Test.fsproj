@@ -14,6 +14,7 @@
     <Compile Include="ServerGame.fs" />
     <Compile Include="ClientGame.fs" />
     <Compile Include="Program.fs" />
+    <ProjectReference Include="..\Core\Foom.Ecs\Foom.EntityManager.fsproj" />
     <ProjectReference Include="..\Core\Foom.Geometry\Foom.Geometry.fsproj" />
     <ProjectReference Include="..\Core\Foom.Math\Foom.Math.fsproj" />
     <ProjectReference Include="..\Wad\Foom.Wad\Foom.Wad.fsproj" />
@@ -30,7 +31,6 @@
     <ProjectReference Include="..\Core\IO\Foom.IO.Message\Foom.IO.Message.fsproj" />
     <ProjectReference Include="..\Core\IO\Foom.IO.Serializer\Foom.IO.Serializer.fsproj" />
     <ProjectReference Include="..\Core\Foom.Core\Foom.Core.fsproj" />
-    <ProjectReference Include="..\Core\Foom.Ecs\Foom.EntityManager.fsproj" />
   </ItemGroup>
   <Target Name="PreBuild" BeforeTargets="PreBuildEvent">
     <Exec Command="&quot;$(MSBuildBinPath)\MSBuild.exe&quot; &quot;$(ProjectDir)..\Ferop\Ferop.Compiler\Ferop.Compiler.fsproj&quot;" Condition=" '$(OS)' == 'WINDOWS_NT'" />

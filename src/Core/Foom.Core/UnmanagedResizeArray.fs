@@ -17,7 +17,7 @@ type UnmanagedResizeArray<'T when 'T : unmanaged>(capacity) =
 
     let mutable length = sizeof<'T> * capacity
     let mutable count = 0
-    let ptr =
+    let mutable ptr =
         if capacity <= 0 then
             failwith "Capacity must be greater than 0"
         Marshal.AllocHGlobal(length)
@@ -32,9 +32,9 @@ type UnmanagedResizeArray<'T when 'T : unmanaged>(capacity) =
 
         length <- int newLength
 
-        let newBuffer = Marshal.ReAllocHGlobal(NativePtr.toNativeInt buffer, nativeint length) 
-                        |> NativePtr.ofNativeInt
-        buffer <- newBuffer
+        let newPtr = Marshal.ReAllocHGlobal(NativePtr.toNativeInt buffer, nativeint length) 
+        ptr <- newPtr
+        buffer <- newPtr |> NativePtr.ofNativeInt
 
     member this.Add(item) =
         if count * sizeof<'T> >= length then
@@ -65,14 +65,13 @@ type UnmanagedResizeArray<'T when 'T : unmanaged>(capacity) =
 
     member __.Count = count
 
-    member __.Span = Span<'T>(ptr.ToPointer(), count)
+    member __.ToSpan() = Span<'T>(ptr.ToPointer(), length)
 
     interface IDisposable with
 
         member __.Dispose() =
             Marshal.FreeHGlobal(NativePtr.toNativeInt buffer)
 
-[<Struct>]
 type UnmanagedArray<'T when 'T : unmanaged> =
 
     val Buffer : nativeptr<'T>
@@ -86,14 +85,14 @@ type UnmanagedArray<'T when 'T : unmanaged> =
         }
 
     member inline this.Item
-        with get index = NativePtrExtension.toByref (NativePtr.add this.Buffer index)
+        with get index = NativePtr.read (NativePtr.add this.Buffer index)
+        and set index value = NativePtr.set this.Buffer index value
 
     static member Create(length, init) =
         let arr = new UnmanagedArray<_>(length)
 
         for i = 0 to arr.Length - 1 do
-            let ref = arr.[i]
-            ref <- init i
+            arr.[i] <- init i
 
         arr
 

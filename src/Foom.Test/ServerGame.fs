@@ -17,7 +17,7 @@ type EmptyServerGame() =
 [<AutoOpen>]
 module private BestHelpers =
     let player1StartPosition () =
-        let wad = Wad.FromFile("../../../../../Foom-deps/testwads/doom1.wad")
+        use wad = Wad.FromFile("../../../../../Foom-deps/testwads/doom1.wad")
         let map = wad.FindMap "e1m1"
 
         let player1Start = map.TryFindPlayer1Start()
@@ -41,7 +41,7 @@ type ServerGame(server: BackgroundServer) =
     let mutable snapshotId = 0L
 
 
-    let em = new EntityManager(32768)
+    let em = new EntityManager(100)
 
     do
         server.ListenForMessage<UserInfo>()

@@ -61,7 +61,7 @@ type TestComponent5 =
 [<EntryPoint>]
 let main argv =
     
-    let em = new EntityManager(1000000)
+    let em = new EntityManager(65536)
     em.RegisterComponent<TestComponent>()
     em.RegisterComponent<TestComponent2>()
     em.RegisterComponent<TestComponent3>()
@@ -71,7 +71,7 @@ let main argv =
     for i = 1 to 250 do
         let queue = Queue()
         let spawnEntityTime = Stopwatch.StartNew()
-        for i = 1 to 100000 do
+        for i = 1 to 10000 do
             let ent = em.Spawn()
             em.Add<TestComponent>(ent)
             em.Add<TestComponent2>(ent)

@@ -49,11 +49,9 @@ type EntityLookupData<'T when 'T : unmanaged and 'T :> IComponent> =
                 components.SwapRemoveAt index
 
                 if not (ent.Index.Equals swappingEntity.Index) then
-                    let refIndexLookup = indexLookup.[swappingEntity.Index]
-                    refIndexLookup <- index
+                    indexLookup.[swappingEntity.Index] <- index
 
-                let refIndexLookup = indexLookup.[ent.Index]
-                refIndexLookup <- -1
+                indexLookup.[ent.Index] <- -1
 
                 true
             else
@@ -148,14 +146,14 @@ and [<Sealed>] EntityManager(maxEntityAmount) =
         | true -> struct(bit, lookupType.[bit] :?> EntityLookupData<'T>)
         | _ -> failwithf "Component, %s, not registered." typeof<'T>.Name
 
-    member inline this.Iterate<'T when 'T : unmanaged and 'T :> IComponent> (f: ForEachDelegate<'T>) : unit =
+    member this.Iterate<'T when 'T : unmanaged and 'T :> IComponent> (f: ForEachDelegate<'T>) : unit =
         let mutable bit = 0
         if lookup.TryGetValue (typeof<'T>, &bit) then
             let data = lookupType.[bit] :?> EntityLookupData<'T>
 
             let count = data.Entities.Count
-            let entities = data.Entities.Span
-            let components = data.Components.Span
+            let entities = data.Entities.ToSpan()
+            let components = data.Components.ToSpan()
 
             for i = 0 to count - 1 do
                 let ent = entities.[i]
@@ -172,13 +170,14 @@ and [<Sealed>] EntityManager(maxEntityAmount) =
             let data1 = data1 :?> EntityLookupData<'T1>
             let data2 = data2 :?> EntityLookupData<'T2>
 
-            let entities = data.Entities
-            let components1 = data1.Components
-            let components2 = data2.Components
+            let count = data.Entities.Count
+            let entities = data.Entities.ToSpan()
+            let components1 = data1.Components.ToSpan()
+            let components2 = data2.Components.ToSpan()
             let lookup1 = data1.IndexLookup
             let lookup2 = data2.IndexLookup
     
-            for i = 0 to data.Entities.Count - 1 do
+            for i = 0 to count - 1 do
                 let ent = entities.[i]
     
                 let comp1Index = lookup1.[ent.Index]
@@ -277,8 +276,7 @@ and [<Sealed>] EntityManager(maxEntityAmount) =
                 else
                     let mutable index = entities.Count
 
-                    let refIndexLookup = indexLookup.[entity.Index]
-                    refIndexLookup <- index
+                    indexLookup.[entity.Index] <- index
 
                     components.AddDefault()
                     entities.Add(entity)
@@ -318,8 +316,7 @@ and [<Sealed>] EntityManager(maxEntityAmount) =
                     nextEntityIndex <- index + 1
                     Entity (index, 1u)
 
-            let ref = activeVersions.[entity.Index]
-            ref <- entity.Version
+            activeVersions.[entity.Index] <- entity.Version
 
             entity
 
@@ -338,8 +335,7 @@ and [<Sealed>] EntityManager(maxEntityAmount) =
                     ec.RemoveComponentId(v)
 
                 removedEntityQueue.Enqueue ent  
-                let ref = activeVersions.[ent.Index] 
-                ref <- 0u
+                activeVersions.[ent.Index] <- 0u
 
             else
                 Debug.WriteLine (String.Format ("ECS WARNING: {0} is invalid. Cannot destroy.", ent))
@@ -378,9 +374,9 @@ and [<Sealed>] EntityManager(maxEntityAmount) =
     member this.TryGetComponent<'T when 'T : unmanaged and 'T :> IComponent>(ent: Entity, tryGetF: TryGetDelegate<'T>) =
         let struct(bit, data) = this.GetEntityLookupData<'T>()
 
-        let indexRef = data.IndexLookup.[ent.Index]
-        if indexRef <> -1 then
-            let compRef = data.Components.[indexRef]
+        let index = data.IndexLookup.[ent.Index]
+        if index <> -1 then
+            let compRef = data.Components.[index]
             tryGetF.Invoke(&compRef)
 
     //member this.ForEach<'T1, 'T2, 'T3 when 'T1 :> Component and 'T2 :> Component and 'T3 :> Component> f : unit =
