@@ -59,8 +59,8 @@ type internal BackgroundClient(msgReg, channelLookupFactory) =
         member __.Disconnect() =
             client.Disconnect()
 
-        member __.SendMessage(msg, channelId) =
-            client.SendMessage(msg, channelId, willRecycle = true)
+        member __.SendMessage(msg) =
+            client.SendMessage(msg, willRecycle = true)
 
         member __.CreateMessage() =
             client.CreateMessage()

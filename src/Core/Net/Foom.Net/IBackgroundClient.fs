@@ -9,7 +9,7 @@ type IBackgroundClient =
 
     abstract Disconnect : unit -> unit
 
-    abstract SendMessage : NetMessage * channelId: byte -> unit
+    abstract SendMessage : NetMessage -> unit
 
     abstract CreateMessage<'T when 'T :> NetMessage and 'T : (new : unit -> 'T)> : unit -> 'T
 

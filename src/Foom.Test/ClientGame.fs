@@ -56,7 +56,7 @@ type ClientGame(input: IInput, renderer: IRenderer, client: IBackgroundClient) =
 
         let userInfoMsg = client.CreateMessage<UserInfo>()
         userInfoMsg.Movement <- mov
-        client.SendMessage(userInfoMsg, 1uy)
+        client.SendMessage(userInfoMsg)
 
         //if clientId <> -1 then
             //updatePlayer mov &playerStates.[clientId]

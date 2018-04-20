@@ -96,8 +96,8 @@ let ``Udp Client and Server Simple`` () =
 let ``Udp Client and Server Simple Big Message`` () =
     let network = Network()
 
-    network.RegisterMessage<TextMessage>(0us, 64)
     network.RegisterChannel(0uy, ChannelType.Unreliable)
+    network.RegisterMessage<TextMessage>(0us, 0uy, 64)
 
     //
 
@@ -175,8 +175,8 @@ let ``Udp Client and Server Simple Big Message`` () =
 let ``Udp Client and Server Simple - Background`` () =
     let network = Network()
 
-    network.RegisterMessage<TextMessage>(0us, 64)
     network.RegisterChannel(0uy, ChannelType.Unreliable)
+    network.RegisterMessage<TextMessage>(0us, 0uy, 64)
 
     use server = network.CreateBackgroundServer(27015, 8)
     use client = network.CreateBackgroundClient()
@@ -207,7 +207,7 @@ let ``Udp Client and Server Simple - Background`` () =
         msg.text <- String.init 15000 (fun _ -> "c")
 
         client.ProcessMessages(fun _ -> ())
-        client.SendMessage(msg, 0uy)
+        client.SendMessage(msg)
 
         System.Threading.Thread.Sleep(700)
         server.ProcessMessages(fun msg ->

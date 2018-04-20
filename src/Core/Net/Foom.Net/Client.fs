@@ -55,9 +55,9 @@ type Client(msgReg, channelLookupFactory: ChannelLookupFactory) as this =
         if udpClient.IsConnected && isConnected then
             disconnectRequest ()
 
-    member this.SendMessage(msg, channelId, willRecycle) =
+    member this.SendMessage(msg, willRecycle) =
         if udpClient.IsConnected && isConnected then
-            sender.EnqueueMessage(msg, channelId, willRecycle)
+            sender.EnqueueMessage(msg, msgReg.LookupChannelId.[msg.TypeId], willRecycle)
 
     member this.SendPackets() =
         if udpClient.IsConnected && isConnected then

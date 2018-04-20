@@ -125,7 +125,7 @@ type BackgroundServer(msgReg, channelLookupFactory, port, maxClients) =
                 member __.Disconnect() = 
                     receivedLocalClientMsgs.Enqueue(ServerMessage.ClientDisconnected(ClientId()))
 
-                member __.SendMessage(msg, _) =
+                member __.SendMessage(msg) =
                     receivedLocalClientMsgs.Enqueue(ServerMessage.Message(ClientId(), msg))
 
                 member __.CreateMessage() =

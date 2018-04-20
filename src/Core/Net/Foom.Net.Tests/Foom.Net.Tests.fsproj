@@ -27,6 +27,7 @@
     <ProjectReference Include="..\..\IO\Foom.IO.Packet\Foom.IO.Packet.fsproj" />
     <ProjectReference Include="..\..\IO\Foom.IO.Serializer\Foom.IO.Serializer.fsproj" />
     <ProjectReference Include="..\Foom.Net\Foom.Net.fsproj" />
+    <ProjectReference Include="..\..\Foom.Core\Foom.Core.fsproj" />
   </ItemGroup>
 
 </Project>

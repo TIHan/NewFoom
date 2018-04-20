@@ -41,9 +41,8 @@ let main argv =
     let network = Network()
 
     network.RegisterChannel(0uy, ChannelType.Unreliable)
-    network.RegisterChannel(1uy, ChannelType.Unreliable)
-    network.RegisterMessage<Snapshot>(0us, 20)
-    network.RegisterMessage<UserInfo>(1us, 20)
+    network.RegisterMessage<Snapshot>(0us, 0uy, 20)
+    network.RegisterMessage<UserInfo>(1us, 0uy, 20)
 
     let serverOpt =
         if argv.Length = 0 then

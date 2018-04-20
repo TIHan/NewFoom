@@ -12,17 +12,17 @@ type Network() =
     do
         channelLookupFactory.RegisterChannel(DefaultChannelIds.Connection, ChannelType.ReliableOrdered)
         channelLookupFactory.RegisterChannel(DefaultChannelIds.Heartbeat, ChannelType.Reliable)
-        msgReg.RegisterMessage<Heartbeat>(Heartbeat.DefaultTypeId, Heartbeat.DefaultPoolAmount)
-        msgReg.RegisterMessage<ConnectionRequested>(ConnectionRequested.DefaultTypeId, ConnectionRequested.DefaultPoolAmount)
-        msgReg.RegisterMessage<ConnectionAccepted>(ConnectionAccepted.DefaultTypeId, ConnectionAccepted.DefaultPoolAmount)
-        msgReg.RegisterMessage<DisconnectRequested>(DisconnectRequested.DefaultTypeId, DisconnectRequested.DefaultPoolAmount)
-        msgReg.RegisterMessage<DisconnectAccepted>(DisconnectAccepted.DefaultTypeId, DisconnectAccepted.DefaultPoolAmount)
-        msgReg.RegisterMessage<ClientDisconnected>(ClientDisconnected.DefaultTypeId, ClientDisconnected.DefaultPoolAmount)
+        msgReg.RegisterMessage<Heartbeat>(Heartbeat.DefaultTypeId, DefaultChannelIds.Heartbeat, Heartbeat.DefaultPoolAmount)
+        msgReg.RegisterMessage<ConnectionRequested>(ConnectionRequested.DefaultTypeId, DefaultChannelIds.Connection, ConnectionRequested.DefaultPoolAmount)
+        msgReg.RegisterMessage<ConnectionAccepted>(ConnectionAccepted.DefaultTypeId, DefaultChannelIds.Connection, ConnectionAccepted.DefaultPoolAmount)
+        msgReg.RegisterMessage<DisconnectRequested>(DisconnectRequested.DefaultTypeId, DefaultChannelIds.Connection, DisconnectRequested.DefaultPoolAmount)
+        msgReg.RegisterMessage<DisconnectAccepted>(DisconnectAccepted.DefaultTypeId, DefaultChannelIds.Connection, DisconnectAccepted.DefaultPoolAmount)
+        msgReg.RegisterMessage<ClientDisconnected>(ClientDisconnected.DefaultTypeId, DefaultChannelIds.Connection, ClientDisconnected.DefaultPoolAmount)
 
-    member __.RegisterMessage<'T when 'T :> Message and 'T : (new : unit -> 'T)>(typeId, poolAmount) =
+    member __.RegisterMessage<'T when 'T :> Message and 'T : (new : unit -> 'T)>(typeId, channelId, poolAmount) =
         if didCreateServerOrClient then
             failwith "Cannot register messages after a server or client has been created."
-        msgReg.RegisterMessage<'T>(typeId, poolAmount)
+        msgReg.RegisterMessage<'T>(typeId, channelId, poolAmount)
 
     member __.RegisterChannel(channelId, channelType) =
         if didCreateServerOrClient then
