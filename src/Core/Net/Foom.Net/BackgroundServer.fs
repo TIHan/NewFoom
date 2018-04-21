@@ -11,7 +11,8 @@ type BackgroundServerInternalMessage =
     | Stop
     | Dispose of AsyncReplyChannel<unit>
 
-type BackgroundServer(msgFactory, port, maxClients) =
+type BackgroundServer(networkChannels, port, maxClients) =
+    let msgFactory = createMessageFactory networkChannels maxClients
     let server = new Server(msgFactory, port, maxClients)
     let exceptionEvent = Event<Exception>()
 
@@ -99,7 +100,7 @@ type BackgroundServer(msgFactory, port, maxClients) =
     member __.OnException = exceptionEvent.Publish
 
     member __.CreateLocalBackgroundClient() =
-        let localClient = MessageFactory(1)
+        let localClient = createMessageFactory networkChannels 1
         let localClientReceiveQueue = ConcurrentQueue()
         let receivedLocalClientMsgs = ConcurrentQueue()
         let onLocalClientException = Event<Exception>()

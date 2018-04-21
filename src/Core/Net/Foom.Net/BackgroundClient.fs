@@ -10,7 +10,8 @@ open Foom.IO.Message
 type internal BackgroundClientInternalMessage =
     | Dispose of AsyncReplyChannel<unit>
 
-type internal BackgroundClient(msgFactory) =
+type internal BackgroundClient(networkChannels) =
+    let msgFactory = createMessageFactory networkChannels 1
     let client = new Client(msgFactory)
     let exceptionEvent = Event<Exception>()
 
