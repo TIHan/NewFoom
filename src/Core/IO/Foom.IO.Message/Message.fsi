@@ -4,26 +4,19 @@ open System
 open Foom.IO.Serializer
 open System.Collections
 open System.Collections.Concurrent
-
-[<Struct>]
-type internal MessageHeader =
-    {
-        TypeId: uint16
-        SequenceId: uint16
-    }
    
 [<AbstractClass;AllowNullLiteral>]
 type Message =
 
     new : unit -> Message
 
+    [<DefaultValue>] val mutable internal typeId : byte
+
     [<DefaultValue>] val mutable internal sequenceId : uint16
 
-    [<DefaultValue>] val mutable internal typeId : uint16
+    member TypeId : byte with get
 
     member SequenceId : uint16 with get
-
-    member TypeId : uint16 with get
 
     member IsRecycled : bool with get
 
@@ -60,4 +53,4 @@ type MessagePoolBase =
 type MessagePool<'T when 'T :> Message and 'T : (new : unit -> 'T)> =
     inherit MessagePoolBase
 
-    new : typeId: uint16 * poolAmount: int -> MessagePool<'T>
+    new : typeId: byte * poolAmount: int -> MessagePool<'T>

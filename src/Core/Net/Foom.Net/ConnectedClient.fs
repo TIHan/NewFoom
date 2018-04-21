@@ -6,9 +6,9 @@ open Foom.IO.Message
 open Foom.IO.Packet
 
 [<Sealed>]
-type ConnectedClient(msgFactory: MessageFactory, typeToChannelMap, channelLookup, udpServer: UdpServer, endPoint: IPEndPoint) =
+type ConnectedClient(msgFactory: MessageFactory, udpServer: UdpServer, endPoint: IPEndPoint) =
     let stream = PacketStream()
-    let netChannel = NetChannel(stream, typeToChannelMap, channelLookup)
+    let netChannel = NetChannel(stream, msgFactory, msgFactory.CreateChannelLookup())
 
     let heartbeat () =
         let msg = msgFactory.CreateMessage<Heartbeat>()

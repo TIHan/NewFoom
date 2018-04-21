@@ -14,13 +14,12 @@ type ServerMessage =
     | Message of ClientId * NetMessage
 
 [<Sealed>]
-type Server(msgReg, channelLookupFactory, port: int, maxClients) as this =
-    inherit Peer(msgReg, maxClients / 4) // conversative, perhaps revisit
+type Server(msgFactory, port: int, maxClients) =
 
     let mutable udpServerOpt = None
     let mutable currentTime = TimeSpan.Zero
 
-    let clients = ClientManager(this.MessageFactory, msgReg.LookupChannelId, channelLookupFactory, maxClients)
+    let clients = ClientManager(msgFactory, maxClients)
 
     member val UdpServerOption : UdpServer option = udpServerOpt
 
@@ -79,7 +78,7 @@ type Server(msgReg, channelLookupFactory, port: int, maxClients) as this =
         clients.ProcessReceivedMessages(fun clientId msg ->
             match msg with
             | :? ConnectionRequested -> 
-                let msg = this.CreateMessage<ConnectionAccepted>()
+                let msg = msgFactory.CreateMessage<ConnectionAccepted>()
                 msg.clientId <- clientId
 
                 this.SendMessage(msg, clientId, willRecycle = true)
@@ -94,14 +93,14 @@ type Server(msgReg, channelLookupFactory, port: int, maxClients) as this =
             | _ -> 
                 f (ServerMessage.Message(clientId, msg))
 
-            this.RecycleMessage(msg)
+            msgFactory.RecycleMessage(msg)
         )
 
     member this.DisconnectClient(clientId) =
         if clients.IsClientConnected(clientId) then
             clients.RemoveClient(clientId)
 
-            let msg = this.CreateMessage<ClientDisconnected>()
+            let msg = msgFactory.CreateMessage<ClientDisconnected>()
             msg.reason <- "Client timed out."
             this.SendMessage(msg, willRecycle = true)
 
@@ -110,6 +109,12 @@ type Server(msgReg, channelLookupFactory, port: int, maxClients) as this =
         and set value =
             currentTime <- value
             clients.SetAllClientsTime(currentTime)
+
+    member __.CreateMessage() =
+        msgFactory.CreateMessage()
+
+    member __.RecycleMessage(msg) =
+        msgFactory.RecycleMessage(msg)
 
     interface IDisposable with
 

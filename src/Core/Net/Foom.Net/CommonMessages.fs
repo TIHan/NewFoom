@@ -16,7 +16,7 @@ module DefaultChannelIds =
 type Heartbeat() =
     inherit NetMessage()
 
-    static member DefaultTypeId = UInt16.MaxValue
+    static member DefaultTypeId = Byte.MaxValue
 
     static member DefaultPoolAmount = 20
 
@@ -24,7 +24,7 @@ type Heartbeat() =
 type ConnectionRequested() =
     inherit NetMessage()
 
-    static member DefaultTypeId = UInt16.MaxValue - 1us
+    static member DefaultTypeId = Byte.MaxValue - 1uy
 
     static member DefaultPoolAmount = 20
 
@@ -42,7 +42,7 @@ type ConnectionAccepted =
     override this.NetReset() =
         this.clientId <- ClientId()
 
-    static member DefaultTypeId = UInt16.MaxValue - 2us
+    static member DefaultTypeId = Byte.MaxValue - 2uy
 
     static member DefaultPoolAmount = 20
 
@@ -50,7 +50,7 @@ type ConnectionAccepted =
 type DisconnectRequested() =
     inherit NetMessage()
 
-    static member DefaultTypeId = UInt16.MaxValue - 3us
+    static member DefaultTypeId = Byte.MaxValue - 3uy
 
     static member DefaultPoolAmount = 20
 
@@ -58,7 +58,7 @@ type DisconnectRequested() =
 type DisconnectAccepted() =
     inherit NetMessage()
 
-    static member DefaultTypeId = UInt16.MaxValue - 4us
+    static member DefaultTypeId = Byte.MaxValue - 4uy
 
     static member DefaultPoolAmount = 20
 
@@ -76,6 +76,6 @@ type ClientDisconnected =
     override this.NetReset() =
         this.reason <- String.Empty
 
-    static member DefaultTypeId = UInt16.MaxValue - 5us
+    static member DefaultTypeId = Byte.MaxValue - 5uy
 
     static member DefaultPoolAmount = 20

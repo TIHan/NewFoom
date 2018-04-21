@@ -8,39 +8,13 @@ open Foom.IO.Message
 open Foom.IO.Message.Channel
 open Foom.IO.Serializer
 
-type TypeToChannelMap = byte []
-
-[<AbstractClass>]
-type NetMessage =
-    inherit Message
-
-    val mutable channelId : byte
-
-    new () = { channelId = 0uy }
-
-    override this.Serialize(writer, stream) =
-        writer.WriteByte(stream, &this.channelId) 
-        this.NetSerialize(&writer, stream)
-
-    override this.Reset() =
-        this.channelId <- 0uy
-        this.NetReset()
-
-    abstract NetSerialize : byref<Writer> * Span<byte> -> unit
-
-    default __.NetSerialize(_, _) = ()
-
-    abstract NetReset : unit -> unit
-
-    default __.NetReset() = ()
-
 [<Sealed>]
-type Sender(stream: PacketStream, typeToChannelMap: TypeToChannelMap, channelLookup: Dictionary<byte, struct(AbstractChannel * PacketDeliveryType)>) =
+type Sender(stream: PacketStream, msgFactory: MessageFactory, channelLookup: Dictionary<byte, struct(AbstractChannel * PacketDeliveryType)>) =
 
     let queue = ConcurrentQueue()
 
     member __.EnqueueMessage(msg: NetMessage, willRecycle) =
-        msg.channelId <- typeToChannelMap.[int msg.TypeId]
+        msg.channelId <- msgFactory.GetChannelId(msg.TypeId)
         queue.Enqueue struct(msg, willRecycle)
 
     member __.SendPackets(f) =
@@ -52,16 +26,16 @@ type Sender(stream: PacketStream, typeToChannelMap: TypeToChannelMap, channelLoo
         stream.ProcessSending(f)
 
 [<Sealed>]
-type Receiver(stream: PacketStream, typeToChannelMap: TypeToChannelMap, channelLookup: Dictionary<byte, struct(AbstractChannel * PacketDeliveryType)>) =
+type Receiver(stream: PacketStream, msgFactory: MessageFactory, channelLookup: Dictionary<byte, struct(AbstractChannel * PacketDeliveryType)>) =
     member this.EnqueuePacket(packet: Span<byte>) =
 
         stream.Receive(packet, fun data -> 
             let mutable data = data
             while data.Length > 0 do
-                let typeId = LittleEndian.read16 data 0
-                let channelId = data.[4] // This gets the channelId - don't change.
+                let typeId = data.[0]
+                let channelId = data.[3] // This gets the channelId - don't change.
 
-                if typeToChannelMap.[int typeId] <> channelId then
+                if msgFactory.GetChannelId(typeId) <> channelId then
                     failwith "Message received with invalid channel."
 
                 let struct(channel, _) = channelLookup.[channelId]
@@ -86,10 +60,10 @@ type Receiver(stream: PacketStream, typeToChannelMap: TypeToChannelMap, channelL
         )
 
 [<Sealed>]
-type NetChannel(stream, channelIdMap, channelLookup) =
+type NetChannel(stream, msgFactory, channelLookup) =
 
-    let sender = Sender(stream, channelIdMap, channelLookup)
-    let receiver = Receiver(stream, channelIdMap, channelLookup)
+    let sender = Sender(stream, msgFactory, channelLookup)
+    let receiver = Receiver(stream, msgFactory, channelLookup)
 
     /// Thread safe
     member __.SendMessage(msg, willRecycle) =

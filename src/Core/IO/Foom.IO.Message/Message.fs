@@ -5,23 +5,16 @@ open Foom.IO.Serializer
 open System.Collections
 open System.Collections.Concurrent
 
-[<Struct>]
-type MessageHeader =
-    {
-        TypeId: uint16
-        SequenceId: uint16
-    }
-
 [<AbstractClass;AllowNullLiteral>]
 type Message() =
 
+    [<DefaultValue>] val mutable typeId : byte
+
     [<DefaultValue>] val mutable sequenceId : uint16
 
-    [<DefaultValue>] val mutable typeId : uint16
+    member this.TypeId = this.typeId
 
     member this.SequenceId = this.sequenceId
-
-    member this.TypeId = this.typeId
 
     member val IsRecyclable = false with get, set
 
@@ -46,8 +39,8 @@ type Message() =
         writer.position
 
     member this.MainReset() =
+        this.typeId <- 0uy
         this.sequenceId <- 0us
-        this.typeId <- 0us
         this.IsRecyclable <- false
         this.IsRecycled <- true
 
@@ -69,7 +62,7 @@ type MessagePoolBase() =
     abstract Recycle : Message -> unit
 
 [<Sealed>]
-type MessagePool<'T when 'T :> Message and 'T : (new : unit -> 'T)>(typeId: uint16, poolAmount) =
+type MessagePool<'T when 'T :> Message and 'T : (new : unit -> 'T)>(typeId, poolAmount) =
     inherit MessagePoolBase()
 
     let msgs = ConcurrentStack(Array.init poolAmount (fun _ -> new 'T()))

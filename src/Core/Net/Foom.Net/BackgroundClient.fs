@@ -10,8 +10,8 @@ open Foom.IO.Message
 type internal BackgroundClientInternalMessage =
     | Dispose of AsyncReplyChannel<unit>
 
-type internal BackgroundClient(msgReg, channelLookupFactory) =
-    let client = new Client(msgReg, channelLookupFactory)
+type internal BackgroundClient(msgFactory) =
+    let client = new Client(msgFactory)
     let exceptionEvent = Event<Exception>()
 
     let msgHash = HashSet()
@@ -63,7 +63,7 @@ type internal BackgroundClient(msgReg, channelLookupFactory) =
             client.SendMessage(msg, willRecycle = true)
 
         member __.CreateMessage() =
-            client.CreateMessage()
+            msgFactory.CreateMessage()
 
         member __.ProcessMessages(f) =
             client.ProcessMessages(f)

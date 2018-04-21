@@ -44,7 +44,8 @@ type internal PacketReceiver(acks: AckManager) =
             if packet.IsEmpty then ()
             else
 
-            let header = Reader().Read<PacketHeader> (packet)
+            let mutable header = Unchecked.defaultof<PacketHeader>
+            Writer(true).Write(packet, &header)
             if not packet.IsEmpty then
                 let packetData = packet.Slice(sizeof<PacketHeader>)
                 let packetData = packetData.Slice(0, packetData.Length - pool.GetRemainingLength(seqId))
@@ -61,7 +62,9 @@ type internal PacketReceiver(acks: AckManager) =
     // TODO: We need to validate this packet to make sure it isn't malicious. 
     //     e.g. older packets, duplicate packets
     member this.Receive(incomingPacket: Span<byte>, f) =
-        let mutable header = Reader().Read<PacketHeader> incomingPacket
+        let mutable header = Unchecked.defaultof<PacketHeader>
+        Writer(true).Write(incomingPacket, &header)
+
         let packetType' = header.PacketType
         let seqId = header.SequenceId
         let fragId = int header.FragmentId

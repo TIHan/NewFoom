@@ -27,6 +27,7 @@ type internal Receiver(receiverType: ReceiverType, lookup: MessagePoolBase []) =
     let mutable latest = 65535us
     let mutable latestSequencedMsg = null
 
+    // TODO: This is LOH, find a better way
     let msgs = Array.init 65536 (fun _ -> null)
     let mutable nextOrdered = 0us
 
@@ -68,13 +69,11 @@ type internal Receiver(receiverType: ReceiverType, lookup: MessagePoolBase []) =
         numBytesRead
 
     member this.Enqueue(data: Span<byte>) =
-        let mutable reader = Reader()
-        let header = reader.Read<MessageHeader> data
-
-        match lookup.[int header.TypeId] with
-        | null -> failwithf "Can't find message type with TypeId, %i." header.TypeId
+        let typeId = data.[0]
+        match lookup.[int typeId] with
+        | null -> failwithf "Can't find message type with TypeId, %i." typeId
         | pool ->
-            let seqId = header.SequenceId
+            let seqId = LittleEndian.read16 data 1
 
             if sequenceMoreRecent seqId latest then
                 latest <- seqId

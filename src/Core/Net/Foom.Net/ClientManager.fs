@@ -9,7 +9,7 @@ open Foom.IO.Message
 open Foom.Core
 
 [<Sealed>]
-type ClientManager(msgFactory, typeToChannelMap, channelLookupFactory: ChannelLookupFactory, maxClients: int) =
+type ClientManager(msgFactory, maxClients: int) =
     let endPointLookup = Dictionary<EndPoint, ClientId>()
 
     let manager = Manager<ConnectedClient>(maxClients)
@@ -17,7 +17,7 @@ type ClientManager(msgFactory, typeToChannelMap, channelLookupFactory: ChannelLo
     let lockObj = obj ()
 
     member __.AddClient(udpServer, currentTime, endPoint) =
-        let client = ConnectedClient(msgFactory, typeToChannelMap, channelLookupFactory.CreateChannelLookup(msgFactory.PoolLookup), udpServer, endPoint)
+        let client = ConnectedClient(msgFactory, udpServer, endPoint)
         client.Time <- currentTime
 
         let clientId = lock lockObj |> fun _ -> ClientId(manager.Add(client))

@@ -22,7 +22,7 @@ type TextMessage =
 
 [<Fact>]
 let ``Normal`` () =
-    let pool = MessagePool<TextMessage>(0us, 64) :> MessagePoolBase
+    let pool = MessagePool<TextMessage>(0uy, 64) :> MessagePoolBase
     let lookup = Array.zeroCreate 65536
 
     lookup.[int 0us] <- pool
@@ -52,7 +52,7 @@ let ``Normal`` () =
 
 [<Fact>]
 let ``Sequenced`` () =
-    let pool = MessagePool<TextMessage>(0us, 64) :> MessagePoolBase
+    let pool = MessagePool<TextMessage>(0uy, 64) :> MessagePoolBase
     let lookup = Array.zeroCreate 65536
 
     lookup.[int 0us] <- pool
@@ -89,7 +89,7 @@ let ``Sequenced`` () =
 
 [<Fact>]
 let ``Ordered`` () =
-    let pool = MessagePool<TextMessage>(0us, 64) :> MessagePoolBase
+    let pool = MessagePool<TextMessage>(0uy, 64) :> MessagePoolBase
     let lookup = Array.zeroCreate 65536
 
     lookup.[int 0us] <- pool
@@ -104,12 +104,12 @@ let ``Ordered`` () =
 
     channel.SerializeMessage(msg2, true, fun data -> 
         // This modifies the bytes to set the sequence id for testing
-        let x = data.[2]
+        let x = data.[1]
         x <- 1uy
         channel.Receive(data) |> ignore)
     channel.SerializeMessage(msg, true, fun data -> 
         // This modifies the bytes to set the sequence id for testing
-        let x = data.[2]
+        let x = data.[1]
         x <- 0uy
         channel.Receive(data) |> ignore)
 

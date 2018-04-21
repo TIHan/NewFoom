@@ -11,8 +11,7 @@ type ClientMessage =
     | Message of NetMessage
     
 [<Sealed>]
-type Client(msgReg, channelLookupFactory: ChannelLookupFactory) as this =
-    inherit Peer(msgReg, 1)
+type Client(msgFactory: MessageFactory) =
 
     // Events
     let exRaisedEvent = Event<Exception>()
@@ -22,9 +21,9 @@ type Client(msgReg, channelLookupFactory: ChannelLookupFactory) as this =
 
     // Packet streams and channels
     let stream = PacketStream()
-    let channelLookup = channelLookupFactory.CreateChannelLookup(this.MessageFactory.PoolLookup)
-    let sender = Sender(stream, msgReg.LookupChannelId, channelLookup)
-    let receiver = Receiver(stream, msgReg.LookupChannelId, channelLookup)
+    let channelLookup = msgFactory.CreateChannelLookup()
+    let sender = Sender(stream, msgFactory, channelLookup)
+    let receiver = Receiver(stream, msgFactory, channelLookup)
 
     // Client state
     let mutable currentTime = TimeSpan.Zero
@@ -35,45 +34,45 @@ type Client(msgReg, channelLookupFactory: ChannelLookupFactory) as this =
         sender.SendPackets(fun packet -> udpClient.Send(packet))
 
     let heartbeat () =
-        let msg = this.CreateMessage<Heartbeat>()
+        let msg = msgFactory.CreateMessage<Heartbeat>()
         sender.EnqueueMessage(msg, willRecycle = true)
 
     let connectionRequest () =
-        let msg = this.CreateMessage<ConnectionRequested>()
+        let msg = msgFactory.CreateMessage<ConnectionRequested>()
         sender.EnqueueMessage(msg, willRecycle = true)
 
     let disconnectRequest () =
-        let msg = this.CreateMessage<DisconnectRequested>()
+        let msg = msgFactory.CreateMessage<DisconnectRequested>()
         sender.EnqueueMessage(msg, willRecycle = true)
 
-    member this.Connect(address: string, port: int) =
+    member __.Connect(address: string, port: int) =
         if not isConnected && not udpClient.IsConnected then
             udpClient.Connect(address, port) |> ignore
             connectionRequest ()
 
-    member this.Disconnect() =
+    member __.Disconnect() =
         if udpClient.IsConnected && isConnected then
             disconnectRequest ()
 
-    member this.SendMessage(msg, willRecycle) =
+    member __.SendMessage(msg, willRecycle) =
         if udpClient.IsConnected && isConnected then
             sender.EnqueueMessage(msg, willRecycle)
 
-    member this.SendPackets() =
+    member __.SendPackets() =
         if udpClient.IsConnected && isConnected then
             heartbeat ()
 
         if udpClient.IsConnected then
             sendPackets ()
 
-    member this.ReceivePackets() =
+    member __.ReceivePackets() =
         if udpClient.IsConnected then
             while udpClient.IsDataAvailable do
                 let packet = udpClient.Receive()
                 receiver.EnqueuePacket packet
 
     /// Thread safe
-    member this.ProcessMessages(f) =
+    member __.ProcessMessages(f) =
         receiver.ProcessMessages (fun msg ->
             match msg with
             | :? ConnectionAccepted as msg -> 
@@ -90,7 +89,7 @@ type Client(msgReg, channelLookupFactory: ChannelLookupFactory) as this =
             | _ -> 
                 f (ClientMessage.Message(msg))
 
-            this.RecycleMessage(msg)
+            msgFactory.RecycleMessage(msg)
         )
 
     member __.Time 
@@ -100,6 +99,12 @@ type Client(msgReg, channelLookupFactory: ChannelLookupFactory) as this =
             stream.Time <- currentTime
 
     member __.IsConnected = isConnected
+
+    member __.CreateMessage() =
+        msgFactory.CreateMessage()
+
+    member __.RecycleMessage(msg) =
+        msgFactory.RecycleMessage(msg)
 
     interface IDisposable with
 

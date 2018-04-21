@@ -42,10 +42,10 @@ let main argv =
     let netChans =
         [
             NetworkChannel.create ChannelType.Unreliable
-            |> NetworkChannel.addMessage<Snapshot> 20
+            |> NetworkChannel.register<Snapshot> 20
 
             NetworkChannel.create ChannelType.UnreliableSequenced
-            |> NetworkChannel.addMessage<UserInfo> 20
+            |> NetworkChannel.register<UserInfo> 20
         ]
 
     let network = Network(netChans)

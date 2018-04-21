@@ -2,9 +2,9 @@
 
 open Foom.IO.Message
 
-type internal TypeId = uint16
+type internal TypeId = byte
 type internal ChannelId = byte
-type internal NetworkRegistrationFunc = (TypeId -> ChannelId -> MessageRegistration -> unit)
+type internal NetworkRegistrationFunc = (TypeId -> ChannelId -> MessageFactory -> unit)
 
 type NetworkChannel = internal NetworkChannel of ChannelType * NetworkRegistrationFunc list
 
@@ -16,21 +16,27 @@ module NetworkChannel =
     let register<'T when 'T :> Message and 'T : (new : unit -> 'T)> (poolAmount: int) = function
         | NetworkChannel(channelType, funcs) ->
             let func : NetworkRegistrationFunc = 
-                fun (typeId: TypeId) (channelId: ChannelId) msgReg -> 
-                    msgReg.RegisterMessage<'T>(typeId, channelId, poolAmount)
+                fun (typeId: TypeId) (channelId: ChannelId) msgFactory -> 
+                    msgFactory.RegisterMessage<'T>(typeId, channelId, poolAmount)
             NetworkChannel(channelType, func :: funcs)
 
-[<Sealed>]
-type Network(networkChannels: NetworkChannel list) =
-    let msgReg = MessageRegistration()
-    let channelLookupFactory = ChannelLookupFactory()
+[<AutoOpen>]
+module private NetworkHelpers =
 
-    let mutable didCreateServerOrClient = false
+    let defaultRegister (msgFactory: MessageFactory) =
+        msgFactory.RegisterChannel(DefaultChannelIds.Connection, ChannelType.ReliableOrdered)
+        msgFactory.RegisterChannel(DefaultChannelIds.Heartbeat, ChannelType.Reliable)
+        msgFactory.RegisterMessage<Heartbeat>(Heartbeat.DefaultTypeId, DefaultChannelIds.Heartbeat, Heartbeat.DefaultPoolAmount)
+        msgFactory.RegisterMessage<ConnectionRequested>(ConnectionRequested.DefaultTypeId, DefaultChannelIds.Connection, ConnectionRequested.DefaultPoolAmount)
+        msgFactory.RegisterMessage<ConnectionAccepted>(ConnectionAccepted.DefaultTypeId, DefaultChannelIds.Connection, ConnectionAccepted.DefaultPoolAmount)
+        msgFactory.RegisterMessage<DisconnectRequested>(DisconnectRequested.DefaultTypeId, DefaultChannelIds.Connection, DisconnectRequested.DefaultPoolAmount)
+        msgFactory.RegisterMessage<DisconnectAccepted>(DisconnectAccepted.DefaultTypeId, DefaultChannelIds.Connection, DisconnectAccepted.DefaultPoolAmount)
+        msgFactory.RegisterMessage<ClientDisconnected>(ClientDisconnected.DefaultTypeId, DefaultChannelIds.Connection, ClientDisconnected.DefaultPoolAmount)
 
-    let rec processNetworkChannels typeId channelId = function
+    let rec processNetworkChannels (msgFactory: MessageFactory) typeId channelId = function
         | [] -> ()
         | NetworkChannel(channelType, funcs) :: networkChannels ->
-            channelLookupFactory.RegisterChannel(channelId, channelType)
+            msgFactory.RegisterChannel(channelId, channelType)
 
             let funcs =
                 funcs
@@ -39,36 +45,33 @@ type Network(networkChannels: NetworkChannel list) =
             let nextTypeId =
                 (typeId, funcs)
                 ||> List.fold (fun typeId func ->
-                    func typeId channelId msgReg
-                    typeId + 1us
+                    func typeId channelId msgFactory
+                    typeId + 1uy
                 )
-            processNetworkChannels nextTypeId (channelId + 1uy) networkChannels
+            processNetworkChannels msgFactory nextTypeId (channelId + 1uy) networkChannels
 
-    do
-        channelLookupFactory.RegisterChannel(DefaultChannelIds.Connection, ChannelType.ReliableOrdered)
-        channelLookupFactory.RegisterChannel(DefaultChannelIds.Heartbeat, ChannelType.Reliable)
-        msgReg.RegisterMessage<Heartbeat>(Heartbeat.DefaultTypeId, DefaultChannelIds.Heartbeat, Heartbeat.DefaultPoolAmount)
-        msgReg.RegisterMessage<ConnectionRequested>(ConnectionRequested.DefaultTypeId, DefaultChannelIds.Connection, ConnectionRequested.DefaultPoolAmount)
-        msgReg.RegisterMessage<ConnectionAccepted>(ConnectionAccepted.DefaultTypeId, DefaultChannelIds.Connection, ConnectionAccepted.DefaultPoolAmount)
-        msgReg.RegisterMessage<DisconnectRequested>(DisconnectRequested.DefaultTypeId, DefaultChannelIds.Connection, DisconnectRequested.DefaultPoolAmount)
-        msgReg.RegisterMessage<DisconnectAccepted>(DisconnectAccepted.DefaultTypeId, DefaultChannelIds.Connection, DisconnectAccepted.DefaultPoolAmount)
-        msgReg.RegisterMessage<ClientDisconnected>(ClientDisconnected.DefaultTypeId, DefaultChannelIds.Connection, ClientDisconnected.DefaultPoolAmount)
+[<Sealed>]
+type Network(networkChannels: NetworkChannel list) =
 
-        processNetworkChannels 0us 0uy networkChannels
+    let createMessageFactory poolMultiply =
+        let msgFactory = MessageFactory(poolMultiply)
+        defaultRegister msgFactory
+        processNetworkChannels msgFactory 0uy 0uy networkChannels
+        msgFactory
 
     member __.CreateServer(port, maxClients) =
-        didCreateServerOrClient <- true
-        new Server(msgReg, channelLookupFactory, port, maxClients)
+        let msgFactory = createMessageFactory maxClients
+        new Server(msgFactory, port, maxClients)
 
     member __.CreateClient() =
-        didCreateServerOrClient <- true
-        new Client(msgReg, channelLookupFactory)
+        let msgFactory = createMessageFactory 1
+        new Client(msgFactory)
 
     member __.CreateBackgroundServer(port, maxClients) =
-        didCreateServerOrClient <- true
-        new BackgroundServer(msgReg, channelLookupFactory, port, maxClients)
+        let msgFactory = createMessageFactory maxClients
+        new BackgroundServer(msgFactory, port, maxClients)
 
     member __.CreateBackgroundClient() =
-        didCreateServerOrClient <- true
-        new BackgroundClient(msgReg, channelLookupFactory) :> IBackgroundClient 
+        let msgFactory = createMessageFactory 1
+        new BackgroundClient(msgFactory) :> IBackgroundClient 
      

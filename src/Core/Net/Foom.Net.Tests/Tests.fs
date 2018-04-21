@@ -32,7 +32,7 @@ let ``Udp Client and Server`` () =
 
     Assert.True(udpClient.Connect("::1", 27015))
 
-    let pool = MessagePool<TextMessage>(0us, 64) :> MessagePoolBase
+    let pool = MessagePool<TextMessage>(0uy, 64) :> MessagePoolBase
     let lookup = Array.zeroCreate 65536
 
     lookup.[int 0us] <- pool
@@ -99,7 +99,7 @@ let ``Udp Client and Server Simple Big Message`` () =
         Network(
             [
                 NetworkChannel.create ChannelType.Unreliable
-                |> NetworkChannel.addMessage<TextMessage> 64
+                |> NetworkChannel.register<TextMessage> 64
             ]
         )
 
@@ -181,7 +181,7 @@ let ``Udp Client and Server Simple - Background`` () =
         Network(
             [
                 NetworkChannel.create ChannelType.Unreliable
-                |> NetworkChannel.addMessage<TextMessage> 64
+                |> NetworkChannel.register<TextMessage> 64
             ]
         )
 
