@@ -13,8 +13,6 @@ type IBackgroundClient =
 
     abstract CreateMessage<'T when 'T :> NetMessage and 'T : (new : unit -> 'T)> : unit -> 'T
 
-    abstract ListenForMessage<'T when 'T :> NetMessage> : unit -> unit
-
     abstract ProcessMessages : (ClientMessage -> unit) -> unit
 
     abstract OnException : IEvent<Exception>

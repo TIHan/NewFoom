@@ -20,7 +20,7 @@ type Server(msgReg, channelLookupFactory, port: int, maxClients) as this =
     let mutable udpServerOpt = None
     let mutable currentTime = TimeSpan.Zero
 
-    let clients = ClientManager(this.MessageFactory, channelLookupFactory, maxClients)
+    let clients = ClientManager(this.MessageFactory, msgReg.LookupChannelId, channelLookupFactory, maxClients)
 
     member val UdpServerOption : UdpServer option = udpServerOpt
 
@@ -38,13 +38,13 @@ type Server(msgReg, channelLookupFactory, port: int, maxClients) as this =
         | _ ->
             () // Server not started
 
-    member __.SendMessage(msg: NetMessage, channelId, clientId: ClientId, willRecycle) =
+    member __.SendMessage(msg: NetMessage, clientId: ClientId, willRecycle) =
         if udpServerOpt.IsSome then
-            clients.SendMessage(clientId, msg, channelId, willRecycle)
+            clients.SendMessage(clientId, msg, willRecycle)
 
-    member this.SendMessage(msg, channelId, willRecycle) =
+    member this.SendMessage(msg, willRecycle) =
         if udpServerOpt.IsSome then
-            clients.SendMessage(msg, channelId, willRecycle)
+            clients.SendMessage(msg, willRecycle)
 
     member __.SendPackets() =
         if udpServerOpt.IsSome then
@@ -82,7 +82,7 @@ type Server(msgReg, channelLookupFactory, port: int, maxClients) as this =
                 let msg = this.CreateMessage<ConnectionAccepted>()
                 msg.clientId <- clientId
 
-                this.SendMessage(msg, DefaultChannelIds.Connection, clientId, willRecycle = true)
+                this.SendMessage(msg, clientId, willRecycle = true)
                 f (ServerMessage.ClientConnected(clientId))
 
             | :? DisconnectRequested ->
@@ -103,7 +103,7 @@ type Server(msgReg, channelLookupFactory, port: int, maxClients) as this =
 
             let msg = this.CreateMessage<ClientDisconnected>()
             msg.reason <- "Client timed out."
-            this.SendMessage(msg, DefaultChannelIds.Connection, willRecycle = true)
+            this.SendMessage(msg, willRecycle = true)
 
     member __.Time
         with get () = currentTime

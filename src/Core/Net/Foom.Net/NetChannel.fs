@@ -8,6 +8,8 @@ open Foom.IO.Message
 open Foom.IO.Message.Channel
 open Foom.IO.Serializer
 
+type TypeToChannelMap = ConcurrentDictionary<uint16, byte>
+
 [<AbstractClass>]
 type NetMessage =
     inherit Message
@@ -33,12 +35,12 @@ type NetMessage =
     default __.NetReset() = ()
 
 [<Sealed>]
-type Sender(stream: PacketStream, channelLookup: Dictionary<byte, struct(AbstractChannel * PacketDeliveryType)>) =
+type Sender(stream: PacketStream, typeToChannelMap: TypeToChannelMap, channelLookup: Dictionary<byte, struct(AbstractChannel * PacketDeliveryType)>) =
 
     let queue = ConcurrentQueue()
 
-    member __.EnqueueMessage(msg: NetMessage, channelId, willRecycle) =
-        msg.channelId <- channelId
+    member __.EnqueueMessage(msg: NetMessage, willRecycle) =
+        msg.channelId <- typeToChannelMap.[msg.TypeId]
         queue.Enqueue struct(msg, willRecycle)
 
     member __.SendPackets(f) =
@@ -50,13 +52,18 @@ type Sender(stream: PacketStream, channelLookup: Dictionary<byte, struct(Abstrac
         stream.ProcessSending(f)
 
 [<Sealed>]
-type Receiver(stream: PacketStream, channelLookup: Dictionary<byte, struct(AbstractChannel * PacketDeliveryType)>) =
+type Receiver(stream: PacketStream, typeToChannelMap: TypeToChannelMap, channelLookup: Dictionary<byte, struct(AbstractChannel * PacketDeliveryType)>) =
     member this.EnqueuePacket(packet: Span<byte>) =
 
         stream.Receive(packet, fun data -> 
             let mutable data = data
             while data.Length > 0 do
+                let typeId = LittleEndian.read16 data 0
                 let channelId = data.[4] // This gets the channelId - don't change.
+
+                if typeToChannelMap.[typeId] <> channelId then
+                    failwith "Message received with invalid channel."
+
                 let struct(channel, _) = channelLookup.[channelId]
                 let numBytesRead = channel.Receive(data)
 
@@ -79,14 +86,14 @@ type Receiver(stream: PacketStream, channelLookup: Dictionary<byte, struct(Abstr
         )
 
 [<Sealed>]
-type NetChannel(stream, channelLookup) =
+type NetChannel(stream, channelIdMap, channelLookup) =
 
-    let sender = Sender(stream, channelLookup)
-    let receiver = Receiver(stream, channelLookup)
+    let sender = Sender(stream, channelIdMap, channelLookup)
+    let receiver = Receiver(stream, channelIdMap, channelLookup)
 
     /// Thread safe
-    member __.SendMessage(msg, channelId, willRecycle) =
-        sender.EnqueueMessage(msg, channelId, willRecycle)
+    member __.SendMessage(msg, willRecycle) =
+        sender.EnqueueMessage(msg, willRecycle)
 
     member __.SendPackets(f) =
         sender.SendPackets(f)

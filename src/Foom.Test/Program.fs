@@ -41,13 +41,14 @@ let main argv =
     let network = Network()
 
     network.RegisterChannel(0uy, ChannelType.Unreliable)
+    network.RegisterChannel(1uy, ChannelType.UnreliableSequenced)
     network.RegisterMessage<Snapshot>(0us, 0uy, 20)
-    network.RegisterMessage<UserInfo>(1us, 0uy, 20)
+    network.RegisterMessage<UserInfo>(1us, 1uy, 20)
 
     let serverOpt =
         if argv.Length = 0 then
             let server = network.CreateBackgroundServer(27015, 8)
-            server.OnException.Add(fun ex -> printfn "%A" ex.Message)
+            server.OnException.Add(fun ex -> printfn "%A" ex.Message; printfn "%A" ex.StackTrace)
             server.Start()
             printfn "Server started"
             Some server

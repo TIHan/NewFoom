@@ -9,7 +9,7 @@ open Foom.IO.Message
 open Foom.Core
 
 [<Sealed>]
-type ClientManager(msgFactory, channelLookupFactory: ChannelLookupFactory, maxClients: int) =
+type ClientManager(msgFactory, typeToChannelMap, channelLookupFactory: ChannelLookupFactory, maxClients: int) =
     let endPointLookup = Dictionary<EndPoint, ClientId>()
 
     let manager = Manager<ConnectedClient>(maxClients)
@@ -17,7 +17,7 @@ type ClientManager(msgFactory, channelLookupFactory: ChannelLookupFactory, maxCl
     let lockObj = obj ()
 
     member __.AddClient(udpServer, currentTime, endPoint) =
-        let client = ConnectedClient(msgFactory, channelLookupFactory.CreateChannelLookup(msgFactory.PoolLookup), udpServer, endPoint)
+        let client = ConnectedClient(msgFactory, typeToChannelMap, channelLookupFactory.CreateChannelLookup(msgFactory.PoolLookup), udpServer, endPoint)
         client.Time <- currentTime
 
         let clientId = lock lockObj |> fun _ -> ClientId(manager.Add(client))
@@ -31,27 +31,36 @@ type ClientManager(msgFactory, channelLookupFactory: ChannelLookupFactory, maxCl
         |> fun _ ->
             manager.Remove(clientId.Id)
 
+    member this.TryRemoveClientByEndPoint(endPoint) =
+        match endPointLookup.TryGetValue(endPoint) with
+        | true, clientId ->
+            this.RemoveClient(clientId)
+            true
+        | _ -> false
+
     member __.TryGetClientId(endPoint) =
         match endPointLookup.TryGetValue(endPoint) with
         | true, clientId -> Some clientId
         | _ -> None
 
-    member __.SendMessage(clientId: ClientId, msg, channelId, willRecycle) =
+    member __.SendMessage(clientId: ClientId, msg, willRecycle) =
         let client = manager.Get(clientId.Id)
-        client.SendMessage(msg, channelId, willRecycle)
+        client.SendMessage(msg, willRecycle)
 
-    member __.SendMessage(msg, channelId, willRecycle) =
+    member __.SendMessage(msg, willRecycle) =
         manager.ForEach(fun _ client ->
-            client.SendMessage(msg, channelId, willRecycle)
+            client.SendMessage(msg, willRecycle)
         )
 
-    member __.ReceivePacket(clientId: ClientId, packet) =
+    member this.ReceivePacket(clientId: ClientId, packet) =
         let client = manager.Get(clientId.Id)
-        client.ReceivePacket(packet)
+        try client.ReceivePacket(packet)
+        with | _ -> this.RemoveClient(clientId)
 
-    member __.SendPackets() =
-        manager.ForEach(fun _ client ->
-            client.SendPackets()
+    member this.SendPackets() =
+        manager.ForEach(fun id client ->
+            try client.SendPackets()
+            with | _ -> this.RemoveClient(ClientId(id))
         )
 
     /// Thread safe

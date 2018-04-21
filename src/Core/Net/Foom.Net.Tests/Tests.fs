@@ -156,7 +156,7 @@ let ``Udp Client and Server Simple Big Message`` () =
     let msg = server.CreateMessage<TextMessage>()
     msg.text <- expectedText
 
-    server.SendMessage(msg, 0uy, clientId, willRecycle = true)
+    server.SendMessage(msg, clientId, willRecycle = true)
 
     server.Time <- (stopwatch.Elapsed)
     server.ReceivePackets()
@@ -190,9 +190,6 @@ let ``Udp Client and Server Simple - Background`` () =
     client.OnException.Add(fun ex ->
         clientHadException <- true
     )
-
-    server.ListenForMessage<TextMessage>()
-    client.ListenForMessage<TextMessage>()
 
     server.Start()
     client.Connect("::1", 27015)

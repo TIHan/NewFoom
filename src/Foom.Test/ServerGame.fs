@@ -44,7 +44,6 @@ type ServerGame(server: BackgroundServer) =
     let em = new EntityManager(32000)
 
     do
-        server.ListenForMessage<UserInfo>()
         em.RegisterComponent<Player>()
         em.RegisterComponent<Movement>()
 
@@ -92,7 +91,7 @@ type ServerGame(server: BackgroundServer) =
 
         snapshotMsg.snapshotId <- snapshotId
         snapshotId <- snapshotId + 1L
-        server.SendMessage(snapshotMsg, 1uy)
+        server.SendMessage(snapshotMsg)
         false
 
     static member Create(server) =

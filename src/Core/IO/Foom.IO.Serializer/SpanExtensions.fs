@@ -12,9 +12,10 @@ open FSharp.NativeInterop
 
 type SpanDelegate = delegate of Span<byte> -> unit
 
-module internal LittleEndian =
+[<RequireQualifiedAccess>]
+module LittleEndian =
 
-    let inline (<--) (r: byref<byte>) (v: byte) =
+    let inline internal (<--) (r: byref<byte>) (v: byte) =
         r <- v
 
     let inline write8 (data: Span<byte>) offset value =

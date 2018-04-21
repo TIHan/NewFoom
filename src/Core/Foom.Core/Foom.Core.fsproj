@@ -5,6 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="InlineResizeArray.fs" />
     <Compile Include="UnmanagedResizeArray.fs" />
     <Compile Include="EventAggregator.fs" />
     <Compile Include="Manager.fs" />

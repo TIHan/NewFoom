@@ -84,7 +84,7 @@ module Backend =
         //SDL_SetRelativeMouseMode(1);
 
         app.GLContext = SDL_GL_CreateContext ((SDL_Window*)app.Window);
-      //  SDL_GL_SetSwapInterval (1);
+        SDL_GL_SetSwapInterval (1);
 
         #if defined(__GNUC__)
         #else

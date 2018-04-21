@@ -6,16 +6,16 @@ open Foom.IO.Message
 open Foom.IO.Packet
 
 [<Sealed>]
-type ConnectedClient(msgFactory: MessageFactory, channelLookup, udpServer: UdpServer, endPoint: IPEndPoint) =
+type ConnectedClient(msgFactory: MessageFactory, typeToChannelMap, channelLookup, udpServer: UdpServer, endPoint: IPEndPoint) =
     let stream = PacketStream()
-    let netChannel = NetChannel(stream, channelLookup)
+    let netChannel = NetChannel(stream, typeToChannelMap, channelLookup)
 
     let heartbeat () =
         let msg = msgFactory.CreateMessage<Heartbeat>()
-        netChannel.SendMessage(msg, DefaultChannelIds.Heartbeat, willRecycle = true)
+        netChannel.SendMessage(msg, willRecycle = true)
 
-    member __.SendMessage(msg, channelId, willRecycle) =
-        netChannel.SendMessage(msg, channelId, willRecycle)
+    member __.SendMessage(msg, willRecycle) =
+        netChannel.SendMessage(msg, willRecycle)
 
     member __.ReceivePacket(packet) =
         netChannel.ReceivePacket(packet)

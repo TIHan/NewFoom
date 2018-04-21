@@ -41,7 +41,6 @@ type ClientGame(input: IInput, renderer: IRenderer, client: IBackgroundClient) =
     let queue = Queue()
 
     do
-        client.ListenForMessage<Snapshot>()
         eventQueue.Enqueue(LoadMap "e1m1")
 
     override __.PreUpdate(time, interval) =

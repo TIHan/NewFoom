@@ -23,8 +23,8 @@ type Client(msgReg, channelLookupFactory: ChannelLookupFactory) as this =
     // Packet streams and channels
     let stream = PacketStream()
     let channelLookup = channelLookupFactory.CreateChannelLookup(this.MessageFactory.PoolLookup)
-    let sender = Sender(stream, channelLookup)
-    let receiver = Receiver(stream, channelLookup)
+    let sender = Sender(stream, msgReg.LookupChannelId, channelLookup)
+    let receiver = Receiver(stream, msgReg.LookupChannelId, channelLookup)
 
     // Client state
     let mutable currentTime = TimeSpan.Zero
@@ -36,15 +36,15 @@ type Client(msgReg, channelLookupFactory: ChannelLookupFactory) as this =
 
     let heartbeat () =
         let msg = this.CreateMessage<Heartbeat>()
-        sender.EnqueueMessage(msg, DefaultChannelIds.Heartbeat, willRecycle = true)
+        sender.EnqueueMessage(msg, willRecycle = true)
 
     let connectionRequest () =
         let msg = this.CreateMessage<ConnectionRequested>()
-        sender.EnqueueMessage(msg, DefaultChannelIds.Connection, willRecycle = true)
+        sender.EnqueueMessage(msg, willRecycle = true)
 
     let disconnectRequest () =
         let msg = this.CreateMessage<DisconnectRequested>()
-        sender.EnqueueMessage(msg, DefaultChannelIds.Connection, willRecycle = true)
+        sender.EnqueueMessage(msg, willRecycle = true)
 
     member this.Connect(address: string, port: int) =
         if not isConnected && not udpClient.IsConnected then
@@ -57,7 +57,7 @@ type Client(msgReg, channelLookupFactory: ChannelLookupFactory) as this =
 
     member this.SendMessage(msg, willRecycle) =
         if udpClient.IsConnected && isConnected then
-            sender.EnqueueMessage(msg, msgReg.LookupChannelId.[msg.TypeId], willRecycle)
+            sender.EnqueueMessage(msg, willRecycle)
 
     member this.SendPackets() =
         if udpClient.IsConnected && isConnected then

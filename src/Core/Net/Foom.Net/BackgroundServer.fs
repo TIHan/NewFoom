@@ -12,8 +12,6 @@ type BackgroundServerInternalMessage =
     | Dispose of AsyncReplyChannel<unit>
 
 type BackgroundServer(msgReg, channelLookupFactory, port, maxClients) =
-    let msgHash = HashSet()
-
     let server = new Server(msgReg, channelLookupFactory, port, maxClients)
     let exceptionEvent = Event<Exception>()
 
@@ -67,7 +65,7 @@ type BackgroundServer(msgReg, channelLookupFactory, port, maxClients) =
     member __.CreateMessage<'T when 'T :> Message>() =
         server.CreateMessage<'T>()
 
-    member __.SendMessage(msg, channelId) =
+    member __.SendMessage(msg) =
         let willRecycle =
             match localClientOpt with
             | Some(_, localClientReceiveQueue) -> 
@@ -76,18 +74,14 @@ type BackgroundServer(msgReg, channelLookupFactory, port, maxClients) =
             | _ ->
                 true
 
-        server.SendMessage(msg, channelId, willRecycle)
+        server.SendMessage(msg, willRecycle)
 
-    member __.SendMessage(msg, channelId, clientId: ClientId) =
+    member __.SendMessage(msg, clientId: ClientId) =
         match localClientOpt with
         | Some(_, localClientReceiveQueue) when clientId.IsLocal ->
             localClientReceiveQueue.Enqueue struct(ClientId.Local, ClientMessage.Message(msg))
         | _ ->
-            server.SendMessage(msg, channelId, clientId, willRecycle = true)
-
-    member __.ListenForMessage<'T when 'T :> Message>() =
-        if msgHash.Add(typeof<'T>) then
-            server.MessageReceived<'T>().Add(fun _ -> ())
+            server.SendMessage(msg, clientId, willRecycle = true)
 
     member __.ProcessMessages(f) =
         let mutable msg = Unchecked.defaultof<_>
@@ -106,7 +100,6 @@ type BackgroundServer(msgReg, channelLookupFactory, port, maxClients) =
 
     member __.CreateLocalBackgroundClient() =
         let localClient = Peer(msgReg, 1)
-        let localClientReceiveHash = HashSet()
         let localClientReceiveQueue = ConcurrentQueue()
         let receivedLocalClientMsgs = ConcurrentQueue()
         let onLocalClientException = Event<Exception>()
@@ -130,10 +123,6 @@ type BackgroundServer(msgReg, channelLookupFactory, port, maxClients) =
 
                 member __.CreateMessage() =
                     localClient.CreateMessage()
-
-                member __.ListenForMessage<'T when 'T :> NetMessage>() =
-                    if localClientReceiveHash.Add(typeof<'T>) then
-                        localClient.MessageReceived<'T>().Add(fun _ -> ())
 
                 member __.ProcessMessages(f) =
                     let mutable fullMsg = Unchecked.defaultof<_>
