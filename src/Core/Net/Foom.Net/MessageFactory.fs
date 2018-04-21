@@ -7,7 +7,7 @@ open Foom.IO.Message
 [<Sealed>]
 type MessageRegistration() =
     let lookupTypeId = ConcurrentDictionary()
-    let lookupChannelId = ConcurrentDictionary()
+    let lookupChannelId = Array.zeroCreate 65536
     let poolCreation = ConcurrentDictionary()
 
     member __.RegisterMessage<'T when 'T :> Message and 'T : (new : unit -> 'T)>(typeId, channelId: byte, poolAmount: int) =
@@ -15,7 +15,7 @@ type MessageRegistration() =
             failwithf "TypeId, %i, already registered." typeId
 
         lookupTypeId.[typeof<'T>] <- typeId
-        lookupChannelId.[typeId] <- channelId
+        lookupChannelId.[int typeId] <- channelId
         poolCreation.[typeId] <- fun poolMultiply -> MessagePool<'T>(typeId, poolMultiply * poolAmount) :> MessagePoolBase
 
     member __.LookupTypeId = lookupTypeId

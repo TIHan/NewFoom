@@ -1,10 +1,10 @@
-﻿namespace rec Foom.Net
+﻿namespace Foom.Net
 
 open Foom.IO.Message
 
-type TypeId = uint16
-type ChannelId = byte
-type NetworkRegistrationFunc = (TypeId -> ChannelId -> Network -> unit)
+type internal TypeId = uint16
+type internal ChannelId = byte
+type internal NetworkRegistrationFunc = (TypeId -> ChannelId -> MessageRegistration -> unit)
 
 type NetworkChannel = internal NetworkChannel of ChannelType * NetworkRegistrationFunc list
 
@@ -13,15 +13,15 @@ module NetworkChannel =
 
     let create channelType = NetworkChannel(channelType, [])
 
-    let addMessage<'T when 'T :> Message and 'T : (new : unit -> 'T)> (poolAmount: int) = function
+    let register<'T when 'T :> Message and 'T : (new : unit -> 'T)> (poolAmount: int) = function
         | NetworkChannel(channelType, funcs) ->
             let func : NetworkRegistrationFunc = 
-                fun (typeId: TypeId) (channelId: ChannelId) (network: Network) -> 
-                    network.RegisterMessage<'T>(typeId, channelId, poolAmount)
+                fun (typeId: TypeId) (channelId: ChannelId) msgReg -> 
+                    msgReg.RegisterMessage<'T>(typeId, channelId, poolAmount)
             NetworkChannel(channelType, func :: funcs)
 
 [<Sealed>]
-type Network(networkChannels: NetworkChannel list) as this =
+type Network(networkChannels: NetworkChannel list) =
     let msgReg = MessageRegistration()
     let channelLookupFactory = ChannelLookupFactory()
 
@@ -30,7 +30,7 @@ type Network(networkChannels: NetworkChannel list) as this =
     let rec processNetworkChannels typeId channelId = function
         | [] -> ()
         | NetworkChannel(channelType, funcs) :: networkChannels ->
-            this.RegisterChannel(channelId, channelType)
+            channelLookupFactory.RegisterChannel(channelId, channelType)
 
             let funcs =
                 funcs
@@ -39,7 +39,7 @@ type Network(networkChannels: NetworkChannel list) as this =
             let nextTypeId =
                 (typeId, funcs)
                 ||> List.fold (fun typeId func ->
-                    func typeId channelId this
+                    func typeId channelId msgReg
                     typeId + 1us
                 )
             processNetworkChannels nextTypeId (channelId + 1uy) networkChannels
@@ -55,16 +55,6 @@ type Network(networkChannels: NetworkChannel list) as this =
         msgReg.RegisterMessage<ClientDisconnected>(ClientDisconnected.DefaultTypeId, DefaultChannelIds.Connection, ClientDisconnected.DefaultPoolAmount)
 
         processNetworkChannels 0us 0uy networkChannels
-
-    member internal __.RegisterMessage<'T when 'T :> Message and 'T : (new : unit -> 'T)>(typeId: TypeId, channelId: ChannelId, poolAmount: int) =
-        if didCreateServerOrClient then
-            failwith "Cannot register messages after a server or client has been created."
-        msgReg.RegisterMessage<'T>(typeId, channelId, poolAmount)
-
-    member internal __.RegisterChannel(channelId, channelType) =
-        if didCreateServerOrClient then
-            failwith "Cannot register channels after a server or client has been created."
-        channelLookupFactory.RegisterChannel(channelId, channelType)
 
     member __.CreateServer(port, maxClients) =
         didCreateServerOrClient <- true

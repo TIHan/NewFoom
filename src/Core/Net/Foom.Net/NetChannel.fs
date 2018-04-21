@@ -8,7 +8,7 @@ open Foom.IO.Message
 open Foom.IO.Message.Channel
 open Foom.IO.Serializer
 
-type TypeToChannelMap = ConcurrentDictionary<uint16, byte>
+type TypeToChannelMap = byte []
 
 [<AbstractClass>]
 type NetMessage =
@@ -40,7 +40,7 @@ type Sender(stream: PacketStream, typeToChannelMap: TypeToChannelMap, channelLoo
     let queue = ConcurrentQueue()
 
     member __.EnqueueMessage(msg: NetMessage, willRecycle) =
-        msg.channelId <- typeToChannelMap.[msg.TypeId]
+        msg.channelId <- typeToChannelMap.[int msg.TypeId]
         queue.Enqueue struct(msg, willRecycle)
 
     member __.SendPackets(f) =
@@ -61,7 +61,7 @@ type Receiver(stream: PacketStream, typeToChannelMap: TypeToChannelMap, channelL
                 let typeId = LittleEndian.read16 data 0
                 let channelId = data.[4] // This gets the channelId - don't change.
 
-                if typeToChannelMap.[typeId] <> channelId then
+                if typeToChannelMap.[int typeId] <> channelId then
                     failwith "Message received with invalid channel."
 
                 let struct(channel, _) = channelLookup.[channelId]
