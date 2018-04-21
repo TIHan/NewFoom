@@ -38,12 +38,17 @@ open Foom.Game
 
 [<EntryPoint>]
 let main argv =
-    let network = Network()
 
-    network.RegisterChannel(0uy, ChannelType.Unreliable)
-    network.RegisterChannel(1uy, ChannelType.UnreliableSequenced)
-    network.RegisterMessage<Snapshot>(0us, 0uy, 20)
-    network.RegisterMessage<UserInfo>(1us, 1uy, 20)
+    let netChans =
+        [
+            NetworkChannel.create ChannelType.Unreliable
+            |> NetworkChannel.addMessage<Snapshot> 20
+
+            NetworkChannel.create ChannelType.UnreliableSequenced
+            |> NetworkChannel.addMessage<UserInfo> 20
+        ]
+
+    let network = Network(netChans)
 
     let serverOpt =
         if argv.Length = 0 then

@@ -67,7 +67,7 @@ let ``Udp Client and Server`` () =
 
 [<Fact>]
 let ``Udp Client and Server Simple`` () =
-    let network = Network()
+    let network = Network([])
 
     use server = network.CreateServer(27015, 8)
     use client = network.CreateClient()
@@ -94,10 +94,14 @@ let ``Udp Client and Server Simple`` () =
 
 [<Fact>]
 let ``Udp Client and Server Simple Big Message`` () =
-    let network = Network()
 
-    network.RegisterChannel(0uy, ChannelType.Unreliable)
-    network.RegisterMessage<TextMessage>(0us, 0uy, 64)
+    let network = 
+        Network(
+            [
+                NetworkChannel.create ChannelType.Unreliable
+                |> NetworkChannel.addMessage<TextMessage> 64
+            ]
+        )
 
     //
 
@@ -173,10 +177,13 @@ let ``Udp Client and Server Simple Big Message`` () =
 
 [<Fact>]
 let ``Udp Client and Server Simple - Background`` () =
-    let network = Network()
-
-    network.RegisterChannel(0uy, ChannelType.Unreliable)
-    network.RegisterMessage<TextMessage>(0us, 0uy, 64)
+    let network = 
+        Network(
+            [
+                NetworkChannel.create ChannelType.Unreliable
+                |> NetworkChannel.addMessage<TextMessage> 64
+            ]
+        )
 
     use server = network.CreateBackgroundServer(27015, 8)
     use client = network.CreateBackgroundClient()

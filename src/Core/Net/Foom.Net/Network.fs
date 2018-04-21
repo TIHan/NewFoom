@@ -1,13 +1,48 @@
-﻿namespace Foom.Net
+﻿namespace rec Foom.Net
 
 open Foom.IO.Message
 
+type TypeId = uint16
+type ChannelId = byte
+type NetworkRegistrationFunc = (TypeId -> ChannelId -> Network -> unit)
+
+type NetworkChannel = internal NetworkChannel of ChannelType * NetworkRegistrationFunc list
+
+[<RequireQualifiedAccess>]
+module NetworkChannel =
+
+    let create channelType = NetworkChannel(channelType, [])
+
+    let addMessage<'T when 'T :> Message and 'T : (new : unit -> 'T)> (poolAmount: int) = function
+        | NetworkChannel(channelType, funcs) ->
+            let func : NetworkRegistrationFunc = 
+                fun (typeId: TypeId) (channelId: ChannelId) (network: Network) -> 
+                    network.RegisterMessage<'T>(typeId, channelId, poolAmount)
+            NetworkChannel(channelType, func :: funcs)
+
 [<Sealed>]
-type Network() =
+type Network(networkChannels: NetworkChannel list) as this =
     let msgReg = MessageRegistration()
     let channelLookupFactory = ChannelLookupFactory()
 
     let mutable didCreateServerOrClient = false
+
+    let rec processNetworkChannels typeId channelId = function
+        | [] -> ()
+        | NetworkChannel(channelType, funcs) :: networkChannels ->
+            this.RegisterChannel(channelId, channelType)
+
+            let funcs =
+                funcs
+                |> List.rev
+
+            let nextTypeId =
+                (typeId, funcs)
+                ||> List.fold (fun typeId func ->
+                    func typeId channelId this
+                    typeId + 1us
+                )
+            processNetworkChannels nextTypeId (channelId + 1uy) networkChannels
 
     do
         channelLookupFactory.RegisterChannel(DefaultChannelIds.Connection, ChannelType.ReliableOrdered)
@@ -19,12 +54,14 @@ type Network() =
         msgReg.RegisterMessage<DisconnectAccepted>(DisconnectAccepted.DefaultTypeId, DefaultChannelIds.Connection, DisconnectAccepted.DefaultPoolAmount)
         msgReg.RegisterMessage<ClientDisconnected>(ClientDisconnected.DefaultTypeId, DefaultChannelIds.Connection, ClientDisconnected.DefaultPoolAmount)
 
-    member __.RegisterMessage<'T when 'T :> Message and 'T : (new : unit -> 'T)>(typeId, channelId, poolAmount) =
+        processNetworkChannels 0us 0uy networkChannels
+
+    member internal __.RegisterMessage<'T when 'T :> Message and 'T : (new : unit -> 'T)>(typeId: TypeId, channelId: ChannelId, poolAmount: int) =
         if didCreateServerOrClient then
             failwith "Cannot register messages after a server or client has been created."
         msgReg.RegisterMessage<'T>(typeId, channelId, poolAmount)
 
-    member __.RegisterChannel(channelId, channelType) =
+    member internal __.RegisterChannel(channelId, channelType) =
         if didCreateServerOrClient then
             failwith "Cannot register channels after a server or client has been created."
         channelLookupFactory.RegisterChannel(channelId, channelType)
