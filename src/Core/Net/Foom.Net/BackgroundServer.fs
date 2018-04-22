@@ -9,6 +9,7 @@ open Foom.IO.Message
 type BackgroundServerInternalMessage =
     | Start
     | Stop
+    | SendPackets
     | Dispose of AsyncReplyChannel<unit>
 
 type BackgroundServer(networkChannels, port, maxClients) =
@@ -30,7 +31,6 @@ type BackgroundServer(networkChannels, port, maxClients) =
                 while not willDispose do
                     try 
                         server.ReceivePackets()
-                        server.SendPackets()
 
                         if inbox.CurrentQueueLength > 0 then
                             let! msg = inbox.Receive()
@@ -39,16 +39,18 @@ type BackgroundServer(networkChannels, port, maxClients) =
                                 server.Start()
                             | Stop -> 
                                 server.Stop()
+                            | SendPackets ->
+                                server.SendPackets()
                             | Dispose(reply) ->
                                 replyDispose <- reply
                                 willDispose <- true
                         else
-                            do! Async.Sleep(10)
+                            do! Async.Sleep(1)
                     with
                     | ex -> 
                         server.Stop()
                         exceptionEvent.Trigger(ex)
-                        do! Async.Sleep(10)
+                        do! Async.Sleep(1)
 
                 (server :> IDisposable).Dispose()
                 replyDispose.Reply()
@@ -99,6 +101,9 @@ type BackgroundServer(networkChannels, port, maxClients) =
 
     member __.OnException = exceptionEvent.Publish
 
+    member __.SendPackets() =
+        mp.Post(SendPackets)
+
     member __.CreateLocalBackgroundClient() =
         let localClient = createMessageFactory networkChannels 1
         let localClientReceiveQueue = ConcurrentQueue()
@@ -121,6 +126,8 @@ type BackgroundServer(networkChannels, port, maxClients) =
 
                 member __.SendMessage(msg) =
                     receivedLocalClientMsgs.Enqueue(ServerMessage.Message(ClientId(), msg))
+
+                member __.SendPackets() = ()
 
                 member __.CreateMessage() =
                     localClient.CreateMessage()

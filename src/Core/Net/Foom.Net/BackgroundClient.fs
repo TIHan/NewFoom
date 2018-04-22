@@ -8,6 +8,7 @@ open System.Collections.Concurrent
 open Foom.IO.Message
 
 type internal BackgroundClientInternalMessage =
+    | SendPackets
     | Dispose of AsyncReplyChannel<unit>
 
 type internal BackgroundClient(networkChannels) =
@@ -29,21 +30,22 @@ type internal BackgroundClient(networkChannels) =
 
                     try
                         client.ReceivePackets()
-                        client.SendPackets()
 
                         if inbox.CurrentQueueLength > 0 then
                             let! msg = inbox.Receive()
                             match msg with
+                            | SendPackets ->
+                                client.SendPackets()
                             | Dispose(reply) ->
                                 replyDispose <- reply
                                 willDispose <- true
                         else
-                            do! Async.Sleep(10)
+                            do! Async.Sleep(1)
                     with
                     | ex -> 
                         client.Disconnect()
                         exceptionEvent.Trigger(ex)
-                        do! Async.Sleep(10)
+                        do! Async.Sleep(1)
 
                 (client :> IDisposable).Dispose()
                 replyDispose.Reply()
@@ -62,6 +64,9 @@ type internal BackgroundClient(networkChannels) =
 
         member __.SendMessage(msg) =
             client.SendMessage(msg, willRecycle = true)
+
+        member __.SendPackets() =
+            mp.Post(SendPackets)
 
         member __.CreateMessage() =
             msgFactory.CreateMessage()

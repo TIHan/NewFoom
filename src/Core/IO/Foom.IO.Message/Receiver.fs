@@ -91,6 +91,7 @@ type internal Receiver(receiverType: ReceiverType, lookup: MessagePoolBase []) =
             let maxCount = msgQueue.Count
             let mutable count = 0
             let mutable msg = null
-            while msgQueue.TryDequeue(&msg) && count < maxCount do
+            // !! CHECK COUNT BEFORE TRYING TO DEQUEUE !!
+            while count < maxCount && msgQueue.TryDequeue(&msg) do
                 f msg
                 count <- count + 1

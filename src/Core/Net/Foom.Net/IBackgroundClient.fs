@@ -11,6 +11,8 @@ type IBackgroundClient =
 
     abstract SendMessage : NetMessage -> unit
 
+    abstract SendPackets : unit -> unit
+
     abstract CreateMessage<'T when 'T :> NetMessage and 'T : (new : unit -> 'T)> : unit -> 'T
 
     abstract ProcessMessages : (ClientMessage -> unit) -> unit

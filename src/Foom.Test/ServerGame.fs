@@ -93,6 +93,7 @@ type ServerGame(server: BackgroundServer) =
         snapshotMsg.serverTime <- time
         snapshotId <- snapshotId + 1L
         server.SendMessage(snapshotMsg)
+        server.SendPackets()
         false
 
     static member Create(server) =

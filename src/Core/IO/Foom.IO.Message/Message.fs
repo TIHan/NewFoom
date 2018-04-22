@@ -76,6 +76,7 @@ type MessagePool<'T when 'T :> Message and 'T : (new : unit -> 'T)>(typeId, pool
                 msg
             | _ ->
                 printfn "MessagePool, %s, reached its pool count." typeof<'T>.FullName
+                printfn "Can't creat - Stack count %A" msgs.Count
                 let msg = new 'T() :> Message
                 msg.IsRecyclable <- false
                 msg

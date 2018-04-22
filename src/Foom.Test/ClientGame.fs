@@ -109,7 +109,7 @@ type ClientGame(input: IInput, renderer: IRenderer, client: IBackgroundClient) =
                     renderTime.Value
                 | Some renderTime -> renderTime
            // printfn "snapshot count: %A" sortedList.Count
-            if rTime - interval - interval >= serverTime then
+            if rTime - interval - interval >= serverTime || sortedList.Count = 1 then
 
                 sortedList.RemoveAt(0)
                 for i = 0 to playerCount - 1 do
@@ -125,6 +125,10 @@ type ClientGame(input: IInput, renderer: IRenderer, client: IBackgroundClient) =
                     if player.clientId = clientId then
                         camera.Translation <- player.translation
                         camera.Rotation <- player.rotation
+            else
+                printfn "no updating snapshot"
+
+        client.SendPackets()
 
         inputState.Events
         |> List.exists (function KeyReleased '\027' -> true | _ -> false)
