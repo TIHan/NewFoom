@@ -38,12 +38,12 @@ type internal BackgroundClient(networkChannels) =
                                 replyDispose <- reply
                                 willDispose <- true
                         else
-                            do! Async.Sleep(1)
+                            do! Async.Sleep(10)
                     with
                     | ex -> 
                         client.Disconnect()
                         exceptionEvent.Trigger(ex)
-                        do! Async.Sleep(1)
+                        do! Async.Sleep(10)
 
                 (client :> IDisposable).Dispose()
                 replyDispose.Reply()

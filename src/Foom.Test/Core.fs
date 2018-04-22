@@ -357,13 +357,15 @@ type Snapshot =
     inherit NetMessage
 
     val mutable snapshotId : int64
+    val mutable serverTime : TimeSpan
     val mutable playerCount : int
     val mutable playerState : Player []
 
-    new () = { snapshotId = 0L; playerCount = 0; playerState = Array.zeroCreate<Player> 64 }
+    new () = { snapshotId = 0L; serverTime = TimeSpan.Zero; playerCount = 0; playerState = Array.zeroCreate<Player> 64 }
 
     override this.NetSerialize(writer, stream) =
         writer.WriteInt64(stream, &this.snapshotId)
+        writer.Write(stream, &this.serverTime)
         writer.WriteInt(stream, &this.playerCount)
         for i = 0 to this.playerCount - 1 do
             writer.Write(stream, &this.playerState.[i])

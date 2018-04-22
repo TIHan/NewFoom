@@ -43,12 +43,12 @@ type BackgroundServer(networkChannels, port, maxClients) =
                                 replyDispose <- reply
                                 willDispose <- true
                         else
-                            do! Async.Sleep(1)
+                            do! Async.Sleep(10)
                     with
                     | ex -> 
                         server.Stop()
                         exceptionEvent.Trigger(ex)
-                        do! Async.Sleep(1)
+                        do! Async.Sleep(10)
 
                 (server :> IDisposable).Dispose()
                 replyDispose.Reply()

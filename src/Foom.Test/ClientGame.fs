@@ -40,6 +40,8 @@ type ClientGame(input: IInput, renderer: IRenderer, client: IBackgroundClient) =
     let sortedList = SortedList()
     let queue = Queue()
 
+    let mutable renderTime = None
+
     do
         eventQueue.Enqueue(LoadMap "e1m1")
 
@@ -77,7 +79,10 @@ type ClientGame(input: IInput, renderer: IRenderer, client: IBackgroundClient) =
                         playerStates.[i] <- snapshotMsg.playerState.[i]
 
                     if sortedList.ContainsKey(snapshotMsg.snapshotId) |> not then
-                        sortedList.Add(snapshotMsg.snapshotId, struct(playerStates, time))
+                        if sortedList.Count > 3 then
+                            printfn "deleting snapshot"
+                            sortedList.RemoveAt(0)
+                        sortedList.Add(snapshotMsg.snapshotId, struct(playerStates, time, snapshotMsg.serverTime))
 
                 | _ -> ()
         )
@@ -90,11 +95,22 @@ type ClientGame(input: IInput, renderer: IRenderer, client: IBackgroundClient) =
                 zombiemanSpriteBatchOpt <- Some(loadMap name camera renderer)
                 client.Connect("localhost", 27015)
             | _ -> ()
-        
+
+        if renderTime.IsSome then
+            renderTime <- Some(renderTime.Value + interval)
+
         // end events
         if sortedList.Count > 0 then
-            let struct(playerStates, snapTime) = sortedList.Values.[0]
-            if time >= snapTime + TimeSpan.FromMilliseconds(100.) || clientId.IsLocal then
+            let struct(playerStates, snapTime, serverTime) = sortedList.Values.[0]
+            let rTime = 
+                match renderTime with
+                | None -> 
+                    renderTime <- Some(serverTime)
+                    renderTime.Value
+                | Some renderTime -> renderTime
+           // printfn "snapshot count: %A" sortedList.Count
+            if rTime - interval - interval >= serverTime then
+
                 sortedList.RemoveAt(0)
                 for i = 0 to playerCount - 1 do
                     let player = &playerStates.[i]

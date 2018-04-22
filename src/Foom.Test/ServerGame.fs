@@ -90,6 +90,7 @@ type ServerGame(server: BackgroundServer) =
         snapshotMsg.playerCount <- i
 
         snapshotMsg.snapshotId <- snapshotId
+        snapshotMsg.serverTime <- time
         snapshotId <- snapshotId + 1L
         server.SendMessage(snapshotMsg)
         false
