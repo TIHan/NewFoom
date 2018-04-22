@@ -27,6 +27,8 @@ type EntityManager =
     /// Checks to see if the Entity is valid and has a component of type 'T.
     member Has<'T when 'T : unmanaged and 'T :> IComponent> : Entity -> bool
 
+    member CopyComponentsTo<'T when 'T : unmanaged and 'T :> IComponent> : copyTo: Span<'T> -> unit
+
     //************************************************************************************************************************
 
     /// Iterate entities that have a component of type 'T.

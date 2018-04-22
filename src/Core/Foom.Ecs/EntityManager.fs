@@ -63,7 +63,7 @@ type ForEachDelegate<'T1, 'T2 when 'T1 : unmanaged and 'T2 : unmanaged and 'T1 :
 type TryGetDelegate<'T when 'T : unmanaged and 'T :> IComponent> = delegate of byref<'T> -> unit
 
 [<Struct>]
-[<StructLayout(LayoutKind.Sequential, Size = 510)>]
+[<StructLayout(LayoutKind.Sequential, Size = 508)>]
 type EntityComponentsInternal =
 
     val mutable fixedValues : uint16
@@ -107,8 +107,8 @@ and [<Sealed>] EntityManager(maxEntityAmount) =
         maxEntityAmount
 
     let lookup = Dictionary<Type, int> ()
-    let lookupType = Array.zeroCreate 256
-    let activeVersions = UnmanagedArray<uint32>.Create(maxEntityAmount, fun _ -> 1u) //Array.init maxEntityAmount (fun _ -> 1u)
+    let lookupType = Array.zeroCreate 252
+    let activeVersions = UnmanagedArray<uint32>.Create(maxEntityAmount, fun _ -> 1u)
     let entComps = UnmanagedArray<EntityComponents>.Create(maxEntityAmount, fun _ -> { count = 0 })
 
     let mutable nextEntityIndex = 0
@@ -272,7 +272,7 @@ and [<Sealed>] EntityManager(maxEntityAmount) =
                 let index = indexLookup.[entity.Index]
                 if index >= 0 then
                     Console.WriteLine (String.Format ("ECS WARNING: Component, {0}, already added to {1}.", typeof<'T>.Name, entity))
-                    components.[index]
+                    &data.dummy
                 else
                     let mutable index = entities.Count
 
@@ -284,7 +284,7 @@ and [<Sealed>] EntityManager(maxEntityAmount) =
                     let ec = entComps.GetByRef(entity.Index)
                     ec.AddComponentId(uint16 bit)
 
-                    components.[index]
+                    components.GetByRef(index)
             else
                 &data.dummy
 
@@ -353,7 +353,12 @@ and [<Sealed>] EntityManager(maxEntityAmount) =
             let data = lookupType.[bit]
             data.GetIndex(entity.Index) >= 0
         else
-            false   
+            false
+
+    member this.CopyComponentsTo<'T when 'T : unmanaged and 'T :> IComponent>(copyTo: Span<'T>) =
+        let struct(_, data) = this.GetEntityLookupData<'T>()
+        let ptr = data.Components.Buffer |> NativePtr.toNativeInt
+        Span(ptr.ToPointer(), sizeof<'T> * data.Components.Count).CopyTo(copyTo)
 
     //************************************************************************************************************************
 
@@ -376,7 +381,7 @@ and [<Sealed>] EntityManager(maxEntityAmount) =
 
         let index = data.IndexLookup.[ent.Index]
         if index <> -1 then
-            let compRef = data.Components.[index]
+            let compRef = data.Components.GetByRef(index)
             tryGetF.Invoke(&compRef)
 
     //member this.ForEach<'T1, 'T2, 'T3 when 'T1 :> Component and 'T2 :> Component and 'T3 :> Component> f : unit =

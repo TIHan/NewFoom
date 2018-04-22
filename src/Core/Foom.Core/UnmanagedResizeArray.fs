@@ -61,7 +61,11 @@ type UnmanagedResizeArray<'T when 'T : unmanaged>(capacity) =
         count <- lastIndex
 
     member inline this.Item
-        with get index = NativePtrExtension.toByref (NativePtr.add this.Buffer index)
+        with get index = NativePtr.read (NativePtr.add this.Buffer index)
+        and set index value = NativePtr.set this.Buffer index value
+
+    member inline this.GetByRef(index) =
+        NativePtrExtension.toByref (NativePtr.add this.Buffer index)
 
     member __.Count = count
 
