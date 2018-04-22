@@ -42,27 +42,7 @@ type ClientGame(input: IInput, renderer: IRenderer, client: IBackgroundClient) =
 
     let mutable renderTime = None
 
-    do
-        eventQueue.Enqueue(LoadMap "e1m1")
-
-    override __.PreUpdate(time, interval) =
-      //  client.ProcessMessages(fun _ -> ())
-        input.PollEvents()
-
-        inputState <- input.GetState()
-
-        camera.ViewLerp <- camera.View
-
-        mov <- getMovement inputState mov
-
-        let userInfoMsg = client.CreateMessage<UserInfo>()
-        userInfoMsg.Movement <- mov
-        client.SendMessage(userInfoMsg)
-
-        //if clientId <> -1 then
-            //updatePlayer mov &playerStates.[clientId]
-
-    override __.Update(time, interval) = 
+    let processMessages time =
         client.ProcessMessages(function
             | ClientMessage.ConnectionAccepted(x) -> clientId <- x
             | ClientMessage.DisconnectAccepted _ -> ()
@@ -87,13 +67,47 @@ type ClientGame(input: IInput, renderer: IRenderer, client: IBackgroundClient) =
                 | _ -> ()
         )
 
+    do
+        eventQueue.Enqueue(LoadMap "e1m1")
+
+    override __.PreUpdate(time, interval) =
+      //  client.ProcessMessages(fun _ -> ())
+        input.PollEvents()
+
+        inputState <- input.GetState()
+
+        camera.ViewLerp <- camera.View
+
+        mov <- getMovement inputState mov
+
+        let userInfoMsg = client.CreateMessage<UserInfo>()
+        userInfoMsg.Movement <- mov
+        client.SendMessage(userInfoMsg)
+
+        //if clientId <> -1 then
+            //updatePlayer mov &playerStates.[clientId]
+
+    override __.Update(time, interval) = 
+        processMessages time
+
         let mutable evt = Unchecked.defaultof<ClientEvent>
         while eventQueue.TryDequeue(&evt) do
             match evt with
             | LoadMap name ->
                 camera.Rotation <- Quaternion.CreateFromAxisAngle (Vector3.UnitX, 90.f * (float32 Math.PI / 180.f))
-                zombiemanSpriteBatchOpt <- Some(loadMap name camera renderer)
                 client.Connect("localhost", 27015)
+
+                let mutable beef = false
+
+                let connection = async {
+                    while beef = false do
+                        processMessages time
+                        client.SendPackets()
+                        do! Async.Sleep(10) } |> Async.StartAsTask
+                zombiemanSpriteBatchOpt <- Some(loadMap name camera renderer)
+                renderer.Draw(0.f)
+                beef <- true
+                connection.Wait()
             | _ -> ()
 
         if renderTime.IsSome then
@@ -127,6 +141,8 @@ type ClientGame(input: IInput, renderer: IRenderer, client: IBackgroundClient) =
                         camera.Rotation <- player.rotation
             else
                 printfn "no updating snapshot"
+        else
+            printfn "no snapshots available"
 
         client.SendPackets()
 
