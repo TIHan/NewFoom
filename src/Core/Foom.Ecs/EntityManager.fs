@@ -60,6 +60,7 @@ type EntityLookupData<'T when 'T : unmanaged and 'T :> IComponent> =
     
 type ForEachDelegate<'T when 'T : unmanaged and 'T :> IComponent> = delegate of Entity * byref<'T> -> unit
 type ForEachDelegate<'T1, 'T2 when 'T1 : unmanaged and 'T2 : unmanaged and 'T1 :> IComponent and 'T2 :> IComponent> = delegate of Entity * byref<'T1> * byref<'T2> -> unit
+type ForEachDelegate<'T1, 'T2, 'T3, 'T4, 'T5 when 'T1 : unmanaged and 'T2 : unmanaged and 'T3 : unmanaged and 'T4 : unmanaged and 'T5 : unmanaged and 'T1 :> IComponent and 'T2 :> IComponent and 'T3 :> IComponent and 'T4 :> IComponent and 'T5 :> IComponent> = delegate of Entity * byref<'T1> * byref<'T2> * byref<'T3> * byref<'T4> * byref<'T5> -> unit
 type TryGetDelegate<'T when 'T : unmanaged and 'T :> IComponent> = delegate of byref<'T> -> unit
 
 [<Struct>]
@@ -188,73 +189,54 @@ and [<Sealed>] EntityManager(maxEntityAmount) =
                     let comp2 = components2.[comp2Index]
                     f.Invoke(ent, &comp1, &comp2)
 
-    //member inline this.Iterate<'T1, 'T2, 'T3 when 'T1 :> Component and 'T2 :> Component and 'T3 :> Component> (f) : unit =
-    //    let mutable data1 = Unchecked.defaultof<IEntityLookupData>
-    //    let mutable data2 = Unchecked.defaultof<IEntityLookupData>
-    //    let mutable data3 = Unchecked.defaultof<IEntityLookupData>
-    //    if this.Lookup.TryGetValue (typeof<'T1>, &data1) && this.Lookup.TryGetValue (typeof<'T2>, &data2) && 
-    //       this.Lookup.TryGetValue (typeof<'T3>, &data3) then
-    //        let data = [|data1;data2;data3|] |> Array.minBy (fun x -> x.Entities.Count)
-    //        let data1 = data1 :?> EntityLookupData<'T1>
-    //        let data2 = data2 :?> EntityLookupData<'T2>
-    //        let data3 = data3 :?> EntityLookupData<'T3>
+    member inline this.Iterate<'T1, 'T2, 'T3, 'T4, 'T5 when 'T1 : unmanaged and 'T2 : unmanaged and 'T3 : unmanaged and 'T4 : unmanaged and 'T5 : unmanaged and 'T1 :> IComponent and 'T2 :> IComponent and 'T3 :> IComponent and 'T4 :> IComponent and 'T5 :> IComponent> (f: ForEachDelegate<'T1, 'T2, 'T3, 'T4, 'T5>) : unit =
+        let mutable bit1 = 0
+        let mutable bit2 = 0
+        let mutable bit3 = 0
+        let mutable bit4 = 0
+        let mutable bit5 = 0
+        if lookup.TryGetValue (typeof<'T1>, &bit1) && lookup.TryGetValue (typeof<'T2>, &bit2) && lookup.TryGetValue (typeof<'T3>, &bit3) && lookup.TryGetValue (typeof<'T4>, &bit4) && lookup.TryGetValue (typeof<'T5>, &bit5) then
+            let data1 = lookupType.[bit1]
+            let data2 = lookupType.[bit2]
+            let data3 = lookupType.[bit3]
+            let data4 = lookupType.[bit4]
+            let data5 = lookupType.[bit5]
+            let data = [|data1;data2;data3;data4;data5|] |> Array.minBy (fun x -> x.Entities.Count)
+            let data1 = data1 :?> EntityLookupData<'T1>
+            let data2 = data2 :?> EntityLookupData<'T2>
+            let data3 = data3 :?> EntityLookupData<'T3>
+            let data4 = data4 :?> EntityLookupData<'T4>
+            let data5 = data5 :?> EntityLookupData<'T5>
 
-    //        let entities = data.Entities.Buffer
-    //        let components1 = data1.Components.Buffer
-    //        let components2 = data2.Components.Buffer
-    //        let components3 = data3.Components.Buffer
-    //        let lookup1 = data1.IndexLookup
-    //        let lookup2 = data2.IndexLookup
-    //        let lookup3 = data3.IndexLookup
-
-    //        let inline iter i =
-    //            let entity = entities.[i]
+            let count = data.Entities.Count
+            let entities = data.Entities.ToSpan()
+            let components1 = data1.Components.ToSpan()
+            let components2 = data2.Components.ToSpan()
+            let components3 = data3.Components.ToSpan()
+            let components4 = data4.Components.ToSpan()
+            let components5 = data5.Components.ToSpan()
+            let lookup1 = data1.IndexLookup
+            let lookup2 = data2.IndexLookup
+            let lookup3 = data3.IndexLookup
+            let lookup4 = data4.IndexLookup
+            let lookup5 = data5.IndexLookup
     
-    //            let comp1Index = lookup1.[entity.Index]
-    //            let comp2Index = lookup2.[entity.Index]
-    //            let comp3Index = lookup3.[entity.Index]
-
-    //            if comp1Index >= 0 && comp2Index >= 0 && comp3Index >= 0 then
-    //                f entity components1.[comp1Index] components2.[comp2Index] components3.[comp3Index]
+            for i = 0 to count - 1 do
+                let ent = entities.[i]
     
-    //        for i = 0 to data.Entities.Count - 1 do iter i
+                let comp1Index = lookup1.[ent.Index]
+                let comp2Index = lookup2.[ent.Index]
+                let comp3Index = lookup3.[ent.Index]
+                let comp4Index = lookup4.[ent.Index]
+                let comp5Index = lookup5.[ent.Index]
 
-    //member inline this.Iterate<'T1, 'T2, 'T3, 'T4 when 'T1 :> Component and 'T2 :> Component and 'T3 :> Component and 'T4 :> Component> (f) : unit =
-    //    let mutable data1 = Unchecked.defaultof<IEntityLookupData>
-    //    let mutable data2 = Unchecked.defaultof<IEntityLookupData>
-    //    let mutable data3 = Unchecked.defaultof<IEntityLookupData>
-    //    let mutable data4 = Unchecked.defaultof<IEntityLookupData>
-    //    if this.Lookup.TryGetValue (typeof<'T1>, &data1) && this.Lookup.TryGetValue (typeof<'T2>, &data2) && 
-    //       this.Lookup.TryGetValue (typeof<'T3>, &data3) && this.Lookup.TryGetValue (typeof<'T4>, &data4) then
-    //        let data = [|data1;data2;data3;data4|] |> Array.minBy (fun x -> x.Entities.Count)
-    //        let data1 = data1 :?> EntityLookupData<'T1>
-    //        let data2 = data2 :?> EntityLookupData<'T2>
-    //        let data3 = data3 :?> EntityLookupData<'T3>
-    //        let data4 = data4 :?> EntityLookupData<'T4>
-
-    //        let entities = data.Entities.Buffer
-    //        let components1 = data1.Components.Buffer
-    //        let components2 = data2.Components.Buffer
-    //        let components3 = data3.Components.Buffer
-    //        let components4 = data4.Components.Buffer
-    //        let lookup1 = data1.IndexLookup
-    //        let lookup2 = data2.IndexLookup
-    //        let lookup3 = data3.IndexLookup
-    //        let lookup4 = data4.IndexLookup
-
-    //        let inline iter i =
-    //            let entity = entities.[i]
-    
-    //            let comp1Index = lookup1.[entity.Index]
-    //            let comp2Index = lookup2.[entity.Index]
-    //            let comp3Index = lookup3.[entity.Index]
-    //            let comp4Index = lookup4.[entity.Index]
-
-    //            if comp1Index >= 0 && comp2Index >= 0 && comp3Index >= 0 && comp4Index >= 0 then
-    //                f entity components1.[comp1Index] components2.[comp2Index] components3.[comp3Index] components4.[comp4Index]
-    
-    //        for i = 0 to data.Entities.Count - 1 do iter i
-            //Parallel.For (0, data.Entities.Count - 1, fun i _ -> iter i) |> ignore
+                if comp1Index >= 0 && comp2Index >= 0 && comp3Index >= 0 && comp4Index >= 0 && comp5Index >= 0 then
+                    let comp1 = components1.[comp1Index]
+                    let comp2 = components2.[comp2Index]
+                    let comp3 = components3.[comp3Index]
+                    let comp4 = components4.[comp4Index]
+                    let comp5 = components5.[comp5Index]
+                    f.Invoke(ent, &comp1, &comp2, &comp3, &comp4, &comp5)
 
     // Components
 
@@ -376,6 +358,13 @@ and [<Sealed>] EntityManager(maxEntityAmount) =
 
         currentIterations <- currentIterations - 1
 
+    member this.ForEach<'T1, 'T2, 'T3, 'T4, 'T5 when 'T1 : unmanaged and 'T2 : unmanaged and 'T3 : unmanaged and 'T4 : unmanaged and 'T5 : unmanaged and 'T1 :> IComponent and 'T2 :> IComponent and 'T3 :> IComponent and 'T4 :> IComponent and 'T5 :> IComponent> (f) : unit =
+        currentIterations <- currentIterations + 1
+
+        this.Iterate<'T1, 'T2, 'T3, 'T4, 'T5>(f)
+
+        currentIterations <- currentIterations - 1
+
     member this.TryGetComponent<'T when 'T : unmanaged and 'T :> IComponent>(ent: Entity, tryGetF: TryGetDelegate<'T>) =
         let struct(bit, data) = this.GetEntityLookupData<'T>()
 
@@ -384,27 +373,4 @@ and [<Sealed>] EntityManager(maxEntityAmount) =
             let compRef = data.Components.GetByRef(index)
             tryGetF.Invoke(&compRef)
 
-    //member this.ForEach<'T1, 'T2, 'T3 when 'T1 :> Component and 'T2 :> Component and 'T3 :> Component> f : unit =
-    //    this.CurrentIterations <- this.CurrentIterations + 1
-
-    //    this.Iterate<'T1, 'T2, 'T3> (f)
-
-    //    this.CurrentIterations <- this.CurrentIterations - 1
-    //    this.ResolvePendingQueues ()
-
-    //member this.ForEach<'T1, 'T2, 'T3, 'T4 when 'T1 :> Component and 'T2 :> Component and 'T3 :> Component and 'T4 :> Component> f : unit =
-    //    this.CurrentIterations <- this.CurrentIterations + 1
-
-    //    this.Iterate<'T1, 'T2, 'T3, 'T4> (f)
-
-    //    this.CurrentIterations <- this.CurrentIterations - 1
-    //    this.ResolvePendingQueues ()
-
-    member this.MaxNumberOfEntities = maxEntityAmount - 1
-
-    //member this.DestroyAll () =
-    //    activeVersions
-    //    |> Array.iteri (fun index version ->
-    //        if version > 0u then
-    //            this.Destroy (Entity (index, version))
-    //    )
+    member this.MaxNumberOfEntities = maxEntityAmount

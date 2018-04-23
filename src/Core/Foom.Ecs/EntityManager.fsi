@@ -7,6 +7,7 @@ open System.Runtime.InteropServices
 
 type ForEachDelegate<'T when 'T : unmanaged and 'T :> IComponent> = delegate of Entity * byref<'T> -> unit
 type ForEachDelegate<'T1, 'T2 when 'T1 : unmanaged and 'T2 : unmanaged and 'T1 :> IComponent and 'T2 :> IComponent> = delegate of Entity * byref<'T1> * byref<'T2> -> unit
+type ForEachDelegate<'T1, 'T2, 'T3, 'T4, 'T5 when 'T1 : unmanaged and 'T2 : unmanaged and 'T3 : unmanaged and 'T4 : unmanaged and 'T5 : unmanaged and 'T1 :> IComponent and 'T2 :> IComponent and 'T3 :> IComponent and 'T4 :> IComponent and 'T5 :> IComponent> = delegate of Entity * byref<'T1> * byref<'T2> * byref<'T3> * byref<'T4> * byref<'T5> -> unit
 type TryGetDelegate<'T when 'T : unmanaged and 'T :> IComponent> = delegate of byref<'T> -> unit
 
 /// Responsible for querying/adding/removing components and spawning/destroying entities.
@@ -37,11 +38,7 @@ type EntityManager =
     /// Iterate entities that have components of type 'T1 and 'T2.
     member ForEach<'T1, 'T2 when 'T1 : unmanaged and 'T2 : unmanaged and 'T1 :> IComponent and 'T2 :> IComponent> : ForEachDelegate<'T1, 'T2> -> unit
 
-    ///// Iterate entities that have components of type 'T1, 'T2, and 'T3.
-    //member ForEach<'T1, 'T2, 'T3 when 'T1 :> Component and 'T2 :> Component and 'T3 :> Component> : (Entity -> 'T1 -> 'T2 -> 'T3 -> unit) -> unit
-
-    ///// Iterate entities that have components of type 'T1, 'T2, 'T3, and 'T4.
-    //member ForEach<'T1, 'T2, 'T3, 'T4 when 'T1 :> Component and 'T2 :> Component and 'T3 :> Component and 'T4 :> Component> : (Entity -> 'T1 -> 'T2 -> 'T3 -> 'T4 -> unit) -> unit
+    member ForEach<'T1, 'T2, 'T3, 'T4, 'T5 when 'T1 : unmanaged and 'T2 : unmanaged and 'T3 : unmanaged and 'T4 : unmanaged and 'T5 : unmanaged and 'T1 :> IComponent and 'T2 :> IComponent and 'T3 :> IComponent and 'T4 :> IComponent and 'T5 :> IComponent> : ForEachDelegate<'T1, 'T2, 'T3, 'T4, 'T5> -> unit
 
     // Components
 

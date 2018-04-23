@@ -82,7 +82,7 @@ let main argv =
         spawnEntityTime.Stop()
 
         let forEachEntityTime = Stopwatch.StartNew()
-        em.ForEach<TestComponent3>(fun _ _ -> ())
+        em.ForEach<TestComponent, TestComponent2, TestComponent3, TestComponent4, TestComponent5>(fun _ _ _ _ _ _ -> ())
         forEachEntityTime.Stop()
 
         let destroyEntityTime = Stopwatch.StartNew()
@@ -93,7 +93,7 @@ let main argv =
         destroyEntityTime.Stop()
 
         printfn "Spawn 1000: %A" spawnEntityTime.Elapsed.TotalMilliseconds
-        printfn "Iterate 1000 (2 comps): %A" forEachEntityTime.Elapsed.TotalMilliseconds
+        printfn "Iterate 1000 (5 comps): %A" forEachEntityTime.Elapsed.TotalMilliseconds
         printfn "Destroy 1000: %A" destroyEntityTime.Elapsed.TotalMilliseconds
 
     0
