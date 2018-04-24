@@ -75,12 +75,12 @@ let main argv =
         match serverOpt with
         | None ->
             let client = network.CreateBackgroundClient()
-            client.OnException.Add(fun ex -> printfn "%A" ex.Message)
+            client.OnException.Add(fun ex -> printfn "%A" ex)
             printfn "Client started, connecting at %s." argv.[0]
             Some client
         | Some server -> 
             let client = server.CreateLocalBackgroundClient()
-            client.OnException.Add(fun ex -> printfn "%A" ex.Message)
+            client.OnException.Add(fun ex -> printfn "%A" ex)
             printfn "Local client started."
             Some client
 

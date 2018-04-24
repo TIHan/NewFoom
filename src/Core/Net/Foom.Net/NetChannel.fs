@@ -15,15 +15,19 @@ type Sender(stream: PacketStream, msgFactory: MessageFactory, channelLookup: Dic
 
     member __.EnqueueMessage(msg: NetMessage, willRecycle) =
         msg.channelId <- msgFactory.GetChannelId(msg.TypeId)
-        queue.Enqueue struct(msg, willRecycle)
+        System.Threading.Interlocked.Increment(&msg.refCount) |> ignore
+        queue.Enqueue(msg)
 
     member __.SendPackets(f) =
-        let mutable msg = Unchecked.defaultof<struct(NetMessage * bool)>
+        let mutable msg = Unchecked.defaultof<NetMessage>
         while queue.TryDequeue(&msg) do
-            let struct(msg, willRecycle) = msg
             let struct(channel, packetDeliveryType) = channelLookup.[msg.channelId]
 
-            printfn "Truly Sending: %A" msg
+            let willRecycle =
+                let refCount = System.Threading.Interlocked.Decrement(&msg.refCount)
+                if msg.refCount <= 0 then true
+                                     else false
+
             channel.SerializeMessage(msg, willRecycle, fun data -> stream.Send(data, packetDeliveryType) |> ignore)
         stream.ProcessSending(f)
 
@@ -39,8 +43,6 @@ type Receiver(stream: PacketStream, msgFactory: MessageFactory, channelLookup: D
 
                 if msgFactory.GetChannelId(typeId) <> channelId then
                     failwith "Message received with invalid channel."
-
-                printfn "Truly Received: %A" (typeId)
 
                 let struct(channel, _) = channelLookup.[channelId]
                 let numBytesRead = channel.Receive(data)

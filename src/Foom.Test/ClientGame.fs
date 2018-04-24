@@ -43,8 +43,9 @@ type ClientGame(em: EntityManager, input: IInput, renderer: IRenderer, client: I
     let mutable renderTime = None
 
     do
-        let mutable snap = 30us
+        let mutable snap = 0us
         // This event will happen on a different thread.
+        // TODO: Revisit how we do this.
         client.GetBeforeDeserializedEvent<Snapshot>()
         |> Event.add (fun snapshotMsg ->
             snapshotMsg.playerSnapshots <- masterPlayerSnapshots.[int snap]

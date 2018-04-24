@@ -90,6 +90,17 @@ let ``Udp Client and Server Simple`` () =
     client.ProcessMessages(fun _ -> ())
     client.SendPackets()
 
+    // Added extra two below because we added challenge requests.
+    System.Threading.Thread.Sleep(100)
+    server.ReceivePackets()
+    server.ProcessMessages(fun _ -> ())
+    server.SendPackets()
+
+    System.Threading.Thread.Sleep(100)
+    client.ReceivePackets()
+    client.ProcessMessages(fun _ -> ())
+    client.SendPackets()
+
     Assert.True(client.IsConnected)
 
 [<Fact>]
@@ -150,6 +161,20 @@ let ``Udp Client and Server Simple Big Message`` () =
     client.ReceivePackets()
     client.ProcessMessages clientProcess
     client.SendPackets()
+
+    // Added extra two below because we added challenge requests.
+    System.Threading.Thread.Sleep(100)
+    server.Time <- (stopwatch.Elapsed)
+    server.ReceivePackets()
+    server.ProcessMessages serverProcess
+    server.SendPackets()
+
+    System.Threading.Thread.Sleep(100)
+    client.Time <- (stopwatch.Elapsed)
+    client.ReceivePackets()
+    client.ProcessMessages clientProcess
+    client.SendPackets()
+
 
     Assert.True(client.IsConnected)
     Assert.NotEqual(ClientId.Local, clientId)

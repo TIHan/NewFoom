@@ -81,7 +81,7 @@ type MessageFactory(poolMultiply) =
     member inline this.CreateMessage<'T when 'T :> Message>() =
         this.GetPool<'T>().Create() :?> 'T
 
-    member __.RecycleMessage<'T when 'T :> Message>(msg: 'T) : unit =
+    member __.RecycleMessage(msg: NetMessage) : unit =
         if msg.IsRecycled then
             failwithf "Message, %s, has already been recycled." (msg.GetType().Name)
         lookupPool.[int msg.TypeId].Recycle(msg)

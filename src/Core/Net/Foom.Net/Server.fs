@@ -40,10 +40,14 @@ type Server(msgFactory, port: int, maxClients) =
     member __.SendMessage(msg: NetMessage, clientId: ClientId, willRecycle) =
         if udpServerOpt.IsSome then
             clients.SendMessage(clientId, msg, willRecycle)
+        else
+            msgFactory.RecycleMessage(msg)
 
     member this.SendMessage(msg, willRecycle) =
         if udpServerOpt.IsSome then
             clients.SendMessage(msg, willRecycle)
+        else
+            msgFactory.RecycleMessage(msg)
 
     member __.SendPackets() =
         if udpServerOpt.IsSome then

@@ -63,11 +63,10 @@ type Client(msgFactory: MessageFactory) =
             disconnectRequest ()
 
     member __.SendMessage(msg, willRecycle) =
-        printfn "udpClient.IsConnected %A" udpClient.IsConnected
-        printfn "isConnected: %A" isConnected
-        printfn "Sending message %A" msg
         if udpClient.IsConnected && isConnected then
             netChannel.SendMessage(msg, willRecycle)
+        else
+            msgFactory.RecycleMessage(msg)
 
     member __.SendPackets() =
         if udpClient.IsConnected && isConnected then
@@ -85,7 +84,6 @@ type Client(msgFactory: MessageFactory) =
     /// Thread safe
     member __.ProcessMessages(f) =
         netChannel.ProcessReceivedMessages (fun msg ->
-            printfn "Client receiving: %A" msg
             match msg with
             | :? ConnectionChallengeRequested as msg ->
                 clientId <- msg.clientId
