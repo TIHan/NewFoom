@@ -45,22 +45,28 @@ type ClientManager(msgFactory, maxClients: int) =
 
     member __.SendMessage(clientId: ClientId, msg, willRecycle) =
         let client = manager.Get(clientId.Id)
-        client.SendMessage(msg, willRecycle)
+        if not client.IsChallenging then
+            client.SendMessage(msg, willRecycle)
 
     member __.SendMessage(msg, willRecycle) =
         manager.ForEach(fun _ client ->
-            client.SendMessage(msg, willRecycle)
+            if not client.IsChallenging then
+                client.SendMessage(msg, willRecycle)
         )
 
     member this.ReceivePacket(clientId: ClientId, packet) =
         let client = manager.Get(clientId.Id)
         try client.ReceivePacket(packet)
-        with | _ -> this.RemoveClient(clientId)
+        with | ex -> 
+            printfn "Tried to receive packet from client. Client removed because: %A" ex
+            this.RemoveClient(clientId)
 
     member this.SendPackets() =
         manager.ForEach(fun id client ->
             try client.SendPackets()
-            with | _ -> this.RemoveClient(ClientId(id))
+            with | ex -> 
+                printfn "Tried to send packets to client. Client removed because: %A" ex
+                this.RemoveClient(ClientId(id))
         )
 
     /// Thread safe
@@ -68,7 +74,23 @@ type ClientManager(msgFactory, maxClients: int) =
         lock lockObj
         |> fun _ ->
             manager.ForEach(fun id client ->
-                client.ProcessReceivedMessages(fun msg -> f (ClientId(id)) msg)
+                client.ProcessReceivedMessages(fun msg -> 
+                    printfn "Server reciving: %A" msg
+                    if client.IsChallenging then
+                        match msg with
+                        | :? ConnectionRequested ->
+                            let sendingMsg = msgFactory.CreateMessage<ConnectionChallengeRequested>()
+                            sendingMsg.clientId <- ClientId(id)
+                            client.SendMessage(sendingMsg, willRecycle = true)
+                        | :? ConnectionChallengeAccepted ->
+                            let sendingMsg = msgFactory.CreateMessage<ConnectionAccepted>()
+                            client.SendMessage(sendingMsg, willRecycle = true)
+                            client.IsChallenging <- false
+                            f (ClientId(id)) msg
+                        | _ -> () // TODO: Disconnect challenging client.
+                    else
+                        f (ClientId(id)) msg
+                )
             )
             // TODO: Do something here.
             //if not didSucceed then

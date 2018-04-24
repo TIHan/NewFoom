@@ -64,29 +64,19 @@ type Server(msgFactory, port: int, maxClients) =
                 | Some clientId -> 
                     clients.ReceivePacket(clientId, packet)
                 | _ -> 
-
                     let clientId = clients.AddClient(udpServerOpt.Value, currentTime, endPoint)
-
-                    try
-                        clients.ReceivePacket(clientId, packet)
-                    with | ex ->
-                        // TODO: ban client
-                        printfn "Client connection refused. Reason: %A" ex
-                        clients.RemoveClient(clientId)
+                    clients.ReceivePacket(clientId, packet)
 
     member this.ProcessMessages(f) =
         clients.ProcessReceivedMessages(fun clientId msg ->
             match msg with
-            | :? ConnectionRequested -> 
-                let msg = msgFactory.CreateMessage<ConnectionAccepted>()
-                msg.clientId <- clientId
-
-                this.SendMessage(msg, clientId, willRecycle = true)
+            | :? ConnectionChallengeAccepted -> 
+                let sendingMsg = msgFactory.CreateMessage<ConnectionAccepted>()
+                clients.SendMessage(clientId, sendingMsg, willRecycle = true)
                 f (ServerMessage.ClientConnected(clientId))
 
-            | :? DisconnectRequested ->
-                // TODO: Revisit
-                f (ServerMessage.ClientDisconnected(clientId))
+            | :? ConnectionRequested -> () // TODO: Revisit
+            | :? DisconnectRequested -> () // TODO: Revisit
 
             | :? Heartbeat -> ()
 

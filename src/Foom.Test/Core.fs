@@ -400,7 +400,6 @@ type Snapshot =
     new () = { snapshotId = 0L; serverTime = TimeSpan.Zero; playerCount = 0; playerSnapshots = null }
 
     override this.NetSerialize(writer, stream) =
-        failwith "beef"
         writer.WriteInt64(stream, &this.snapshotId)
         writer.Write(stream, &this.serverTime)
         writer.WriteInt(stream, &this.playerCount)

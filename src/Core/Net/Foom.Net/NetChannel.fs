@@ -23,6 +23,7 @@ type Sender(stream: PacketStream, msgFactory: MessageFactory, channelLookup: Dic
             let struct(msg, willRecycle) = msg
             let struct(channel, packetDeliveryType) = channelLookup.[msg.channelId]
 
+            printfn "Truly Sending: %A" msg
             channel.SerializeMessage(msg, willRecycle, fun data -> stream.Send(data, packetDeliveryType) |> ignore)
         stream.ProcessSending(f)
 
@@ -38,6 +39,8 @@ type Receiver(stream: PacketStream, msgFactory: MessageFactory, channelLookup: D
 
                 if msgFactory.GetChannelId(typeId) <> channelId then
                     failwith "Message received with invalid channel."
+
+                printfn "Truly Received: %A" (typeId)
 
                 let struct(channel, _) = channelLookup.[channelId]
                 let numBytesRead = channel.Receive(data)

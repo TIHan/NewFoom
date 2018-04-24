@@ -26,6 +26,8 @@ module internal NetworkHelpers =
         msgFactory.RegisterChannel(DefaultChannelIds.Heartbeat, ChannelType.Reliable)
         msgFactory.RegisterMessage<Heartbeat>(Heartbeat.DefaultTypeId, DefaultChannelIds.Heartbeat, Heartbeat.DefaultPoolAmount)
         msgFactory.RegisterMessage<ConnectionRequested>(ConnectionRequested.DefaultTypeId, DefaultChannelIds.Connection, ConnectionRequested.DefaultPoolAmount)
+        msgFactory.RegisterMessage<ConnectionChallengeRequested>(ConnectionChallengeRequested.DefaultTypeId, DefaultChannelIds.Connection, ConnectionChallengeRequested.DefaultPoolAmount)
+        msgFactory.RegisterMessage<ConnectionChallengeAccepted>(ConnectionChallengeAccepted.DefaultTypeId, DefaultChannelIds.Connection, ConnectionChallengeAccepted.DefaultPoolAmount)
         msgFactory.RegisterMessage<ConnectionAccepted>(ConnectionAccepted.DefaultTypeId, DefaultChannelIds.Connection, ConnectionAccepted.DefaultPoolAmount)
         msgFactory.RegisterMessage<DisconnectRequested>(DisconnectRequested.DefaultTypeId, DefaultChannelIds.Connection, DisconnectRequested.DefaultPoolAmount)
         msgFactory.RegisterMessage<DisconnectAccepted>(DisconnectAccepted.DefaultTypeId, DefaultChannelIds.Connection, DisconnectAccepted.DefaultPoolAmount)

@@ -29,7 +29,7 @@ type ConnectionRequested() =
     static member DefaultPoolAmount = 20
 
 [<Sealed>]
-type ConnectionAccepted =
+type ConnectionChallengeRequested =
     inherit NetMessage
 
     val mutable clientId : ClientId
@@ -47,7 +47,7 @@ type ConnectionAccepted =
     static member DefaultPoolAmount = 20
 
 [<Sealed>]
-type DisconnectRequested() =
+type ConnectionChallengeAccepted() =
     inherit NetMessage()
 
     static member DefaultTypeId = Byte.MaxValue - 3uy
@@ -55,10 +55,26 @@ type DisconnectRequested() =
     static member DefaultPoolAmount = 20
 
 [<Sealed>]
-type DisconnectAccepted() =
+type ConnectionAccepted() =
     inherit NetMessage()
 
     static member DefaultTypeId = Byte.MaxValue - 4uy
+
+    static member DefaultPoolAmount = 20
+
+[<Sealed>]
+type DisconnectRequested() =
+    inherit NetMessage()
+
+    static member DefaultTypeId = Byte.MaxValue - 5uy
+
+    static member DefaultPoolAmount = 20
+
+[<Sealed>]
+type DisconnectAccepted() =
+    inherit NetMessage()
+
+    static member DefaultTypeId = Byte.MaxValue - 6uy
 
     static member DefaultPoolAmount = 20
 
@@ -76,6 +92,6 @@ type ClientDisconnected =
     override this.NetReset() =
         this.reason <- String.Empty
 
-    static member DefaultTypeId = Byte.MaxValue - 5uy
+    static member DefaultTypeId = Byte.MaxValue - 7uy
 
     static member DefaultPoolAmount = 20
