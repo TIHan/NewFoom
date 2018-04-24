@@ -2,6 +2,7 @@
 
 open System
 open System.Numerics
+open System.Threading
 open System.Collections.Concurrent
 open System.Collections.Generic
 open System.Linq
@@ -36,25 +37,30 @@ type ClientGame(em: EntityManager, input: IInput, renderer: IRenderer, client: I
     let spriteStates = Array.zeroCreate<int> 64
     let mutable clientId = ClientId.Local
 
-    let mutable latestSnap = 31us
     let masterPlayerSnapshots = Array.init<UnmanagedArray<PlayerSnapshot>> 30 (fun _ -> UnmanagedArray<PlayerSnapshot>.Create(32768, fun _ -> PlayerSnapshot()))
     let sortedList = SortedList()
 
     let mutable renderTime = None
 
+    do
+        let mutable snap = 30us
+        // This event will happen on a different thread.
+        client.GetBeforeDeserializedEvent<Snapshot>()
+        |> Event.add (fun snapshotMsg ->
+            snapshotMsg.playerSnapshots <- masterPlayerSnapshots.[int snap]
+            snap <- (snap + 1us) % 30us
+        )
+
     let processMessages time =
         client.ProcessMessages(function
-            | ClientMessage.ConnectionAccepted(x) -> clientId <- x
+            | ClientMessage.ConnectionAccepted(x) -> 
+                printfn "Connection Accepted."
+                clientId <- x
             | ClientMessage.DisconnectAccepted _ -> ()
             | ClientMessage.Message(msg) -> 
                 match msg with
                 | :? Snapshot as snapshotMsg ->
-
-                    let playerSnapshots = 
-                        let playerSnapshots = masterPlayerSnapshots.[int snapshotMsg.snapshotId % 30]
-                        playerSnapshots
-
-                    latestSnap <- (latestSnap + 1us) % 30us
+                    let playerSnapshots = snapshotMsg.playerSnapshots
 
                     if sortedList.ContainsKey(snapshotMsg.snapshotId) |> not then
                         if sortedList.Count > 3 then
@@ -93,19 +99,14 @@ type ClientGame(em: EntityManager, input: IInput, renderer: IRenderer, client: I
             match evt with
             | LoadMap name ->
                 camera.Rotation <- Quaternion.CreateFromAxisAngle (Vector3.UnitX, 90.f * (float32 Math.PI / 180.f))
-                client.Connect("localhost", 27015)
 
                 let mutable beef = false
 
-                let connection = async {
-                    while beef = false do
-                        processMessages time
-                        client.SendPackets()
-                        do! Async.Sleep(10) } |> Async.StartAsTask
                 zombiemanSpriteBatchOpt <- Some(loadMap name camera renderer)
+                client.Connect("localhost", 27015)
+                client.SendPackets()
                 renderer.Draw(0.f)
-                beef <- true
-                connection.Wait()
+
             | _ -> ()
 
         if renderTime.IsSome then

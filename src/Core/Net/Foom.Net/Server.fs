@@ -69,9 +69,9 @@ type Server(msgFactory, port: int, maxClients) =
 
                     try
                         clients.ReceivePacket(clientId, packet)
-                    with | _ ->
+                    with | ex ->
                         // TODO: ban client
-                        printfn "Client connection refused."
+                        printfn "Client connection refused. Reason: %A" ex
                         clients.RemoveClient(clientId)
 
     member this.ProcessMessages(f) =
