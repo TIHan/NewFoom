@@ -19,5 +19,9 @@ type IBackgroundClient =
 
     abstract OnException : IEvent<Exception>
 
+    abstract GetBeforeSerializedEvent<'T when 'T :> NetMessage and 'T : (new : unit -> 'T)> : unit -> IEvent<'T>
+
+    abstract GetBeforeDeserializedEvent<'T when 'T :> NetMessage and 'T : (new : unit -> 'T)> : unit -> IEvent<'T>
+
     inherit IDisposable
 

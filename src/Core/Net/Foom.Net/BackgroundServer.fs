@@ -112,6 +112,8 @@ type BackgroundServer(networkChannels, port, maxClients) =
 
         let mutable connectedQueue = None
 
+        let noOpEvent = Event<unit>()
+
         localClientOpt <- Some(localClient, localClientReceiveQueue)
         receivedLocalClientMsgsOpt <- Some(receivedLocalClientMsgs)
         {
@@ -144,6 +146,14 @@ type BackgroundServer(networkChannels, port, maxClients) =
                         | _ -> ()
 
                 member __.OnException = onLocalClientException.Publish
+
+                member __.GetBeforeSerializedEvent() =
+                    noOpEvent.Publish
+                    |> Event.map (fun _ -> Unchecked.defaultof<_>)
+
+                member __.GetBeforeDeserializedEvent() =
+                    noOpEvent.Publish
+                    |> Event.map (fun _ -> Unchecked.defaultof<_>)                    
 
             interface IDisposable with
 

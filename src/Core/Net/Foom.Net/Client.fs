@@ -21,9 +21,7 @@ type Client(msgFactory: MessageFactory) =
 
     // Packet streams and channels
     let stream = PacketStream()
-    let channelLookup = msgFactory.CreateChannelLookup()
-    let sender = Sender(stream, msgFactory, channelLookup)
-    let receiver = Receiver(stream, msgFactory, channelLookup)
+    let netChannel = NetChannel(stream, msgFactory, msgFactory.CreateChannelLookup())
 
     // Client state
     let mutable currentTime = TimeSpan.Zero
@@ -31,19 +29,19 @@ type Client(msgFactory: MessageFactory) =
 
     // Internal client messages
     let sendPackets () =
-        sender.SendPackets(fun packet -> udpClient.Send(packet))
+        netChannel.SendPackets(fun packet -> udpClient.Send(packet))
 
     let heartbeat () =
         let msg = msgFactory.CreateMessage<Heartbeat>()
-        sender.EnqueueMessage(msg, willRecycle = true)
+        netChannel.SendMessage(msg, willRecycle = true)
 
     let connectionRequest () =
         let msg = msgFactory.CreateMessage<ConnectionRequested>()
-        sender.EnqueueMessage(msg, willRecycle = true)
+        netChannel.SendMessage(msg, willRecycle = true)
 
     let disconnectRequest () =
         let msg = msgFactory.CreateMessage<DisconnectRequested>()
-        sender.EnqueueMessage(msg, willRecycle = true)
+        netChannel.SendMessage(msg, willRecycle = true)
 
     member __.Connect(address: string, port: int) =
         if not isConnected && not udpClient.IsConnected then
@@ -56,7 +54,7 @@ type Client(msgFactory: MessageFactory) =
 
     member __.SendMessage(msg, willRecycle) =
         if udpClient.IsConnected && isConnected then
-            sender.EnqueueMessage(msg, willRecycle)
+            netChannel.SendMessage(msg, willRecycle)
 
     member __.SendPackets() =
         if udpClient.IsConnected && isConnected then
@@ -69,11 +67,11 @@ type Client(msgFactory: MessageFactory) =
         if udpClient.IsConnected then
             while udpClient.IsDataAvailable do
                 let packet = udpClient.Receive()
-                receiver.EnqueuePacket packet
+                netChannel.ReceivePacket(packet)
 
     /// Thread safe
     member __.ProcessMessages(f) =
-        receiver.ProcessMessages (fun msg ->
+        netChannel.ProcessReceivedMessages (fun msg ->
             match msg with
             | :? ConnectionAccepted as msg -> 
                 isConnected <- true
@@ -105,6 +103,10 @@ type Client(msgFactory: MessageFactory) =
 
     member __.RecycleMessage(msg) =
         msgFactory.RecycleMessage(msg)
+
+    member __.GetBeforeSerializedEvent(typeId) = netChannel.GetBeforeSerializedEvent(typeId)
+
+    member __.GetBeforeDeserializedEvent(typeId) = netChannel.GetBeforeDeserializedEvent(typeId)
 
     interface IDisposable with
 

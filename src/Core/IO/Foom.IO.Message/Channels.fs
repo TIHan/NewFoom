@@ -15,6 +15,12 @@ type AbstractChannel internal (serializer: Serializer, receiver: Receiver) =
     member __.ProcessReceived(f) =
         receiver.Process(f)
 
+    /// Thread safe.
+    member __.GetBeforeSerializedEvent(typeId) = serializer.GetBeforeSerializedEvent(typeId)
+
+    /// Thread safe.
+    member __.GetBeforeDeserializedEvent(typeId) = receiver.GetBeforeDeserializedEvent(typeId)
+
 [<Sealed>]
 type Channel(lookup) =
     inherit AbstractChannel(Serializer(lookup), Receiver(ReceiverType.Normal, lookup))

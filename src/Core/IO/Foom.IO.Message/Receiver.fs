@@ -15,6 +15,8 @@ type internal ReceiverType =
 [<Sealed>]
 type internal Receiver(receiverType: ReceiverType, lookup: MessagePoolBase []) =
 
+    let beforeDeserializedEvents = ConcurrentDictionary<byte, Event<Message>>()
+
     let sequenceMoreRecent (s1 : uint16) (s2 : uint16) =
         (s1 > s2) &&
         (s1 - s2 <= UInt16.MaxValue / 2us)
@@ -23,7 +25,6 @@ type internal Receiver(receiverType: ReceiverType, lookup: MessagePoolBase []) =
         (s2 - s1 > UInt16.MaxValue / 2us)
 
     let msgQueue = ConcurrentQueue()
-    let msgQueueLock = obj ()
     let mutable latest = 65535us
     let mutable latestSequencedMsg = null
 
@@ -33,6 +34,10 @@ type internal Receiver(receiverType: ReceiverType, lookup: MessagePoolBase []) =
 
     let receive data (pool: MessagePoolBase) =
         let msg = pool.Create()
+
+        match beforeDeserializedEvents.TryGetValue(msg.TypeId) with
+        | (true, evt) -> evt.Trigger(msg)
+        | _ -> ()
 
         let numBytesRead = msg.StartDeserialize(data)
         let seqId = msg.SequenceId
@@ -68,7 +73,17 @@ type internal Receiver(receiverType: ReceiverType, lookup: MessagePoolBase []) =
             msgQueue.Enqueue(msg)
         numBytesRead
 
-    member this.Enqueue(data: Span<byte>) =
+    member __.GetBeforeDeserializedEvent(typeId: byte) =
+        match beforeDeserializedEvents.TryGetValue(typeId) with
+        | (true, evt) -> evt.Publish
+        | _ ->
+            let evt = Event<Message>()
+            if beforeDeserializedEvents.TryAdd(typeId, evt) |> not then
+                beforeDeserializedEvents.[typeId].Publish
+            else
+                evt.Publish
+
+    member __.Enqueue(data: Span<byte>) =
         let typeId = data.[0]
         match lookup.[int typeId] with
         | null -> failwithf "Can't find message type with TypeId, %i." typeId

@@ -13,6 +13,8 @@ type internal Receiver =
 
     new : ReceiverType * lookup: MessagePoolBase [] -> Receiver
 
+    member GetBeforeDeserializedEvent : typeId: byte -> IEvent<Message>
+
     member Enqueue : Span<byte> -> int
 
     member Process : (Message -> unit) -> unit

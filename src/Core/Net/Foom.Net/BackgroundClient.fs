@@ -76,6 +76,24 @@ type internal BackgroundClient(networkChannels) =
 
         member __.OnException = exceptionEvent.Publish
 
+        member __.GetBeforeSerializedEvent<'T when 'T :> NetMessage and 'T : (new : unit -> 'T)>() =
+            let typeId = msgFactory.GetTypeId<'T>()
+            client.GetBeforeSerializedEvent(typeId)
+            |> Event.map (fun msg -> 
+                match msg with
+                | :? 'T as msg -> msg
+                | _ -> failwith "Should not happen. Message is of incorrect type."
+            )
+
+        member __.GetBeforeDeserializedEvent<'T when 'T :> NetMessage and 'T : (new : unit -> 'T)>() =
+            let typeId = msgFactory.GetTypeId<'T>()
+            client.GetBeforeDeserializedEvent(typeId)
+            |> Event.map (fun msg -> 
+                match msg with
+                | :? 'T as msg -> msg
+                | _ -> failwith "Should not happen. Message is of incorrect type."
+            )
+
     interface IDisposable with
 
         member __.Dispose() =

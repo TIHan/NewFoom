@@ -22,6 +22,7 @@ type Sender(stream: PacketStream, msgFactory: MessageFactory, channelLookup: Dic
         while queue.TryDequeue(&msg) do
             let struct(msg, willRecycle) = msg
             let struct(channel, packetDeliveryType) = channelLookup.[msg.channelId]
+
             channel.SerializeMessage(msg, willRecycle, fun data -> stream.Send(data, packetDeliveryType) |> ignore)
         stream.ProcessSending(f)
 
@@ -69,12 +70,26 @@ type NetChannel(stream, msgFactory, channelLookup) =
     member __.SendMessage(msg, willRecycle) =
         sender.EnqueueMessage(msg, willRecycle)
 
+    /// Not thread safe
     member __.SendPackets(f) =
         sender.SendPackets(f)
 
+    /// Not thread safe
     member __.ReceivePacket(packet: Span<byte>) =
         receiver.EnqueuePacket(packet)
 
     /// Thread safe
     member __.ProcessReceivedMessages(f) =
         receiver.ProcessMessages(f)
+
+    /// Thread safe
+    member __.GetBeforeSerializedEvent(typeId: byte) = 
+        match channelLookup.TryGetValue(typeId) with
+        | (true, struct(channel, _)) -> channel.GetBeforeSerializedEvent(typeId)
+        | _ -> failwithf "TypeId, %i, has not been registered to a channel. Unable to get event." typeId
+
+    /// Thread safe
+    member __.GetBeforeDeserializedEvent(typeId: byte) = 
+        match channelLookup.TryGetValue(typeId) with
+        | (true, struct(channel, _)) -> channel.GetBeforeDeserializedEvent(typeId)
+        | _ -> failwithf "TypeId, %i, has not been registered to a channel. Unable to get event." typeId
