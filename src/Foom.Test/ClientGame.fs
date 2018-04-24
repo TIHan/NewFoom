@@ -11,13 +11,15 @@ open Foom.Renderer.GL
 open Foom.Renderer.GL.Desktop
 open Foom.Input
 open Foom.Net
+open Foom.EntityManager
+open Foom.Core
 
 type ClientEvent =
     | Connected
     | LoadMap of name: string
 
 [<Sealed>]
-type ClientGame(input: IInput, renderer: IRenderer, client: IBackgroundClient) =
+type ClientGame(em: EntityManager, input: IInput, renderer: IRenderer, client: IBackgroundClient) =
     inherit AbstractClientGame()
 
     let eventQueue = ConcurrentQueue()
@@ -31,14 +33,12 @@ type ClientGame(input: IInput, renderer: IRenderer, client: IBackgroundClient) =
     let mutable mov = Movement.Default
     let mutable inputState = Unchecked.defaultof<InputState>
 
-    let mutable playerCount = 0
     let spriteStates = Array.zeroCreate<int> 64
     let mutable clientId = ClientId.Local
 
     let mutable latestSnap = 31us
-    let snapshotHistory = Array.init 32 (fun _ -> Array.zeroCreate<Player> 64)
+    let masterPlayerSnapshots = Array.init<UnmanagedArray<PlayerSnapshot>> 30 (fun _ -> UnmanagedArray<PlayerSnapshot>.Create(32768, fun _ -> PlayerSnapshot()))
     let sortedList = SortedList()
-    let queue = Queue()
 
     let mutable renderTime = None
 
@@ -49,20 +49,18 @@ type ClientGame(input: IInput, renderer: IRenderer, client: IBackgroundClient) =
             | ClientMessage.Message(msg) -> 
                 match msg with
                 | :? Snapshot as snapshotMsg ->
-                    playerCount <- snapshotMsg.playerCount
 
-                    latestSnap <- (latestSnap + 1us) % 32us
+                    let playerSnapshots = 
+                        let playerSnapshots = masterPlayerSnapshots.[int snapshotMsg.snapshotId % 30]
+                        playerSnapshots
 
-                    let playerStates = snapshotHistory.[int latestSnap]
-
-                    for i = 0 to playerCount - 1 do
-                        playerStates.[i] <- snapshotMsg.playerState.[i]
+                    latestSnap <- (latestSnap + 1us) % 30us
 
                     if sortedList.ContainsKey(snapshotMsg.snapshotId) |> not then
                         if sortedList.Count > 3 then
                             printfn "deleting snapshot"
                             sortedList.RemoveAt(0)
-                        sortedList.Add(snapshotMsg.snapshotId, struct(playerStates, time, snapshotMsg.serverTime))
+                        sortedList.Add(snapshotMsg.snapshotId, struct(snapshotMsg.playerCount, playerSnapshots, time, snapshotMsg.serverTime))
 
                 | _ -> ()
         )
@@ -115,7 +113,7 @@ type ClientGame(input: IInput, renderer: IRenderer, client: IBackgroundClient) =
 
         // end events
         if sortedList.Count > 0 then
-            let struct(playerStates, snapTime, serverTime) = sortedList.Values.[0]
+            let struct(playerCount, playerSnapshots, snapTime, serverTime) = sortedList.Values.[0]
             let rTime = 
                 match renderTime with
                 | None -> 
@@ -123,21 +121,21 @@ type ClientGame(input: IInput, renderer: IRenderer, client: IBackgroundClient) =
                     renderTime.Value
                 | Some renderTime -> renderTime
            // printfn "snapshot count: %A" sortedList.Count
-            if rTime - interval - interval >= serverTime || sortedList.Count = 1 then
+            if (rTime - interval - interval >= serverTime) || clientId.IsLocal then
 
                 sortedList.RemoveAt(0)
                 for i = 0 to playerCount - 1 do
-                    let player = &playerStates.[i]
+                    let player = playerSnapshots.GetByRef(i)
 
                     let sprite = &spriteStates.[i]
                     if sprite = 0 && zombiemanSpriteBatchOpt.IsSome then
                         sprite <- zombiemanSpriteBatchOpt.Value.CreateSprite()
 
                     if zombiemanSpriteBatchOpt.IsSome then
-                        zombiemanSpriteBatchOpt.Value.SetSpritePosition(sprite, playerStates.[i].translation)
+                        zombiemanSpriteBatchOpt.Value.SetSpritePosition(sprite, player.position)
 
                     if player.clientId = clientId then
-                        camera.Translation <- player.translation
+                        camera.Translation <- player.position
                         camera.Rotation <- player.rotation
             else
                 printfn "no updating snapshot"
@@ -152,11 +150,11 @@ type ClientGame(input: IInput, renderer: IRenderer, client: IBackgroundClient) =
     override __.Render(time, deltaTime) =
         renderer.Draw(deltaTime)
 
-    static member Create(client) =
+    static member Create(em, client) =
         let app = Backend.init()
         let input = Foom.Input.Desktop.DesktopInput(app.Window) :> IInput
 
         let desktopGL = DesktopGL(app)
         let renderer = Renderer(desktopGL) :> IRenderer
 
-        ClientGame(input, renderer, client)
+        ClientGame(em, input, renderer, client)

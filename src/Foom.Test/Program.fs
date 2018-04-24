@@ -35,9 +35,20 @@ open Foom.Test
 open Foom.Net
 open Foom.IO.Message
 open Foom.Game
+open Foom.EntityManager
 
 [<EntryPoint>]
 let main argv =
+
+    let createEntityManager () =
+        let em = new EntityManager(32768)
+
+        em.RegisterComponent<Transform>()
+        em.RegisterComponent<Direction>()
+        em.RegisterComponent<Render>()
+        em.RegisterComponent<UserControlled>()
+        em.RegisterComponent<SpectatorTag>()
+        em
 
     let netChans =
         [
@@ -75,9 +86,9 @@ let main argv =
 
     let svGame = 
         match serverOpt with
-        | Some server -> ServerGame.Create(server) :> AbstractServerGame
+        | Some server -> ServerGame.Create(createEntityManager(), server) :> AbstractServerGame
         | _ -> EmptyServerGame() :> AbstractServerGame
-    let clGame = ClientGame.Create(clientOpt.Value)
+    let clGame = ClientGame.Create(createEntityManager(), clientOpt.Value)
     let game = Game(svGame, clGame, 30)
 
     game.Start()

@@ -32,6 +32,7 @@ open Foom.Input
 open Foom.Input.Desktop
 open Foom.Net
 open Foom.EntityManager
+open Foom.Core
 
 let createBitmap (pixels: Pixel [,]) =
     let mutable isTransparent = false
@@ -255,8 +256,6 @@ type Movement =
         IsMovingRight: bool
     }
 
-    interface IComponent
-
     static member Default =
         {
             Yaw = 0.f
@@ -291,16 +290,53 @@ let getMovement (input: InputState) mov =
     )
 
 [<Struct>]
-type Player =
-    {
-        mutable clientId: ClientId
-        mutable translation: Vector3
-        mutable rotation: Quaternion
-    }
+type Transform =
+    val mutable position : Vector3
+    val mutable rotation : Quaternion
 
     interface IComponent
 
-let updatePlayer (mov: Movement) (player: byref<Player>) =
+[<Struct>]
+type Direction =
+    val mutable value : byte
+
+    interface IComponent
+
+[<Struct>]
+type Render =
+    val mutable index : int
+    val mutable frame : uint16
+
+    interface IComponent
+
+[<Struct>]
+type UserControlled =
+    val mutable clientId : ClientId
+    val mutable movement : Movement
+
+    interface IComponent
+
+type SpectatorTag = struct interface IComponent end
+
+[<Struct>]
+type PlayerSnapshot =
+    val mutable entity : Entity
+    val mutable position : Vector3
+    val mutable rotation : Quaternion
+    val mutable renderIndex : int
+    val mutable renderFrame : uint16
+    val mutable direction : byte
+    val mutable clientId : ClientId
+
+[<Struct>]
+type RenderableSnapshot =
+    val mutable entity : Entity
+    val mutable position : Vector3
+    val mutable renderIndex : int
+    val mutable renderFrame : uint16
+    val mutable direction : byte
+
+let updatePlayer (mov: Movement) (player: byref<Transform>) =
     let isMovingForward = mov.IsMovingForward
     let isMovingLeft = mov.IsMovingLeft
     let isMovingBackward = mov.IsMovingBackward
@@ -339,7 +375,7 @@ let updatePlayer (mov: Movement) (player: byref<Player>) =
             0.f
         )
 
-    player.translation <- player.translation + acc
+    player.position <- player.position + acc
 
 type UserInfo() =
     inherit NetMessage()
@@ -359,13 +395,18 @@ type Snapshot =
     val mutable snapshotId : int64
     val mutable serverTime : TimeSpan
     val mutable playerCount : int
-    val mutable playerState : Player []
+    val mutable playerSnapshots : UnmanagedArray<PlayerSnapshot>
 
-    new () = { snapshotId = 0L; serverTime = TimeSpan.Zero; playerCount = 0; playerState = Array.zeroCreate<Player> 64 }
+    new () = { snapshotId = 0L; serverTime = TimeSpan.Zero; playerCount = 0; playerSnapshots = null }
 
     override this.NetSerialize(writer, stream) =
+        failwith "beef"
         writer.WriteInt64(stream, &this.snapshotId)
         writer.Write(stream, &this.serverTime)
         writer.WriteInt(stream, &this.playerCount)
         for i = 0 to this.playerCount - 1 do
-            writer.Write(stream, &this.playerState.[i])
+            let r = this.playerSnapshots.GetByRef(i)
+            writer.Write(stream, &r)
+
+    override this.NetReset() =
+        this.playerSnapshots <- null

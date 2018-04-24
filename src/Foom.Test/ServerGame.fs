@@ -27,9 +27,10 @@ module private BestHelpers =
         )
 
 open Foom.EntityManager
+open Foom.Core
 
 [<Sealed>]
-type ServerGame(server: BackgroundServer) =
+type ServerGame(em: EntityManager, server: BackgroundServer) =
     inherit AbstractServerGame()
 
     let eventQueue = ConcurrentQueue()
@@ -40,24 +41,22 @@ type ServerGame(server: BackgroundServer) =
 
     let mutable snapshotId = 0L
 
-
-    let em = new EntityManager(32000)
-
-    do
-        em.RegisterComponent<Player>()
-        em.RegisterComponent<Movement>()
+    let masterPlayerSnapshots = Array.init<UnmanagedArray<PlayerSnapshot>> 30 (fun _ -> UnmanagedArray<PlayerSnapshot>.Create(32768, fun _ -> PlayerSnapshot()))
 
     override __.Update(time, interval) =
         server.ProcessMessages(function
             | ServerMessage.ClientConnected(clientId) ->
                 let ent = em.Spawn()
 
-                let player = em.Add<Player>(ent)
-                let _movement = em.Add<Movement>(ent)
+                let transform = em.Add<Transform>(ent)
+                let _direction = em.Add<Direction>(ent)
+                let _render = em.Add<Render>(ent)
+                let userControlled = em.Add<UserControlled>(ent)
+                let _spectatorTag = em.Add<SpectatorTag>(ent)
 
-                player.clientId <- clientId
+                userControlled.clientId <- clientId
                 match player1StartPosition with
-                | Some pos -> player.translation <- pos
+                | Some pos -> transform.position <- pos
                 | _ -> ()
 
                 playerLookup.Add(clientId, ent)
@@ -68,27 +67,36 @@ type ServerGame(server: BackgroundServer) =
             | ServerMessage.Message(clientId, msg) ->
                 match msg with
                 | :? UserInfo as userInfoMsg when playerLookup.ContainsKey(clientId) ->
-                    em.TryGetComponent<Movement>(playerLookup.[clientId], fun movement ->
-                        movement <- userInfoMsg.Movement
+                    em.TryGetComponent<UserControlled>(playerLookup.[clientId], fun userControlled ->
+                        userControlled.movement <- userInfoMsg.Movement
                     )
                 | _ -> ()
         )
 
-        em.ForEach<Player, Movement>(fun _ player movement ->
-            updatePlayer movement &player
+        em.ForEach<UserControlled, Transform>(fun _ userControlled transform ->
+            updatePlayer userControlled.movement &transform
         )
 
         let snapshotMsg = server.CreateMessage<Snapshot>()
 
         let mutable i = 0
 
-        em.ForEach<Player>(fun _ player ->
-            snapshotMsg.playerState.[i] <- player
+        let playerSnapshots = masterPlayerSnapshots.[int snapshotId % 30]
+
+        em.ForEach<Transform, Direction, Render, UserControlled, SpectatorTag>(fun ent transform direction render userControlled _ ->
+            let r = playerSnapshots.GetByRef(i)
+            r.entity <- ent
+            r.position <- transform.position
+            r.rotation <- transform.rotation
+            r.renderIndex <- render.index
+            r.renderFrame <- render.frame
+            r.direction <- direction.value
+            r.clientId <- userControlled.clientId
             i <- i + 1
         )
 
         snapshotMsg.playerCount <- i
-
+        snapshotMsg.playerSnapshots <- playerSnapshots
         snapshotMsg.snapshotId <- snapshotId
         snapshotMsg.serverTime <- time
         snapshotId <- snapshotId + 1L
@@ -96,5 +104,5 @@ type ServerGame(server: BackgroundServer) =
         server.SendPackets()
         false
 
-    static member Create(server) =
-        ServerGame(server)
+    static member Create(em, server) =
+        ServerGame(em, server)

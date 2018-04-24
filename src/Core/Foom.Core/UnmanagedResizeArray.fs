@@ -76,6 +76,7 @@ type UnmanagedResizeArray<'T when 'T : unmanaged>(capacity) =
         member __.Dispose() =
             Marshal.FreeHGlobal(NativePtr.toNativeInt buffer)
 
+[<AllowNullLiteral>]
 type UnmanagedArray<'T when 'T : unmanaged> =
 
     val Buffer : nativeptr<'T>
