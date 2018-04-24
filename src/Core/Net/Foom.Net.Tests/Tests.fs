@@ -213,6 +213,8 @@ let ``Udp Client and Server Simple - Background`` () =
         client.ProcessMessages(fun _ -> ())
         client.SendMessage(msg)
 
+        client.SendPackets()
+
         System.Threading.Thread.Sleep(700)
         server.ProcessMessages(fun msg ->
             match msg with
@@ -223,6 +225,7 @@ let ``Udp Client and Server Simple - Background`` () =
                 | _ -> ()
             | _ -> ()
         )
+        server.SendPackets()
 
     System.Threading.Thread.Sleep(700)
 
