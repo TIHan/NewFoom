@@ -14,6 +14,8 @@ type Message =
 
     [<DefaultValue>] val mutable internal sequenceId : uint16
 
+    [<DefaultValue>] val mutable internal refCount : int
+
     member TypeId : byte with get
 
     member SequenceId : uint16 with get
@@ -31,6 +33,8 @@ type Message =
     member internal MainSerialize : byref<Writer> * Span<byte> -> int
 
     member internal MainReset : unit -> unit
+
+    member IncrementRefCount : unit -> unit
 
     abstract Serialize : byref<Writer> * Span<byte> -> unit
 

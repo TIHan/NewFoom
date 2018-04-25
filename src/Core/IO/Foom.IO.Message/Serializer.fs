@@ -37,5 +37,4 @@ type internal Serializer(lookup: MessagePoolBase []) =
             let numBytesWritten = msg.StartSerialize(Span(buffer))
             f.Invoke(Span(buffer, 0, numBytesWritten))
 
-            if willRecycle then
-                pool.Recycle(msg)
+            pool.Recycle(msg)

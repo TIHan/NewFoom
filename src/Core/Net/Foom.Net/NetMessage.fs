@@ -14,9 +14,7 @@ type NetMessage =
 
     val mutable channelId : byte
 
-    val mutable internal refCount : int
-
-    new () = { channelId = 0uy; refCount = 0 }
+    new () = { channelId = 0uy } 
 
     override this.Serialize(writer, stream) =
         writer.WriteByte(stream, &this.channelId) 
@@ -24,7 +22,6 @@ type NetMessage =
 
     override this.Reset() =
         this.channelId <- 0uy
-        this.refCount <- 0
         this.NetReset()
 
     abstract NetSerialize : byref<Writer> * Span<byte> -> unit

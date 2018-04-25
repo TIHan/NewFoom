@@ -41,12 +41,14 @@ type Server(msgFactory, port: int, maxClients) =
         if udpServerOpt.IsSome then
             clients.SendMessage(clientId, msg, willRecycle)
         else
+            msg.IncrementRefCount()
             msgFactory.RecycleMessage(msg)
 
-    member this.SendMessage(msg, willRecycle) =
+    member this.SendMessage(msg: NetMessage, willRecycle) =
         if udpServerOpt.IsSome then
             clients.SendMessage(msg, willRecycle)
         else
+            msg.IncrementRefCount()
             msgFactory.RecycleMessage(msg)
 
     member __.SendPackets() =
@@ -75,8 +77,6 @@ type Server(msgFactory, port: int, maxClients) =
         clients.ProcessReceivedMessages(fun clientId msg ->
             match msg with
             | :? ConnectionChallengeAccepted -> 
-                let sendingMsg = msgFactory.CreateMessage<ConnectionAccepted>()
-                clients.SendMessage(clientId, sendingMsg, willRecycle = true)
                 f (ServerMessage.ClientConnected(clientId))
 
             | :? ConnectionRequested -> () // TODO: Revisit

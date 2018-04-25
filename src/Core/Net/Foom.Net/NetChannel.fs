@@ -1,6 +1,7 @@
 ﻿namespace Foom.Net
 
 open System
+open System.Threading
 open System.Collections.Generic
 open System.Collections.Concurrent
 open Foom.IO.Packet
@@ -15,20 +16,13 @@ type Sender(stream: PacketStream, msgFactory: MessageFactory, channelLookup: Dic
 
     member __.EnqueueMessage(msg: NetMessage, willRecycle) =
         msg.channelId <- msgFactory.GetChannelId(msg.TypeId)
-        System.Threading.Interlocked.Increment(&msg.refCount) |> ignore
         queue.Enqueue(msg)
 
     member __.SendPackets(f) =
         let mutable msg = Unchecked.defaultof<NetMessage>
         while queue.TryDequeue(&msg) do
             let struct(channel, packetDeliveryType) = channelLookup.[msg.channelId]
-
-            let willRecycle =
-                let refCount = System.Threading.Interlocked.Decrement(&msg.refCount)
-                if msg.refCount <= 0 then true
-                                     else false
-
-            channel.SerializeMessage(msg, willRecycle, fun data -> stream.Send(data, packetDeliveryType) |> ignore)
+            channel.SerializeMessage(msg, true, fun data -> stream.Send(data, packetDeliveryType) |> ignore)
         stream.ProcessSending(f)
 
 [<Sealed>]

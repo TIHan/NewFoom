@@ -36,21 +36,25 @@ type Client(msgFactory: MessageFactory) =
     let heartbeat () =
         if isConnected then
             let msg = msgFactory.CreateMessage<Heartbeat>()
+            msg.IncrementRefCount()
             netChannel.SendMessage(msg, willRecycle = true)
 
     let connectionRequest () =
         if not isConnected then
             let msg = msgFactory.CreateMessage<ConnectionRequested>()
+            msg.IncrementRefCount()
             netChannel.SendMessage(msg, willRecycle = true)
 
     let connectionChallengeAccepted () =
         if not isConnected then
             let msg = msgFactory.CreateMessage<ConnectionChallengeAccepted>()
+            msg.IncrementRefCount()
             netChannel.SendMessage(msg, willRecycle = true)
 
     let disconnectRequest () =
         if isConnected then
             let msg = msgFactory.CreateMessage<DisconnectRequested>()
+            msg.IncrementRefCount()
             netChannel.SendMessage(msg, willRecycle = true)
 
     member __.Connect(address: string, port: int) =
@@ -62,7 +66,10 @@ type Client(msgFactory: MessageFactory) =
         if udpClient.IsConnected && isConnected then
             disconnectRequest ()
 
-    member __.SendMessage(msg, willRecycle) =
+    member __.SendMessage(msg: NetMessage, willRecycle) =
+
+        msg.IncrementRefCount()
+
         if udpClient.IsConnected && isConnected then
             netChannel.SendMessage(msg, willRecycle)
         else

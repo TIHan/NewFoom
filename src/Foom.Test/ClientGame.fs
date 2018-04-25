@@ -116,6 +116,9 @@ type ClientGame(em: EntityManager, input: IInput, renderer: IRenderer, client: I
         // end events
         if sortedList.Count > 0 then
             let struct(playerCount, playerSnapshots, snapTime, serverTime) = sortedList.Values.[0]
+
+           // if renderTime.IsSome && renderTime.Value < 
+
             let rTime = 
                 match renderTime with
                 | None -> 

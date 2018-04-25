@@ -72,7 +72,7 @@ type BackgroundServer(networkChannels, port, maxClients) =
         let willRecycle =
             match localClientOpt with
             | Some(_, localClientReceiveQueue) -> 
-                System.Threading.Interlocked.Increment(&msg.refCount) |> ignore
+                msg.IncrementRefCount()
                 localClientReceiveQueue.Enqueue struct(ClientId.Local, ClientMessage.Message(msg))
                 false
             | _ ->
@@ -80,9 +80,10 @@ type BackgroundServer(networkChannels, port, maxClients) =
 
         server.SendMessage(msg, willRecycle)
 
-    member __.SendMessage(msg, clientId: ClientId) =
+    member __.SendMessage(msg: NetMessage, clientId: ClientId) =
         match localClientOpt with
         | Some(_, localClientReceiveQueue) when clientId.IsLocal ->
+            msg.IncrementRefCount()
             localClientReceiveQueue.Enqueue struct(ClientId.Local, ClientMessage.Message(msg))
         | _ ->
             server.SendMessage(msg, clientId, willRecycle = true)
@@ -128,6 +129,7 @@ type BackgroundServer(networkChannels, port, maxClients) =
                     receivedLocalClientMsgs.Enqueue(ServerMessage.ClientDisconnected(ClientId()))
 
                 member __.SendMessage(msg) =
+                    msg.IncrementRefCount()
                     receivedLocalClientMsgs.Enqueue(ServerMessage.Message(ClientId(), msg))
 
                 member __.SendPackets() = ()
@@ -143,9 +145,7 @@ type BackgroundServer(networkChannels, port, maxClients) =
 
                         match cl_msg with
                         | ClientMessage.Message msg ->
-                            let refCount = System.Threading.Interlocked.Decrement(&msg.refCount)
-                            if refCount <= 0 then
-                                server.RecycleMessage(msg)
+                            server.RecycleMessage(msg)
                         | _ -> ()
 
                 member __.OnException = onLocalClientException.Publish

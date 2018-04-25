@@ -40,9 +40,11 @@ let ``Udp Client and Server`` () =
     let channel = Channel(lookup)
 
     let msg = pool.Create() :?> TextMessage
+    msg.IncrementRefCount()
     msg.text <- "BEEF"
 
     let msg2 = pool.Create() :?> TextMessage
+    msg2.IncrementRefCount()
     msg2.text <- "BEEF2"
 
     let mutable text = ""

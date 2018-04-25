@@ -25,8 +25,9 @@ type ClientManager(msgFactory, maxClients: int) =
         clientId
 
     member __.RemoveClient(clientId: ClientId) =
-        let endPoint = manager.Get(clientId.Id).EndPoint
-        endPointLookup.Remove(endPoint) |> ignore
+        let client = manager.Get(clientId.Id)
+        endPointLookup.Remove(client.EndPoint) |> ignore
+
         lock lockObj
         |> fun _ ->
             manager.Remove(clientId.Id)
@@ -43,21 +44,23 @@ type ClientManager(msgFactory, maxClients: int) =
         | true, clientId -> Some clientId
         | _ -> None
 
-    member __.SendMessage(clientId: ClientId, msg, willRecycle) =
+    member __.SendMessage(clientId: ClientId, msg: NetMessage, willRecycle) =
         let client = manager.Get(clientId.Id)
+
+        msg.IncrementRefCount()
+
         if not client.IsChallenging then
             client.SendMessage(msg, willRecycle)
         else
             msgFactory.RecycleMessage(msg)
 
-    member __.SendMessage(msg, willRecycle) =
+    /// Thread safe
+    member __.SendMessage(msg: NetMessage, willRecycle) =
         manager.ForEach(fun _ client ->
             if not client.IsChallenging then
+                msg.IncrementRefCount()
                 client.SendMessage(msg, willRecycle)
         )
-
-        if msg.refCount <= 0 then
-            msgFactory.RecycleMessage(msg)
 
     member this.ReceivePacket(clientId: ClientId, packet) =
         let client = manager.Get(clientId.Id)
@@ -84,10 +87,12 @@ type ClientManager(msgFactory, maxClients: int) =
                         match msg with
                         | :? ConnectionRequested ->
                             let sendingMsg = msgFactory.CreateMessage<ConnectionChallengeRequested>()
+                            sendingMsg.IncrementRefCount()
                             sendingMsg.clientId <- ClientId(id)
                             client.SendMessage(sendingMsg, willRecycle = true)
                         | :? ConnectionChallengeAccepted ->
                             let sendingMsg = msgFactory.CreateMessage<ConnectionAccepted>()
+                            sendingMsg.IncrementRefCount()
                             client.SendMessage(sendingMsg, willRecycle = true)
                             client.IsChallenging <- false
                             f (ClientId(id)) msg

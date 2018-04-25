@@ -34,6 +34,8 @@ type internal Receiver(receiverType: ReceiverType, lookup: MessagePoolBase []) =
 
     let receive data (pool: MessagePoolBase) =
         let msg = pool.Create()
+        
+        msg.IncrementRefCount()
 
         match beforeDeserializedEvents.TryGetValue(msg.TypeId) with
         | (true, evt) -> evt.Trigger(msg)

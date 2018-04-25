@@ -12,6 +12,8 @@ type Message() =
 
     [<DefaultValue>] val mutable sequenceId : uint16
 
+    [<DefaultValue>] val mutable refCount : int
+
     member this.TypeId = this.typeId
 
     member this.SequenceId = this.sequenceId
@@ -41,10 +43,14 @@ type Message() =
     member this.MainReset() =
         this.typeId <- 0uy
         this.sequenceId <- 0us
+        this.refCount <- 0
         this.IsRecyclable <- false
         this.IsRecycled <- true
 
         this.Reset()
+
+    member this.IncrementRefCount() =
+        System.Threading.Interlocked.Increment(&this.refCount) |> ignore
 
     abstract Serialize : byref<Writer> * Span<byte> -> unit
 
@@ -76,7 +82,6 @@ type MessagePool<'T when 'T :> Message and 'T : (new : unit -> 'T)>(typeId, pool
                 msg
             | _ ->
                 printfn "MessagePool, %s, reached its pool count." typeof<'T>.FullName
-             //   printfn "Can't create - Stack count %A" msgs.Count
                 let msg = new 'T() :> Message
                 msg.IsRecyclable <- false
                 msg
@@ -85,6 +90,11 @@ type MessagePool<'T when 'T :> Message and 'T : (new : unit -> 'T)>(typeId, pool
         msg
 
     override __.Recycle msg =
-        if msg.IsRecyclable && (not msg.IsRecycled) then
+
+        let refCount = System.Threading.Interlocked.Decrement(&msg.refCount)
+        if refCount < 0 then
+            failwithf "RefCount on message, %A, is below zero." (msg.GetType().Name)
+
+        if msg.IsRecyclable && (not msg.IsRecycled) && refCount = 0 then
             msg.MainReset()
             msgs.Push(msg :?> 'T)
