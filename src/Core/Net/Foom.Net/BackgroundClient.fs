@@ -26,16 +26,16 @@ type internal BackgroundClient(networkChannels) =
                 let mutable willDispose = false
                 while not willDispose do
                     let time = stopwatch.Elapsed
-                    client.Time <- time
+                   // client.Time <- time
 
                     try
-                        client.ReceivePackets()
+                        //client.ReceivePackets()
 
                         if inbox.CurrentQueueLength > 0 then
                             let! msg = inbox.Receive()
                             match msg with
-                            | SendPackets ->
-                                client.SendPackets()
+                            | SendPackets -> ()
+                               // client.SendPackets()
                             | Dispose(reply) ->
                                 replyDispose <- reply
                                 willDispose <- true
@@ -72,7 +72,8 @@ type internal BackgroundClient(networkChannels) =
             msgFactory.CreateMessage()
 
         member __.ProcessMessages(f) =
-            client.ProcessMessages(f)
+            ()
+            //client.ProcessMessages(f)
 
         member __.OnException = exceptionEvent.Publish
 

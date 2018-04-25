@@ -78,9 +78,7 @@ let ``Udp Client and Server Simple`` () =
 
     client.Connect("::1", 27015)
 
-    client.ReceivePackets()
-    client.ProcessMessages(fun _ -> ())
-    client.SendPackets()
+    client.Update(TimeSpan.Zero, fun _ -> ())
 
     System.Threading.Thread.Sleep(100)
     server.ReceivePackets()
@@ -88,9 +86,7 @@ let ``Udp Client and Server Simple`` () =
     server.SendPackets()
 
     System.Threading.Thread.Sleep(100)
-    client.ReceivePackets()
-    client.ProcessMessages(fun _ -> ())
-    client.SendPackets()
+    client.Update(TimeSpan.Zero, fun _ -> ())
 
     // Added extra two below because we added challenge requests.
     System.Threading.Thread.Sleep(100)
@@ -99,9 +95,7 @@ let ``Udp Client and Server Simple`` () =
     server.SendPackets()
 
     System.Threading.Thread.Sleep(100)
-    client.ReceivePackets()
-    client.ProcessMessages(fun _ -> ())
-    client.SendPackets()
+    client.Update(TimeSpan.Zero, fun _ -> ())
 
     Assert.True(client.IsConnected)
 
@@ -142,15 +136,14 @@ let ``Udp Client and Server Simple Big Message`` () =
     //
 
     let stopwatch = System.Diagnostics.Stopwatch.StartNew()
+    let mutable time = TimeSpan.Zero
 
     server.Start()
 
     client.Connect("::1", 27015)
 
-    client.Time <- (stopwatch.Elapsed)
-    client.ReceivePackets()
-    client.ProcessMessages clientProcess
-    client.SendPackets()
+    time <- stopwatch.Elapsed
+    client.Update(TimeSpan.Zero, clientProcess)
 
     System.Threading.Thread.Sleep(100)
     server.Time <- (stopwatch.Elapsed)
@@ -159,10 +152,8 @@ let ``Udp Client and Server Simple Big Message`` () =
     server.SendPackets()
 
     System.Threading.Thread.Sleep(100)
-    client.Time <- (stopwatch.Elapsed)
-    client.ReceivePackets()
-    client.ProcessMessages clientProcess
-    client.SendPackets()
+    time <- stopwatch.Elapsed - time
+    client.Update(TimeSpan.Zero, clientProcess)
 
     // Added extra two below because we added challenge requests.
     System.Threading.Thread.Sleep(100)
@@ -172,10 +163,8 @@ let ``Udp Client and Server Simple Big Message`` () =
     server.SendPackets()
 
     System.Threading.Thread.Sleep(100)
-    client.Time <- (stopwatch.Elapsed)
-    client.ReceivePackets()
-    client.ProcessMessages clientProcess
-    client.SendPackets()
+    time <- stopwatch.Elapsed - time
+    client.Update(TimeSpan.Zero, clientProcess)
 
 
     Assert.True(client.IsConnected)
@@ -195,10 +184,8 @@ let ``Udp Client and Server Simple Big Message`` () =
     server.SendPackets()
 
     System.Threading.Thread.Sleep(100)
-    client.Time <- (stopwatch.Elapsed)
-    client.ReceivePackets()
-    client.ProcessMessages clientProcess
-    client.SendPackets()
+    time <- stopwatch.Elapsed - time
+    client.Update(TimeSpan.Zero, clientProcess)
 
     Assert.Equal(expectedText, finalText)
 

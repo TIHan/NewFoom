@@ -89,21 +89,8 @@ type Client(msgFactory: MessageFactory) =
         else
             msgFactory.RecycleMessage(msg)
 
-    member __.SendPackets() =
-        if udpClient.IsConnected && isConnected then
-            heartbeat ()
+    member __.Update(interval, f) =
 
-        if udpClient.IsConnected then
-            senderTaskQueue.Enqueue(sendPackets) |> ignore
-
-    member __.ReceivePackets() = ()
-        //if udpClient.IsConnected then
-            //while udpClient.IsDataAvailable do
-                //let packet = udpClient.Receive()
-                //netChannel.ReceivePacket(packet)
-
-    /// Thread safe
-    member __.ProcessMessages(f) =
         netChannel.ProcessReceivedMessages (fun msg ->
             match msg with
             | :? ConnectionChallengeRequested as msg ->
@@ -127,11 +114,13 @@ type Client(msgFactory: MessageFactory) =
             msgFactory.RecycleMessage(msg)
         )
 
-    member __.Time 
-        with get () = currentTime
-        and set value =
-            currentTime <- value
-            stream.Time <- currentTime
+        if udpClient.IsConnected && isConnected then
+            heartbeat ()
+
+        if udpClient.IsConnected then
+            senderTaskQueue.Enqueue(sendPackets) |> ignore
+
+        stream.Time <- stream.Time + interval
 
     member __.IsConnected = isConnected
 
