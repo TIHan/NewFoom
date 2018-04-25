@@ -1,6 +1,8 @@
 ﻿namespace Foom.Net
 
 open System
+open System.Threading.Tasks
+open Foom.Core
 open Foom.IO.Message
 open Foom.IO.Packet
 
@@ -12,6 +14,9 @@ type ClientMessage =
     
 [<Sealed>]
 type Client(msgFactory: MessageFactory) =
+
+    let senderTaskQueue = TaskQueue()
+    let receiverTaskQueue = TaskQueue()
 
     // Events
     let exRaisedEvent = Event<Exception>()
@@ -82,11 +87,30 @@ type Client(msgFactory: MessageFactory) =
         if udpClient.IsConnected then
             sendPackets ()
 
+    member __.SendPacketsAsync() =
+        if udpClient.IsConnected && isConnected then
+            heartbeat ()
+
+        if udpClient.IsConnected then
+            senderTaskQueue.Enqueue(sendPackets)
+        else
+            Task.FromResult(true) :> Task
+
     member __.ReceivePackets() =
         if udpClient.IsConnected then
             while udpClient.IsDataAvailable do
                 let packet = udpClient.Receive()
                 netChannel.ReceivePacket(packet)
+
+    member __.ReceivePacketsAsync() =
+        if udpClient.IsConnected then
+            receiverTaskQueue.Enqueue(fun () ->
+                while udpClient.IsDataAvailable do
+                    let packet = udpClient.Receive()
+                    netChannel.ReceivePacket(packet)
+            )
+        else
+            Task.FromResult(true) :> Task
 
     /// Thread safe
     member __.ProcessMessages(f) =
