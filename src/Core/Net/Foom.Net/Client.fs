@@ -11,6 +11,12 @@ type ClientMessage =
     | ConnectionAccepted of clientId: ClientId
     | DisconnectAccepted
     | Message of NetMessage
+
+type IClientUpdate =
+
+    abstract OnMessageReceived : ClientMessage -> unit
+
+    abstract OnAfterMessagesReceived : unit -> unit
     
 [<Sealed>]
 type Client(msgFactory: MessageFactory) =
@@ -89,7 +95,7 @@ type Client(msgFactory: MessageFactory) =
         else
             msgFactory.RecycleMessage(msg)
 
-    member __.Update(interval, f) =
+    member __.Update(interval, clientUpdate: IClientUpdate) =
 
         netChannel.ProcessReceivedMessages (fun msg ->
             match msg with
@@ -99,20 +105,22 @@ type Client(msgFactory: MessageFactory) =
 
             | :? ConnectionAccepted as msg -> 
                 isConnected <- true
-                f (ClientMessage.ConnectionAccepted(clientId))
+                clientUpdate.OnMessageReceived(ClientMessage.ConnectionAccepted(clientId))
 
             | :? DisconnectAccepted ->
                 isConnected <- false
                 udpClient.Disconnect()
-                f ClientMessage.DisconnectAccepted
+                clientUpdate.OnMessageReceived(ClientMessage.DisconnectAccepted)
 
             | :? Heartbeat -> ()
 
             | _ -> 
-                f (ClientMessage.Message(msg))
+                clientUpdate.OnMessageReceived(ClientMessage.Message(msg))
 
             msgFactory.RecycleMessage(msg)
         )
+
+        clientUpdate.OnAfterMessagesReceived()
 
         if udpClient.IsConnected && isConnected then
             heartbeat ()

@@ -69,6 +69,13 @@ let ``Udp Client and Server`` () =
 
 [<Fact>]
 let ``Udp Client and Server Simple`` () =
+    let clientUpdateNoOp =
+        { new IClientUpdate with
+
+            member __.OnMessageReceived(_) = ()
+
+            member __.OnAfterMessagesReceived() = () }
+
     let network = Network([])
 
     use server = network.CreateServer(27015, 8)
@@ -78,7 +85,7 @@ let ``Udp Client and Server Simple`` () =
 
     client.Connect("::1", 27015)
 
-    client.Update(TimeSpan.Zero, fun _ -> ())
+    client.Update(TimeSpan.Zero, clientUpdateNoOp)
 
     System.Threading.Thread.Sleep(100)
     server.ReceivePackets()
@@ -86,7 +93,7 @@ let ``Udp Client and Server Simple`` () =
     server.SendPackets()
 
     System.Threading.Thread.Sleep(100)
-    client.Update(TimeSpan.Zero, fun _ -> ())
+    client.Update(TimeSpan.Zero, clientUpdateNoOp)
 
     // Added extra two below because we added challenge requests.
     System.Threading.Thread.Sleep(100)
@@ -95,7 +102,7 @@ let ``Udp Client and Server Simple`` () =
     server.SendPackets()
 
     System.Threading.Thread.Sleep(100)
-    client.Update(TimeSpan.Zero, fun _ -> ())
+    client.Update(TimeSpan.Zero, clientUpdateNoOp)
 
     Assert.True(client.IsConnected)
 
@@ -124,14 +131,19 @@ let ``Udp Client and Server Simple Big Message`` () =
         | ServerMessage.ClientDisconnected(_) -> ()
         | ServerMessage.Message(_) -> ()
 
-    let clientProcess msg =
-        match msg with
-        | ClientMessage.Message(msg) ->
-            match msg with
-            | :? TextMessage as msg ->
-                finalText <- msg.text
-            |  _ -> ()
-        | _ -> ()
+    let clientUpdate =
+        { new IClientUpdate with
+
+            member __.OnMessageReceived(msg) =
+                match msg with
+                | ClientMessage.Message(msg) ->
+                    match msg with
+                    | :? TextMessage as msg ->
+                        finalText <- msg.text
+                    |  _ -> ()
+                | _ -> ()
+                
+            member __.OnAfterMessagesReceived() = () }
 
     //
 
@@ -143,7 +155,7 @@ let ``Udp Client and Server Simple Big Message`` () =
     client.Connect("::1", 27015)
 
     time <- stopwatch.Elapsed
-    client.Update(TimeSpan.Zero, clientProcess)
+    client.Update(TimeSpan.Zero, clientUpdate)
 
     System.Threading.Thread.Sleep(100)
     server.Time <- (stopwatch.Elapsed)
@@ -153,7 +165,7 @@ let ``Udp Client and Server Simple Big Message`` () =
 
     System.Threading.Thread.Sleep(100)
     time <- stopwatch.Elapsed - time
-    client.Update(TimeSpan.Zero, clientProcess)
+    client.Update(TimeSpan.Zero, clientUpdate)
 
     // Added extra two below because we added challenge requests.
     System.Threading.Thread.Sleep(100)
@@ -164,7 +176,7 @@ let ``Udp Client and Server Simple Big Message`` () =
 
     System.Threading.Thread.Sleep(100)
     time <- stopwatch.Elapsed - time
-    client.Update(TimeSpan.Zero, clientProcess)
+    client.Update(TimeSpan.Zero, clientUpdate)
 
 
     Assert.True(client.IsConnected)
@@ -185,7 +197,7 @@ let ``Udp Client and Server Simple Big Message`` () =
 
     System.Threading.Thread.Sleep(100)
     time <- stopwatch.Elapsed - time
-    client.Update(TimeSpan.Zero, clientProcess)
+    client.Update(TimeSpan.Zero, clientUpdate)
 
     Assert.Equal(expectedText, finalText)
 
