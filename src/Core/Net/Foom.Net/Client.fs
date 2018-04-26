@@ -28,54 +28,65 @@ type Client(msgFactory: MessageFactory) =
     let udpClient = new UdpClient()
 
     // Packet streams and channels
+    let sendMsgQueue = MessageQueue()
     let stream = PacketStream()
-    let netChannel = NetChannel(stream, msgFactory, msgFactory.CreateChannelLookup())
+    let channelLookup = msgFactory.CreateChannelLookup()
+    let taskQueue = new TaskQueue()
+    let packetSender = new PacketSender(stream, channelLookup, msgFactory, taskQueue, 10, fun packet -> 
+        if udpClient.IsConnected then
+            udpClient.Send(packet)
+    ) 
+    let messageReceiver = new MessageReceiver([|stream|], [|channelLookup|], msgFactory, fun streamIndex ->
+        streamIndex <- 0
+        try
+            if udpClient.IsConnected && udpClient.IsDataAvailable then
+                udpClient.Receive()
+            else
+                Packet.Empty
+        with | ex ->
+            printfn "%A" ex
+            Packet.Empty
+    )
 
     // Client state
     let mutable currentTime = TimeSpan.Zero
     let mutable isConnected = false
-
     let mutable clientId = ClientId()
 
-    // Internal client messages
-    let sendPackets () =
-        netChannel.SendPackets(fun packet -> udpClient.Send(packet))
+    let processReceivedMessages f =
+        channelLookup
+        |> Seq.iter (fun pair -> 
+            let struct(channel, _) = pair.Value
+            channel.ProcessReceived(fun msg ->
+                match msg with
+                | :? NetMessage as msg -> f msg
+                | _ -> failwith "Invalid NetMessage"
+            )
+        )
 
     let heartbeat () =
         if isConnected then
             let msg = msgFactory.CreateMessage<Heartbeat>()
             msg.IncrementRefCount()
-            netChannel.SendMessage(msg, willRecycle = true)
+            sendMsgQueue.Enqueue(msg)
 
     let connectionRequest () =
         if not isConnected then
             let msg = msgFactory.CreateMessage<ConnectionRequested>()
             msg.IncrementRefCount()
-            netChannel.SendMessage(msg, willRecycle = true)
+            sendMsgQueue.Enqueue(msg)
 
     let connectionChallengeAccepted () =
         if not isConnected then
             let msg = msgFactory.CreateMessage<ConnectionChallengeAccepted>()
             msg.IncrementRefCount()
-            netChannel.SendMessage(msg, willRecycle = true)
+            sendMsgQueue.Enqueue(msg)
 
     let disconnectRequest () =
         if isConnected then
             let msg = msgFactory.CreateMessage<DisconnectRequested>()
             msg.IncrementRefCount()
-            netChannel.SendMessage(msg, willRecycle = true)
-
-    let senderTaskQueue = TaskQueue()
-    let receivePacketsTask = 
-        new Task((fun () ->
-            while true do
-                if udpClient.IsConnected then
-                    while udpClient.IsDataAvailable do
-                        let packet = udpClient.Receive()
-                        netChannel.ReceivePacket(packet)), TaskCreationOptions.LongRunning)
-
-    do
-        receivePacketsTask.Start()
+            sendMsgQueue.Enqueue(msg)
 
     member __.Connect(address: string, port: int) =
         if not isConnected && not udpClient.IsConnected then
@@ -91,13 +102,13 @@ type Client(msgFactory: MessageFactory) =
         msg.IncrementRefCount()
 
         if udpClient.IsConnected && isConnected then
-            netChannel.SendMessage(msg, willRecycle)
+            sendMsgQueue.Enqueue(msg)
         else
             msgFactory.RecycleMessage(msg)
 
     member __.Update(interval, clientUpdate: IClientUpdate) =
 
-        netChannel.ProcessReceivedMessages (fun msg ->
+        processReceivedMessages (fun msg ->
             match msg with
             | :? ConnectionChallengeRequested as msg ->
                 clientId <- msg.clientId
@@ -125,8 +136,7 @@ type Client(msgFactory: MessageFactory) =
         if udpClient.IsConnected && isConnected then
             heartbeat ()
 
-        if udpClient.IsConnected then
-            senderTaskQueue.Enqueue(sendPackets) |> ignore
+        packetSender.SendPacketsAsync(sendMsgQueue) |> ignore
 
         stream.Time <- stream.Time + interval
 
@@ -138,9 +148,15 @@ type Client(msgFactory: MessageFactory) =
     member __.RecycleMessage(msg) =
         msgFactory.RecycleMessage(msg)
 
-    member __.GetBeforeSerializedEvent(typeId) = netChannel.GetBeforeSerializedEvent(typeId)
+    member __.GetBeforeSerializedEvent(typeId) =
+        match channelLookup.TryGetValue(typeId) with
+        | (true, struct(channel, _)) -> channel.GetBeforeSerializedEvent(typeId)
+        | _ -> failwithf "TypeId, %i, has not been registered to a channel. Unable to get event." typeId
 
-    member __.GetBeforeDeserializedEvent(typeId) = netChannel.GetBeforeDeserializedEvent(typeId)
+    member __.GetBeforeDeserializedEvent(typeId) =
+        match channelLookup.TryGetValue(typeId) with
+        | (true, struct(channel, _)) -> channel.GetBeforeDeserializedEvent(typeId)
+        | _ -> failwithf "TypeId, %i, has not been registered to a channel. Unable to get event." typeId
 
     interface IDisposable with
 

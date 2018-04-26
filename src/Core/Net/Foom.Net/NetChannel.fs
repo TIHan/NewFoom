@@ -26,12 +26,13 @@ module private PacketSenderHelpers =
             count <- count + 1
             f msg
 
-    let serializeMessage (channelLookup: ChannelLookup) (stream: PacketStream) (msg: NetMessage) =
+    let serializeMessage (channelLookup: ChannelLookup) (stream: PacketStream) (msgFactory: MessageFactory) (msg: NetMessage) =
+        msg.channelId <- msgFactory.GetChannelId(msg.TypeId)
         let struct(channel, packetDeliveryType) = channelLookup.[msg.channelId]
         channel.SerializeMessage(msg, true, fun data -> stream.Send(data, packetDeliveryType) |> ignore)  
 
 [<Sealed>]
-type PacketSender(stream: PacketStream, channelLookup: ChannelLookup, taskQueue: TaskQueue, maxTaskCount: int, sendMessage) =
+type PacketSender(stream: PacketStream, channelLookup: ChannelLookup, msgFactory: MessageFactory, taskQueue: TaskQueue, maxTaskCount: int, sendMessage) =
 
     member __.SendPacketsAsync(queue: MessageQueue) =
         if taskQueue.Count > maxTaskCount then
@@ -40,14 +41,21 @@ type PacketSender(stream: PacketStream, channelLookup: ChannelLookup, taskQueue:
         else
             let numMsgsToProcess = queue.Count
             taskQueue.Enqueue(fun () ->
-                processQueuedMessages queue numMsgsToProcess (serializeMessage channelLookup stream)
-                stream.ProcessSending(sendMessage)
+                try
+                    processQueuedMessages queue numMsgsToProcess (serializeMessage channelLookup stream msgFactory)
+                    stream.ProcessSending(sendMessage)
+                with | ex ->
+                    printfn "SendPacketsAsync: Queued task threw an exception: %A" ex
             )
+
+    interface IDisposable with
+
+        member __.Dispose() = ()
 
 type ReceivePacketDelegate = delegate of byref<int> -> Packet
    
 [<Sealed>]
-type MessageReceiver(streams: PacketStreamLookup, channelLookup: ChannelLookup, msgFactory: MessageFactory, receivePacket: ReceivePacketDelegate) =
+type MessageReceiver(streams: PacketStreamLookup, channelLookups: ChannelLookup [], msgFactory: MessageFactory, receivePacket: ReceivePacketDelegate) =
 
     let failedQueue = ConcurrentQueue<int * Exception>()
 
@@ -61,8 +69,10 @@ type MessageReceiver(streams: PacketStreamLookup, channelLookup: ChannelLookup, 
                 | packet ->
 
                     let stream = streams.[streamIndex]
-
                     if stream = Unchecked.defaultof<PacketStream> then ()
+
+                    let channelLookup = channelLookups.[streamIndex]
+                    if channelLookup = null then ()
 
                     try
                         stream.Receive(packet, fun data -> 
@@ -86,7 +96,7 @@ type MessageReceiver(streams: PacketStreamLookup, channelLookup: ChannelLookup, 
                         // stream.Dispose()
                         streams.[streamIndex] <- Unchecked.defaultof<PacketStream>
                         failedQueue.Enqueue(streamIndex, ex)
-        ))
+        ), TaskCreationOptions.LongRunning)
 
     do
         receivePacketsTask.Start()
@@ -95,6 +105,10 @@ type MessageReceiver(streams: PacketStreamLookup, channelLookup: ChannelLookup, 
         let mutable value = Unchecked.defaultof<int * Exception>
         while failedQueue.TryDequeue(&value) do
             f value
+
+    interface IDisposable with
+
+        member __.Dispose() = ()
 
 [<Sealed>]
 type Sender(stream: PacketStream, msgFactory: MessageFactory, channelLookup: Dictionary<byte, struct(AbstractChannel * PacketDeliveryType)>) =

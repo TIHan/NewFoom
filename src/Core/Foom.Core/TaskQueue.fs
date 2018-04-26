@@ -22,3 +22,7 @@ type TaskQueue() =
                 Interlocked.Decrement(&taskQueueCount)
             )
             prevTask
+
+    interface IDisposable with
+
+        member __.Dispose() = ()
