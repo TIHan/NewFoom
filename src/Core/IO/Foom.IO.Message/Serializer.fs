@@ -30,11 +30,13 @@ type internal Serializer(lookup: MessagePoolBase []) =
             msg.sequenceId <- nextSeqId
             nextSeqId <- nextSeqId + 1us
 
-            match beforeSerializedEvents.TryGetValue(msg.TypeId) with
-            | (true, evt) -> evt.Trigger(msg)
-            | _ -> ()
+            let numBytesWritten = 
+                try
+                    match beforeSerializedEvents.TryGetValue(msg.TypeId) with
+                    | (true, evt) -> evt.Trigger(msg)
+                    | _ -> ()
+                    msg.StartSerialize(Span(buffer))
+                finally 
+                    pool.Recycle(msg)
 
-            let numBytesWritten = msg.StartSerialize(Span(buffer))
             f.Invoke(Span(buffer, 0, numBytesWritten))
-
-            pool.Recycle(msg)

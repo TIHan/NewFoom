@@ -37,11 +37,15 @@ type internal Receiver(receiverType: ReceiverType, lookup: MessagePoolBase []) =
         
         msg.IncrementRefCount()
 
-        match beforeDeserializedEvents.TryGetValue(msg.TypeId) with
-        | (true, evt) -> evt.Trigger(msg)
-        | _ -> ()
+        let numBytesRead = 
+            try
+                match beforeDeserializedEvents.TryGetValue(msg.TypeId) with
+                | (true, evt) -> evt.Trigger(msg)
+                | _ -> ()
+                msg.StartDeserialize(data)
+            finally
+                pool.Recycle(msg)
 
-        let numBytesRead = msg.StartDeserialize(data)
         let seqId = msg.SequenceId
 
         match receiverType with

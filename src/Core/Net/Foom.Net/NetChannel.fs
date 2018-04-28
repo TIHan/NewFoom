@@ -27,9 +27,13 @@ module private PacketSenderHelpers =
             f msg
 
     let serializeMessage (channelLookup: ChannelLookup) (stream: PacketStream) (msgFactory: MessageFactory) (msg: NetMessage) =
-        msg.channelId <- msgFactory.GetChannelId(msg.TypeId)
-        let struct(channel, packetDeliveryType) = channelLookup.[msg.channelId]
-        channel.SerializeMessage(msg, true, fun data -> stream.Send(data, packetDeliveryType) |> ignore)  
+        try
+            msg.channelId <- msgFactory.GetChannelId(msg.TypeId)
+            let struct(channel, packetDeliveryType) = channelLookup.[msg.channelId]
+            channel.SerializeMessage(msg, true, fun data -> stream.Send(data, packetDeliveryType) |> ignore)
+        finally
+            if not msg.IsRecycled then
+                msgFactory.RecycleMessage(msg)
 
 [<Sealed>]
 type PacketSender(stream: PacketStream, channelLookup: ChannelLookup, msgFactory: MessageFactory, taskQueue: TaskQueue, maxTaskCount: int, sendMessage) =
