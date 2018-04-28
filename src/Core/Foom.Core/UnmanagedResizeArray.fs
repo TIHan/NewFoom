@@ -36,7 +36,14 @@ type UnmanagedResizeArray<'T when 'T : unmanaged>(capacity) =
         ptr <- newPtr
         buffer <- newPtr |> NativePtr.ofNativeInt
 
-    member this.Add(item) =
+    member this.Add(item: 'T) =
+        if count * sizeof<'T> >= length then
+            this.IncreaseCapacity ()
+        
+        NativePtr.set buffer count item
+        count <- count + 1
+
+    member this.Add(item: byref<'T>) =
         if count * sizeof<'T> >= length then
             this.IncreaseCapacity ()
         

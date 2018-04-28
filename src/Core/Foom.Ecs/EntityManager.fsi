@@ -44,7 +44,9 @@ type EntityManager =
 
     member TryGetComponent<'T when 'T : unmanaged and 'T :> IComponent> : Entity * TryGetDelegate<'T> -> unit //(ent: Entity, [<Out>] didGet: byref<bool>) =
 
-    member Add<'T when 'T : unmanaged and 'T :> IComponent> : Entity -> byref<'T>
+    member Add<'T when 'T : unmanaged and 'T :> IComponent> : Entity * byref<'T> -> unit
+
+    member Add<'T when 'T : unmanaged and 'T :> IComponent> : Entity * 'T -> unit
 
     member Remove<'T when 'T : unmanaged and 'T :> IComponent> : Entity -> unit
 

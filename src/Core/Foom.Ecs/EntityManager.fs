@@ -240,11 +240,10 @@ and [<Sealed>] EntityManager(maxEntityAmount) =
 
     // Components
 
-    member this.Add<'T when 'T : unmanaged and 'T :> IComponent>(entity: Entity) =
+    member inline this.AddInline<'T when 'T : unmanaged and 'T :> IComponent>(entity: Entity, comp: byref<'T>) =
         let struct(bit, data) = this.GetEntityLookupData<'T>()
         if currentIterations > 0 then
             failwith "Can't add while iterating"
-            &data.dummy
         else
             if this.IsValidEntity entity then
                 let indexLookup = data.IndexLookup
@@ -254,21 +253,23 @@ and [<Sealed>] EntityManager(maxEntityAmount) =
                 let index = indexLookup.[entity.Index]
                 if index >= 0 then
                     Console.WriteLine (String.Format ("ECS WARNING: Component, {0}, already added to {1}.", typeof<'T>.Name, entity))
-                    &data.dummy
                 else
                     let mutable index = entities.Count
 
                     indexLookup.[entity.Index] <- index
 
-                    components.AddDefault()
+                    components.Add(&comp)
                     entities.Add(entity)
 
                     let ec = entComps.GetByRef(entity.Index)
                     ec.AddComponentId(uint16 bit)
 
-                    components.GetByRef(index)
-            else
-                &data.dummy
+    member this.Add<'T when 'T : unmanaged and 'T :> IComponent>(entity: Entity, comp: byref<'T>) =
+        this.AddInline(entity, &comp)
+
+    member this.Add<'T when 'T : unmanaged and 'T :> IComponent>(entity: Entity, comp: 'T) =
+        let mutable comp = comp
+        this.AddInline(entity, &comp)
 
     member this.Remove<'T when 'T : unmanaged and 'T :> IComponent>(entity: Entity) =
         let struct(bit, data) = this.GetEntityLookupData<'T> ()
