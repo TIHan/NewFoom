@@ -4,6 +4,7 @@ open System
 open System.Diagnostics
 open System.Collections.Generic
 open System.Runtime.InteropServices
+open System.Runtime.CompilerServices
 open FSharp.NativeInterop
 open Foom.Core
 
@@ -153,12 +154,12 @@ and [<Sealed>] EntityManager(maxEntityAmount) =
             let data = lookupType.[bit] :?> EntityLookupData<'T>
 
             let count = data.Entities.Count
-            let entities = data.Entities.ToSpan()
-            let components = data.Components.ToSpan()
+            let entities = data.Entities
+            let components = data.Components
 
             for i = 0 to count - 1 do
                 let ent = entities.[i]
-                let comp = components.[i]
+                let comp = components.GetByRef(i)
                 f.Invoke(ent, &comp)
 
     member inline this.Iterate<'T1, 'T2 when 'T1 : unmanaged and 'T2 : unmanaged and 'T1 :> IComponent and 'T2 :> IComponent> (f: ForEachDelegate<'T1, 'T2>) : unit =
@@ -173,8 +174,8 @@ and [<Sealed>] EntityManager(maxEntityAmount) =
 
             let count = data.Entities.Count
             let entities = data.Entities.ToSpan()
-            let components1 = data1.Components.ToSpan()
-            let components2 = data2.Components.ToSpan()
+            let components1 = data1.Components
+            let components2 = data2.Components
             let lookup1 = data1.IndexLookup
             let lookup2 = data2.IndexLookup
     
@@ -185,8 +186,8 @@ and [<Sealed>] EntityManager(maxEntityAmount) =
                 let comp2Index = lookup2.[ent.Index]
 
                 if comp1Index >= 0 && comp2Index >= 0 then
-                    let comp1 = components1.[comp1Index]
-                    let comp2 = components2.[comp2Index]
+                    let comp1 = components1.GetByRef(comp1Index)
+                    let comp2 = components2.GetByRef(comp2Index)
                     f.Invoke(ent, &comp1, &comp2)
 
     member inline this.Iterate<'T1, 'T2, 'T3, 'T4, 'T5 when 'T1 : unmanaged and 'T2 : unmanaged and 'T3 : unmanaged and 'T4 : unmanaged and 'T5 : unmanaged and 'T1 :> IComponent and 'T2 :> IComponent and 'T3 :> IComponent and 'T4 :> IComponent and 'T5 :> IComponent> (f: ForEachDelegate<'T1, 'T2, 'T3, 'T4, 'T5>) : unit =
@@ -210,11 +211,11 @@ and [<Sealed>] EntityManager(maxEntityAmount) =
 
             let count = data.Entities.Count
             let entities = data.Entities.ToSpan()
-            let components1 = data1.Components.ToSpan()
-            let components2 = data2.Components.ToSpan()
-            let components3 = data3.Components.ToSpan()
-            let components4 = data4.Components.ToSpan()
-            let components5 = data5.Components.ToSpan()
+            let components1 = data1.Components
+            let components2 = data2.Components
+            let components3 = data3.Components
+            let components4 = data4.Components
+            let components5 = data5.Components
             let lookup1 = data1.IndexLookup
             let lookup2 = data2.IndexLookup
             let lookup3 = data3.IndexLookup
@@ -231,11 +232,11 @@ and [<Sealed>] EntityManager(maxEntityAmount) =
                 let comp5Index = lookup5.[ent.Index]
 
                 if comp1Index >= 0 && comp2Index >= 0 && comp3Index >= 0 && comp4Index >= 0 && comp5Index >= 0 then
-                    let comp1 = components1.[comp1Index]
-                    let comp2 = components2.[comp2Index]
-                    let comp3 = components3.[comp3Index]
-                    let comp4 = components4.[comp4Index]
-                    let comp5 = components5.[comp5Index]
+                    let comp1 = components1.GetByRef(comp1Index)
+                    let comp2 = components2.GetByRef(comp2Index)
+                    let comp3 = components3.GetByRef(comp3Index)
+                    let comp4 = components4.GetByRef(comp4Index)
+                    let comp5 = components5.GetByRef(comp5Index)
                     f.Invoke(ent, &comp1, &comp2, &comp3, &comp4, &comp5)
 
     // Components
