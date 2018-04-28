@@ -2,6 +2,7 @@
 
 open System
 open System.Runtime.InteropServices
+open System.Runtime.CompilerServices
 open FSharp.NativeInterop
 
 #nowarn "9"
@@ -36,6 +37,7 @@ type UnmanagedResizeArray<'T when 'T : unmanaged>(capacity) =
         ptr <- newPtr
         buffer <- newPtr |> NativePtr.ofNativeInt
 
+    [<MethodImpl(MethodImplOptions.AggressiveInlining)>]
     member this.Add(item: 'T) =
         if count * sizeof<'T> >= length then
             this.IncreaseCapacity ()
@@ -43,18 +45,12 @@ type UnmanagedResizeArray<'T when 'T : unmanaged>(capacity) =
         NativePtr.set buffer count item
         count <- count + 1
 
+    [<MethodImpl(MethodImplOptions.AggressiveInlining)>]
     member this.Add(item: byref<'T>) =
         if count * sizeof<'T> >= length then
             this.IncreaseCapacity ()
         
         NativePtr.set buffer count item
-        count <- count + 1
-
-    member this.AddDefault() =
-        if count * sizeof<'T> >= length then
-            this.IncreaseCapacity ()
-        
-        NativePtr.set buffer count (Unchecked.defaultof<'T>)
         count <- count + 1
 
     member __.LastItem = NativePtr.get buffer (count - 1)
