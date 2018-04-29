@@ -21,6 +21,8 @@ type Udp =
 
     val UdpClientV6 : UdpClient
 
+    val SendBuffer : byte []
+
     val Buffer : byte []
 
     val mutable receiveBufferSize : int
@@ -42,6 +44,7 @@ type Udp =
         { 
             UdpClient = udpClient
             UdpClientV6 = udpClientV6
+            SendBuffer = Array.zeroCreate 65536
             Buffer = Array.zeroCreate 65536
             receiveBufferSize = UdpConstants.DefaultReceiveBufferSize
             sendBufferSize = UdpConstants.DefaultSendBufferSize
@@ -62,6 +65,7 @@ type Udp =
         { 
             UdpClient = udpClient
             UdpClientV6 = udpClientV6
+            SendBuffer = Array.zeroCreate 65536
             Buffer = Array.zeroCreate 65536
             receiveBufferSize = UdpConstants.DefaultReceiveBufferSize
             sendBufferSize = UdpConstants.DefaultSendBufferSize
@@ -127,8 +131,8 @@ type Udp =
             (this.UdpClientV6 :> IDisposable).Dispose()
 
 [<Sealed>]
-type UdpClient () =
-    inherit Udp ()
+type UdpClient() as this =
+    inherit Udp()
 
     let mutable isConnected = false
     let mutable isIpV6 = false
@@ -190,12 +194,12 @@ type UdpClient () =
         if not isConnected then
             failwith "Send is invalid because we haven't tried to connect."
 
-        payload.CopyTo(Span(this.Buffer, 0, payload.Length))
+        payload.CopyTo(Span(this.SendBuffer, 0, payload.Length))
 
         if isIpV6 then
-            this.UdpClientV6.Send (this.Buffer, payload.Length) |> ignore
+            this.UdpClientV6.Send (this.SendBuffer, payload.Length) |> ignore
         else
-            this.UdpClient.Send (this.Buffer, payload.Length) |> ignore
+            this.UdpClient.Send (this.SendBuffer, payload.Length) |> ignore
 
     member __.IsConnected = isConnected
 

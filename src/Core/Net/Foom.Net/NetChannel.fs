@@ -72,8 +72,6 @@ type MessageReceiver(streams: PacketStreamLookup, channelLookups: ChannelLookup 
                 | packet when packet.IsEmpty -> ()
                 | packet ->
 
-                    printfn "Packet received"
-
                     let stream = streams.[streamIndex]
                     if stream = Unchecked.defaultof<PacketStream> then ()
 
