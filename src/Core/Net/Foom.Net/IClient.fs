@@ -3,7 +3,21 @@
 open System
 open Foom.IO.Message
 
-type IBackgroundClient =
+[<Struct;RequireQualifiedAccess>]
+type ClientMessage =
+    | ConnectionAccepted of clientId: ClientId
+    | DisconnectAccepted
+    | Message of NetMessage
+
+type IClientUpdate =
+
+    abstract OnMessageReceived : ClientMessage -> unit
+
+    abstract OnAfterMessagesReceived : unit -> unit
+
+type IClient =
+
+    abstract IsConnected : bool
 
     abstract Connect : address: string * port: int -> unit
 
@@ -11,13 +25,9 @@ type IBackgroundClient =
 
     abstract SendMessage : NetMessage -> unit
 
-    abstract SendPackets : unit -> unit
-
     abstract CreateMessage<'T when 'T :> NetMessage and 'T : (new : unit -> 'T)> : unit -> 'T
 
-    abstract ProcessMessages : (ClientMessage -> unit) -> unit
-
-    abstract OnException : IEvent<Exception>
+    abstract Update : interval: TimeSpan * IClientUpdate -> unit
 
     abstract GetBeforeSerializedEvent<'T when 'T :> NetMessage and 'T : (new : unit -> 'T)> : unit -> IEvent<'T>
 

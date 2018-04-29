@@ -27,10 +27,10 @@ type TextMessage =
 
 [<Fact>]
 let ``Udp Client and Server`` () =
-    use udpServer = new UdpServer(27015)
+    use udpServer = new UdpServer(27017)
     use udpClient = new UdpClient()
 
-    Assert.True(udpClient.Connect("::1", 27015))
+    Assert.True(udpClient.Connect("::1", 27017))
 
     let pool = MessagePool<TextMessage>(0uy, 64) :> MessagePoolBase
     let lookup = Array.zeroCreate 65536
@@ -51,7 +51,7 @@ let ``Udp Client and Server`` () =
 
     let data = channel.SerializeMessage(msg2, true, fun data -> udpClient.Send(data))
 
-    System.Threading.Thread.Sleep(100)
+    System.Threading.Thread.Sleep(700)
 
     Assert.True(udpServer.IsDataAvailable)
 

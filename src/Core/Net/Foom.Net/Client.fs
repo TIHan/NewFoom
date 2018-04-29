@@ -5,18 +5,6 @@ open System.Threading.Tasks
 open Foom.Core
 open Foom.IO.Message
 open Foom.IO.Packet
-
-[<Struct;RequireQualifiedAccess>]
-type ClientMessage =
-    | ConnectionAccepted of clientId: ClientId
-    | DisconnectAccepted
-    | Message of NetMessage
-
-type IClientUpdate =
-
-    abstract OnMessageReceived : ClientMessage -> unit
-
-    abstract OnAfterMessagesReceived : unit -> unit
     
 [<Sealed>]
 type Client(msgFactory: MessageFactory) =
@@ -88,75 +76,76 @@ type Client(msgFactory: MessageFactory) =
             msg.IncrementRefCount()
             sendMsgQueue.Enqueue(msg)
 
-    member __.Connect(address: string, port: int) =
-        if not isConnected && not udpClient.IsConnected then
-            udpClient.Connect(address, port) |> ignore
-            connectionRequest ()
+    interface IClient with
 
-    member __.Disconnect() =
-        if udpClient.IsConnected && isConnected then
-            disconnectRequest ()
+        member __.Connect(address: string, port: int) =
+            if not isConnected && not udpClient.IsConnected then
+                udpClient.Connect(address, port) |> ignore
+                connectionRequest ()
 
-    member __.SendMessage(msg: NetMessage, willRecycle) =
+        member __.Disconnect() =
+            if udpClient.IsConnected && isConnected then
+                disconnectRequest ()
 
-        msg.IncrementRefCount()
+        member __.SendMessage(msg: NetMessage) =
 
-        if udpClient.IsConnected && isConnected then
-            sendMsgQueue.Enqueue(msg)
-        else
-            msgFactory.RecycleMessage(msg)
+            msg.IncrementRefCount()
 
-    member __.Update(interval, clientUpdate: IClientUpdate) =
+            if udpClient.IsConnected && isConnected then
+                sendMsgQueue.Enqueue(msg)
+            else
+                msgFactory.RecycleMessage(msg)
 
-        processReceivedMessages (fun msg ->
-            match msg with
-            | :? ConnectionChallengeRequested as msg ->
-                clientId <- msg.clientId
-                connectionChallengeAccepted ()
+        member __.Update(interval, clientUpdate: IClientUpdate) =
 
-            | :? ConnectionAccepted as msg -> 
-                isConnected <- true
-                clientUpdate.OnMessageReceived(ClientMessage.ConnectionAccepted(clientId))
+            processReceivedMessages (fun msg ->
+                match msg with
+                | :? ConnectionChallengeRequested as msg ->
+                    clientId <- msg.clientId
+                    connectionChallengeAccepted ()
 
-            | :? DisconnectAccepted ->
-                isConnected <- false
-                udpClient.Disconnect()
-                clientUpdate.OnMessageReceived(ClientMessage.DisconnectAccepted)
+                | :? ConnectionAccepted as msg -> 
+                    isConnected <- true
+                    clientUpdate.OnMessageReceived(ClientMessage.ConnectionAccepted(clientId))
 
-            | :? Heartbeat -> ()
+                | :? DisconnectAccepted ->
+                    isConnected <- false
+                    udpClient.Disconnect()
+                    clientUpdate.OnMessageReceived(ClientMessage.DisconnectAccepted)
 
-            | _ -> 
-                clientUpdate.OnMessageReceived(ClientMessage.Message(msg))
+                | :? Heartbeat -> ()
 
-            msgFactory.RecycleMessage(msg)
-        )
+                | _ -> 
+                    clientUpdate.OnMessageReceived(ClientMessage.Message(msg))
 
-        clientUpdate.OnAfterMessagesReceived()
+                msgFactory.RecycleMessage(msg)
+            )
 
-        if udpClient.IsConnected && isConnected then
-            heartbeat ()
+            clientUpdate.OnAfterMessagesReceived()
 
-        packetSender.SendPacketsAsync(sendMsgQueue) |> ignore
+            if udpClient.IsConnected && isConnected then
+                heartbeat ()
 
-        stream.Time <- stream.Time + interval
+            packetSender.SendPacketsAsync(sendMsgQueue) |> ignore
 
-    member __.IsConnected = isConnected
+            stream.Time <- stream.Time + interval
 
-    member __.CreateMessage() =
-        msgFactory.CreateMessage()
+        member __.IsConnected = isConnected
 
-    member __.RecycleMessage(msg) =
-        msgFactory.RecycleMessage(msg)
+        member __.CreateMessage() =
+            msgFactory.CreateMessage()
 
-    member __.GetBeforeSerializedEvent(typeId) =
-        match channelLookup.TryGetValue(typeId) with
-        | (true, struct(channel, _)) -> channel.GetBeforeSerializedEvent(typeId)
-        | _ -> failwithf "TypeId, %i, has not been registered to a channel. Unable to get event." typeId
+        member __.GetBeforeSerializedEvent<'T when 'T :> NetMessage and 'T : (new : unit -> 'T)>() =
+            let typeId = msgFactory.GetTypeId<'T>()
+            match channelLookup.TryGetValue(typeId) with
+            | (true, struct(channel, _)) -> channel.GetBeforeSerializedEvent(typeId) |> Event.map (fun x -> x :?> 'T)
+            | _ -> failwithf "TypeId, %i, has not been registered to a channel. Unable to get event." typeId
 
-    member __.GetBeforeDeserializedEvent(typeId) =
-        match channelLookup.TryGetValue(typeId) with
-        | (true, struct(channel, _)) -> channel.GetBeforeDeserializedEvent(typeId)
-        | _ -> failwithf "TypeId, %i, has not been registered to a channel. Unable to get event." typeId
+        member __.GetBeforeDeserializedEvent<'T when 'T :> NetMessage and 'T : (new : unit -> 'T)>() =
+            let typeId = msgFactory.GetTypeId<'T>()
+            match channelLookup.TryGetValue(typeId) with
+            | (true, struct(channel, _)) -> channel.GetBeforeDeserializedEvent(typeId) |> Event.map (fun x -> x :?> 'T)
+            | _ -> failwithf "TypeId, %i, has not been registered to a channel. Unable to get event." typeId
 
     interface IDisposable with
 

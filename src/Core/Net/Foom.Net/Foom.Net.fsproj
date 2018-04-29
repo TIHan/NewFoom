@@ -12,11 +12,10 @@
     <Compile Include="CommonMessages.fs" />
     <Compile Include="ConnectedClient.fs" />
     <Compile Include="ClientManager.fs" />
+    <Compile Include="IClient.fs" />
     <Compile Include="Client.fs" />
     <Compile Include="Server.fs" />
     <Compile Include="NetworkChannel.fs" />
-    <Compile Include="IBackgroundClient.fs" />
-    <Compile Include="BackgroundClient.fs" />
     <Compile Include="BackgroundServer.fs" />
     <Compile Include="Network.fs" />
   </ItemGroup>

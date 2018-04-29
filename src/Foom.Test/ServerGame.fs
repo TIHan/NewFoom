@@ -48,11 +48,11 @@ type ServerGame(em: EntityManager, server: BackgroundServer) =
             | ServerMessage.ClientConnected(clientId) ->
                 let ent = em.Spawn()
 
-                let transform = em.Add<Transform>(ent)
-                let _direction = em.Add<Direction>(ent)
-                let _render = em.Add<Render>(ent)
-                let userControlled = em.Add<UserControlled>(ent)
-                let _spectatorTag = em.Add<SpectatorTag>(ent)
+                let mutable transform = Transform()
+                let mutable direction = Direction()
+                let mutable render = Render()
+                let mutable userControlled = UserControlled()
+                let mutable spectatorTag = SpectatorTag()
 
                 userControlled.clientId <- clientId
                 match player1StartPosition with
@@ -60,6 +60,12 @@ type ServerGame(em: EntityManager, server: BackgroundServer) =
                 | _ -> ()
 
                 playerLookup.Add(clientId, ent)
+
+                em.Add(ent, transform)
+                em.Add(ent, direction)
+                em.Add(ent, render)
+                em.Add(ent, userControlled)
+                em.Add(ent, spectatorTag)
 
                 printfn "Client Connected: %A" clientId
 

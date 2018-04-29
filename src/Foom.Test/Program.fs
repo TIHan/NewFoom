@@ -74,15 +74,13 @@ let main argv =
     let clientOpt =
         match serverOpt with
         | None ->
-            let client = network.CreateBackgroundClient()
-            client.OnException.Add(fun ex -> printfn "%A" ex)
+            let client = network.CreateClient()
             printfn "Client started, connecting at %s." argv.[0]
             Some client
         | Some server -> 
             let client = server.CreateLocalBackgroundClient()
-            client.OnException.Add(fun ex -> printfn "%A" ex)
             printfn "Local client started."
-            Some client
+            Some (client)
 
     let svGame = 
         match serverOpt with

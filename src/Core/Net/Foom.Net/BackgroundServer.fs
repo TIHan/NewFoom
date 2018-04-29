@@ -110,7 +110,6 @@ type BackgroundServer(networkChannels, port, maxClients) =
         let localClient = createMessageFactory networkChannels 1
         let localClientReceiveQueue = ConcurrentQueue()
         let receivedLocalClientMsgs = ConcurrentQueue()
-        let onLocalClientException = Event<Exception>()
 
         let mutable connectedQueue = None
 
@@ -119,7 +118,7 @@ type BackgroundServer(networkChannels, port, maxClients) =
         localClientOpt <- Some(localClient, localClientReceiveQueue)
         receivedLocalClientMsgsOpt <- Some(receivedLocalClientMsgs)
         {
-            new IBackgroundClient with
+            new IClient with
 
                 member __.Connect(_, _) =
                     localClientReceiveQueue.Enqueue(struct(Unchecked.defaultof<ClientId>, ClientMessage.ConnectionAccepted(Unchecked.defaultof<ClientId>)))
@@ -132,23 +131,23 @@ type BackgroundServer(networkChannels, port, maxClients) =
                     msg.IncrementRefCount()
                     receivedLocalClientMsgs.Enqueue(ServerMessage.Message(ClientId(), msg))
 
-                member __.SendPackets() = ()
-
                 member __.CreateMessage() =
                     localClient.CreateMessage()
 
-                member __.ProcessMessages(f) =
+                member __.Update(interval, clientUpdate) =
                     let mutable fullMsg = Unchecked.defaultof<_>
                     while localClientReceiveQueue.TryDequeue(&fullMsg) do
                         let struct(_, cl_msg) = fullMsg
-                        f cl_msg
+                        clientUpdate.OnMessageReceived(cl_msg)
 
                         match cl_msg with
                         | ClientMessage.Message msg ->
                             server.RecycleMessage(msg)
                         | _ -> ()
 
-                member __.OnException = onLocalClientException.Publish
+                    clientUpdate.OnAfterMessagesReceived()
+
+                member __.IsConnected = true
 
                 member __.GetBeforeSerializedEvent() =
                     noOpEvent.Publish

@@ -11,11 +11,8 @@ type Network(networkChannels: NetworkChannel list) =
 
     member __.CreateClient() =
         let msgFactory = createMessageFactory networkChannels 1
-        new Client(msgFactory)
+        new Client(msgFactory) :> IClient
 
     member __.CreateBackgroundServer(port, maxClients) =
         new BackgroundServer(networkChannels, port, maxClients)
-
-    member __.CreateBackgroundClient() =
-        new BackgroundClient(networkChannels) :> IBackgroundClient 
      

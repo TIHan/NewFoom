@@ -43,8 +43,9 @@ type internal Receiver(receiverType: ReceiverType, lookup: MessagePoolBase []) =
                 | (true, evt) -> evt.Trigger(msg)
                 | _ -> ()
                 msg.StartDeserialize(data)
-            finally
+            with | ex ->
                 pool.Recycle(msg)
+                reraise ()
 
         let seqId = msg.SequenceId
 
