@@ -97,17 +97,18 @@ let main argv =
         let queue = Queue()
         let spawnEntityTime = Stopwatch.StartNew()
         for i = 1 to 100000 do
-            let ent = em.Spawn()
-            let mutable t = Unchecked.defaultof<TestComponent>
-            em.Add<TestComponent>(ent, t)
-            let mutable t2 = Unchecked.defaultof<TestComponent2>
-            em.Add<TestComponent2>(ent, t2)
-            let mutable t3 = Unchecked.defaultof<TestComponent3>
-            em.Add<TestComponent3>(ent, t3)
-            let mutable t4 = Unchecked.defaultof<TestComponent4>
-            em.Add<TestComponent4>(ent, t4)
-            let mutable t5 = Unchecked.defaultof<TestComponent5>
-            em.Add<TestComponent5>(ent, t5)
+            let ent = em.SpawnArchetype(Unchecked.defaultof<TestComponent>, Unchecked.defaultof<TestComponent2>, Unchecked.defaultof<TestComponent3>, Unchecked.defaultof<TestComponent4>, Unchecked.defaultof<TestComponent5>)
+            //let ent = em.Spawn()
+            //let mutable t = Unchecked.defaultof<TestComponent>
+            //em.Add<TestComponent>(ent, t)
+            //let mutable t2 = Unchecked.defaultof<TestComponent2>
+            //em.Add<TestComponent2>(ent, t2)
+            //let mutable t3 = Unchecked.defaultof<TestComponent3>
+            //em.Add<TestComponent3>(ent, t3)
+            //let mutable t4 = Unchecked.defaultof<TestComponent4>
+            //em.Add<TestComponent4>(ent, t4)
+            //let mutable t5 = Unchecked.defaultof<TestComponent5>
+            //em.Add<TestComponent5>(ent, t5)
             queue.Enqueue(ent)
         spawnEntityTime.Stop()
 

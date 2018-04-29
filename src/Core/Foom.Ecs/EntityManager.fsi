@@ -54,6 +54,8 @@ type EntityManager =
 
     member Spawn : unit -> Entity
 
+    member SpawnArchetype<'T1, 'T2, 'T3, 'T4, 'T5 when 'T1 : unmanaged and 'T2 : unmanaged and 'T3 : unmanaged and 'T4 : unmanaged and 'T5 : unmanaged and 'T1 :> IComponent and 'T2 :> IComponent and 'T3 :> IComponent and 'T4 :> IComponent and 'T5 :> IComponent> : 'T1 * 'T2 * 'T3 * 'T4 * 'T5 -> Entity
+
     /// Defers to destroy the specified Entity.
     member Destroy : Entity -> unit
 

@@ -241,6 +241,17 @@ and [<Sealed>] EntityManager(maxEntityAmount) =
 
     // Components
 
+    member inline this.AddDataInline(entity: Entity, comp: byref<'T>, bit, data: EntityLookupData<'T>) =
+        let index = data.Entities.Count
+
+        data.IndexLookup.[entity.Index] <- index
+
+        data.Components.Add(&comp)
+        data.Entities.Add(entity)
+
+        let ec = entComps.GetByRef(entity.Index)
+        ec.AddComponentId(uint16 bit)
+
     member inline this.AddInline<'T when 'T : unmanaged and 'T :> IComponent>(entity: Entity, comp: byref<'T>) =
         let struct(bit, data) = this.GetEntityLookupData<'T>()
         if currentIterations > 0 then
@@ -301,6 +312,47 @@ and [<Sealed>] EntityManager(maxEntityAmount) =
                     Entity (index, 1u)
 
             activeVersions.[entity.Index] <- entity.Version
+
+            entity
+
+    member this.SpawnArchetype<'T1, 'T2, 'T3, 'T4, 'T5 when 'T1 : unmanaged and 'T2 : unmanaged and 'T3 : unmanaged and 'T4 : unmanaged and 'T5 : unmanaged and 'T1 :> IComponent and 'T2 :> IComponent and 'T3 :> IComponent and 'T4 :> IComponent and 'T5 :> IComponent>(comp1: 'T1, comp2: 'T2, comp3: 'T3, comp4: 'T4, comp5: 'T5) =
+        if removedEntityQueue.Count = 0 && nextEntityIndex >= maxEntityAmount then
+            Debug.WriteLine (String.Format ("ECS WARNING: Unable to spawn entity. Max entity amount hit: {0}", (maxEntityAmount)))
+            Entity()
+        else
+            let entity =
+                if removedEntityQueue.Count > 0 then
+                    let entity = removedEntityQueue.Dequeue ()
+                    Entity (entity.Index, entity.Version + 1u)
+                else
+                    let index = nextEntityIndex
+                    nextEntityIndex <- index + 1
+                    Entity (index, 1u)
+
+            activeVersions.[entity.Index] <- entity.Version
+
+            let mutable bit1 = 0
+            let mutable bit2 = 0
+            let mutable bit3 = 0
+            let mutable bit4 = 0
+            let mutable bit5 = 0
+            if lookup.TryGetValue (typeof<'T1>, &bit1) && lookup.TryGetValue (typeof<'T2>, &bit2) && lookup.TryGetValue (typeof<'T3>, &bit3) && lookup.TryGetValue (typeof<'T4>, &bit4) && lookup.TryGetValue (typeof<'T5>, &bit5) then
+                let data1 = lookupType.[bit1] :?> EntityLookupData<'T1>
+                let data2 = lookupType.[bit2] :?> EntityLookupData<'T2>
+                let data3 = lookupType.[bit3] :?> EntityLookupData<'T3>
+                let data4 = lookupType.[bit4] :?> EntityLookupData<'T4>
+                let data5 = lookupType.[bit5] :?> EntityLookupData<'T5>
+
+                let mutable comp1 = comp1
+                let mutable comp2 = comp2
+                let mutable comp3 = comp3
+                let mutable comp4 = comp4
+                let mutable comp5 = comp5
+                this.AddDataInline(entity, &comp1, bit1, data1)
+                this.AddDataInline(entity, &comp2, bit2, data2)
+                this.AddDataInline(entity, &comp3, bit3, data3)
+                this.AddDataInline(entity, &comp4, bit4, data4)
+                this.AddDataInline(entity, &comp5, bit5, data5)
 
             entity
 
