@@ -84,10 +84,10 @@ type ClientGame(em: EntityManager, input: IInput, renderer: IRenderer, client: I
                             let playerSnapshots = snapshotMsg.playerSnapshots
 
                             if sortedList.ContainsKey(snapshotMsg.snapshotId) |> not then
-                                if sortedList.Count > 3 then
+                                sortedList.Add(snapshotMsg.snapshotId, struct(snapshotMsg.playerCount, playerSnapshots, time, snapshotMsg.serverTime))
+                                if sortedList.Count > 6 then
                                     printfn "deleting snapshot"
                                     sortedList.RemoveAt(0)
-                                sortedList.Add(snapshotMsg.snapshotId, struct(snapshotMsg.playerCount, playerSnapshots, time, snapshotMsg.serverTime))
 
                         | _ -> ()
 
@@ -109,6 +109,7 @@ type ClientGame(em: EntityManager, input: IInput, renderer: IRenderer, client: I
                     if renderTime.IsSome then
                         renderTime <- Some(renderTime.Value + interval)
 
+                    printfn "sorted count %A" sortedList.Count
                     // end events
                     if sortedList.Count > 0 then
                         let struct(playerCount, playerSnapshots, snapTime, serverTime) = sortedList.Values.[0]
@@ -122,7 +123,9 @@ type ClientGame(em: EntityManager, input: IInput, renderer: IRenderer, client: I
                                 renderTime.Value
                             | Some renderTime -> renderTime
                        // printfn "snapshot count: %A" sortedList.Count
-                        if (rTime - interval - interval >= serverTime) || clientId.IsLocal then
+                        if (rTime >= serverTime + interval + interval) || sortedList.Count >= 3 || clientId.IsLocal then
+
+                            renderTime <- Some(serverTime + interval + interval)
 
                             sortedList.RemoveAt(0)
                             for i = 0 to playerCount - 1 do
