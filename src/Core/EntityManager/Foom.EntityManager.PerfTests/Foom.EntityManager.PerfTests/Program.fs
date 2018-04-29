@@ -93,11 +93,13 @@ let main argv =
     em.RegisterComponent<TestComponent4>()
     em.RegisterComponent<TestComponent5>()
 
+    let archetype = em.CreateArchetype<TestComponent, TestComponent2, TestComponent3, TestComponent4, TestComponent5>()
+
     for i = 1 to 250 do
         let queue = Queue()
         let spawnEntityTime = Stopwatch.StartNew()
         for i = 1 to 100000 do
-            let ent = em.SpawnArchetype(Unchecked.defaultof<TestComponent>, Unchecked.defaultof<TestComponent2>, Unchecked.defaultof<TestComponent3>, Unchecked.defaultof<TestComponent4>, Unchecked.defaultof<TestComponent5>)
+            let ent = em.SpawnArchetype(archetype, Unchecked.defaultof<TestComponent>, Unchecked.defaultof<TestComponent2>, Unchecked.defaultof<TestComponent3>, Unchecked.defaultof<TestComponent4>, Unchecked.defaultof<TestComponent5>)
             //let ent = em.Spawn()
             //let mutable t = Unchecked.defaultof<TestComponent>
             //em.Add<TestComponent>(ent, t)

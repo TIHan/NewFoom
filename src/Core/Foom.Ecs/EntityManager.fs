@@ -10,6 +10,15 @@ open Foom.Core
 
 #nowarn "9"
 
+type EntityArchetype<'T1, 'T2, 'T3, 'T4, 'T5> = 
+    {
+        bit1: byte
+        bit2: byte
+        bit3: byte
+        bit4: byte
+        bit5: byte
+    }
+
 [<AllowNullLiteral>]
 type IEntityLookupData =
 
@@ -315,7 +324,18 @@ and [<Sealed>] EntityManager(maxEntityAmount) =
 
             entity
 
-    member this.SpawnArchetype<'T1, 'T2, 'T3, 'T4, 'T5 when 'T1 : unmanaged and 'T2 : unmanaged and 'T3 : unmanaged and 'T4 : unmanaged and 'T5 : unmanaged and 'T1 :> IComponent and 'T2 :> IComponent and 'T3 :> IComponent and 'T4 :> IComponent and 'T5 :> IComponent>(comp1: 'T1, comp2: 'T2, comp3: 'T3, comp4: 'T4, comp5: 'T5) =
+    member this.CreateArchetype<'T1, 'T2, 'T3, 'T4, 'T5 when 'T1 : unmanaged and 'T2 : unmanaged and 'T3 : unmanaged and 'T4 : unmanaged and 'T5 : unmanaged and 'T1 :> IComponent and 'T2 :> IComponent and 'T3 :> IComponent and 'T4 :> IComponent and 'T5 :> IComponent>() : EntityArchetype<'T1, 'T2, 'T3, 'T4, 'T5> =
+        let mutable bit1 = 0
+        let mutable bit2 = 0
+        let mutable bit3 = 0
+        let mutable bit4 = 0
+        let mutable bit5 = 0
+        if lookup.TryGetValue (typeof<'T1>, &bit1) && lookup.TryGetValue (typeof<'T2>, &bit2) && lookup.TryGetValue (typeof<'T3>, &bit3) && lookup.TryGetValue (typeof<'T4>, &bit4) && lookup.TryGetValue (typeof<'T5>, &bit5) then
+            { bit1 = byte bit1; bit2 = byte bit2; bit3 = byte bit3; bit4 = byte bit4; bit5 = byte bit5 }
+        else
+            failwith "Can't find one or more components for archetype."
+
+    member this.SpawnArchetype<'T1, 'T2, 'T3, 'T4, 'T5 when 'T1 : unmanaged and 'T2 : unmanaged and 'T3 : unmanaged and 'T4 : unmanaged and 'T5 : unmanaged and 'T1 :> IComponent and 'T2 :> IComponent and 'T3 :> IComponent and 'T4 :> IComponent and 'T5 :> IComponent>(archetype: EntityArchetype<'T1, 'T2, 'T3, 'T4, 'T5>, comp1: 'T1, comp2: 'T2, comp3: 'T3, comp4: 'T4, comp5: 'T5) =
         if removedEntityQueue.Count = 0 && nextEntityIndex >= maxEntityAmount then
             Debug.WriteLine (String.Format ("ECS WARNING: Unable to spawn entity. Max entity amount hit: {0}", (maxEntityAmount)))
             Entity()
@@ -331,28 +351,28 @@ and [<Sealed>] EntityManager(maxEntityAmount) =
 
             activeVersions.[entity.Index] <- entity.Version
 
-            let mutable bit1 = 0
-            let mutable bit2 = 0
-            let mutable bit3 = 0
-            let mutable bit4 = 0
-            let mutable bit5 = 0
-            if lookup.TryGetValue (typeof<'T1>, &bit1) && lookup.TryGetValue (typeof<'T2>, &bit2) && lookup.TryGetValue (typeof<'T3>, &bit3) && lookup.TryGetValue (typeof<'T4>, &bit4) && lookup.TryGetValue (typeof<'T5>, &bit5) then
-                let data1 = lookupType.[bit1] :?> EntityLookupData<'T1>
-                let data2 = lookupType.[bit2] :?> EntityLookupData<'T2>
-                let data3 = lookupType.[bit3] :?> EntityLookupData<'T3>
-                let data4 = lookupType.[bit4] :?> EntityLookupData<'T4>
-                let data5 = lookupType.[bit5] :?> EntityLookupData<'T5>
+            let bit1 = int archetype.bit1
+            let bit2 = int archetype.bit2
+            let bit3 = int archetype.bit3
+            let bit4 = int archetype.bit4
+            let bit5 = int archetype.bit5
 
-                let mutable comp1 = comp1
-                let mutable comp2 = comp2
-                let mutable comp3 = comp3
-                let mutable comp4 = comp4
-                let mutable comp5 = comp5
-                this.AddDataInline(entity, &comp1, bit1, data1)
-                this.AddDataInline(entity, &comp2, bit2, data2)
-                this.AddDataInline(entity, &comp3, bit3, data3)
-                this.AddDataInline(entity, &comp4, bit4, data4)
-                this.AddDataInline(entity, &comp5, bit5, data5)
+            let data1 = lookupType.[bit1] :?> EntityLookupData<'T1>
+            let data2 = lookupType.[bit2] :?> EntityLookupData<'T2>
+            let data3 = lookupType.[bit3] :?> EntityLookupData<'T3>
+            let data4 = lookupType.[bit4] :?> EntityLookupData<'T4>
+            let data5 = lookupType.[bit5] :?> EntityLookupData<'T5>
+
+            let mutable comp1 = comp1
+            let mutable comp2 = comp2
+            let mutable comp3 = comp3
+            let mutable comp4 = comp4
+            let mutable comp5 = comp5
+            this.AddDataInline(entity, &comp1, bit1, data1)
+            this.AddDataInline(entity, &comp2, bit2, data2)
+            this.AddDataInline(entity, &comp3, bit3, data3)
+            this.AddDataInline(entity, &comp4, bit4, data4)
+            this.AddDataInline(entity, &comp5, bit5, data5)
 
             entity
 
