@@ -46,6 +46,7 @@ type internal AckManager() =
                 if ackBits &&& (1 <<< i) <> 0 then
                     acks.[index] <- true
                     packetAcked.Trigger(uint16 index)
+                    printfn "acked: %i" ack
 
     //member __.Ack(ack: uint16) =
         //if not acks.[int ack] then

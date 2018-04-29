@@ -72,6 +72,8 @@ type MessageReceiver(streams: PacketStreamLookup, channelLookups: ChannelLookup 
                 | packet when packet.IsEmpty -> ()
                 | packet ->
 
+                    printfn "Packet received"
+
                     let stream = streams.[streamIndex]
                     if stream = Unchecked.defaultof<PacketStream> then ()
 
@@ -97,6 +99,7 @@ type MessageReceiver(streams: PacketStreamLookup, channelLookups: ChannelLookup 
                                 data <- data.Slice(numBytesRead)
                         )
                     with | ex ->
+                        printfn "MessageReceiver threw: %A" ex
                         // stream.Dispose()
                         streams.[streamIndex] <- Unchecked.defaultof<PacketStream>
                         failedQueue.Enqueue(streamIndex, ex)
