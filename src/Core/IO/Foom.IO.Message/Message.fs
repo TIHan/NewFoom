@@ -90,11 +90,11 @@ type MessagePool<'T when 'T :> Message and 'T : (new : unit -> 'T)>(typeId, pool
         msg
 
     override __.Recycle msg =
+        if msg.IsRecyclable then
+            let refCount = System.Threading.Interlocked.Decrement(&msg.refCount)
+            if refCount < 0 then
+                failwithf "RefCount on message, %A, is below zero." (msg.GetType().Name)
 
-        let refCount = System.Threading.Interlocked.Decrement(&msg.refCount)
-        if refCount < 0 then
-            failwithf "RefCount on message, %A, is below zero." (msg.GetType().Name)
-
-        if msg.IsRecyclable && (not msg.IsRecycled) && refCount = 0 then
-            msg.MainReset()
-            msgs.Push(msg :?> 'T)
+            if refCount = 0 then
+                msg.MainReset()
+                msgs.Push(msg :?> 'T)

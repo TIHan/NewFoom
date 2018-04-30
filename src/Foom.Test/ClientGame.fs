@@ -85,7 +85,7 @@ type ClientGame(em: EntityManager, input: IInput, renderer: IRenderer, client: I
 
                             if sortedList.ContainsKey(snapshotMsg.snapshotId) |> not then
                                 sortedList.Add(snapshotMsg.snapshotId, struct(snapshotMsg.playerCount, playerSnapshots, time, snapshotMsg.serverTime))
-                                if sortedList.Count > 6 then
+                                if sortedList.Count > 4 then
                                     printfn "deleting snapshot"
                                     sortedList.RemoveAt(0)
 
@@ -109,7 +109,7 @@ type ClientGame(em: EntityManager, input: IInput, renderer: IRenderer, client: I
                     if renderTime.IsSome then
                         renderTime <- Some(renderTime.Value + interval)
 
-                    printfn "sorted count %A" sortedList.Count
+                  //  printfn "sorted count %A" sortedList.Count
                     // end events
                     if sortedList.Count > 0 then
                         let struct(playerCount, playerSnapshots, snapTime, serverTime) = sortedList.Values.[0]
