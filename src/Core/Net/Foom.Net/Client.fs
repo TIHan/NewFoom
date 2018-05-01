@@ -21,10 +21,6 @@ type Client(msgFactory: MessageFactory) =
     let netChannel = NetChannel(stream, msgFactory, channelLookup)
     let sendTaskQueue = new TaskQueue()
 
-    let sendPacket(packet) =
-        if udpClient.IsConnected then
-            udpClient.Send(packet)
-
     let receivePacket() =
         try
             if udpClient.IsConnected && udpClient.IsDataAvailable then
@@ -52,23 +48,7 @@ type Client(msgFactory: MessageFactory) =
                 | packet ->
 
                     try
-                        stream.Receive(packet, fun data -> 
-                            let mutable data = data
-                            while data.Length > 0 do
-                                let typeId = data.[0]
-                                let channelId = data.[3] // This gets the channelId - don't change.
-
-                                if msgFactory.GetChannelId(typeId) <> channelId then
-                                    failwith "Message received with invalid channel."
-
-                                let struct(channel, _) = channelLookup.[channelId]
-                                let numBytesRead = channel.Receive(data)
-
-                                if numBytesRead = 0 then
-                                    failwith "Unable to receive message."
-
-                                data <- data.Slice(numBytesRead)
-                        )
+                        netChannel.ReceivePacket(packet)
                     with | ex ->
                         printfn "MessageReceiver threw: %A" ex
         ), TaskCreationOptions.LongRunning)
