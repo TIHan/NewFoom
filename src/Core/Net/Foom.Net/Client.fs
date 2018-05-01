@@ -16,16 +16,16 @@ type Client(msgFactory: MessageFactory) =
     let udpClient = new UdpClient()
 
     // Packet streams and channels
-    let sendMsgQueue = MessageQueue()
     let stream = PacketStream()
     let channelLookup = msgFactory.CreateChannelLookup()
-    let taskQueue = new TaskQueue()
-    let packetSender = new PacketSender(stream, channelLookup, msgFactory, taskQueue, 10, fun packet -> 
+    let netChannel = NetChannel(stream, msgFactory, channelLookup)
+    let sendTaskQueue = new TaskQueue()
+
+    let sendPacket(packet) =
         if udpClient.IsConnected then
             udpClient.Send(packet)
-    ) 
-    let messageReceiver = new MessageReceiver([|stream|], [|channelLookup|], msgFactory, fun streamIndex ->
-        streamIndex <- 0
+
+    let receivePacket() =
         try
             if udpClient.IsConnected && udpClient.IsDataAvailable then
                 udpClient.Receive()
@@ -34,47 +34,76 @@ type Client(msgFactory: MessageFactory) =
         with | ex ->
             printfn "%A" ex
             Packet.Empty
-    )
+
+    let sendPackets() =
+        sendTaskQueue.Enqueue(fun () ->
+            netChannel.SendPackets(fun packet ->
+                if udpClient.IsConnected then
+                    udpClient.Send(packet)
+            )
+        )
+
+    let receivePacketsTask = 
+        new Task((fun () ->
+            while true do
+
+                match receivePacket() with
+                | packet when packet.IsEmpty -> ()
+                | packet ->
+
+                    try
+                        stream.Receive(packet, fun data -> 
+                            let mutable data = data
+                            while data.Length > 0 do
+                                let typeId = data.[0]
+                                let channelId = data.[3] // This gets the channelId - don't change.
+
+                                if msgFactory.GetChannelId(typeId) <> channelId then
+                                    failwith "Message received with invalid channel."
+
+                                let struct(channel, _) = channelLookup.[channelId]
+                                let numBytesRead = channel.Receive(data)
+
+                                if numBytesRead = 0 then
+                                    failwith "Unable to receive message."
+
+                                data <- data.Slice(numBytesRead)
+                        )
+                    with | ex ->
+                        printfn "MessageReceiver threw: %A" ex
+        ), TaskCreationOptions.LongRunning)
 
     // Client state
     let mutable currentTime = TimeSpan.Zero
     let mutable isConnected = false
     let mutable clientId = ClientId()
 
-    let processReceivedMessages f =
-        channelLookup
-        |> Seq.iter (fun pair -> 
-            let struct(channel, _) = pair.Value
-            channel.ProcessReceived(fun msg ->
-                match msg with
-                | :? NetMessage as msg -> f msg
-                | _ -> failwith "Invalid NetMessage"
-            )
-        )
-
     let heartbeat () =
         if isConnected then
             let msg = msgFactory.CreateMessage<Heartbeat>()
             msg.IncrementRefCount()
-            sendMsgQueue.Enqueue(msg)
+            netChannel.SendMessage(msg, false)
 
     let connectionRequest () =
         if not isConnected then
             let msg = msgFactory.CreateMessage<ConnectionRequested>()
             msg.IncrementRefCount()
-            sendMsgQueue.Enqueue(msg)
+            netChannel.SendMessage(msg, false)
 
     let connectionChallengeAccepted () =
         if not isConnected then
             let msg = msgFactory.CreateMessage<ConnectionChallengeAccepted>()
             msg.IncrementRefCount()
-            sendMsgQueue.Enqueue(msg)
+            netChannel.SendMessage(msg, false)
 
     let disconnectRequest () =
         if isConnected then
             let msg = msgFactory.CreateMessage<DisconnectRequested>()
             msg.IncrementRefCount()
-            sendMsgQueue.Enqueue(msg)
+            netChannel.SendMessage(msg, false)
+
+    do
+        receivePacketsTask.Start()
 
     interface IClient with
 
@@ -92,13 +121,13 @@ type Client(msgFactory: MessageFactory) =
             msg.IncrementRefCount()
 
             if udpClient.IsConnected && isConnected then
-                sendMsgQueue.Enqueue(msg)
+                netChannel.SendMessage(msg, false)
             else
                 msgFactory.RecycleMessage(msg)
 
         member __.Update(interval, clientUpdate: IClientUpdate) =
 
-            processReceivedMessages (fun msg ->
+            netChannel.ProcessReceivedMessages(fun msg ->
                 match msg with
                 | :? ConnectionChallengeRequested as msg ->
                     clientId <- msg.clientId
@@ -126,7 +155,10 @@ type Client(msgFactory: MessageFactory) =
             if udpClient.IsConnected && isConnected then
                 heartbeat ()
 
-            packetSender.SendPacketsAsync(sendMsgQueue) |> ignore
+            netChannel.SendPackets(fun packet ->
+                if udpClient.IsConnected then
+                    udpClient.Send(packet)
+            )
 
             stream.Time <- stream.Time + interval
 
