@@ -1,6 +1,7 @@
 module Foom.Renderer.GL.ShaderQuotation.Implementation
 
 open System
+open System.Collections.Generic
 open Microsoft.FSharp.Quotations
 open Microsoft.FSharp.Quotations.Patterns
 open Microsoft.FSharp.Quotations.DerivedPatterns
@@ -81,6 +82,7 @@ module rec GlslLang =
 
     [<RequireQualifiedAccess>]
     type GlslType =
+        | Void
         | Bool
         | Int
         | UInt
@@ -106,18 +108,85 @@ module rec GlslLang =
     type GlslVal = GlslVal of name: string * GlslType
 
     [<RequireQualifiedAccess>]
-    type GlslDeclareVar =
+    type GlslExpr =
+        | Internal
+        | Call of func: GlslFunction * exprList: GlslExpr list
         | Literal of GlslLiteral
         | Var of GlslVar
         | Val of GlslVal
-
-    [<RequireQualifiedAccess>]
-    type GlslExpr =
-        | Call of func: GlslFunction * exprList: GlslExpr
-        | Var of GlslVar
-        | DeclareVar of GlslDeclareVar
+        | DeclareVal of name: string * GlslExpr * next: GlslExpr
+        | DeclareVar of name: string * GlslExpr * next: GlslExpr
 
     type GlslModule = GlslModule of uniforms: GlslVal list * ins: GlslVal list * outs: GlslVar list * GlslFunction list
+
+    let testMeshVertex =
+
+        let multiplyOp_mat4x4_mat4x4 = 
+            GlslFunction("*", 
+                [
+                    GlslParameter("m0", GlslType.Matrix4x4)
+                    GlslParameter("m1", GlslType.Matrix4x4)
+                ], GlslType.Matrix4x4, GlslExpr.Internal)
+
+        let multiplyOp_mat4x4_vec4 = 
+            GlslFunction("*", 
+                [
+                    GlslParameter("m0", GlslType.Matrix4x4)
+                    GlslParameter("v0", GlslType.Vector4 GlslVectorType.Float)
+                ], GlslType.Vector4 GlslVectorType.Float, GlslExpr.Internal)
+
+        let projection = GlslVal("projection", GlslType.Matrix4x4)
+        let view = GlslVal("view", GlslType.Matrix4x4)
+        let position = GlslVal("position", GlslType.Vector3 GlslVectorType.Float)
+        let vec4_ctor = 
+            GlslFunction("vec4.ctor", 
+                [
+                    GlslParameter("xyz", GlslType.Vector3 GlslVectorType.Float)
+                    GlslParameter("w", GlslType.Float)
+                ], GlslType.Float, GlslExpr.Internal
+            )
+        GlslModule(
+            [
+                projection
+                view
+            ],
+            [
+                position
+                GlslVal("uv", GlslType.Vector2 GlslVectorType.Float)
+                GlslVal("color", GlslType.Vector4 GlslVectorType.Float)
+            ],
+            [
+                GlslVar("out_uv", GlslType.Vector2 GlslVectorType.Float)
+                GlslVar("out_color", GlslType.Vector4 GlslVectorType.Float)
+            ],
+            [
+                GlslFunction("main", [], GlslType.Void,
+                    GlslExpr.DeclareVal("snapToPixel",
+                        GlslExpr.Call(multiplyOp_mat4x4_vec4,
+                            [
+                                GlslExpr.Call(multiplyOp_mat4x4_vec4,
+                                    [
+                                        GlslExpr.Val projection
+                                        GlslExpr.Val view
+                                    ]
+                                )
+                                GlslExpr.Call(vec4_ctor,
+                                    [
+                                        GlslExpr.Val position
+                                        GlslExpr.Literal(GlslLiteral.Float 1.f)
+                                    ]
+                                )
+                            ]
+                        ), 
+                        GlslExpr.DeclareVal("vertex",
+                            GlslExpr.Val(GlslVal("snapToPixel", GlslType.Vector4 GlslVectorType.Float)),
+                            GlslExpr.Internal
+                        )
+                    )
+                )
+            ]
+        )
+
 
 type UniformAttribute() =
     inherit Attribute()
