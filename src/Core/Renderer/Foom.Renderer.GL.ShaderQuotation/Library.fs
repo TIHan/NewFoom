@@ -1,7 +1,6 @@
 module Foom.Renderer.GL.ShaderQuotation.Implementation
 
 open System
-open System.Numerics
 open Microsoft.FSharp.Quotations
 open Microsoft.FSharp.Quotations.Patterns
 open Microsoft.FSharp.Quotations.DerivedPatterns
@@ -70,30 +69,124 @@ println exprLambda
 println exprCall
 println <@@ let f x = x + 10 in f 10 @@>
 
+module rec GlslLang =
+
+    [<RequireQualifiedAccess>]
+    type GlslVectorType =
+        | Bool
+        | Int
+        | UInt
+        | Float
+        | Double
+
+    [<RequireQualifiedAccess>]
+    type GlslType =
+        | Bool
+        | Int
+        | UInt
+        | Float
+        | Double
+        | Vector2 of GlslVectorType
+        | Vector3 of GlslVectorType
+        | Vector4 of GlslVectorType
+        | Matrix4x4
+        | Struct of fields: (string * GlslType) list
+
+    [<RequireQualifiedAccess>]
+    type GlslLiteral =
+        | Bool of bool
+        | Int of int
+        | UInt of uint32
+        | Float of float32
+        | Double of float
+
+    type GlslParameter = GlslParameter of name: string * GlslType
+    type GlslFunction = GlslFunction of name: string * parms: GlslParameter list * ret: GlslType * body: GlslExpr
+    type GlslVar = GlslVar of name: string * GlslType
+    type GlslVal = GlslVal of name: string * GlslType
+
+    [<RequireQualifiedAccess>]
+    type GlslDeclareVar =
+        | Literal of GlslLiteral
+        | Var of GlslVar
+        | Val of GlslVal
+
+    [<RequireQualifiedAccess>]
+    type GlslExpr =
+        | Call of func: GlslFunction * exprList: GlslExpr
+        | Var of GlslVar
+        | DeclareVar of GlslDeclareVar
+
+    type GlslModule = GlslModule of uniforms: GlslVal list * ins: GlslVal list * outs: GlslVar list * GlslFunction list
+
 type UniformAttribute() =
     inherit Attribute()
 
 type GlobalAttribute() =
     inherit Attribute()
 
-//let (*) (m: Matrix4x4, v: Vector4) = Matrix4x4.Identity
+module QuotationTypes =
 
+    type vec2<'a> =
+        val mutable x : 'a
+        val mutable y : 'a
+
+        new (x, y) = { x = x; y = y }
+
+    type vec3<'a> =
+        val mutable x : 'a
+        val mutable y : 'a
+        val mutable z : 'a
+
+        new (x, y, z) = { x = x; y = y; z = z }
+
+    type vec4<'a> =
+        val mutable x : 'a
+        val mutable y : 'a
+        val mutable z : 'a
+        val mutable w : 'a
+
+        new (x, y, z, w) = { x = x; y = y; z = z; w = w }
+
+        new (xyz: vec3<'a>, w) = { x = xyz.x; y = xyz.y; z = xyz.z; w = w }
+
+    type mat4x4<'a> =
+        val mutable v0 : vec4<'a>
+        val mutable v1 : vec4<'a>
+        val mutable v2 : vec4<'a>
+        val mutable v3 : vec4<'a>
+
+        new (v0, v1, v2, v3) = { v0 = v0; v1 = v1; v2 = v2; v3 = v3 }
+
+        static member (*) (_m0: mat4x4<'a>, _m1: mat4x4<'a>) : mat4x4<'a> = raise (NotImplementedException())
+
+        static member (*) (_m0: mat4x4<'a>, _v0: vec4<'a>) : vec4<'a> = raise (NotImplementedException())
+
+    type vec2 = vec2<float32>
+    type vec3 = vec3<float32>
+    type vec4 = vec4<float32>
+    type mat4x4 = mat4x4<float32>
+    type mat4 = mat4x4
+
+open QuotationTypes
+
+[<Struct>]
 type MeshVertexOutput =
     {
-        gl_Position: Vector4
-        uv: Vector2
-        color: Vector4
+        gl_Position: vec4
+        uv: vec2
+        color: vec4
     }
 
 let meshVertex =
     <@
-    fun ([<Uniform>] projection: Matrix4x4) 
-        ([<Uniform>] view: Matrix4x4) 
-        (position: Vector3) 
-        (uv: Vector2) 
-        (color: Vector4) ->
+    fun ([<Uniform>] projection: mat4)
+        ([<Uniform>] view: mat4)
+        (position: vec3)
+        (uv: vec2)
+        (color: vec4) ->
         
-        let snapToPixel = Vector4.Transform(Vector4(position, 1.f), projection * view)
+        let snapToPixel = projection * view * vec4(position, 1.f)
         let vertex = snapToPixel
 
         {
