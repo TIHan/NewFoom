@@ -68,6 +68,8 @@ Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "Foom.EntityManager.PerfTest
 EndProject
 Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "Foom.Renderer.GL.ShaderQuotation", "src\Core\Renderer\Foom.Renderer.GL.ShaderQuotation\Foom.Renderer.GL.ShaderQuotation.fsproj", "{ADBF7B40-13C0-4C73-B67D-5305C96BCFA6}"
 EndProject
+Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "Foom.Renderer.GL.ShaderQuotation.Tests", "src\Core\Renderer\Foom.Renderer.GL.ShaderQuotation.Tests\Foom.Renderer.GL.ShaderQuotation.Tests.fsproj", "{C7B9C36E-AB64-4931-88DD-16C00D26FCFC}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -170,6 +172,10 @@ Global
 		{ADBF7B40-13C0-4C73-B67D-5305C96BCFA6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{ADBF7B40-13C0-4C73-B67D-5305C96BCFA6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{ADBF7B40-13C0-4C73-B67D-5305C96BCFA6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C7B9C36E-AB64-4931-88DD-16C00D26FCFC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C7B9C36E-AB64-4931-88DD-16C00D26FCFC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C7B9C36E-AB64-4931-88DD-16C00D26FCFC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C7B9C36E-AB64-4931-88DD-16C00D26FCFC}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -203,6 +209,7 @@ Global
 		{6AE2BE8D-B6C5-46BC-82B2-04F6F8FDFA7B} = {33DEB521-F18C-467E-95E2-710E37167FB5}
 		{009336C8-9B8C-46F6-B153-F8E2E46D0D96} = {6AE2BE8D-B6C5-46BC-82B2-04F6F8FDFA7B}
 		{ADBF7B40-13C0-4C73-B67D-5305C96BCFA6} = {B56D6DC9-39AF-4597-B4BF-D33516067F63}
+		{C7B9C36E-AB64-4931-88DD-16C00D26FCFC} = {B56D6DC9-39AF-4597-B4BF-D33516067F63}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {2782F051-7E65-4A50-AB2B-45D308458EA2}

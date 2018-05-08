@@ -1,4 +1,4 @@
-﻿module internal rec Foom.Renderer.GL.ShaderQuotation.GlslAst
+﻿module rec Foom.Renderer.GL.ShaderQuotation.GlslAst 
 
 [<RequireQualifiedAccess>]
 type GlslVectorType =
@@ -32,8 +32,10 @@ type GlslLiteral =
 
 type GlslParameter = GlslParameter of name: string * GlslType
 type GlslFunction = GlslFunction of name: string * parms: GlslParameter list * ret: GlslType * body: GlslExpr
-type GlslVar = GlslVar of name: string * GlslType
-type GlslVal = GlslVal of name: string * GlslType
+type GlslVar = GlslVar of name: string * GlslType * isMutable: bool
+
+let mkVar name typ = GlslVar(name, typ, false)
+let mkMutableVar name typ = GlslVar(name, typ, true)
 
 [<RequireQualifiedAccess>]
 type GlslExpr =
@@ -42,7 +44,22 @@ type GlslExpr =
     | Call of func: GlslFunction * exprList: GlslExpr list
     | Literal of GlslLiteral
     | Var of GlslVar
-    | Val of GlslVal
     | DeclareVar of name: string * GlslType * body: GlslExpr * next: GlslExpr
 
-type GlslModule = GlslModule of uniforms: GlslVal list * ins: GlslVal list * outs: GlslVar list * GlslFunction list
+type GlslModule = 
+    {
+        uniforms: GlslVar list
+        ins: GlslVar list 
+        outs: GlslVar list 
+        funcs: GlslFunction list
+    }
+
+module GlslModule =
+
+    let empty =
+        {
+            uniforms = []
+            ins = []
+            outs = []
+            funcs = []
+        }

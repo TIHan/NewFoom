@@ -1,4 +1,4 @@
-﻿module internal Foom.Renderer.GL.ShaderQuotation.GlslGen
+﻿module Foom.Renderer.GL.ShaderQuotation.GlslGen
 
 open GlslAst
 
@@ -18,9 +18,9 @@ let testMeshVertex =
                 GlslParameter("v0", GlslType.Vector4 GlslVectorType.Float)
             ], GlslType.Vector4 GlslVectorType.Float, GlslExpr.Internal)
 
-    let projection = GlslVal("projection", GlslType.Matrix4x4)
-    let view = GlslVal("view", GlslType.Matrix4x4)
-    let position = GlslVal("position", GlslType.Vector3 GlslVectorType.Float)
+    let projection = mkVar "projection" GlslType.Matrix4x4
+    let view = mkVar "view" GlslType.Matrix4x4
+    let position = mkVar "position" (GlslType.Vector3 GlslVectorType.Float)
     let vec4_ctor = 
         GlslFunction("vec4.ctor", 
             [
@@ -28,44 +28,48 @@ let testMeshVertex =
                 GlslParameter("w", GlslType.Float)
             ], GlslType.Float, GlslExpr.Internal
         )
-    GlslModule(
-        [
+    {
+        uniforms = 
+            [
             projection
             view
-        ],
-        [
+        ]
+        ins = 
+            [
             position
-            GlslVal("uv", GlslType.Vector2 GlslVectorType.Float)
-            GlslVal("color", GlslType.Vector4 GlslVectorType.Float)
-        ],
-        [
-            GlslVar("out_uv", GlslType.Vector2 GlslVectorType.Float)
-            GlslVar("out_color", GlslType.Vector4 GlslVectorType.Float)
-        ],
-        [
+            mkVar "uv" (GlslType.Vector2 GlslVectorType.Float)
+            mkVar "color" (GlslType.Vector4 GlslVectorType.Float)
+        ]
+        outs = 
+            [
+            mkVar "out_uv" (GlslType.Vector2 GlslVectorType.Float)
+            mkVar "out_color" (GlslType.Vector4 GlslVectorType.Float)
+        ]
+        funcs = 
+            [
             GlslFunction("main", [], GlslType.Void,
                 GlslExpr.DeclareVar("snapToPixel", GlslType.Vector4 GlslVectorType.Float,
                     GlslExpr.Call(multiplyOp_mat4x4_vec4,
                         [
                             GlslExpr.Call(multiplyOp_mat4x4_vec4,
                                 [
-                                    GlslExpr.Val projection
-                                    GlslExpr.Val view
+                                    GlslExpr.Var projection
+                                    GlslExpr.Var view
                                 ]
                             )
                             GlslExpr.Call(vec4_ctor,
                                 [
-                                    GlslExpr.Val position
+                                    GlslExpr.Var position
                                     GlslExpr.Literal(GlslLiteral.Float 1.f)
                                 ]
                             )
                         ]
                     ), 
                     GlslExpr.DeclareVar("vertex", GlslType.Vector4 GlslVectorType.Float,
-                        GlslExpr.Val(GlslVal("snapToPixel", GlslType.Vector4 GlslVectorType.Float)),
+                        GlslExpr.Var(mkMutableVar "snapToPixel" (GlslType.Vector4 GlslVectorType.Float)),
                         GlslExpr.NoOp
                     )
                 )
             )
         ]
-    )
+    }

@@ -2,15 +2,14 @@ namespace Foom.Renderer.GL.ShaderQuotation
 
 open System
 
-type UniformAttribute() =
-    inherit Attribute()
-
+[<Struct>]
 type vec2<'a> =
     val mutable x : 'a
     val mutable y : 'a
 
     new (x, y) = { x = x; y = y }
 
+[<Struct>]
 type vec3<'a> =
     val mutable x : 'a
     val mutable y : 'a
@@ -18,6 +17,7 @@ type vec3<'a> =
 
     new (x, y, z) = { x = x; y = y; z = z }
 
+[<Struct>]
 type vec4<'a> =
     val mutable x : 'a
     val mutable y : 'a
@@ -28,6 +28,7 @@ type vec4<'a> =
 
     new (xyz: vec3<'a>, w) = { x = xyz.x; y = xyz.y; z = xyz.z; w = w }
 
+[<Struct>]
 type mat4x4<'a> =
     val mutable v0 : vec4<'a>
     val mutable v1 : vec4<'a>
@@ -45,3 +46,13 @@ type vec3 = vec3<float32>
 type vec4 = vec4<float32>
 type mat4x4 = mat4x4<float32>
 type mat4 = mat4x4
+
+[<Struct>]
+type uniform<'a> = 
+    val value : 'a
+
+    new (value) = { value = value }
+
+[<AutoOpen>]
+module Uniform =
+    let uniform value = uniform(value)
