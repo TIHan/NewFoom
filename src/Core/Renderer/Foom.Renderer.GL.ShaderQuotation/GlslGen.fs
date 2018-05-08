@@ -48,7 +48,7 @@ let testMeshVertex =
         funcs = 
             [
             GlslFunction("main", [], GlslType.Void,
-                GlslExpr.DeclareVar("snapToPixel", GlslType.Vector4 GlslVectorType.Float,
+                GlslExpr.DeclareVar(GlslVar("snapToPixel", GlslType.Vector4 GlslVectorType.Float, true),
                     GlslExpr.Call(multiplyOp_mat4x4_vec4,
                         [
                             GlslExpr.Call(multiplyOp_mat4x4_vec4,
@@ -65,7 +65,7 @@ let testMeshVertex =
                             )
                         ]
                     ), 
-                    GlslExpr.DeclareVar("vertex", GlslType.Vector4 GlslVectorType.Float,
+                    GlslExpr.DeclareVar(GlslVar("vertex", GlslType.Vector4 GlslVectorType.Float, true),
                         GlslExpr.Var(mkMutableVar "snapToPixel" (GlslType.Vector4 GlslVectorType.Float)),
                         GlslExpr.NoOp
                     )

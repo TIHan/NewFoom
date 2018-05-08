@@ -70,10 +70,20 @@ let rec translateType (typ: Type) =
     | x when x.GetGenericTypeDefinition() = typedefof<uniform<_>> -> translateType x.GenericTypeArguments.[0]
     | _ -> failwithf "Can't translated type: %A" typ
 
-let rec translateExpr (expr: Expr) : GlslExpr =
+let rec translateExpr (expr: Expr) (hashNames: Set<string>) (ast: byref<GlslModule>) : GlslExpr =
     match expr with
     | Call(exprOpt, methodInfo, exprList) ->
         GlslExpr.NoOp
+    | Let(var, expr1, expr2) ->
+        let (name, hashNames) =
+            if hashNames.Contains(var.Name) then
+                let name = var.Name + "@"
+                (name, hashNames.Add(name))
+            else
+                (var.Name, hashNames.Add(var.Name))
+
+        let glslVar = mkMutableVar name (translateType var.Type)
+        GlslExpr.DeclareVar(glslVar, translateExpr expr1 hashNames &ast, translateExpr expr2 hashNames &ast)
     | x -> failwithf "No supported. %A" x
 
 let rec translateToModule (expr: Expr) (ast: GlslModule) : GlslModule =
@@ -96,7 +106,16 @@ let rec translateToModule (expr: Expr) (ast: GlslModule) : GlslModule =
         //let env = translate expr1 env
         //translate expr2 env
     | _ -> 
-        let mainFunc = GlslFunction("main", [], GlslType.Void, translateExpr expr)
+
+        // TODO: Should be able to resolve outs.
+
+        let hashNames = 
+            ast.ins @ ast.uniforms
+            |> List.map (fun (GlslVar(name, _, _)) -> name)
+            |> Set.ofList
+
+        let mutable ast = ast
+        let mainFunc = GlslFunction("main", [], GlslType.Void, translateExpr expr hashNames &ast)
         { ast with
             funcs = mainFunc :: ast.funcs
         }

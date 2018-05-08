@@ -44,7 +44,7 @@ type GlslExpr =
     | Call of func: GlslFunction * exprList: GlslExpr list
     | Literal of GlslLiteral
     | Var of GlslVar
-    | DeclareVar of name: string * GlslType * body: GlslExpr * next: GlslExpr
+    | DeclareVar of GlslVar * body: GlslExpr * next: GlslExpr
 
 type GlslModule = 
     {
