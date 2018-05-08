@@ -1,11 +1,11 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
   </PropertyGroup>
-
   <ItemGroup>
-    <Compile Include="Library.fs" />
+    <Compile Include="GlslAst.fs" />
+    <Compile Include="GlslGen.fs" />
+    <Compile Include="TranspilerTypes.fs" />
+    <Compile Include="Transpiler.fs" />
   </ItemGroup>
-
 </Project>
