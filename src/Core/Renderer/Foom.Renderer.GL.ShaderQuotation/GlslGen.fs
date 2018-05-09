@@ -1,75 +1,77 @@
 ﻿module Foom.Renderer.GL.ShaderQuotation.GlslGen
 
+open System
 open GlslAst
 
-let testMeshVertex =
+let genType = function
+    | GlslType.Void -> "void"
+    | GlslType.Bool -> "bool"
+    | GlslType.Int -> "int"
+    | GlslType.Float -> "float"
+    | GlslType.Double -> "double"
+    | GlslType.Vector2 GlslVectorType.Float -> "vec2"
+    | GlslType.Vector3 GlslVectorType.Float -> "vec3"
+    | GlslType.Vector4 GlslVectorType.Float -> "vec4"
+    | GlslType.Matrix4x4 -> "mat4"
+    | x -> failwithf "Type not supported yet: %A" x
 
-    let multiplyOp_mat4x4_mat4x4 = 
-        GlslFunction("*", 
-            [
-                GlslParameter("m0", GlslType.Matrix4x4)
-                GlslParameter("m1", GlslType.Matrix4x4)
-            ], GlslType.Matrix4x4, GlslExpr.Internal)
-
-    let multiplyOp_mat4x4_vec4 = 
-        GlslFunction("*", 
-            [
-                GlslParameter("m0", GlslType.Matrix4x4)
-                GlslParameter("v0", GlslType.Vector4 GlslVectorType.Float)
-            ], GlslType.Vector4 GlslVectorType.Float, GlslExpr.Internal)
-
-    let projection = mkVar "projection" GlslType.Matrix4x4
-    let view = mkVar "view" GlslType.Matrix4x4
-    let position = mkVar "position" (GlslType.Vector3 GlslVectorType.Float)
-    let vec4_ctor = 
-        GlslFunction("vec4.ctor", 
-            [
-                GlslParameter("xyz", GlslType.Vector3 GlslVectorType.Float)
-                GlslParameter("w", GlslType.Float)
-            ], GlslType.Float, GlslExpr.Internal
+let genUniforms = function
+    | [] -> String.Empty
+    | uniforms ->
+        uniforms
+        |> List.map (function
+            | GlslVar(name, typ, _) ->
+                sprintf "uniform %s %s;\n" (genType typ) name
         )
-    {
-        uniforms = 
-            [
-            projection
-            view
-        ]
-        ins = 
-            [
-            position
-            mkVar "uv" (GlslType.Vector2 GlslVectorType.Float)
-            mkVar "color" (GlslType.Vector4 GlslVectorType.Float)
-        ]
-        outs = 
-            [
-            mkVar "out_uv" (GlslType.Vector2 GlslVectorType.Float)
-            mkVar "out_color" (GlslType.Vector4 GlslVectorType.Float)
-        ]
-        funcs = 
-            [
-            GlslFunction("main", [], GlslType.Void,
-                GlslExpr.DeclareVar(GlslVar("snapToPixel", GlslType.Vector4 GlslVectorType.Float, true),
-                    GlslExpr.Call(multiplyOp_mat4x4_vec4,
-                        [
-                            GlslExpr.Call(multiplyOp_mat4x4_vec4,
-                                [
-                                    GlslExpr.Var projection
-                                    GlslExpr.Var view
-                                ]
-                            )
-                            GlslExpr.Call(vec4_ctor,
-                                [
-                                    GlslExpr.Var position
-                                    GlslExpr.Literal(GlslLiteral.Float 1.f)
-                                ]
-                            )
-                        ]
-                    ), 
-                    GlslExpr.DeclareVar(GlslVar("vertex", GlslType.Vector4 GlslVectorType.Float, true),
-                        GlslExpr.Var(mkMutableVar "snapToPixel" (GlslType.Vector4 GlslVectorType.Float)),
-                        GlslExpr.NoOp
-                    )
-                )
-            )
-        ]
-    }
+        |> List.reduce (+)
+
+let genIns = function
+    | [] -> String.Empty
+    | ins ->
+        ins
+        |> List.map (function
+            | GlslVar(name, typ, _) ->
+                sprintf "in %s %s;\n" (genType typ) name
+        )
+        |> List.reduce (+)
+
+let genOuts = function
+    | [] -> String.Empty
+    | ins ->
+        ins
+        |> List.map (function
+            | GlslVar(name, typ, _) ->
+                sprintf "out %s %s;\n" (genType typ) name
+        )
+        |> List.reduce (+)
+
+let genParameter = function
+    | GlslParameter(name, typ) ->
+        sprintf "%s %s" (genType typ) name
+
+let genParameters = function
+    | [] -> String.Empty
+    | parms ->
+        parms
+        |> List.map genParameter
+        |> List.reduce (+)
+
+let genFunction = function
+    | GlslFunction(name, parms, ret, body) ->
+        String.Empty
+//        sprintf """%s(%s){
+//%s
+//}""" name (genParameters parms) String.Empty
+////let genFunctions = function
+    //| [] -> String.Empty
+    //| funcs ->
+        //funcs
+
+let gen { uniforms = uniforms; ins = ins; outs = outs; funcs = funcs } =
+    """
+#version 330 core
+
+    """ +
+    genUniforms uniforms +
+    genIns ins +
+    genOuts outs

@@ -47,12 +47,8 @@ type vec4 = vec4<float32>
 type mat4x4 = mat4x4<float32>
 type mat4 = mat4x4
 
-[<Struct>]
 type uniform<'a> = 
     val value : 'a
 
-    new (value) = { value = value }
-
-[<AutoOpen>]
-module Uniform =
-    let uniform value = uniform(value)
+type input<'a> =
+    val value : 'a

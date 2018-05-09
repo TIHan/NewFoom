@@ -123,7 +123,8 @@ let rec translateExpr (expr: Expr) : GlslExpr =
             |> List.map translateExpr
         )
     | PropertyGet(Some(Var(var)), propOrValInfo, _) ->
-        if typedefof<uniform<_>> = var.Type.GetGenericTypeDefinition() && propOrValInfo.Name = "value" then
+        let typedef = var.Type.GetGenericTypeDefinition()
+        if (typedefof<uniform<_>> = typedef || typedefof<input<_>> = typedef) && propOrValInfo.Name = "value" then
             GlslExpr.Var(mkVar var.Name (translateType var.Type.GenericTypeArguments.[0]))
         else
             failwithf "PropertyGet not supported: %A" expr

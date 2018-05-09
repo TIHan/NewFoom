@@ -16,17 +16,17 @@ let meshVertex =
     <@
     fun (projection: mat4 uniform)
         (view: mat4 uniform)
-        (position: vec3)
-        (uv: vec2)
-        (color: vec4) ->
+        (position: vec3 input)
+        (uv: vec2 input)
+        (color: vec4 input) ->
 
-            let snapToPixel = projection.value * view.value * vec4(position, 1.f)
+            let snapToPixel = projection.value * view.value * vec4(position.value, 1.f)
             let snapToPixel = snapToPixel
 
             {
                 gl_Position = snapToPixel
-                uv = uv
-                color = color
+                uv = uv.value
+                color = color.value
             }
     @>
 
