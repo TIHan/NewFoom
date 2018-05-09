@@ -70,20 +70,70 @@ let rec translateType (typ: Type) =
     | x when x.GetGenericTypeDefinition() = typedefof<uniform<_>> -> translateType x.GenericTypeArguments.[0]
     | _ -> failwithf "Can't translated type: %A" typ
 
-let rec translateExpr (expr: Expr) (hashNames: Set<string>) (ast: byref<GlslModule>) : GlslExpr =
+let mkMultiplyFunction x0 x1 ret = 
+    mkFunction 
+        "op_multiply" 
+        [ mkParameter "x0" (translateType x1); mkParameter "x1" (translateType x1) ] 
+        (translateType ret) 
+        GlslExpr.Internal
+
+let vec4CtorFunction =
+    mkFunction
+        "ctor_vec4"
+        [ mkParameter "xyz" (GlslType.Vector3 GlslVectorType.Float); mkParameter "w" GlslType.Float ]
+        (GlslType.Vector4 GlslVectorType.Float)
+        GlslExpr.Internal
+
+let rec translateExpr (expr: Expr) : GlslExpr =
     match expr with
+    | Sequential(expr1, expr2) ->
+        GlslExpr.Sequential(translateExpr expr1, translateExpr expr2)
+    | NewRecord(typ, exprList) ->
+        let props = typ.GetProperties()
+        if props.Length <> exprList.Length then
+            failwithf "Record can only be constructed at the end of the quotation: %A" typ
+    
+        (props, exprList)
+        ||> Seq.map2 (fun prop expr ->
+            GlslExpr.VarSet(mkVar prop.Name (translateType prop.PropertyType), translateExpr expr)
+        )
+        |> Seq.reduce (fun glslExpr1 glslExpr2 -> GlslExpr.Sequential(glslExpr1, glslExpr2))
+    | VarSet(var, expr) ->
+        GlslExpr.VarSet(mkMutableVar var.Name (translateType var.Type), translateExpr expr)
+    | Var(var) ->
+        GlslExpr.Var(mkMutableVar var.Name (translateType var.Type))
+    | Value(value, typ) ->
+        let literal =
+            match typ with
+            | x when x = typeof<bool> -> mkLiteralBool (value :?> bool)
+            | x when x = typeof<int> -> mkLiteralInt (value :?> int)
+            | x when x = typeof<uint32> -> mkLiteralUInt (value :?> uint32)
+            | x when x = typeof<float32> -> mkLiteralFloat (value :?> float32)
+            | x when x = typeof<double> -> mkLiteralDouble (value :?> float)
+            | _ -> failwithf "Literal not supported: %A" value
+
+        GlslExpr.Literal(literal)
+    | NewObject(ctorInfo, exprList) ->
+        GlslExpr.Call(vec4CtorFunction,
+            exprList
+            |> List.map translateExpr
+        )
+    | PropertyGet(Some(Var(var)), propOrValInfo, _) ->
+        if typedefof<uniform<_>> = var.Type.GetGenericTypeDefinition() && propOrValInfo.Name = "value" then
+            GlslExpr.Var(mkVar var.Name (translateType var.Type.GenericTypeArguments.[0]))
+        else
+            failwithf "PropertyGet not supported: %A" expr
+    | SpecificCall <@@ (*) @@> (None, typeList, exprList) ->
+        GlslExpr.Call(mkMultiplyFunction typeList.[0] typeList.[1] typeList.[2],
+            exprList
+            |> List.map (fun x -> translateExpr x)
+        )
     | Call(exprOpt, methodInfo, exprList) ->
         GlslExpr.NoOp
     | Let(var, expr1, expr2) ->
-        let (name, hashNames) =
-            if hashNames.Contains(var.Name) then
-                let name = var.Name + "@"
-                (name, hashNames.Add(name))
-            else
-                (var.Name, hashNames.Add(var.Name))
-
+        let name = var.Name
         let glslVar = mkMutableVar name (translateType var.Type)
-        GlslExpr.DeclareVar(glslVar, translateExpr expr1 hashNames &ast, translateExpr expr2 hashNames &ast)
+        GlslExpr.DeclareVar(glslVar, translateExpr expr1, translateExpr expr2)
     | x -> failwithf "No supported. %A" x
 
 let rec translateToModule (expr: Expr) (ast: GlslModule) : GlslModule =
@@ -109,15 +159,9 @@ let rec translateToModule (expr: Expr) (ast: GlslModule) : GlslModule =
 
         // TODO: Should be able to resolve outs.
 
-        let hashNames = 
-            ast.ins @ ast.uniforms
-            |> List.map (fun (GlslVar(name, _, _)) -> name)
-            |> Set.ofList
-
-        let mutable ast = ast
-        let mainFunc = GlslFunction("main", [], GlslType.Void, translateExpr expr hashNames &ast)
+        let mainFunc = GlslFunction("main", [], GlslType.Void, translateExpr expr)
         { ast with
-            funcs = mainFunc :: ast.funcs
+            funcs = mainFunc :: (ast).funcs
         }
     //| SpecificCall <@@ (+) @@> (_, _, exprList) ->
     //    // Matches a call to (+). Must appear before Call pattern.

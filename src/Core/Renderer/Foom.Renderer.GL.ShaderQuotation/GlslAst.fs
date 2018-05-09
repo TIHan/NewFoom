@@ -36,6 +36,13 @@ type GlslVar = GlslVar of name: string * GlslType * isMutable: bool
 
 let mkVar name typ = GlslVar(name, typ, false)
 let mkMutableVar name typ = GlslVar(name, typ, true)
+let mkParameter name typ = GlslParameter(name, typ)
+let mkFunction name parms ret body = GlslFunction(name, parms, ret, body)
+let mkLiteralBool value = GlslLiteral.Bool(value)
+let mkLiteralInt value =  GlslLiteral.Int(value)
+let mkLiteralUInt value = GlslLiteral.UInt(value)
+let mkLiteralFloat value = GlslLiteral.Float(value)
+let mkLiteralDouble value = GlslLiteral.Double(value)
 
 [<RequireQualifiedAccess>]
 type GlslExpr =
@@ -44,6 +51,8 @@ type GlslExpr =
     | Call of func: GlslFunction * exprList: GlslExpr list
     | Literal of GlslLiteral
     | Var of GlslVar
+    | VarSet of GlslVar * GlslExpr
+    | Sequential of GlslExpr * GlslExpr
     | DeclareVar of GlslVar * body: GlslExpr * next: GlslExpr
 
 type GlslModule = 
