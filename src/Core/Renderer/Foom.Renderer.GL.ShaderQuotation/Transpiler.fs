@@ -103,6 +103,10 @@ let rec translateExpr (expr: Expr) : GlslExpr =
     | Var(var) ->
         GlslExpr.Var(mkMutableVar var.Name (translateType var.Type))
     | Value(value, typ) ->
+        if typ = typeof<unit> then
+            GlslExpr.NoOp
+        else
+
         let literal =
             match typ with
             | x when x = typeof<bool> -> mkLiteralBool (value :?> bool)
@@ -110,7 +114,7 @@ let rec translateExpr (expr: Expr) : GlslExpr =
             | x when x = typeof<uint32> -> mkLiteralUInt (value :?> uint32)
             | x when x = typeof<float32> -> mkLiteralFloat (value :?> float32)
             | x when x = typeof<double> -> mkLiteralDouble (value :?> float)
-            | _ -> failwithf "Literal not supported: %A" value
+            | _ -> failwithf "Literal not supported: %A %A" value typ
 
         GlslExpr.Literal(literal)
     | NewObject(ctorInfo, exprList) ->
