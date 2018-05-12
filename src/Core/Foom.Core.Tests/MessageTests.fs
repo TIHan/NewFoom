@@ -1,4 +1,4 @@
-module Tests
+module MessageTests
 
 open System
 open System.Collections.Generic
@@ -124,3 +124,4 @@ let ``Ordered`` () =
     Assert.Equal(2, results.Count)
     Assert.Equal("BEEF", results.[0])
     Assert.Equal("BEEF2", results.[1])
+    

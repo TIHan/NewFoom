@@ -8,8 +8,32 @@
     <Compile Include="EventAggregator.fs" />
     <Compile Include="Manager.fs" />
     <Compile Include="TaskQueue.fs" />
+    <Compile Include="Serializer\SpanExtensions.fs" />
+    <Compile Include="Message\Message.fsi" />
+    <Compile Include="Message\Message.fs" />
+    <Compile Include="Message\Serializer.fsi" />
+    <Compile Include="Message\Serializer.fs" />
+    <Compile Include="Message\Receiver.fsi" />
+    <Compile Include="Message\Receiver.fs" />
+    <Compile Include="Message\Channels.fs" />
+    <Compile Include="Packet\Constants.fs" />
+    <Compile Include="Packet\Packet.fsi" />
+    <Compile Include="Packet\Packet.fs" />
+    <Compile Include="Packet\AckManager.fsi" />
+    <Compile Include="Packet\AckManager.fs" />
+    <Compile Include="Packet\PacketSender.fsi" />
+    <Compile Include="Packet\PacketSender.fs" />
+    <Compile Include="Packet\PacketReceiver.fsi" />
+    <Compile Include="Packet\PacketReceiver.fs" />
+    <Compile Include="Packet\PacketStream.fsi" />
+    <Compile Include="Packet\PacketStream.fs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="System.Memory" Version="4.4.0-preview1-25305-02" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Message\" />
+    <Folder Include="Serializer\" />
+    <Folder Include="Packet\" />
   </ItemGroup>
 </Project>

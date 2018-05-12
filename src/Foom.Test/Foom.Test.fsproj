@@ -28,8 +28,6 @@
     <ProjectReference Include="..\Core\Input\Foom.Input.Desktop\Foom.Input.Desktop.fsproj" />
     <PackageReference Include="SkiaSharp" Version="1.60.0" />
     <ProjectReference Include="..\Core\Net\Foom.Net\Foom.Net.fsproj" />
-    <ProjectReference Include="..\Core\IO\Foom.IO.Message\Foom.IO.Message.fsproj" />
-    <ProjectReference Include="..\Core\IO\Foom.IO.Serializer\Foom.IO.Serializer.fsproj" />
     <ProjectReference Include="..\Core\Foom.Core\Foom.Core.fsproj" />
   </ItemGroup>
   <Target Name="PreBuild" BeforeTargets="PreBuildEvent">

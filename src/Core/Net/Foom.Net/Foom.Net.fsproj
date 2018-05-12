@@ -23,9 +23,6 @@
     <PackageReference Include="System.Memory" Version="4.4.0-preview1-25305-02" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\IO\Foom.IO.Message\Foom.IO.Message.fsproj" />
-    <ProjectReference Include="..\..\IO\Foom.IO.Packet\Foom.IO.Packet.fsproj" />
-    <ProjectReference Include="..\..\IO\Foom.IO.Serializer\Foom.IO.Serializer.fsproj" />
     <ProjectReference Include="..\..\Foom.Core\Foom.Core.fsproj" />
   </ItemGroup>
 </Project>
