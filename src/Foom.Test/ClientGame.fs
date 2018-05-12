@@ -13,7 +13,7 @@ open Foom.Renderer.GL.Desktop
 open Foom.Input
 open Foom.Net
 open Foom.EntityManager
-open Foom.Core
+open Foom.NativeCollections
 
 type ClientEvent =
     | Connected
@@ -37,7 +37,7 @@ type ClientGame(em: EntityManager, input: IInput, renderer: IRenderer, client: I
     let spriteStates = Array.zeroCreate<int> 64
     let mutable clientId = ClientId.Local
 
-    let masterPlayerSnapshots = Array.init<UnmanagedArray<PlayerSnapshot>> 30 (fun _ -> UnmanagedArray<PlayerSnapshot>.Create(32768, fun _ -> PlayerSnapshot()))
+    let masterPlayerSnapshots = Array.init<NativeArray<PlayerSnapshot>> 30 (fun _ -> NativeArray.init 32768 (fun _ -> PlayerSnapshot()))
     let sortedList = SortedList()
 
     let mutable renderTime = None

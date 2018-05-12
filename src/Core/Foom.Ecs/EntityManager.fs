@@ -6,7 +6,7 @@ open System.Collections.Generic
 open System.Runtime.InteropServices
 open System.Runtime.CompilerServices
 open FSharp.NativeInterop
-open Foom.Core
+open Foom.NativeCollections
 
 #nowarn "9"
 
@@ -22,7 +22,7 @@ type EntityArchetype<'T1, 'T2, 'T3, 'T4, 'T5> =
 [<AllowNullLiteral>]
 type IEntityLookupData =
 
-    abstract Entities : Entity UnmanagedResizeArray with get
+    abstract Entities : Entity NativeResizeArray with get
 
     abstract GetIndex : int -> int
 
@@ -31,9 +31,9 @@ type IEntityLookupData =
 [<ReferenceEquality>]
 type EntityLookupData<'T when 'T : unmanaged and 'T :> IComponent> =
     {
-        IndexLookup: int UnmanagedArray
-        Entities: Entity UnmanagedResizeArray
-        Components: 'T UnmanagedResizeArray
+        IndexLookup: int NativeArray
+        Entities: Entity NativeResizeArray
+        Components: 'T NativeResizeArray
 
         mutable dummy: 'T
     }
@@ -119,8 +119,8 @@ and [<Sealed>] EntityManager(maxEntityAmount) =
 
     let lookup = Dictionary<Type, int> ()
     let lookupType = Array.zeroCreate 252
-    let activeVersions = UnmanagedArray<uint32>.Create(maxEntityAmount, fun _ -> 1u)
-    let entComps = UnmanagedArray<EntityComponents>.Create(maxEntityAmount, fun _ -> { count = 0 })
+    let activeVersions = NativeArray.init maxEntityAmount (fun _ -> 1u)
+    let entComps = NativeArray.init maxEntityAmount (fun _ -> { count = 0 })
 
     let mutable nextEntityIndex = 0
     let mutable nextCompBit = 0
@@ -135,9 +135,9 @@ and [<Sealed>] EntityManager(maxEntityAmount) =
     member __.RegisterComponent<'T when 'T : unmanaged and 'T :> IComponent>() =
         let data =
             {
-                IndexLookup = UnmanagedArray<int>.Create(maxEntityAmount, fun _ -> -1) // -1 means that no component exists for that entity
-                Entities = new UnmanagedResizeArray<Entity>(1)
-                Components = new UnmanagedResizeArray<'T>(1)
+                IndexLookup = NativeArray.init maxEntityAmount (fun _ -> -1) // -1 means that no component exists for that entity
+                Entities = new NativeResizeArray<Entity>(1)
+                Components = new NativeResizeArray<'T>(1)
 
                 dummy = Unchecked.defaultof<'T>
             }
@@ -410,11 +410,6 @@ and [<Sealed>] EntityManager(maxEntityAmount) =
             data.GetIndex(entity.Index) >= 0
         else
             false
-
-    member this.CopyComponentsTo<'T when 'T : unmanaged and 'T :> IComponent>(copyTo: Span<'T>) =
-        let struct(_, data) = this.GetEntityLookupData<'T>()
-        let ptr = data.Components.Buffer |> NativePtr.toNativeInt
-        Span(ptr.ToPointer(), sizeof<'T> * data.Components.Count).CopyTo(copyTo)
 
     //************************************************************************************************************************
 

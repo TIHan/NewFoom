@@ -32,7 +32,7 @@ open Foom.Input
 open Foom.Input.Desktop
 open Foom.Net
 open Foom.EntityManager
-open Foom.Core
+open Foom.NativeCollections
 
 let createBitmap (pixels: Pixel [,]) =
     let mutable isTransparent = false
@@ -395,7 +395,7 @@ type Snapshot =
     val mutable snapshotId : int64
     val mutable serverTime : TimeSpan
     val mutable playerCount : int
-    val mutable playerSnapshots : UnmanagedArray<PlayerSnapshot>
+    val mutable playerSnapshots : NativeArray<PlayerSnapshot>
 
     new () = { snapshotId = 0L; serverTime = TimeSpan.Zero; playerCount = 0; playerSnapshots = null }
 

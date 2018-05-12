@@ -7,6 +7,7 @@ open System.Collections.Concurrent
 open Foom.Game
 open Foom.Net
 open Foom.Wad
+open Foom.NativeCollections
 
 [<Sealed>]
 type EmptyServerGame() =
@@ -41,7 +42,7 @@ type ServerGame(em: EntityManager, server: BackgroundServer) =
 
     let mutable snapshotId = 0L
 
-    let masterPlayerSnapshots = Array.init<UnmanagedArray<PlayerSnapshot>> 30 (fun _ -> UnmanagedArray<PlayerSnapshot>.Create(32768, fun _ -> PlayerSnapshot()))
+    let masterPlayerSnapshots = Array.init<NativeArray<PlayerSnapshot>> 30 (fun _ -> NativeArray.init 32768 (fun _ -> PlayerSnapshot()))
 
     override __.Update(time, interval) =
         server.ProcessMessages(function
