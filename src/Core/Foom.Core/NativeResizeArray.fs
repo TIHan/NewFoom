@@ -22,7 +22,7 @@ type NativeResizeArray<'T when 'T : unmanaged>(capacity) =
 
     member __.Buffer = buffer
 
-    member __.IncreaseCapacity () =
+    member __.IncreaseCapacity() =
         let mutable newLength = uint32 length * 2u
         if newLength >= uint32 Int32.MaxValue then
             failwith "Length is bigger than the maximum number of elements in the array"
@@ -46,8 +46,9 @@ type NativeResizeArray<'T when 'T : unmanaged>(capacity) =
         NativePtr.set buffer.Buffer count item
         count <- count + 1
 
-    member this.LastItem = NativePtr.get this.Buffer.Buffer (count - 1)
+    member inline this.LastItem = NativePtr.get this.Buffer.Buffer (this.Count - 1)
 
+    [<MethodImpl(MethodImplOptions.AggressiveInlining)>]
     member this.SwapRemoveAt index =
         if index >= count then
             failwith "Index out of bounds"
