@@ -2,7 +2,7 @@
 
 open System
 open System.Threading.Tasks
-open Foom.Core
+open Foom.Tasks
 open Foom.IO.Message
 open Foom.IO.Packet
 

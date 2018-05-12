@@ -1,4 +1,4 @@
-namespace Foom.Core
+namespace Foom.Control
 
 open System
 open System.Collections.Concurrent

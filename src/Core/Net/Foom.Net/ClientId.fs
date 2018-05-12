@@ -1,6 +1,6 @@
 ﻿namespace Foom.Net
 
-open Foom.Core
+open Foom.Collections
 
 [<Struct>]
 type ClientId =

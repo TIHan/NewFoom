@@ -1,4 +1,4 @@
-﻿namespace Foom.Core
+﻿namespace Foom.Tasks
 
 open System
 open System.Threading

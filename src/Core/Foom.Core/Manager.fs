@@ -1,4 +1,4 @@
-﻿namespace Foom.Core
+﻿namespace Foom.Collections
 
 open System
 open System.Collections.Generic

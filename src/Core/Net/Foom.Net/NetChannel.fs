@@ -5,7 +5,6 @@ open System.Threading
 open System.Threading.Tasks
 open System.Collections.Generic
 open System.Collections.Concurrent
-open Foom.Core
 open Foom.IO.Packet
 open Foom.IO.Message
 open Foom.IO.Message.Channel

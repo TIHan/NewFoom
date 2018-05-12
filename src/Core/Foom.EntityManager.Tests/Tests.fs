@@ -21,11 +21,11 @@ let ``EntityManager - Simple Iteration`` () =
     em.RegisterComponent<TestComponent>()
 
     let ent = em.Spawn()
-    let test = em.Add<TestComponent>(ent)
+    //let test = em.Add<TestComponent>(ent)
 
-    test.x <- 1
-    test.y <- 2
-    test.z <- 3
+    //test.x <- 1
+    //test.y <- 2
+    //test.z <- 3
 
     let mutable happenedOnce = false
 

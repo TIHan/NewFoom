@@ -6,7 +6,7 @@ open System.Net
 open System
 open Foom.IO.Packet
 open Foom.IO.Message
-open Foom.Core
+open Foom.Collections
 
 [<Sealed>]
 type ClientManager(msgFactory, maxClients: int) =

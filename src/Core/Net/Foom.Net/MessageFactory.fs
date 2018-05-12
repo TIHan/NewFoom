@@ -6,7 +6,6 @@ open System.Collections.Concurrent
 open Foom.IO.Message
 open Foom.IO.Message.Channel
 open Foom.IO.Packet
-open Foom.Core
 
 type ChannelType =
     | Unreliable = 0

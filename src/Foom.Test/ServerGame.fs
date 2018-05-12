@@ -28,7 +28,6 @@ module private BestHelpers =
         )
 
 open Foom.EntityManager
-open Foom.Core
 
 [<Sealed>]
 type ServerGame(em: EntityManager, server: BackgroundServer) =
