@@ -83,7 +83,6 @@ type BackgroundServer(networkChannels, port, maxClients) =
     member __.SendMessage(msg: NetMessage, clientId: ClientId) =
         match localClientOpt with
         | Some(_, localClientReceiveQueue) when clientId.IsLocal ->
-            msg.IncrementRefCount()
             localClientReceiveQueue.Enqueue struct(ClientId.Local, ClientMessage.Message(msg))
         | _ ->
             server.SendMessage(msg, clientId, willRecycle = true)
@@ -128,7 +127,6 @@ type BackgroundServer(networkChannels, port, maxClients) =
                     receivedLocalClientMsgs.Enqueue(ServerMessage.ClientDisconnected(ClientId()))
 
                 member __.SendMessage(msg) =
-                    msg.IncrementRefCount()
                     receivedLocalClientMsgs.Enqueue(ServerMessage.Message(ClientId(), msg))
 
                 member __.CreateMessage() =

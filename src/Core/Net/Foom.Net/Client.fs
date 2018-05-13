@@ -73,25 +73,21 @@ type Client(msgFactory: MessageFactory) =
     let heartbeat () =
         if isConnected then
             let msg = msgFactory.CreateMessage<Heartbeat>()
-            msg.IncrementRefCount()
             netChannel.SendMessage(msg, false)
 
     let connectionRequest () =
         if not isConnected then
             let msg = msgFactory.CreateMessage<ConnectionRequested>()
-            msg.IncrementRefCount()
             netChannel.SendMessage(msg, false)
 
     let connectionChallengeAccepted () =
         if not isConnected then
             let msg = msgFactory.CreateMessage<ConnectionChallengeAccepted>()
-            msg.IncrementRefCount()
             netChannel.SendMessage(msg, false)
 
     let disconnectRequest () =
         if isConnected then
             let msg = msgFactory.CreateMessage<DisconnectRequested>()
-            msg.IncrementRefCount()
             netChannel.SendMessage(msg, false)
 
     do
@@ -109,9 +105,6 @@ type Client(msgFactory: MessageFactory) =
                 disconnectRequest ()
 
         member __.SendMessage(msg: NetMessage) =
-
-            msg.IncrementRefCount()
-
             if udpClient.IsConnected && isConnected then
                 netChannel.SendMessage(msg, false)
             else

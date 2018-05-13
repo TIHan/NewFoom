@@ -13,7 +13,6 @@ type ConnectedClient(msgFactory: MessageFactory, udpServer: UdpServer, endPoint:
     let heartbeat () =
         if not this.IsChallenging then
             let msg = msgFactory.CreateMessage<Heartbeat>()
-            msg.IncrementRefCount()
             netChannel.SendMessage(msg, willRecycle = true)
 
     member __.SendMessage(msg, willRecycle) =

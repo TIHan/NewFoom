@@ -87,6 +87,7 @@ type MessagePool<'T when 'T :> Message and 'T : (new : unit -> 'T)>(typeId, pool
                 msg
         msg.typeId <- typeId
         msg.IsRecycled <- false
+        msg.IncrementRefCount()
         msg
 
     override __.Recycle msg =
