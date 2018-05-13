@@ -4,13 +4,14 @@ open System
 open System.Collections.Concurrent
 open Foom.IO.Message
 open Foom.IO.Serializer
+open Foom.NativeCollections
 
 [<Sealed>]
 type internal Serializer(lookup: MessagePoolBase []) =
 
     let beforeSerializedEvents = ConcurrentDictionary<byte, Event<Message>>()
 
-    let buffer = Array.zeroCreate<byte> 65536
+    let buffer = NativeArray.zeroCreate<byte> 65536
     let mutable nextSeqId = 0us
 
     member __.GetBeforeSerializedEvent(typeId: byte) =
@@ -35,8 +36,13 @@ type internal Serializer(lookup: MessagePoolBase []) =
                     match beforeSerializedEvents.TryGetValue(msg.TypeId) with
                     | (true, evt) -> evt.Trigger(msg)
                     | _ -> ()
-                    msg.StartSerialize(Span(buffer))
+                    msg.StartSerialize(buffer.ToSpan())
                 finally 
                     pool.Recycle(msg)
 
-            f.Invoke(Span(buffer, 0, numBytesWritten))
+            f.Invoke(Span(buffer.ToPointer(), numBytesWritten))
+
+    interface IDisposable with
+
+        member __.Dispose() =
+            (buffer :> IDisposable).Dispose()

@@ -55,6 +55,9 @@ type NativeArray<'T when 'T : unmanaged> =
     member inline this.ToSpan() =
         Span<'T>((this.Buffer |> NativePtr.toNativeInt).ToPointer(), this.Length * sizeof<'T>)
 
+    member inline this.ToPointer() =
+        (this.Buffer |> NativePtr.toNativeInt).ToPointer()
+
     interface IDisposable with
 
         member this.Dispose() =
@@ -62,24 +65,24 @@ type NativeArray<'T when 'T : unmanaged> =
 
 module NativeArray =
 
-    let inline zeroCreate count =
-        new NativeArray<_>(count)
+    let inline zeroCreate<'T when 'T : unmanaged> count =
+        new NativeArray<'T> (count)
 
-    let inline init count f =
-        let arr = new NativeArray<_>(count)
+    let inline init<'T when 'T : unmanaged> count f =
+        let arr = new NativeArray<'T>(count)
 
         for i = 0 to arr.Length - 1 do
             arr.[i] <- f i
 
         arr
 
-    let inline iter f (arr: NativeArray<_>) =
+    let inline iter<'T when 'T : unmanaged> f (arr: NativeArray<'T>) =
         for i = 0 to arr.Length - 1 do
             f arr.[i]
 
-    let inline iteri f (arr: NativeArray<_>) =
+    let inline iteri<'T when 'T : unmanaged> f (arr: NativeArray<'T>) =
         for i = 0 to arr.Length - 1 do
             f i arr.[i]
 
-    let inline resize length (narr: NativeArray<_>) =
-        new NativeArray<_>(narr, length)
+    let inline resize<'T when 'T : unmanaged> length (narr: NativeArray<'T>) =
+        new NativeArray<'T>(narr, length)

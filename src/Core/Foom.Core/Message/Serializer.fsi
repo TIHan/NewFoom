@@ -13,3 +13,5 @@ type internal Serializer =
 
     /// This will serialize a message to a byte span.
     member SerializeMessage : Message * willRecycle: bool * SpanDelegate -> unit
+
+    interface IDisposable
