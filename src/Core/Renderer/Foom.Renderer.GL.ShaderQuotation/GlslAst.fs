@@ -51,7 +51,7 @@ type GlslExpr =
     | Call of func: GlslFunction * exprList: GlslExpr list
     | Literal of GlslLiteral
     | Var of GlslVar
-    | VarSet of GlslVar * GlslExpr
+    | VarSet of GlslVar * GlslExpr // TODO: Remove, no clear way to express this.
     | Sequential of GlslExpr * GlslExpr
     | DeclareVar of GlslVar * body: GlslExpr * next: GlslExpr
 

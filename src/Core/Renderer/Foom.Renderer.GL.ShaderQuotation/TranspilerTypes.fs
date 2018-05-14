@@ -52,3 +52,6 @@ type uniform<'a> =
 
 type input<'a> =
     val value : 'a
+
+type output<'a> =
+    val mutable value : 'a

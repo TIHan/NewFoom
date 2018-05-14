@@ -68,6 +68,8 @@ let rec translateType (typ: Type) =
     | x when x = typeof<vec3> -> GlslType.Vector3 GlslVectorType.Float
     | x when x = typeof<vec4> -> GlslType.Vector4 GlslVectorType.Float
     | x when x.GetGenericTypeDefinition() = typedefof<uniform<_>> -> translateType x.GenericTypeArguments.[0]
+    | x when x.GetGenericTypeDefinition() = typedefof<input<_>> -> translateType x.GenericTypeArguments.[0]
+    | x when x.GetGenericTypeDefinition() = typedefof<output<_>> -> translateType x.GenericTypeArguments.[0]
     | _ -> failwithf "Can't translated type: %A" typ
 
 let mkMultiplyFunction x0 x1 ret = 
@@ -86,8 +88,10 @@ let vec4CtorFunction =
 
 let rec translateExpr (expr: Expr) : GlslExpr =
     match expr with
+
     | Sequential(expr1, expr2) ->
-        GlslExpr.Sequential(translateExpr expr1, translateExpr expr2)
+        transSequential expr1 expr2
+
     | NewRecord(typ, exprList) ->
         let props = typ.GetProperties()
         if props.Length <> exprList.Length then
@@ -141,6 +145,9 @@ let rec translateExpr (expr: Expr) : GlslExpr =
         GlslExpr.DeclareVar(glslVar, translateExpr expr1, translateExpr expr2)
     | x -> failwithf "No supported. %A" x
 
+and transSequential expr1 expr2 =
+    GlslExpr.Sequential(translateExpr expr1, translateExpr expr2)
+
 let rec translateToModule (expr: Expr) (ast: GlslModule) : GlslModule =
     match expr with
     | Lambda(param, body) ->
@@ -150,62 +157,18 @@ let rec translateToModule (expr: Expr) (ast: GlslModule) : GlslModule =
                 { ast with
                     uniforms = mkVar param.Name (translateType x) :: ast.uniforms
                 }
-            | x ->
+            | x when x.GetGenericTypeDefinition() = typedefof<input<_>> ->
                 { ast with
                     ins = mkVar param.Name (translateType x) :: ast.ins
                 }
+            | x when x.GetGenericTypeDefinition() = typedefof<output<_>> ->
+                { ast with
+                    outs = mkMutableVar param.Name (translateType x) :: ast.outs
+                }
+            | _ -> ast
         translateToModule body ast
-        // Lambda expression.
-    //| Application(expr1, expr2) ->
-        //// Function application.
-        //let env = translate expr1 env
-        //translate expr2 env
     | _ -> 
-
-        // TODO: Should be able to resolve outs.
-
         let mainFunc = GlslFunction("main", [], GlslType.Void, translateExpr expr)
         { ast with
             funcs = mainFunc :: (ast).funcs
         }
-    //| SpecificCall <@@ (+) @@> (_, _, exprList) ->
-    //    // Matches a call to (+). Must appear before Call pattern.
-    //    print exprList.Head
-    //    printf " + "
-    //    print exprList.Tail.Head
-    //| Call(exprOpt, methodInfo, exprList) ->
-    //    // Method or module function call.
-    //    match exprOpt with
-    //    | Some expr -> print expr
-    //    | None -> printf "%s" methodInfo.DeclaringType.Name
-    //    printf ".%s(" methodInfo.Name
-    //    if (exprList.IsEmpty) then printf ")" else
-    //    print exprList.Head
-    //    for expr in exprList.Tail do
-    //        printf ","
-    //        print expr
-    //    printf ")"
-    //| Int32(n) ->
-    //    printf "%d" n
-    //| Lambda(param, body) ->
-    //    // Lambda expression.
-    //    printf "fun (%s:%s) -> " param.Name (param.Type.ToString())
-    //    print body
-    //| Let(var, expr1, expr2) ->
-    //    // Let binding.
-    //    if (var.IsMutable) then
-    //        printf "let mutable %s = " var.Name
-    //    else
-    //        printf "let %s = " var.Name
-    //    print expr1
-    //    printf " in "
-    //    print expr2
-    //| PropertyGet(_, propOrValInfo, _) ->
-    //    printf "%s" propOrValInfo.Name
-    //| String(str) ->
-    //    printf "%s" str
-    //| Value(value, typ) ->
-    //    printf "%s" (value.ToString())
-    //| Var(var) ->
-    //    printf "%s" var.Name
-    //| _ -> printf "%s" (expr.ToString())
