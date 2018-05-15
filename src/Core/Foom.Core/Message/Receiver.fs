@@ -29,8 +29,10 @@ type internal Receiver(receiverType: ReceiverType, lookup: MessagePoolBase []) =
     let mutable latestSequencedMsg = null
 
     // TODO: This is LOH, find a better way
-    let msgs = Array.init 65536 (fun _ -> null)
+    let orderedMsgs = Array.zeroCreate 1024
     let mutable nextOrdered = 0us
+
+    let getOrderIndex seqId = int (seqId % 1024us)
 
     let receive data (pool: MessagePoolBase) =
         let msg = pool.Create()
@@ -50,20 +52,23 @@ type internal Receiver(receiverType: ReceiverType, lookup: MessagePoolBase []) =
 
         match receiverType with
         | ReceiverType.Ordered ->
-            msgs.[int seqId] <- msg
+            if orderedMsgs.[getOrderIndex seqId] <> null then
+                failwith "Receiver: Message overflow."
+
+            orderedMsgs.[getOrderIndex seqId] <- msg
 
             if nextOrdered = seqId then
-                msgs.[int nextOrdered] <- null
+                orderedMsgs.[getOrderIndex nextOrdered] <- null
                 nextOrdered <- nextOrdered + 1us
                 msgQueue.Enqueue(msg)
 
                 let mutable canBreakOut = false
                 while not canBreakOut do
-                    let msg = msgs.[int nextOrdered]
+                    let msg = orderedMsgs.[getOrderIndex nextOrdered]
                     if msg = null then
                         canBreakOut <- true
                     else
-                        msgs.[int nextOrdered] <- null
+                        orderedMsgs.[getOrderIndex nextOrdered] <- null
                         nextOrdered <- nextOrdered + 1us
                         msgQueue.Enqueue(msg)
         | ReceiverType.Sequenced ->

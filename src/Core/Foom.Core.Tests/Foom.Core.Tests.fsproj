@@ -16,15 +16,4 @@
   <ItemGroup>
     <ProjectReference Include="..\Foom.Core\Foom.Core.fsproj" />
   </ItemGroup>
-  <ItemGroup>
-    <Reference Include="Foom.Core">
-      <HintPath>..\Foom.Core\bin\Release\netstandard2.0\Foom.Core.dll</HintPath>
-    </Reference>
-    <Reference Include="Foom.Core">
-      <HintPath>..\Foom.Core\bin\Release\netstandard2.0\Foom.Core.dll</HintPath>
-    </Reference>
-    <Reference Include="Foom.Core">
-      <HintPath>..\Foom.Core\bin\Release\netstandard2.0\Foom.Core.dll</HintPath>
-    </Reference>
-  </ItemGroup>
 </Project>
