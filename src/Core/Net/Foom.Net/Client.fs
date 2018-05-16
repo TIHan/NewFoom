@@ -5,52 +5,12 @@ open System.Threading.Tasks
 open Foom.Tasks
 open Foom.IO.Message
 open Foom.IO.Packet
-
-[<AutoOpen>]
-module Helpers =
-
-    let inline receivePacket (netChannel: NetChannel) receive =
-        let packet =
-            try
-                receive ()
-            with | ex ->
-                printfn "%A" ex
-                Packet.Empty
-
-        match packet with
-        | packet when packet.IsEmpty -> ()
-        | packet ->
-
-            try
-                netChannel.ReceivePacket(packet)
-            with | ex ->
-                printfn "Receive packet failed: %A" ex
-
-    let inline sendPackets (taskQueue: TaskQueue) (netChannel: NetChannel) sendPacket =
-        taskQueue.Enqueue(fun () ->
-            netChannel.SendPackets(sendPacket)
-        )
-
-[<AutoOpen>]
-module ClientHelpers =
-
-    let receivePacket (udpClient: UdpClient) netChannel =
-        receivePacket netChannel (fun () ->
-            if udpClient.IsConnected && udpClient.IsDataAvailable then
-                udpClient.Receive()
-            else
-                Packet.Empty
-        )
-
-    let sendPackets (udpClient: UdpClient) taskQueue netChannel =
-        sendPackets taskQueue netChannel <| Foom.IO.Serializer.SpanExtensions.SpanDelegate(fun packet ->
-            if udpClient.IsConnected then
-                udpClient.Send(packet)
-        )
-        
     
 [<Sealed>]
 type Client(msgFactory: MessageFactory) =
+
+    // Events
+    let exRaisedEvent = Event<Exception>()
 
     // UDP
     let udpClient = new UdpClient()
@@ -59,11 +19,39 @@ type Client(msgFactory: MessageFactory) =
     let stream = PacketStream()
     let channelLookup = msgFactory.CreateChannelLookup()
     let netChannel = NetChannel(stream, msgFactory, channelLookup)
+    let sendTaskQueue = new TaskQueue()
+
+    let receivePacket() =
+        try
+            if udpClient.IsConnected && udpClient.IsDataAvailable then
+                udpClient.Receive()
+            else
+                Packet.Empty
+        with | ex ->
+            printfn "%A" ex
+            Packet.Empty
+
+    let sendPackets() =
+        sendTaskQueue.Enqueue(fun () ->
+            netChannel.SendPackets(fun packet ->
+                if udpClient.IsConnected then
+                    udpClient.Send(packet)
+            )
+        )
 
     let receivePacketsTask = 
-        new Task((fun () -> while true do receivePacket udpClient netChannel), TaskCreationOptions.LongRunning)
+        new Task((fun () ->
+            while true do
 
-    let sendTaskQueue = new TaskQueue()
+                match receivePacket() with
+                | packet when packet.IsEmpty -> ()
+                | packet ->
+
+                    try
+                        netChannel.ReceivePacket(packet)
+                    with | ex ->
+                        printfn "MessageReceiver threw: %A" ex
+        ), TaskCreationOptions.LongRunning)
 
     // Client state
     let mutable currentTime = TimeSpan.Zero
@@ -140,7 +128,10 @@ type Client(msgFactory: MessageFactory) =
             if udpClient.IsConnected && isConnected then
                 heartbeat ()
 
-            sendPackets udpClient sendTaskQueue netChannel
+            netChannel.SendPackets(fun packet ->
+                if udpClient.IsConnected then
+                    udpClient.Send(packet)
+            )
 
             stream.Time <- stream.Time + interval
 
