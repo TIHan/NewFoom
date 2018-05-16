@@ -9,9 +9,6 @@ open Foom.IO.Packet
 [<Sealed>]
 type Client(msgFactory: MessageFactory) =
 
-    // Events
-    let exRaisedEvent = Event<Exception>()
-
     // UDP
     let udpClient = new UdpClient()
 
