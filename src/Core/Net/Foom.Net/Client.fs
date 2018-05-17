@@ -16,7 +16,6 @@ type Client(msgFactory: MessageFactory) =
     let stream = PacketStream()
     let channelLookup = msgFactory.CreateChannelLookup()
     let netChannel = NetChannel(stream, msgFactory, channelLookup)
-    let sendTaskQueue = new TaskQueue()
 
     let receivePacket() =
         try
@@ -28,27 +27,18 @@ type Client(msgFactory: MessageFactory) =
             printfn "%A" ex
             Packet.Empty
 
-    let sendPackets() =
-        sendTaskQueue.Enqueue(fun () ->
-            netChannel.SendPackets(fun packet ->
-                if udpClient.IsConnected then
-                    udpClient.Send(packet)
-            )
-        )
+    let receive() =
+        let mutable canBreakOut = false
+        while not canBreakOut do
+            match receivePacket() with
+            | packet when packet.IsEmpty -> canBreakOut <- true
+            | packet ->
 
-    let receivePacketsTask = 
-        new Task((fun () ->
-            while true do
-
-                match receivePacket() with
-                | packet when packet.IsEmpty -> ()
-                | packet ->
-
-                    try
-                        netChannel.ReceivePacket(packet)
-                    with | ex ->
-                        printfn "MessageReceiver threw: %A" ex
-        ), TaskCreationOptions.LongRunning)
+                try
+                    netChannel.ReceivePacket(packet)
+                with | ex ->
+                    printfn "MessageReceiver threw: %A" ex
+                    canBreakOut <- true
 
     // Client state
     let mutable currentTime = TimeSpan.Zero
@@ -75,25 +65,33 @@ type Client(msgFactory: MessageFactory) =
             let msg = msgFactory.CreateMessage<DisconnectRequested>()
             netChannel.SendMessage(msg, false)
 
+    let reactor = Reactor(receive)
+
     do
-        receivePacketsTask.Start()
+        reactor.Start()
 
     interface IClient with
 
         member __.Connect(address: string, port: int) =
-            if not isConnected && not udpClient.IsConnected then
-                udpClient.Connect(address, port) |> ignore
-                connectionRequest ()
+            reactor.Enqueue(fun () ->
+                if not isConnected && not udpClient.IsConnected then
+                    udpClient.Connect(address, port) |> ignore
+                    connectionRequest ()
+            )
 
         member __.Disconnect() =
-            if udpClient.IsConnected && isConnected then
-                disconnectRequest ()
+            reactor.Enqueue(fun () ->
+                if udpClient.IsConnected && isConnected then
+                    disconnectRequest ()
+            )
 
         member __.SendMessage(msg: NetMessage) =
-            if udpClient.IsConnected && isConnected then
-                netChannel.SendMessage(msg, false)
-            else
-                msgFactory.RecycleMessage(msg)
+            reactor.Enqueue(fun () ->
+                if udpClient.IsConnected && isConnected then
+                    netChannel.SendMessage(msg, false)
+                else
+                    msgFactory.RecycleMessage(msg)
+            )
 
         member __.Update(interval, clientUpdate: IClientUpdate) =
 
@@ -122,15 +120,17 @@ type Client(msgFactory: MessageFactory) =
 
             clientUpdate.OnAfterMessagesReceived()
 
-            if udpClient.IsConnected && isConnected then
-                heartbeat ()
+            reactor.Enqueue(fun () ->
+                if udpClient.IsConnected && isConnected then
+                    heartbeat ()
 
-            netChannel.SendPackets(fun packet ->
-                if udpClient.IsConnected then
-                    udpClient.Send(packet)
+                netChannel.SendPackets(fun packet ->
+                    if udpClient.IsConnected then
+                        udpClient.Send(packet)
+                )
+
+                stream.Time <- stream.Time + interval
             )
-
-            stream.Time <- stream.Time + interval
 
         member __.IsConnected = isConnected
 
@@ -152,4 +152,5 @@ type Client(msgFactory: MessageFactory) =
     interface IDisposable with
 
         member __.Dispose() =
+            reactor.Stop()
             (udpClient :> IDisposable).Dispose()

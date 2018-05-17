@@ -86,7 +86,6 @@ let ``Udp Client and Server Simple`` () =
     client.Connect("::1", 27015)
 
     client.Update(TimeSpan.Zero, clientUpdateNoOp)
-
     System.Threading.Thread.Sleep(100)
     server.ReceivePackets()
     server.ProcessMessages(fun _ -> ())
