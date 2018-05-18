@@ -17,29 +17,6 @@ type internal ClientImpl(msgFactory: MessageFactory) =
     let channelLookup = msgFactory.CreateChannelLookup()
     let netChannel = NetChannel(stream, msgFactory, channelLookup)
 
-    let receivePacket() =
-        try
-            if udpClient.IsConnected && udpClient.IsDataAvailable then
-                udpClient.Receive()
-            else
-                Packet.Empty
-        with | ex ->
-            printfn "%A" ex
-            Packet.Empty
-
-    let receive() =
-        let mutable canBreakOut = false
-        while not canBreakOut do
-            match receivePacket() with
-            | packet when packet.IsEmpty -> canBreakOut <- true
-            | packet ->
-
-                try
-                    netChannel.ReceivePacket(packet)
-                with | ex ->
-                    printfn "MessageReceiver threw: %A" ex
-                    canBreakOut <- true
-
     // Client state
     let mutable currentTime = TimeSpan.Zero
     let mutable isConnected = false
@@ -65,7 +42,39 @@ type internal ClientImpl(msgFactory: MessageFactory) =
             let msg = msgFactory.CreateMessage<DisconnectRequested>()
             netChannel.SendMessage(msg, false)
 
-    let reactor = Reactor(receive)
+    let receivePacket () =
+        try
+            if udpClient.IsConnected && udpClient.IsDataAvailable then
+                udpClient.Receive()
+            else
+                Packet.Empty
+        with | ex ->
+            printfn "%A" ex
+            Packet.Empty
+
+    let receive () =
+        let mutable canBreakOut = false
+        while not canBreakOut do
+            match receivePacket() with
+            | packet when packet.IsEmpty -> canBreakOut <- true
+            | packet ->
+
+                try
+                    netChannel.ReceivePacket(packet)
+                with | ex ->
+                    printfn "MessageReceiver threw: %A" ex
+                    canBreakOut <- true
+
+    let send () =
+        if udpClient.IsConnected && isConnected then
+            heartbeat ()
+
+        netChannel.SendPackets(fun packet ->
+            if udpClient.IsConnected then
+                udpClient.Send(packet)
+        )
+
+    let reactor = Reactor(fun () -> receive (); send ())
 
     interface IClient with
 
@@ -123,19 +132,6 @@ type internal ClientImpl(msgFactory: MessageFactory) =
             )
 
             clientUpdate.OnAfterMessagesReceived()
-
-            if reactor.IsRunning then
-                reactor.Enqueue(fun () ->
-                    if udpClient.IsConnected && isConnected then
-                        heartbeat ()
-
-                    netChannel.SendPackets(fun packet ->
-                        if udpClient.IsConnected then
-                            udpClient.Send(packet)
-                    )
-
-                    stream.Time <- stream.Time + interval
-                )
 
         member __.IsConnected = isConnected
 
