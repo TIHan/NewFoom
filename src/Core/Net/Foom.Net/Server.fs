@@ -12,7 +12,6 @@ open Foom.Tasks
 type internal ServerImpl(msgFactory, port: int, maxClients) =
 
     let mutable udpServerOpt : UdpServer option = None
-    let mutable currentTime = TimeSpan.Zero
 
     let clients = ClientManager(msgFactory, maxClients)
 
@@ -31,10 +30,10 @@ type internal ServerImpl(msgFactory, port: int, maxClients) =
                 | Some clientId -> 
                     clients.ReceivePacket(clientId, packet)
                 | _ -> 
-                    let clientId = clients.AddClient(udpServerOpt.Value, currentTime, endPoint)
+                    let clientId = clients.AddClient(udpServerOpt.Value, endPoint)
                     clients.ReceivePacket(clientId, packet)
 
-    let reactor = Reactor(receive)
+    let reactor = Reactor(fun time -> receive (); clients.SetAllClientsTime(time))
 
     member val UdpServerOption : UdpServer option = udpServerOpt
 
@@ -99,12 +98,6 @@ type internal ServerImpl(msgFactory, port: int, maxClients) =
                         msg.reason <- "Client timed out."
                         (this :> IServer).SendMessage(msg, willRecycle = true)
                 )
-
-        member __.Time
-            with get () = currentTime
-            and set value =
-                currentTime <- value
-                reactor.Enqueue(fun () -> clients.SetAllClientsTime(currentTime))
 
         member __.CreateMessage() =
             msgFactory.CreateMessage()

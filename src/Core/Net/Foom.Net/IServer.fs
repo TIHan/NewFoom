@@ -25,8 +25,6 @@ type IServer =
 
     abstract DisconnectClient : ClientId -> unit
 
-    abstract Time : TimeSpan with get, set
-
     abstract CreateMessage : unit -> #Message
 
     abstract RecycleMessage : #NetMessage -> unit

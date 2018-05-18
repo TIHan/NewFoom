@@ -1,6 +1,7 @@
 ﻿namespace Foom.Net
 
 open System
+open System.Diagnostics
 open System.Threading.Tasks
 open Foom.Tasks
 open Foom.IO.Message
@@ -74,7 +75,7 @@ type internal ClientImpl(msgFactory: MessageFactory) =
                 udpClient.Send(packet)
         )
 
-    let reactor = Reactor(fun () -> receive (); send ())
+    let reactor = Reactor(fun time -> receive (); send (); stream.Time <- time)
 
     interface IClient with
 

@@ -18,9 +18,8 @@ type ClientManager(msgFactory, maxClients: int) =
 
     member __.Count = manager.Count
 
-    member __.AddClient(udpServer, currentTime, endPoint) =
+    member __.AddClient(udpServer, endPoint) =
         let client = ConnectedClient(msgFactory, udpServer, endPoint)
-        client.Time <- currentTime
 
         let clientId = lock lockObj |> fun _ -> ClientId(manager.Add(client))
         endPointLookup.Add(endPoint, clientId)

@@ -2,16 +2,14 @@
 
 open System
 open System.Diagnostics
-open System.Threading
-open System.Threading.Tasks
-open System.Collections.Concurrent
 
 type internal InternalMessage =
     | Stop of AsyncReplyChannel<unit>
     | Work of (unit -> unit)
 
-type Reactor(f: unit -> unit) =
+type Reactor(f: TimeSpan -> unit) =
 
+    let time = Stopwatch()
     let mutable mbp = None
 
     member __.IsRunning = mbp.IsSome
@@ -20,17 +18,18 @@ type Reactor(f: unit -> unit) =
         if mbp.IsSome then
             failwith "Reactor already running."
 
+        time.Restart()
+
         mbp <-
             MailboxProcessor<InternalMessage>.Start(fun inbox ->
                 let stopwatch = Stopwatch()
                 let rec loop () = async {
 
-                    f ()
-
                     if inbox.CurrentQueueLength = 0 then
                         if not stopwatch.IsRunning then
                             stopwatch.Start()
                         elif stopwatch.Elapsed.TotalMilliseconds >= 10. then
+                            f time.Elapsed
                             do! Async.Sleep(10)
                             
                         return! loop ()
@@ -54,6 +53,7 @@ type Reactor(f: unit -> unit) =
         |> Option.iter (fun mbp ->
             mbp.PostAndReply(fun reply -> InternalMessage.Stop(reply))
         )
+        time.Stop()
 
     member __.Enqueue(f) =
         mbp
