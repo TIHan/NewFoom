@@ -28,6 +28,8 @@
     <Compile Include="Packet\PacketStream.fsi" />
     <Compile Include="Packet\PacketStream.fs" />
     <Compile Include="Reactor.fs" />
+    <Compile Include="Game\GameLoop.fs" />
+    <Compile Include="Game\Game.fs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="System.Memory" Version="4.4.0-preview1-25305-02" />
@@ -36,5 +38,6 @@
     <Folder Include="Message\" />
     <Folder Include="Serializer\" />
     <Folder Include="Packet\" />
+    <Folder Include="Game\" />
   </ItemGroup>
 </Project>

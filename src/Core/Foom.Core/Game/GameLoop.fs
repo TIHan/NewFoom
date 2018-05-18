@@ -1,5 +1,5 @@
 ﻿// http://gafferongames.com/game-physics/fix-your-timestep/
-module GameLoop
+module Foom.Game.GameLoop
 
     open System.Diagnostics
     open System.Threading

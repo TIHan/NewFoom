@@ -2,6 +2,20 @@
 
 open System
 
+[<AbstractClass>]
+type AbstractServerGame() =
+
+    abstract Update : time: TimeSpan * interval: TimeSpan -> bool
+
+[<AbstractClass>]
+type AbstractClientGame() =
+
+    abstract PreUpdate : time: TimeSpan * interval: TimeSpan -> unit
+
+    abstract Update : time: TimeSpan * interval: TimeSpan -> bool
+
+    abstract Render : time: TimeSpan * deltaTime: float32 -> unit
+
 [<Sealed>]
 type Game(svGame: AbstractServerGame, clGame: AbstractClientGame, interval) =
 
