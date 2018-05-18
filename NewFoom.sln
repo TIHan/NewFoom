@@ -60,6 +60,8 @@ Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "Foom.Renderer.GL.ShaderQuot
 EndProject
 Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "Foom.Core.Tests", "src\Core\Foom.Core.Tests\Foom.Core.Tests.fsproj", "{7E22BDB7-9DA2-4B7B-8848-493FAC05C6BF}"
 EndProject
+Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "Foom.Game.Network", "src\Game\Foom.Game.Network\Foom.Game.Network.fsproj", "{818AFAC3-8AC5-40D9-876D-3D17E72F558E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -150,6 +152,10 @@ Global
 		{7E22BDB7-9DA2-4B7B-8848-493FAC05C6BF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7E22BDB7-9DA2-4B7B-8848-493FAC05C6BF}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7E22BDB7-9DA2-4B7B-8848-493FAC05C6BF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{818AFAC3-8AC5-40D9-876D-3D17E72F558E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{818AFAC3-8AC5-40D9-876D-3D17E72F558E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{818AFAC3-8AC5-40D9-876D-3D17E72F558E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{818AFAC3-8AC5-40D9-876D-3D17E72F558E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -179,6 +185,7 @@ Global
 		{ADBF7B40-13C0-4C73-B67D-5305C96BCFA6} = {B56D6DC9-39AF-4597-B4BF-D33516067F63}
 		{C7B9C36E-AB64-4931-88DD-16C00D26FCFC} = {B56D6DC9-39AF-4597-B4BF-D33516067F63}
 		{7E22BDB7-9DA2-4B7B-8848-493FAC05C6BF} = {33DEB521-F18C-467E-95E2-710E37167FB5}
+		{818AFAC3-8AC5-40D9-876D-3D17E72F558E} = {4B301C9A-5968-482A-9881-2DEBEE3F01AF}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {2782F051-7E65-4A50-AB2B-45D308458EA2}

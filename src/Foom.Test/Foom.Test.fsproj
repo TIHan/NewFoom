@@ -25,6 +25,7 @@
     <PackageReference Include="SkiaSharp" Version="1.60.0" />
     <ProjectReference Include="..\Core\Net\Foom.Net\Foom.Net.fsproj" />
     <ProjectReference Include="..\Core\Foom.Core\Foom.Core.fsproj" />
+    <ProjectReference Include="..\Game\Foom.Game.Network\Foom.Game.Network.fsproj" />
   </ItemGroup>
   <Target Name="PreBuild" BeforeTargets="PreBuildEvent">
     <Exec Command="&quot;$(MSBuildBinPath)\MSBuild.exe&quot; &quot;$(ProjectDir)..\Ferop\Ferop.Compiler\Ferop.Compiler.fsproj&quot;" Condition=" '$(OS)' == 'WINDOWS_NT'" />
