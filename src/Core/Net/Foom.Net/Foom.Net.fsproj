@@ -17,7 +17,6 @@
     <Compile Include="IServer.fs" />
     <Compile Include="Server.fs" />
     <Compile Include="NetworkChannel.fs" />
-    <Compile Include="BackgroundServer.fs" />
     <Compile Include="Network.fs" />
   </ItemGroup>
   <ItemGroup>

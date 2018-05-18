@@ -9,7 +9,7 @@ open Foom.IO.Message
 open Foom.Tasks
 
 [<Sealed>]
-type Server(msgFactory, port: int, maxClients) =
+type internal ServerImpl(msgFactory, port: int, maxClients) =
 
     let mutable udpServerOpt : UdpServer option = None
     let mutable currentTime = TimeSpan.Zero

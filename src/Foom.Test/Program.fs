@@ -63,8 +63,7 @@ let main argv =
 
     let serverOpt =
         if argv.Length = 0 then
-            let server = network.CreateBackgroundServer(27015, 8)
-            server.OnException.Add(fun ex -> printfn "%A" ex.Message; printfn "%A" ex.StackTrace)
+            let server = network.CreateServer(27015, 8)
             server.Start()
             printfn "Server started"
             Some server
@@ -78,7 +77,7 @@ let main argv =
             printfn "Client started, connecting at %s." argv.[0]
             Some client
         | Some server -> 
-            let client = server.CreateLocalBackgroundClient()
+            let client = network.CreateClient()
             printfn "Local client started."
             Some (client)
 

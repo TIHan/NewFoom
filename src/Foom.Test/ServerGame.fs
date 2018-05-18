@@ -30,7 +30,7 @@ module private BestHelpers =
 open Foom.EntityManager
 
 [<Sealed>]
-type ServerGame(em: EntityManager, server: BackgroundServer) =
+type ServerGame(em: EntityManager, server: IServer) =
     inherit AbstractServerGame()
 
     let eventQueue = ConcurrentQueue()
@@ -106,7 +106,7 @@ type ServerGame(em: EntityManager, server: BackgroundServer) =
         snapshotMsg.snapshotId <- snapshotId
         snapshotMsg.serverTime <- time
         snapshotId <- snapshotId + 1L
-        server.SendMessage(snapshotMsg)
+        server.SendMessage(snapshotMsg, false)
         server.SendPackets()
         false
 

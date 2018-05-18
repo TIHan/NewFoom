@@ -7,7 +7,7 @@ open Foom.IO.Message
 open Foom.IO.Packet
     
 [<Sealed>]
-type Client(msgFactory: MessageFactory) =
+type internal ClientImpl(msgFactory: MessageFactory) =
 
     // UDP
     let udpClient = new UdpClient()
