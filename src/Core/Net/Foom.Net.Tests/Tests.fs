@@ -87,7 +87,6 @@ let ``Udp Client and Server Simple`` () =
 
     client.Update(TimeSpan.Zero, clientUpdateNoOp)
     System.Threading.Thread.Sleep(100)
-    server.ReceivePackets()
     server.ProcessMessages(fun _ -> ())
     server.SendPackets()
 
@@ -96,7 +95,6 @@ let ``Udp Client and Server Simple`` () =
 
     // Added extra two below because we added challenge requests.
     System.Threading.Thread.Sleep(100)
-    server.ReceivePackets()
     server.ProcessMessages(fun _ -> ())
     server.SendPackets()
 
@@ -158,7 +156,6 @@ let ``Udp Client and Server Simple Big Message`` () =
 
     System.Threading.Thread.Sleep(100)
     server.Time <- (stopwatch.Elapsed)
-    server.ReceivePackets()
     server.ProcessMessages serverProcess
     server.SendPackets()
 
@@ -169,7 +166,6 @@ let ``Udp Client and Server Simple Big Message`` () =
     // Added extra two below because we added challenge requests.
     System.Threading.Thread.Sleep(100)
     server.Time <- (stopwatch.Elapsed)
-    server.ReceivePackets()
     server.ProcessMessages serverProcess
     server.SendPackets()
 
@@ -190,7 +186,6 @@ let ``Udp Client and Server Simple Big Message`` () =
     server.SendMessage(msg, clientId, willRecycle = true)
 
     server.Time <- (stopwatch.Elapsed)
-    server.ReceivePackets()
     server.ProcessMessages serverProcess
     server.SendPackets()
 

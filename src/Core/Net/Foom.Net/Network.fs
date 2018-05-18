@@ -7,7 +7,7 @@ type Network(networkChannels: NetworkChannel list) =
 
     member __.CreateServer(port, maxClients) =
         let msgFactory = createMessageFactory networkChannels maxClients
-        new Server(msgFactory, port, maxClients)
+        new Server(msgFactory, port, maxClients) :> IServer
 
     member __.CreateClient() =
         let msgFactory = createMessageFactory networkChannels 1

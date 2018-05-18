@@ -2,7 +2,6 @@
 
 open System
 open System.Numerics
-open System.Collections.Generic
 
 [<Sealed>]
 type Uniform<'T> (name) =

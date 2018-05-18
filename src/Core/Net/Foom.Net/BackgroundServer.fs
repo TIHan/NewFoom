@@ -14,7 +14,7 @@ type BackgroundServerInternalMessage =
 
 type BackgroundServer(networkChannels, port, maxClients) =
     let msgFactory = createMessageFactory networkChannels maxClients
-    let server = new Server(msgFactory, port, maxClients)
+    let server = new Server(msgFactory, port, maxClients) :> IServer
     let exceptionEvent = Event<Exception>()
 
     let mutable localClientOpt : (MessageFactory * ConcurrentQueue<struct(ClientId * ClientMessage)>) option = None
@@ -30,8 +30,6 @@ type BackgroundServer(networkChannels, port, maxClients) =
                 let mutable willDispose = false
                 while not willDispose do
                     try 
-                        server.ReceivePackets()
-
                         if inbox.CurrentQueueLength > 0 then
                             let! msg = inbox.Receive()
                             match msg with

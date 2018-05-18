@@ -6,54 +6,17 @@ open System.Net
 open System
 open Foom.IO.Packet
 open Foom.IO.Message
-
-[<RequireQualifiedAccess>]
-type ServerMessage =
-    | ClientConnected of ClientId
-    | ClientDisconnected of ClientId
-    | Message of ClientId * NetMessage
+open Foom.Tasks
 
 [<Sealed>]
 type Server(msgFactory, port: int, maxClients) =
 
-    let mutable udpServerOpt = None
+    let mutable udpServerOpt : UdpServer option = None
     let mutable currentTime = TimeSpan.Zero
 
     let clients = ClientManager(msgFactory, maxClients)
 
-    member val UdpServerOption : UdpServer option = udpServerOpt
-
-    member __.Start() =
-        match udpServerOpt with
-        | None -> udpServerOpt <- Some(new UdpServer(port))
-        | _ -> () // Server already started
-
-    member __.Stop() =
-        match udpServerOpt with
-        | Some udpServer -> 
-          //  clients.Clear()
-            udpServer.Close()
-            udpServerOpt <- None
-        | _ ->
-            () // Server not started
-
-    member __.SendMessage(msg: NetMessage, clientId: ClientId, willRecycle) =
-        if udpServerOpt.IsSome then
-            clients.SendMessage(clientId, msg, willRecycle)
-        else
-            msgFactory.RecycleMessage(msg)
-
-    member this.SendMessage(msg: NetMessage, willRecycle) =
-        if udpServerOpt.IsSome then
-            clients.SendMessage(msg, willRecycle)
-        else
-            msgFactory.RecycleMessage(msg)
-
-    member __.SendPackets() =
-        if udpServerOpt.IsSome then
-            clients.SendPackets()
-
-    member this.ReceivePackets() =
+    let receive () =
         match udpServerOpt with
         | None -> () // server not started
         | Some udpServer ->
@@ -71,46 +34,87 @@ type Server(msgFactory, port: int, maxClients) =
                     let clientId = clients.AddClient(udpServerOpt.Value, currentTime, endPoint)
                     clients.ReceivePacket(clientId, packet)
 
-    member this.ProcessMessages(f) =
-        clients.ProcessReceivedMessages(fun clientId msg ->
-            match msg with
-            | :? ConnectionChallengeAccepted -> 
-                f (ServerMessage.ClientConnected(clientId))
+    let reactor = Reactor(receive)
 
-            | :? ConnectionRequested -> () // TODO: Revisit
-            | :? DisconnectRequested -> () // TODO: Revisit
+    member val UdpServerOption : UdpServer option = udpServerOpt
 
-            | :? Heartbeat -> ()
+    interface IServer with
 
-            | _ -> 
-                f (ServerMessage.Message(clientId, msg))
+        member __.Start() =
+            match udpServerOpt with
+            | None -> 
+                udpServerOpt <- Some(new UdpServer(port))
+                reactor.Start()
+            | _ -> () // Server already started
 
+        member __.Stop() =
+            match udpServerOpt with
+            | Some udpServer -> 
+                reactor.Stop()
+                udpServer.Close()
+                udpServerOpt <- None
+            | _ ->
+                () // Server not started
+
+        member __.SendMessage(msg: NetMessage, clientId: ClientId, willRecycle) =
+            if udpServerOpt.IsSome && reactor.IsRunning then
+                reactor.Enqueue(fun () -> clients.SendMessage(clientId, msg, willRecycle))
+            else
+                msgFactory.RecycleMessage(msg)
+
+        member this.SendMessage(msg: NetMessage, willRecycle) =
+            if udpServerOpt.IsSome && reactor.IsRunning then
+                reactor.Enqueue(fun () -> clients.SendMessage(msg, willRecycle))
+            else
+                msgFactory.RecycleMessage(msg)
+
+        member __.SendPackets() =
+            if udpServerOpt.IsSome && reactor.IsRunning then
+                reactor.Enqueue(fun () -> clients.SendPackets())
+
+        member this.ProcessMessages(f) =
+            clients.ProcessReceivedMessages(fun clientId msg ->
+                match msg with
+                | :? ConnectionChallengeAccepted -> 
+                    f (ServerMessage.ClientConnected(clientId))
+
+                | :? ConnectionRequested -> () // TODO: Revisit
+                | :? DisconnectRequested -> () // TODO: Revisit
+
+                | :? Heartbeat -> ()
+
+                | _ -> 
+                    f (ServerMessage.Message(clientId, msg))
+
+                msgFactory.RecycleMessage(msg)
+            )
+
+        member this.DisconnectClient(clientId) =
+            if reactor.IsRunning then
+                reactor.Enqueue(fun () ->
+                    if clients.IsClientConnected(clientId) then
+                        clients.RemoveClient(clientId)
+
+                        let msg = msgFactory.CreateMessage<ClientDisconnected>()
+                        msg.reason <- "Client timed out."
+                        (this :> IServer).SendMessage(msg, willRecycle = true)
+                )
+
+        member __.Time
+            with get () = currentTime
+            and set value =
+                currentTime <- value
+                reactor.Enqueue(fun () -> clients.SetAllClientsTime(currentTime))
+
+        member __.CreateMessage() =
+            msgFactory.CreateMessage()
+
+        member __.RecycleMessage(msg) =
             msgFactory.RecycleMessage(msg)
-        )
-
-    member this.DisconnectClient(clientId) =
-        if clients.IsClientConnected(clientId) then
-            clients.RemoveClient(clientId)
-
-            let msg = msgFactory.CreateMessage<ClientDisconnected>()
-            msg.reason <- "Client timed out."
-            this.SendMessage(msg, willRecycle = true)
-
-    member __.Time
-        with get () = currentTime
-        and set value =
-            currentTime <- value
-            clients.SetAllClientsTime(currentTime)
-
-    member __.CreateMessage() =
-        msgFactory.CreateMessage()
-
-    member __.RecycleMessage(msg) =
-        msgFactory.RecycleMessage(msg)
 
     interface IDisposable with
 
         member this.Dispose() =
             match udpServerOpt with
-            | Some _ -> this.Stop()
+            | Some _ -> (this :> IServer).Stop()
             | _ -> ()

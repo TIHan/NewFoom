@@ -67,31 +67,35 @@ type Client(msgFactory: MessageFactory) =
 
     let reactor = Reactor(receive)
 
-    do
-        reactor.Start()
-
     interface IClient with
 
         member __.Connect(address: string, port: int) =
-            reactor.Enqueue(fun () ->
-                if not isConnected && not udpClient.IsConnected then
-                    udpClient.Connect(address, port) |> ignore
-                    connectionRequest ()
-            )
+            if not reactor.IsRunning then
+                reactor.Start()
+                reactor.Enqueue(fun () ->
+                    if not isConnected && not udpClient.IsConnected then
+                        udpClient.Connect(address, port) |> ignore
+                        connectionRequest ()
+                )
 
         member __.Disconnect() =
-            reactor.Enqueue(fun () ->
-                if udpClient.IsConnected && isConnected then
-                    disconnectRequest ()
-            )
+            if reactor.IsRunning then
+                reactor.Enqueue(fun () ->
+                    if udpClient.IsConnected && isConnected then
+                        disconnectRequest ()
+                )
+                reactor.Stop()
 
         member __.SendMessage(msg: NetMessage) =
-            reactor.Enqueue(fun () ->
-                if udpClient.IsConnected && isConnected then
-                    netChannel.SendMessage(msg, false)
-                else
-                    msgFactory.RecycleMessage(msg)
-            )
+            if reactor.IsRunning then
+                reactor.Enqueue(fun () ->
+                    if udpClient.IsConnected && isConnected then
+                        netChannel.SendMessage(msg, false)
+                    else
+                        msgFactory.RecycleMessage(msg)
+                )
+            else
+                msgFactory.RecycleMessage(msg)
 
         member __.Update(interval, clientUpdate: IClientUpdate) =
 
@@ -120,17 +124,18 @@ type Client(msgFactory: MessageFactory) =
 
             clientUpdate.OnAfterMessagesReceived()
 
-            reactor.Enqueue(fun () ->
-                if udpClient.IsConnected && isConnected then
-                    heartbeat ()
+            if reactor.IsRunning then
+                reactor.Enqueue(fun () ->
+                    if udpClient.IsConnected && isConnected then
+                        heartbeat ()
 
-                netChannel.SendPackets(fun packet ->
-                    if udpClient.IsConnected then
-                        udpClient.Send(packet)
+                    netChannel.SendPackets(fun packet ->
+                        if udpClient.IsConnected then
+                            udpClient.Send(packet)
+                    )
+
+                    stream.Time <- stream.Time + interval
                 )
-
-                stream.Time <- stream.Time + interval
-            )
 
         member __.IsConnected = isConnected
 
