@@ -12,16 +12,16 @@ open Foom.Renderer.GL
 open Foom.Renderer.GL.Desktop
 open Foom.Input
 open Foom.Net
+open Foom.Game.Network
 open Foom.EntityManager
 open Foom.NativeCollections
 
 type ClientEvent =
-    | Connected
     | LoadMap of name: string
 
 [<Sealed>]
-type ClientGame(em: EntityManager, input: IInput, renderer: IRenderer, client: IClient) =
-    inherit AbstractClientGame()
+type ClientGame(em: EntityManager, input: IInput, renderer: IRenderer, network) as this =
+    inherit AbstractNetworkClientGame<ClientEvent>(network)
 
     let eventQueue = ConcurrentQueue()
 
@@ -46,16 +46,15 @@ type ClientGame(em: EntityManager, input: IInput, renderer: IRenderer, client: I
         let mutable snap = 0us
         // This event will happen on a different thread.
         // TODO: Revisit how we do this.
-        client.GetBeforeDeserializedEvent<Snapshot>()
+        this.GetBeforeDeserializedEvent<Snapshot>()
         |> Event.add (fun snapshotMsg ->
             snapshotMsg.playerSnapshots <- masterPlayerSnapshots.[int snap]
             snap <- (snap + 1us) % 30us
         )
 
-    do
-        eventQueue.Enqueue(LoadMap "e1m1")
+        this.Enqueue(LoadMap "e1m1")
 
-    override __.PreUpdate(time, interval) =
+    override this.PreUpdate(time, interval) =
         input.PollEvents()
 
         inputState <- input.GetState()
@@ -64,101 +63,97 @@ type ClientGame(em: EntityManager, input: IInput, renderer: IRenderer, client: I
 
         mov <- getMovement inputState mov
 
-        let userInfoMsg = client.CreateMessage<UserInfo>()
+        let userInfoMsg = this.CreateMessage<UserInfo>()
         userInfoMsg.Movement <- mov
-        client.SendMessage(userInfoMsg)
+        this.SendMessage(userInfoMsg)
+
+    override this.OnEvent(time, interval, evt) =
+        match evt with
+
+        | ConnectionRequested(_, _) ->
+            false
+        | Connected(clientId') ->
+            printfn "Connection Accepted. %A" clientId'
+            clientId <- clientId'
+            false
+
+        | Custom(LoadMap mapName) ->
+            camera.Rotation <- Quaternion.CreateFromAxisAngle (Vector3.UnitX, 90.f * (float32 Math.PI / 180.f))
+            zombiemanSpriteBatchOpt <- Some(loadMap mapName camera renderer)
+            renderer.Draw(0.f)
+            this.Connect("localhost", 27015)
+            false
+
+        | ClientMessageReceived(msg) ->
+            match msg with
+            | :? Snapshot as snapshotMsg ->
+                let playerSnapshots = snapshotMsg.playerSnapshots
+
+                if sortedList.ContainsKey(snapshotMsg.snapshotId) |> not then
+                    sortedList.Add(snapshotMsg.snapshotId, struct(snapshotMsg.playerCount, playerSnapshots, time, snapshotMsg.serverTime))
+                    if sortedList.Count > 4 then
+                        printfn "deleting snapshot"
+                        sortedList.RemoveAt(0)
+
+            | _ -> ()
+            false
+
+        | _ -> false
 
     override __.Update(time, interval) = 
-        let clientUpdate =
-            { new IClientUpdate with
+        base.Update(time, interval) |> ignore
 
-                member __.OnMessageReceived(msg) =
-                    match msg with
-                    | ClientMessage.ConnectionAccepted(x) -> 
-                        printfn "Connection Accepted."
-                        clientId <- x
-                    | ClientMessage.DisconnectAccepted _ -> ()
-                    | ClientMessage.Message(msg) -> 
-                        match msg with
-                        | :? Snapshot as snapshotMsg ->
-                            let playerSnapshots = snapshotMsg.playerSnapshots
+        if renderTime.IsSome then
+            renderTime <- Some(renderTime.Value + interval)
 
-                            if sortedList.ContainsKey(snapshotMsg.snapshotId) |> not then
-                                sortedList.Add(snapshotMsg.snapshotId, struct(snapshotMsg.playerCount, playerSnapshots, time, snapshotMsg.serverTime))
-                                if sortedList.Count > 4 then
-                                    printfn "deleting snapshot"
-                                    sortedList.RemoveAt(0)
+      //  printfn "sorted count %A" sortedList.Count
+        // end events
+        if sortedList.Count > 0 then
+            let struct(playerCount, playerSnapshots, snapTime, serverTime) = sortedList.Values.[0]
 
-                        | _ -> ()
+           // if renderTime.IsSome && renderTime.Value < 
 
-                member __.OnAfterMessagesReceived() =
-                    let mutable evt = Unchecked.defaultof<ClientEvent>
-                    while eventQueue.TryDequeue(&evt) do
-                        match evt with
-                        | LoadMap name ->
-                            camera.Rotation <- Quaternion.CreateFromAxisAngle (Vector3.UnitX, 90.f * (float32 Math.PI / 180.f))
+            let rTime = 
+                match renderTime with
+                | None -> 
+                    renderTime <- Some(serverTime)
+                    renderTime.Value
+                | Some renderTime -> renderTime
+           // printfn "snapshot count: %A" sortedList.Count
+            if (rTime >= serverTime + interval + interval) || sortedList.Count >= 3 || clientId.IsLocal then
 
-                            let mutable beef = false
+                renderTime <- Some(serverTime + interval + interval)
 
-                            zombiemanSpriteBatchOpt <- Some(loadMap name camera renderer)
-                            client.Connect("localhost", 27015)
-                            renderer.Draw(0.f)
+                sortedList.RemoveAt(0)
+                for i = 0 to playerCount - 1 do
+                    let player = playerSnapshots.GetByRef(i)
 
-                        | _ -> ()
+                    let sprite = &spriteStates.[i]
+                    if sprite = 0 && zombiemanSpriteBatchOpt.IsSome then
+                        sprite <- zombiemanSpriteBatchOpt.Value.CreateSprite()
 
-                    if renderTime.IsSome then
-                        renderTime <- Some(renderTime.Value + interval)
+                    if zombiemanSpriteBatchOpt.IsSome then
+                        zombiemanSpriteBatchOpt.Value.SetSpritePosition(sprite, player.position)
 
-                  //  printfn "sorted count %A" sortedList.Count
-                    // end events
-                    if sortedList.Count > 0 then
-                        let struct(playerCount, playerSnapshots, snapTime, serverTime) = sortedList.Values.[0]
+                    if player.clientId = clientId then
+                        camera.Translation <- player.position
+                        camera.Rotation <- player.rotation
+            else
+                printfn "no updating snapshot"
+        else
+            printfn "no snapshots available"
 
-                       // if renderTime.IsSome && renderTime.Value < 
-
-                        let rTime = 
-                            match renderTime with
-                            | None -> 
-                                renderTime <- Some(serverTime)
-                                renderTime.Value
-                            | Some renderTime -> renderTime
-                       // printfn "snapshot count: %A" sortedList.Count
-                        if (rTime >= serverTime + interval + interval) || sortedList.Count >= 3 || clientId.IsLocal then
-
-                            renderTime <- Some(serverTime + interval + interval)
-
-                            sortedList.RemoveAt(0)
-                            for i = 0 to playerCount - 1 do
-                                let player = playerSnapshots.GetByRef(i)
-
-                                let sprite = &spriteStates.[i]
-                                if sprite = 0 && zombiemanSpriteBatchOpt.IsSome then
-                                    sprite <- zombiemanSpriteBatchOpt.Value.CreateSprite()
-
-                                if zombiemanSpriteBatchOpt.IsSome then
-                                    zombiemanSpriteBatchOpt.Value.SetSpritePosition(sprite, player.position)
-
-                                if player.clientId = clientId then
-                                    camera.Translation <- player.position
-                                    camera.Rotation <- player.rotation
-                        else
-                            printfn "no updating snapshot"
-                    else
-                        printfn "no snapshots available"
-            }
-
-        client.Update(interval, clientUpdate)
         inputState.Events
         |> List.exists (function KeyReleased '\027' -> true | _ -> false)
 
     override __.Render(time, deltaTime) =
         renderer.Draw(deltaTime)
 
-    static member Create(em, client) =
+    static member Create(em, network) =
         let app = Backend.init()
         let input = Foom.Input.Desktop.DesktopInput(app.Window) :> IInput
 
         let desktopGL = DesktopGL(app)
         let renderer = Renderer(desktopGL) :> IRenderer
 
-        ClientGame(em, input, renderer, client)
+        ClientGame(em, input, renderer, network)

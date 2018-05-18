@@ -70,28 +70,17 @@ let main argv =
         else
             None
 
-    let clientOpt =
-        match serverOpt with
-        | None ->
-            let client = network.CreateClient()
-            printfn "Client started, connecting at %s." argv.[0]
-            Some client
-        | Some server -> 
-            let client = network.CreateClient()
-            printfn "Local client started."
-            Some (client)
-
     let svGame = 
         match serverOpt with
         | Some server -> ServerGame.Create(createEntityManager(), server) :> AbstractServerGame
         | _ -> EmptyServerGame() :> AbstractServerGame
-    let clGame = ClientGame.Create(createEntityManager(), clientOpt.Value)
+    let clGame = ClientGame.Create(createEntityManager(), network)
     let game = Game(svGame, clGame, 30)
+
 
     game.Start()
 
     if serverOpt.IsSome then (serverOpt.Value :> IDisposable).Dispose()
-    if clientOpt.IsSome then (clientOpt.Value :> IDisposable).Dispose()
 
     //sunderStream (fun stream ->
     //    let wad = Wad.FromStream stream

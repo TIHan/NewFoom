@@ -15,7 +15,7 @@ type ServerGameEvent<'T> =
 
 type ClientGameEvent<'Custom> =
     | ConnectionRequested of address: string * port: int
-    | Connected
+    | Connected of ClientId
     | DisconnectionRequested
     | Disconnected
     | ClientMessageReceived of NetMessage
@@ -39,24 +39,33 @@ type AbstractNetworkClientGame<'Event>(network: Network) =
     member this.Disconnect() =
         eventQueue.Enqueue(DisconnectionRequested)
 
+    member this.SendMessage(msg) = client.SendMessage(msg)
+
+    member this.CreateMessage() = client.CreateMessage()
+
+    member this.GetBeforeDeserializedEvent() = client.GetBeforeDeserializedEvent()
+
     override this.Update(time, interval) =
-        client.Update(time, {
+        let mutable willQuit = false
+        client.Update(interval, {
             new IClientUpdate with
 
                 member __.OnMessageReceived(msg) = 
                     match msg with
-                    | ClientMessage.ConnectionAccepted(_) ->
-                        eventQueue.Enqueue(Connected)
+                    | ClientMessage.ConnectionAccepted(clientId) ->
+                        if not willQuit && this.OnEvent(time, interval, Connected(clientId)) |> not then
+                            willQuit <- true
                     | ClientMessage.DisconnectAccepted ->
-                        eventQueue.Enqueue(Disconnected)
+                        if not willQuit && this.OnEvent(time, interval, Disconnected) |> not then
+                            willQuit <- true
                     | ClientMessage.Message msg ->
-                        eventQueue.Enqueue(ClientMessageReceived(msg))
+                        if not willQuit && this.OnEvent(time, interval, ClientMessageReceived(msg)) |> not then
+                            willQuit <- true
 
                 member __.OnAfterMessagesReceived() = ()
         })
 
         let mutable evt = Unchecked.defaultof<ClientGameEvent<'Event>>
-        let mutable willQuit = false
         while eventQueue.TryDequeue(&evt) && not willQuit do
             match evt with
             | ConnectionRequested(address, port) ->
