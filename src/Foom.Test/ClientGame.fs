@@ -34,7 +34,7 @@ type ClientGame(em: EntityManager, input: IInput, renderer: IRenderer, network) 
     let mutable mov = Movement.Default
     let mutable inputState = Unchecked.defaultof<InputState>
 
-    let spriteStates = Array.zeroCreate<int> 64
+    let spriteStates = Array.zeroCreate<int> 10000
     let mutable clientId = ClientId.Local
 
     let masterPlayerSnapshots = Array.init<NativeArray<PlayerSnapshot>> 30 (fun _ -> NativeArray.init 32768 (fun _ -> PlayerSnapshot()))
@@ -106,7 +106,7 @@ type ClientGame(em: EntityManager, input: IInput, renderer: IRenderer, network) 
         if renderTime.IsSome then
             renderTime <- Some(renderTime.Value + interval)
 
-      //  printfn "sorted count %A" sortedList.Count
+        printfn "sorted count %A" sortedList.Count
         // end events
         if sortedList.Count > 0 then
             let struct(playerCount, playerSnapshots, snapTime, serverTime) = sortedList.Values.[0]

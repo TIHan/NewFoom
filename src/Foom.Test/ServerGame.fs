@@ -35,6 +35,8 @@ type ServerGame(em: EntityManager, server: IServer) =
 
     let eventQueue = ConcurrentQueue()
 
+    let beef = []
+
     let playerLookup = Dictionary<ClientId, Entity>()
 
     let player1StartPosition = player1StartPosition ()
@@ -59,13 +61,13 @@ type ServerGame(em: EntityManager, server: IServer) =
                 | Some pos -> transform.position <- pos
                 | _ -> ()
 
-                playerLookup.Add(clientId, ent)
-
                 em.Add(ent, transform)
                 em.Add(ent, direction)
                 em.Add(ent, render)
                 em.Add(ent, userControlled)
                 em.Add(ent, spectatorTag)
+
+                playerLookup.Add(clientId, ent)
 
                 printfn "Client Connected: %A" clientId
 

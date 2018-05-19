@@ -53,20 +53,20 @@ type AbstractNetworkClientGame<'Event>(network: Network) =
                 member __.OnMessageReceived(msg) = 
                     match msg with
                     | ClientMessage.ConnectionAccepted(clientId) ->
-                        if not willQuit && this.OnEvent(time, interval, Connected(clientId)) |> not then
+                        if not willQuit && this.OnEvent(time, interval, Connected(clientId)) then
                             willQuit <- true
                     | ClientMessage.DisconnectAccepted ->
-                        if not willQuit && this.OnEvent(time, interval, Disconnected) |> not then
+                        if not willQuit && this.OnEvent(time, interval, Disconnected) then
                             willQuit <- true
                     | ClientMessage.Message msg ->
-                        if not willQuit && this.OnEvent(time, interval, ClientMessageReceived(msg)) |> not then
+                        if not willQuit && this.OnEvent(time, interval, ClientMessageReceived(msg)) then
                             willQuit <- true
 
                 member __.OnAfterMessagesReceived() = ()
         })
 
         let mutable evt = Unchecked.defaultof<ClientGameEvent<'Event>>
-        while eventQueue.TryDequeue(&evt) && not willQuit do
+        while not willQuit && eventQueue.TryDequeue(&evt) do
             match evt with
             | ConnectionRequested(address, port) ->
                 client.Connect(address, port)
