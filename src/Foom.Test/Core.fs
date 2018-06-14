@@ -69,48 +69,6 @@ let savePng name pixels =
 
     data.SaveTo (fs)
 
-let allMapGeometry (wad: Wad) mapNames =
-
-    let stopwatch = Stopwatch.StartNew()
-
-    let levels =
-        mapNames
-        |> Seq.map (fun mapName ->
-            wad.FindMap mapName
-        )
-        |> Seq.toArray
-
-    stopwatch.Stop()
-    let deserializationTime = stopwatch.Elapsed.TotalMilliseconds
-    printfn "\tDeserializing Success! Time: %f ms" deserializationTime
-
-    stopwatch.Reset()
-    stopwatch.Start()
-
-    levels
-    |> Array.map(fun map ->
-        map.ComputeAllSectorGeometry()
-    ) |> ignore
-
-    stopwatch.Stop()
-    let geometryTime = stopwatch.Elapsed.TotalMilliseconds
-    printfn "\tGeometry Success! Time: %f ms" geometryTime
-
-    printfn "Total Time: %f ms" (deserializationTime + geometryTime)
-
-let sunderStream f =
-    if not <| File.Exists ("sunder.wad") then
-        use zip = ZipFile.Open("sunder.zip", ZipArchiveMode.Read)
-        let sunderEntry = zip.GetEntry("sunder/sunder.wad")
-
-        sunderEntry.ExtractToFile("sunder.wad")
-
-    let stream = File.Open("sunder.wad", FileMode.Open)
-    f stream
-    stream.Dispose()
-
-    File.Delete("sunder.wad")
-
 let tryCreateFloor (wad: Wad) (sector: Sector) (geo: SectorGeometry) (renderer: IRenderer) =
     match wad.TryFindFlatTexture sector.FloorTextureName with
     | Some wadtex ->

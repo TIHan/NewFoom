@@ -4,7 +4,9 @@ module Foom.Wad.Extensions
 open System.Numerics
 open System.Collections.Generic
 open System.Collections.Immutable
+open System.Threading.Tasks
 open Foom.Geometry
+open System.Threading
 
 let computeSectorTriangle map linedefLookup sectorIndex =
     let polyTrees = LinedefTracer.compute map linedefLookup sectorIndex
@@ -107,8 +109,16 @@ type Map with
     member this.ComputeAllSectorGeometry() =
         let linedefLookup = createLinedefLookup this
         let geos =
-            this.Sectors
-            |> Seq.mapi(fun i sector ->
+            //this.Sectors
+            //|> Seq.mapi(fun i sector ->
+            let builder = Array.zeroCreate this.Sectors.Length
+            let options = ParallelOptions ()
+
+            options.MaxDegreeOfParallelism <- 8
+
+           // Parallel.For(0, this.Sectors.Length, options, fun i _ ->
+            for i = 0 to this.Sectors.Length - 1 do
+                let sector = this.Sectors.[i]
                 let triangles = computeSectorTriangle this linedefLookup i 
 
                 let floorVertices =
@@ -116,12 +126,15 @@ type Map with
 
                 let ceilingVertices =
                     computeSectorCeilingVertices sector triangles
-
-                {
-                    FloorVertices = floorVertices
-                    CeilingVertices = ceilingVertices
-                }
-            )
+                
+                builder.[i] <-
+                    {
+                        FloorVertices = floorVertices
+                        CeilingVertices = ceilingVertices
+                    }
+                
+        //    ) |> ignore
+            builder
        
         geos.ToImmutableArray()
 

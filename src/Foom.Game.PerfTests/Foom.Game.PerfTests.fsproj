@@ -1,0 +1,23 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp2.1</TargetFramework>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Program.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Core\Foom.Core\Foom.Core.fsproj" />
+    <ProjectReference Include="..\Core\Foom.Geometry\Foom.Geometry.fsproj" />
+    <ProjectReference Include="..\Core\Foom.Math\Foom.Math.fsproj" />
+    <ProjectReference Include="..\Wad\Foom.Wad\Foom.Wad.fsproj" />
+  </ItemGroup>
+
+</Project>

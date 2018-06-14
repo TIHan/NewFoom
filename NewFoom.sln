@@ -2,65 +2,67 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.27428.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "Foom.Math", "src\Core\Foom.Math\Foom.Math.fsproj", "{1DCEB75A-606F-4878-9FCC-20308CDF942F}"
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "Foom.Math", "src\Core\Foom.Math\Foom.Math.fsproj", "{1DCEB75A-606F-4878-9FCC-20308CDF942F}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Core", "Core", "{33DEB521-F18C-467E-95E2-710E37167FB5}"
 EndProject
-Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "Foom.Geometry", "src\Core\Foom.Geometry\Foom.Geometry.fsproj", "{CA91BF44-EB60-46EE-867D-CEE5A2525B1A}"
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "Foom.Geometry", "src\Core\Foom.Geometry\Foom.Geometry.fsproj", "{CA91BF44-EB60-46EE-867D-CEE5A2525B1A}"
 EndProject
-Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "Foom.Wad", "src\Wad\Foom.Wad\Foom.Wad.fsproj", "{8095E97A-2542-4C71-9E32-5BB63AA28DEC}"
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "Foom.Wad", "src\Wad\Foom.Wad\Foom.Wad.fsproj", "{8095E97A-2542-4C71-9E32-5BB63AA28DEC}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Wad", "Wad", "{61CB053F-DD1A-45E1-9713-5B0FD4D5531C}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Game", "Game", "{4B301C9A-5968-482A-9881-2DEBEE3F01AF}"
 EndProject
-Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "Foom.Test", "src\Foom.Test\Foom.Test.fsproj", "{1D5C9B36-5798-4E5E-B4DB-054D5A7AC2AD}"
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "Foom.Test", "src\Foom.Test\Foom.Test.fsproj", "{1D5C9B36-5798-4E5E-B4DB-054D5A7AC2AD}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Ferop", "Ferop", "{64BBDB41-F9D0-4476-BF52-6CB708E31465}"
 EndProject
-Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "Ferop", "src\Ferop\Ferop\Ferop.fsproj", "{722B551C-B975-44C3-AE46-85D0D3A6963D}"
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "Ferop", "src\Ferop\Ferop\Ferop.fsproj", "{722B551C-B975-44C3-AE46-85D0D3A6963D}"
 EndProject
-Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "Ferop.Compiler", "src\Ferop\Ferop.Compiler\Ferop.Compiler.fsproj", "{B1933210-7031-4E52-B01B-3417E4B46D4D}"
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "Ferop.Compiler", "src\Ferop\Ferop.Compiler\Ferop.Compiler.fsproj", "{B1933210-7031-4E52-B01B-3417E4B46D4D}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Renderer", "Renderer", "{B56D6DC9-39AF-4597-B4BF-D33516067F63}"
 EndProject
-Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "Foom.Renderer", "src\Core\Renderer\Foom.Renderer\Foom.Renderer.fsproj", "{B8E8F46C-DFDB-4253-9CA4-79662B3F054F}"
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "Foom.Renderer", "src\Core\Renderer\Foom.Renderer\Foom.Renderer.fsproj", "{B8E8F46C-DFDB-4253-9CA4-79662B3F054F}"
 EndProject
-Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "Foom.Renderer.GL.Desktop", "src\Core\Renderer\Foom.Renderer.GL.Desktop\Foom.Renderer.GL.Desktop.fsproj", "{3F39F460-AC4E-4D0A-AF81-D71A8E2CB7FD}"
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "Foom.Renderer.GL.Desktop", "src\Core\Renderer\Foom.Renderer.GL.Desktop\Foom.Renderer.GL.Desktop.fsproj", "{3F39F460-AC4E-4D0A-AF81-D71A8E2CB7FD}"
 EndProject
-Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "Foom.Renderer.GL.Core", "src\Core\Renderer\Foom.Renderer.GL.Core\Foom.Renderer.GL.Core.fsproj", "{F566CC13-3465-4761-A882-FAB8DBF3E88A}"
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "Foom.Renderer.GL.Core", "src\Core\Renderer\Foom.Renderer.GL.Core\Foom.Renderer.GL.Core.fsproj", "{F566CC13-3465-4761-A882-FAB8DBF3E88A}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Input", "Input", "{A707586A-C6D4-4425-B315-E3F2FF5F642F}"
 EndProject
-Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "Foom.Input", "src\Core\Input\Foom.Input\Foom.Input.fsproj", "{1C66904D-8F25-4A6D-9D56-FA73D1851877}"
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "Foom.Input", "src\Core\Input\Foom.Input\Foom.Input.fsproj", "{1C66904D-8F25-4A6D-9D56-FA73D1851877}"
 EndProject
-Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "Foom.Input.Desktop", "src\Core\Input\Foom.Input.Desktop\Foom.Input.Desktop.fsproj", "{EDB91825-3DC1-489A-AE11-1EA4AF524C54}"
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "Foom.Input.Desktop", "src\Core\Input\Foom.Input.Desktop\Foom.Input.Desktop.fsproj", "{EDB91825-3DC1-489A-AE11-1EA4AF524C54}"
 EndProject
-Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "Foom.Net", "src\Core\Net\Foom.Net\Foom.Net.fsproj", "{CA4366CD-4CEC-4ABC-B978-815ABE4178E4}"
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "Foom.Net", "src\Core\Net\Foom.Net\Foom.Net.fsproj", "{CA4366CD-4CEC-4ABC-B978-815ABE4178E4}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Net", "Net", "{D8B7A307-B004-49C7-A5A2-8AE06FFA8E20}"
 EndProject
-Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "Foom.Net.Tests", "src\Core\Net\Foom.Net.Tests\Foom.Net.Tests.fsproj", "{17B93037-B183-40F8-BCA7-4661AFF5FF0D}"
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "Foom.Net.Tests", "src\Core\Net\Foom.Net.Tests\Foom.Net.Tests.fsproj", "{17B93037-B183-40F8-BCA7-4661AFF5FF0D}"
 EndProject
-Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "Foom.EntityManager", "src\Core\Foom.Ecs\Foom.EntityManager.fsproj", "{B1C7CE6B-A191-4CCF-AAD5-3C4D18EEA808}"
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "Foom.EntityManager", "src\Core\Foom.Ecs\Foom.EntityManager.fsproj", "{B1C7CE6B-A191-4CCF-AAD5-3C4D18EEA808}"
 EndProject
-Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "Foom.Core", "src\Core\Foom.Core\Foom.Core.fsproj", "{2A0B46A7-E99E-4086-B930-4B1BCB93F95C}"
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "Foom.Core", "src\Core\Foom.Core\Foom.Core.fsproj", "{2A0B46A7-E99E-4086-B930-4B1BCB93F95C}"
 EndProject
-Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "Foom.Wad.MusicExtractor", "src\Wad\Foom.Wad.MusicExtractor\Foom.Wad.MusicExtractor.fsproj", "{FD59477F-EA33-4857-AFBC-292B400B41F0}"
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "Foom.Wad.MusicExtractor", "src\Wad\Foom.Wad.MusicExtractor\Foom.Wad.MusicExtractor.fsproj", "{FD59477F-EA33-4857-AFBC-292B400B41F0}"
 EndProject
-Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "Foom.EntityManager.Tests", "src\Core\Foom.EntityManager.Tests\Foom.EntityManager.Tests.fsproj", "{D4AD76D7-74BD-48E1-AF99-69CFAE7DED4F}"
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "Foom.EntityManager.Tests", "src\Core\Foom.EntityManager.Tests\Foom.EntityManager.Tests.fsproj", "{D4AD76D7-74BD-48E1-AF99-69CFAE7DED4F}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "EntityManager", "EntityManager", "{6AE2BE8D-B6C5-46BC-82B2-04F6F8FDFA7B}"
 EndProject
-Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "Foom.EntityManager.PerfTests", "src\Core\EntityManager\Foom.EntityManager.PerfTests\Foom.EntityManager.PerfTests\Foom.EntityManager.PerfTests.fsproj", "{009336C8-9B8C-46F6-B153-F8E2E46D0D96}"
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "Foom.EntityManager.PerfTests", "src\Core\EntityManager\Foom.EntityManager.PerfTests\Foom.EntityManager.PerfTests\Foom.EntityManager.PerfTests.fsproj", "{009336C8-9B8C-46F6-B153-F8E2E46D0D96}"
 EndProject
-Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "Foom.Renderer.GL.ShaderQuotation", "src\Core\Renderer\Foom.Renderer.GL.ShaderQuotation\Foom.Renderer.GL.ShaderQuotation.fsproj", "{ADBF7B40-13C0-4C73-B67D-5305C96BCFA6}"
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "Foom.Renderer.GL.ShaderQuotation", "src\Core\Renderer\Foom.Renderer.GL.ShaderQuotation\Foom.Renderer.GL.ShaderQuotation.fsproj", "{ADBF7B40-13C0-4C73-B67D-5305C96BCFA6}"
 EndProject
-Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "Foom.Renderer.GL.ShaderQuotation.Tests", "src\Core\Renderer\Foom.Renderer.GL.ShaderQuotation.Tests\Foom.Renderer.GL.ShaderQuotation.Tests.fsproj", "{C7B9C36E-AB64-4931-88DD-16C00D26FCFC}"
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "Foom.Renderer.GL.ShaderQuotation.Tests", "src\Core\Renderer\Foom.Renderer.GL.ShaderQuotation.Tests\Foom.Renderer.GL.ShaderQuotation.Tests.fsproj", "{C7B9C36E-AB64-4931-88DD-16C00D26FCFC}"
 EndProject
-Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "Foom.Core.Tests", "src\Core\Foom.Core.Tests\Foom.Core.Tests.fsproj", "{7E22BDB7-9DA2-4B7B-8848-493FAC05C6BF}"
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "Foom.Core.Tests", "src\Core\Foom.Core.Tests\Foom.Core.Tests.fsproj", "{7E22BDB7-9DA2-4B7B-8848-493FAC05C6BF}"
 EndProject
-Project("{f2a71f9b-5d33-465a-a702-920d77279786}") = "Foom.Game.Network", "src\Game\Foom.Game.Network\Foom.Game.Network.fsproj", "{818AFAC3-8AC5-40D9-876D-3D17E72F558E}"
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "Foom.Game.Network", "src\Game\Foom.Game.Network\Foom.Game.Network.fsproj", "{818AFAC3-8AC5-40D9-876D-3D17E72F558E}"
+EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Foom.Game.PerfTests", "src\Foom.Game.PerfTests\Foom.Game.PerfTests.fsproj", "{5F68A82D-BB82-4586-B57B-2B4EEDC97D91}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -156,6 +158,10 @@ Global
 		{818AFAC3-8AC5-40D9-876D-3D17E72F558E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{818AFAC3-8AC5-40D9-876D-3D17E72F558E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{818AFAC3-8AC5-40D9-876D-3D17E72F558E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5F68A82D-BB82-4586-B57B-2B4EEDC97D91}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5F68A82D-BB82-4586-B57B-2B4EEDC97D91}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5F68A82D-BB82-4586-B57B-2B4EEDC97D91}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5F68A82D-BB82-4586-B57B-2B4EEDC97D91}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
