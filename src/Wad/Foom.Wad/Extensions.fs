@@ -109,15 +109,12 @@ type Map with
     member this.ComputeAllSectorGeometry() =
         let linedefLookup = createLinedefLookup this
         let geos =
-            //this.Sectors
-            //|> Seq.mapi(fun i sector ->
             let builder = Array.zeroCreate this.Sectors.Length
             let options = ParallelOptions ()
 
             options.MaxDegreeOfParallelism <- 8
 
-           // Parallel.For(0, this.Sectors.Length, options, fun i _ ->
-            for i = 0 to this.Sectors.Length - 1 do
+            Parallel.For(0, this.Sectors.Length, options, fun i _ ->
                 let sector = this.Sectors.[i]
                 let triangles = computeSectorTriangle this linedefLookup i 
 
@@ -133,7 +130,7 @@ type Map with
                         CeilingVertices = ceilingVertices
                     }
                 
-        //    ) |> ignore
+            ) |> ignore
             builder
        
         geos.ToImmutableArray()

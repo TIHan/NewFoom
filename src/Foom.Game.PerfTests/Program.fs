@@ -21,7 +21,6 @@ open System.IO
 open System.IO.Compression
 open System.Diagnostics
 open Foom.Wad
-open System.Threading.Tasks
 
 let allMapGeometry (wad: Wad) mapNames =
 
@@ -41,15 +40,9 @@ let allMapGeometry (wad: Wad) mapNames =
     stopwatch.Reset()
     stopwatch.Start()
 
-    //levels
-  //  |> Array.map(fun map ->
-    let options = ParallelOptions ()
-
-    options.MaxDegreeOfParallelism <- 4
-
-    let beef = ResizeArray()
-    Parallel.For(0, levels.Length, options, fun i _ ->
-        levels.[i].ComputeAllSectorGeometry() |> beef.Add
+    levels
+    |> Array.map(fun map ->
+        map.ComputeAllSectorGeometry()
     ) |> ignore
 
     stopwatch.Stop()
@@ -77,6 +70,8 @@ let main argv =
         let wad = Wad.FromStream stream
 
         allMapGeometry wad
-            <| List.init 50 (fun _ -> "map14")
+            [ "map01"; "map02"; "map03"; "map04"; "map05"; "map06"
+              "map07"; "map08"; "map09"; "map10"; "map11"; "map12"
+              "map13"; "map14" ]
     )
     0
