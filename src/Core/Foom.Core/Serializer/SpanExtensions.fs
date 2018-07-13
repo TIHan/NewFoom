@@ -15,31 +15,28 @@ type SpanDelegate = delegate of Span<byte> -> unit
 [<RequireQualifiedAccess>]
 module LittleEndian =
 
-    let inline internal (<--) (r: byref<byte>) (v: byte) =
-        r <- v
-
     let inline write8 (data: Span<byte>) offset value =
-        data.[offset] <-- byte value
+        data.[offset] <- byte value
 
     let inline write16 (data: Span<byte>) offset value =
-        data.[offset] <-- byte value
-        data.[offset + 1] <-- byte (value >>> 8)
+        data.[offset] <- byte value
+        data.[offset + 1] <- byte (value >>> 8)
 
     let inline write32 (data: Span<byte>) offset value =
-        data.[offset] <-- byte value
-        data.[offset + 1] <-- byte (value >>> 8)
-        data.[offset + 2] <-- byte (value >>> 16)
-        data.[offset + 3] <-- byte (value >>> 24)
+        data.[offset] <- byte value
+        data.[offset + 1] <- byte (value >>> 8)
+        data.[offset + 2] <- byte (value >>> 16)
+        data.[offset + 3] <- byte (value >>> 24)
 
     let inline write64 (data: Span<byte>) offset value =
-        data.[offset] <-- byte value
-        data.[offset + 1] <-- byte (value >>> 8)
-        data.[offset + 2] <-- byte (value >>> 16)
-        data.[offset + 3] <-- byte (value >>> 24)
-        data.[offset + 4] <-- byte (value >>> 32)
-        data.[offset + 5] <-- byte (value >>> 40)
-        data.[offset + 6] <-- byte (value >>> 48)
-        data.[offset + 7] <-- byte (value >>> 56)
+        data.[offset] <- byte value
+        data.[offset + 1] <- byte (value >>> 8)
+        data.[offset + 2] <- byte (value >>> 16)
+        data.[offset + 3] <- byte (value >>> 24)
+        data.[offset + 4] <- byte (value >>> 32)
+        data.[offset + 5] <- byte (value >>> 40)
+        data.[offset + 6] <- byte (value >>> 48)
+        data.[offset + 7] <- byte (value >>> 56)
 
     let inline read8 (data: Span<byte>) offset =
         let x0 = data.[offset]

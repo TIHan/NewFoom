@@ -8,10 +8,6 @@ open FSharp.NativeInterop
 #nowarn "9"
 #nowarn "42"
 
-module NativePtrExtension =
-    [<NoDynamicInvocation>]
-    let inline toByref (x: nativeptr<'T>) = (# "" x : 'T byref  #)
-
 [<AutoOpen>]
 module private NativeArrayHelpers =
 
@@ -46,11 +42,7 @@ type NativeArray<'T when 'T : unmanaged> =
 
 
     member inline this.Item
-        with get index = NativePtr.read (NativePtr.add this.Buffer index)
-        and set index value = NativePtr.set this.Buffer index value
-
-    member inline this.GetByRef(index) =
-        NativePtrExtension.toByref (NativePtr.add this.Buffer index)
+        with get index = NativePtr.toByRef (NativePtr.add this.Buffer index)
 
     member inline this.ToSpan() =
         Span<'T>((this.Buffer |> NativePtr.toNativeInt).ToPointer(), this.Length * sizeof<'T>)

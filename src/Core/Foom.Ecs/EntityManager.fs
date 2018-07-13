@@ -91,13 +91,13 @@ type EntityComponents =
         if i >= 252 then
             failwith "Invalid index to find component."
             let ptr = &&this.values.fixedValues |> NativePtr.toNativeInt |> NativePtr.ofNativeInt<uint16>
-            NativePtrExtension.toByref (NativePtr.add ptr 0)
+            NativePtr.toByRef (NativePtr.add ptr 0)
         else
             let ptr = &&this.values.fixedValues |> NativePtr.toNativeInt |> NativePtr.ofNativeInt<uint16>
-            NativePtrExtension.toByref (NativePtr.add ptr i)
+            NativePtr.toByRef (NativePtr.add ptr i)
 
     member this.AddComponentId(compId: uint16) =
-        let v = this.Get(this.count)
+        let v = &this.Get(this.count)
         v <- compId
         this.count <- this.count + 1
 
@@ -105,7 +105,7 @@ type EntityComponents =
         if this.count > 0 then
             // TODO: We could probably optimize this by providing more book keeping.
             for i = 0 to this.count - 1 do
-                let v = this.Get(i)
+                let v = &this.Get(i)
                 if v = compId then
                     let lastV = this.Get(this.count - 1)
                     v <- lastV
@@ -167,9 +167,7 @@ and [<Sealed>] EntityManager(maxEntityAmount) =
             let components = data.Components
 
             for i = 0 to count - 1 do
-                let ent = entities.[i]
-                let comp = components.GetByRef(i)
-                f.Invoke(ent, &comp)
+                f.Invoke(entities.[i], &components.[i])
 
     member inline this.Iterate<'T1, 'T2 when 'T1 : unmanaged and 'T2 : unmanaged and 'T1 :> IComponent and 'T2 :> IComponent> (f: ForEachDelegate<'T1, 'T2>) : unit =
         let mutable bit1 = 0
@@ -195,9 +193,7 @@ and [<Sealed>] EntityManager(maxEntityAmount) =
                 let comp2Index = lookup2.[ent.Index]
 
                 if comp1Index >= 0 && comp2Index >= 0 then
-                    let comp1 = components1.GetByRef(comp1Index)
-                    let comp2 = components2.GetByRef(comp2Index)
-                    f.Invoke(ent, &comp1, &comp2)
+                    f.Invoke(ent, &components1.[comp1Index], &components2.[comp2Index])
 
     member inline this.Iterate<'T1, 'T2, 'T3, 'T4, 'T5 when 'T1 : unmanaged and 'T2 : unmanaged and 'T3 : unmanaged and 'T4 : unmanaged and 'T5 : unmanaged and 'T1 :> IComponent and 'T2 :> IComponent and 'T3 :> IComponent and 'T4 :> IComponent and 'T5 :> IComponent> (f: ForEachDelegate<'T1, 'T2, 'T3, 'T4, 'T5>) : unit =
         let mutable bit1 = 0
@@ -241,12 +237,7 @@ and [<Sealed>] EntityManager(maxEntityAmount) =
                 let comp5Index = lookup5.[ent.Index]
 
                 if comp1Index >= 0 && comp2Index >= 0 && comp3Index >= 0 && comp4Index >= 0 && comp5Index >= 0 then
-                    let comp1 = components1.GetByRef(comp1Index)
-                    let comp2 = components2.GetByRef(comp2Index)
-                    let comp3 = components3.GetByRef(comp3Index)
-                    let comp4 = components4.GetByRef(comp4Index)
-                    let comp5 = components5.GetByRef(comp5Index)
-                    f.Invoke(ent, &comp1, &comp2, &comp3, &comp4, &comp5)
+                    f.Invoke(ent, &components1.[comp1Index], &components2.[comp2Index], &components3.[comp3Index], &components4.[comp4Index], &components5.[comp5Index])
 
     // Components
 
@@ -258,7 +249,7 @@ and [<Sealed>] EntityManager(maxEntityAmount) =
         data.Components.Add(&comp)
         data.Entities.Add(entity)
 
-        let ec = entComps.GetByRef(entity.Index)
+        let ec = &entComps.[entity.Index]
         ec.AddComponentId(uint16 bit)
 
     member inline this.AddInline<'T when 'T : unmanaged and 'T :> IComponent>(entity: Entity, comp: byref<'T>) =
@@ -282,7 +273,7 @@ and [<Sealed>] EntityManager(maxEntityAmount) =
                     components.Add(&comp)
                     entities.Add(entity)
 
-                    let ec = entComps.GetByRef(entity.Index)
+                    let ec = &entComps.[entity.Index]
                     ec.AddComponentId(uint16 bit)
 
     member this.Add<'T when 'T : unmanaged and 'T :> IComponent>(entity: Entity, comp: byref<'T>) =
@@ -299,7 +290,7 @@ and [<Sealed>] EntityManager(maxEntityAmount) =
         else
             if this.IsValidEntity entity then
                 if (data :> IEntityLookupData).TryRemoveComponent(entity) then
-                    let ec = entComps.GetByRef(entity.Index)
+                    let ec = &entComps.[entity.Index]
                     ec.RemoveComponentId(uint16 bit)
                 else
                     Console.WriteLine (String.Format ("ECS WARNING: Component, {0}, does not exist on {1}", typeof<'T>.Name, entity))
@@ -382,7 +373,7 @@ and [<Sealed>] EntityManager(maxEntityAmount) =
         else
             if this.IsValidEntity ent then
 
-                let ec = entComps.GetByRef(ent.Index)
+                let ec = &entComps.[ent.Index]
 
                 for i = 0 to ec.count - 1 do
                     let v = ec.Get(i)
@@ -439,7 +430,7 @@ and [<Sealed>] EntityManager(maxEntityAmount) =
 
         let index = data.IndexLookup.[ent.Index]
         if index <> -1 then
-            let compRef = data.Components.GetByRef(index)
+            let compRef = &data.Components.[index]
             tryGetF.Invoke(&compRef)
 
     member this.MaxNumberOfEntities = maxEntityAmount

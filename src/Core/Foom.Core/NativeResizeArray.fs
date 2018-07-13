@@ -58,11 +58,7 @@ type NativeResizeArray<'T when 'T : unmanaged>(capacity) =
         count <- lastIndex
 
     member inline this.Item
-        with get index = NativePtr.read (NativePtr.add this.Buffer.Buffer index)
-        and set index value = NativePtr.set this.Buffer.Buffer index value
-
-    member inline this.GetByRef(index) =
-        NativePtrExtension.toByref (NativePtr.add this.Buffer.Buffer index)
+        with get index = NativePtr.toByRef (NativePtr.add this.Buffer.Buffer index)
 
     member inline this.ToSpan() =
         Span<'T>((this.Buffer.Buffer |> NativePtr.toNativeInt).ToPointer(), this.Count * sizeof<'T>)
