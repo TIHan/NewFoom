@@ -41,9 +41,9 @@ let allMapGeometry (wad: Wad) mapNames =
     stopwatch.Start()
 
     levels
-    |> Array.map(fun map ->
-        map.ComputeAllSectorGeometry()
-    ) |> ignore
+    |> Array.iter(fun map ->
+        map.ComputeAllSectorGeometry() |> ignore
+    )
 
     stopwatch.Stop()
     let geometryTime = stopwatch.Elapsed.TotalMilliseconds
@@ -68,6 +68,13 @@ let sunderStream f =
 let main argv =
     sunderStream (fun stream ->
         let wad = Wad.FromStream stream
+
+        allMapGeometry wad
+            [ "map01"; "map02"; "map03"; "map04"; "map05"; "map06"
+              "map07"; "map08"; "map09"; "map10"; "map11"; "map12"
+              "map13"; "map14" ]
+
+        GC.Collect()
 
         allMapGeometry wad
             [ "map01"; "map02"; "map03"; "map04"; "map05"; "map06"

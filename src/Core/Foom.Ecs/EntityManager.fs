@@ -215,7 +215,7 @@ and [<Sealed>] EntityManager(maxEntityAmount) =
             let data5 = data5 :?> EntityLookupData<'T5>
 
             let count = data.Entities.Count
-            let entities = data.Entities.ToSpan()
+            let entities = data.Entities
             let components1 = data1.Components
             let components2 = data2.Components
             let components3 = data3.Components

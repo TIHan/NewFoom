@@ -17,10 +17,11 @@ type NativeResizeArray<'T when 'T : unmanaged>(capacity) =
         sizeof<'T> * capacity
     let mutable count = 0
     let mutable buffer = new NativeArray<'T>(capacity)
+    let mutable ptr = buffer.Buffer
 
     member __.Count = count
 
-    member __.Buffer = buffer
+    member __.Buffer = ptr
 
     member __.IncreaseCapacity() =
         let mutable newLength = uint32 length * 2u
@@ -29,13 +30,14 @@ type NativeResizeArray<'T when 'T : unmanaged>(capacity) =
 
         length <- int newLength
         buffer <- NativeArray.resize length buffer
+        ptr <- buffer.Buffer
 
     [<MethodImpl(MethodImplOptions.AggressiveInlining)>]
     member this.Add(item: 'T) =
         if count * sizeof<'T> >= length then
             this.IncreaseCapacity ()
         
-        NativePtr.set this.Buffer.Buffer count item
+        NativePtr.set this.Buffer count item
         count <- count + 1
 
     [<MethodImpl(MethodImplOptions.AggressiveInlining)>]
@@ -46,7 +48,7 @@ type NativeResizeArray<'T when 'T : unmanaged>(capacity) =
         NativePtr.set buffer.Buffer count item
         count <- count + 1
 
-    member inline this.LastItem = NativePtr.get this.Buffer.Buffer (this.Count - 1)
+    member inline this.LastItem = NativePtr.get this.Buffer (this.Count - 1)
 
     [<MethodImpl(MethodImplOptions.AggressiveInlining)>]
     member this.SwapRemoveAt index =
@@ -54,14 +56,14 @@ type NativeResizeArray<'T when 'T : unmanaged>(capacity) =
             failwith "Index out of bounds"
 
         let lastIndex = count - 1
-        NativePtr.set buffer.Buffer index (NativePtr.get this.Buffer.Buffer lastIndex)
+        NativePtr.set buffer.Buffer index (NativePtr.get this.Buffer lastIndex)
         count <- lastIndex
 
     member inline this.Item
-        with get index = NativePtr.toByRef (NativePtr.add this.Buffer.Buffer index)
+        with get index = NativePtr.toByRef (NativePtr.add this.Buffer index)
 
     member inline this.ToSpan() =
-        Span<'T>((this.Buffer.Buffer |> NativePtr.toNativeInt).ToPointer(), this.Count * sizeof<'T>)
+        Span<'T>((this.Buffer |> NativePtr.toNativeInt).ToPointer(), this.Count * sizeof<'T>)
 
     interface IDisposable with
 
