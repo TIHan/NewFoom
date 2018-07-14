@@ -112,7 +112,10 @@ type Map with
             let builder = Array.zeroCreate this.Sectors.Length
             let options = ParallelOptions ()
 
+            options.MaxDegreeOfParallelism <- 8
+
             Parallel.For(0, this.Sectors.Length, options, fun i _ ->
+          //  this.Sectors |> Seq.iteri (fun i _ ->
                 let sector = this.Sectors.[i]
                 let triangles = computeSectorTriangle this linedefLookup i 
 

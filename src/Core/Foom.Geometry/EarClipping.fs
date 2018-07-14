@@ -30,8 +30,6 @@ let rayIntersection (ray: Ray) (vertices: Vector2 []) =
 
     let segmentsHit = ResizeArray<int * int * Vector2> ()
 
-    let testSet = System.Collections.Generic.HashSet<int> ()
-
     while (j < vertices.Length) do
 
         let start' = vertices.[i]
@@ -138,7 +136,7 @@ let computeVertices (vertices: Vector2 seq) f =
 
 let compute (polygon: Polygon2D) =
 
-    let triangles = ResizeArray<Triangle2D> ()
+    let triangles = ResizeArray<Triangle2D> (polygon.Vertices.Length / 3)
 
     computeVertices polygon.Vertices (fun x y z ->
         triangles.Add (Triangle2D (x, y, z))
@@ -187,18 +185,13 @@ let rec decomposeTree (tree: Polygon2DTree) =
                     else
                         edge2Index
 
-                let mutable replaceIndex = None
+                let mutable replaceIndex = ValueNone
                 let childMaxIndex = 
                     childTree.Polygon.Vertices |> Array.findIndex (fun x -> x = childMax)
 
                 let v1 = pt
                 let v2 = childTree.Polygon.Vertices.[childMaxIndex]
                 let v3 = vertices.[edge2Index]
-
-//                System.Diagnostics.Debug.WriteLine("Tri")
-//                System.Diagnostics.Debug.WriteLine(v1)
-//                System.Diagnostics.Debug.WriteLine(v2)
-//                System.Diagnostics.Debug.WriteLine(v3)
 
                 let reflexes = Array.zeroCreate vertices.Length
                 for i = 0 to vertices.Length - 1 do
@@ -216,35 +209,14 @@ let rec decomposeTree (tree: Polygon2DTree) =
 
                     reflexes.[i] <- isReflexVertex vertices.[prev] vertices.[next] vertices.[i]
 
-                match
-                    vertices |> Array.mapi (fun i x -> (i, x)) |> Array.filter (fun (_, x) ->
-                        x <> v1 && x <> v2 && x <> v3 && Triangle2D.Contains(v1, v2, v3, x)
-                    ) with
-                | [||] -> ()
-                | points ->
-                    //try
-                    replaceIndex <-
-                        let (index, _) =
-                            points
-                            |> Array.filter (fun (i, x) ->
-                                reflexes.[i]
-                            )
-//                            |> Array.map (fun (i, x) ->
-//                                System.Diagnostics.Debug.WriteLine (x)
-//                                (i, x)
-//                            )
-                            |> Array.minBy (fun (_, x) -> (ray.Origin - x).Length())
-                           // |> Array.sortBy(fun (i, x) -> (ray.Origin - x).Length())
-//                            |> Array.maxBy (fun (_, x) ->
-//                                let v = Vector2.Dot (Vector2.UnitX, (x - v2) |> Vector2.Normalize)
-//                                System.Diagnostics.Debug.WriteLine(v)
-//                                v
-//                            )
-                        index
-                        |> Some
-                  //  System.Diagnostics.Debug.WriteLine(replaceIndex)
-                    //System.Diagnostics.Debug.WriteLine(vertices.[replaceIndex.Value])
-                    //with | _ -> ()
+                let mutable minValue = System.Single.MaxValue
+                for i = 0 to vertices.Length - 1 do
+                    let x = vertices.[i]
+                    if x <> v1 && x <> v2 && x <> v3 && Triangle2D.Contains(v1, v2, v3, x) && reflexes.[i] then
+                        let possibleMinValue = (ray.Origin - x).Length()
+                        if possibleMinValue < minValue then
+                            minValue <- possibleMinValue
+                            replaceIndex <- ValueSome i
 
                 let linkedList = vertices |> System.Collections.Generic.List
 
@@ -255,13 +227,10 @@ let rec decomposeTree (tree: Polygon2DTree) =
                 let mutable count = 0
                 let linkedList2 = System.Collections.Generic.List ()
 
-               
-                //linkedList2.Add(pt)
-
                 match replaceIndex with
-                | None ->
+                | ValueNone ->
                     linkedList2.Add(vertices.[edge2Index])
-                | Some index ->
+                | ValueSome index ->
                     linkedList2.Add(vertices.[index])
 
                 let childCount = childTree.Polygon.Count
@@ -276,12 +245,10 @@ let rec decomposeTree (tree: Polygon2DTree) =
 
 
                 linkedList2.Add(childMax)
-                //linkedList2.Add(pt)
-                //linkedList.InsertRange(edge2Index, linkedList2)
                 match replaceIndex with
-                | None ->
+                | ValueNone ->
                     linkedList.InsertRange(edge2Index, linkedList2)
-                | Some index ->
+                | ValueSome index ->
                     linkedList.InsertRange(index, linkedList2)
 
                 vertices <- (linkedList |> Seq.toArray)
@@ -300,10 +267,6 @@ let computeTree (tree: Polygon2DTree) =
     if tree.Children.IsEmpty then
         [ compute tree.Polygon ] |> List.toSeq
     else
-
-
-        let triangles = ResizeArray<Triangle2D> ()
-
         let vertices = 
             match computeMultiple (decomposeTree tree) with
             | [] -> [||]
@@ -313,7 +276,7 @@ let computeTree (tree: Polygon2DTree) =
                 |> Array.map (fun x -> [|x.P1;x.P2;x.P3|])
                 |> Array.reduce Array.append
 
-        let triangles = ResizeArray<Triangle2D> ()
+        let triangles = ResizeArray<Triangle2D> (vertices.Length / 3)
         let mutable i = 0
         while (i < vertices.Length) do
             Triangle2D (
