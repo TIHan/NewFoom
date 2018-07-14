@@ -27,7 +27,7 @@ let ``Normal`` () =
 
     lookup.[int 0us] <- pool
 
-    let channel = Channel(lookup)
+    use channel = new Channel(lookup)
 
     let msg = pool.Create() :?> TextMessage
     msg.text <- "BEEF"
@@ -57,7 +57,7 @@ let ``Sequenced`` () =
 
     lookup.[int 0us] <- pool
 
-    let channel = SequencedChannel(lookup)
+    use channel = new SequencedChannel(lookup)
 
     let msg = pool.Create() :?> TextMessage
     msg.text <- "BEEF"
@@ -67,12 +67,12 @@ let ``Sequenced`` () =
 
     channel.SerializeMessage(msg2, true, fun data -> 
         // This modifies the bytes to set the sequence id for testing
-        let x = data.[2]
+        let x = &data.[2]
         x <- 1uy
         channel.Receive(data) |> ignore)
     channel.SerializeMessage(msg, true, fun data -> 
         // This modifies the bytes to set the sequence id for testing
-        let x = data.[2]
+        let x = &data.[2]
         x <- 0uy
         channel.Receive(data) |> ignore)
 
@@ -94,7 +94,7 @@ let ``Ordered`` () =
 
     lookup.[int 0us] <- pool
 
-    let channel = OrderedChannel(lookup)
+    use channel = new OrderedChannel(lookup)
 
     let msg = pool.Create() :?> TextMessage
     msg.text <- "BEEF"
@@ -104,12 +104,12 @@ let ``Ordered`` () =
 
     channel.SerializeMessage(msg2, true, fun data -> 
         // This modifies the bytes to set the sequence id for testing
-        let x = data.[1]
+        let x = &data.[1]
         x <- 1uy
         channel.Receive(data) |> ignore)
     channel.SerializeMessage(msg, true, fun data -> 
         // This modifies the bytes to set the sequence id for testing
-        let x = data.[1]
+        let x = &data.[1]
         x <- 0uy
         channel.Receive(data) |> ignore)
 

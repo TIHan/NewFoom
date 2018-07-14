@@ -92,7 +92,7 @@ type ServerGame(em: EntityManager, server: IServer) =
         let playerSnapshots = masterPlayerSnapshots.[int snapshotId % 30]
 
         em.ForEach<Transform, Direction, Render, UserControlled, SpectatorTag>(fun ent transform direction render userControlled _ ->
-            let r = playerSnapshots.GetByRef(i)
+            let r = &playerSnapshots.[i]
             r.entity <- ent
             r.position <- transform.position
             r.rotation <- transform.rotation

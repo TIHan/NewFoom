@@ -126,7 +126,7 @@ type ClientGame(em: EntityManager, input: IInput, renderer: IRenderer, network) 
 
                 sortedList.RemoveAt(0)
                 for i = 0 to playerCount - 1 do
-                    let player = playerSnapshots.GetByRef(i)
+                    let player = &playerSnapshots.[i]
 
                     let sprite = &spriteStates.[i]
                     if sprite = 0 && zombiemanSpriteBatchOpt.IsSome then

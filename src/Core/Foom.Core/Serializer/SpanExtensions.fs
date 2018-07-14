@@ -160,7 +160,7 @@ type Writer =
         if this.isReading then
             let mutable length = 0
             this.WriteInt(data, &length)
-            let mutable ptr = data.Slice(this.position).DangerousGetPinnableReference()
+            let mutable ptr = &data.Slice(this.position).[0]
             this.position <- this.position + length
             str <- System.Text.Encoding.Unicode.GetString(&&ptr, length)
         else

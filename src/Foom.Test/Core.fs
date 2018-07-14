@@ -362,7 +362,7 @@ type Snapshot =
         writer.Write(stream, &this.serverTime)
         writer.WriteInt(stream, &this.playerCount)
         for i = 0 to this.playerCount - 1 do
-            let r = this.playerSnapshots.GetByRef(i)
+            let r = &this.playerSnapshots.[i]
             writer.Write(stream, &r)
 
     override this.NetReset() =

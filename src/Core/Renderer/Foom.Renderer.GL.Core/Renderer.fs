@@ -153,7 +153,7 @@ void main()
     vec4 newColor = texture(uni_texture, uv) * color;
     if(newColor.a < 0.5)
         discard;
-    outColor = newColor;
+    outColor = newColor; //vec4(1.f, 0.f, 0.f, 1.f);
 }
         """
 
