@@ -399,11 +399,7 @@ module Backend =
         glBindTexture(GL_TEXTURE_2D, textureID);
          
         // Give the image to OpenGL
-#ifdef _MSC_VER
-        glTexImage2D(GL_TEXTURE_2D, 0,GL_BGRA, width, height, 0, GL_BGRA, GL_UNSIGNED_BYTE, data);
-#else
         glTexImage2D(GL_TEXTURE_2D, 0,GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-#endif
          
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
