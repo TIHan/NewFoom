@@ -23,13 +23,15 @@ module Foom.Game.GameLoop
             LastTime: int64
             UpdateTime: int64
             UpdateAccumulator: int64
-            WillQuit: bool 
+            willQuit: bool 
 
             Context : GameLoopSynchronizationContext
             Stopwatch : Stopwatch
             Skip : int64
             TargetUpdateInterval : int64
         }
+
+        member this.WillQuit = this.willQuit
 
     let create updateInterval =
         let targetUpdateInterval = (1000. / updateInterval) * 10000. |> int64
@@ -45,7 +47,7 @@ module Foom.Game.GameLoop
             LastTime = 0L
             UpdateTime = 0L
             UpdateAccumulator = targetUpdateInterval
-            WillQuit = false
+            willQuit = false
 
             Context = ctx
             Stopwatch = stopwatch
@@ -79,7 +81,7 @@ module Foom.Game.GameLoop
                     { gl with 
                         UpdateTime = gl.UpdateTime + targetUpdateInterval
                         UpdateAccumulator = gl.UpdateAccumulator - targetUpdateInterval
-                        WillQuit = willQuit
+                        willQuit = willQuit
                     }
             else
                 gl
@@ -99,7 +101,7 @@ module Foom.Game.GameLoop
         let gl = create updateInterval
 
         let rec loop gl =
-            if not gl.WillQuit then
+            if not gl.willQuit then
                 gl
                 |> tick alwaysUpdate update render
                 |> loop

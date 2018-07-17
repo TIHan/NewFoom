@@ -148,6 +148,8 @@ type MSG =
     val mutable time : DWORD
     val mutable pt : POINT
 
+type LPMSG = nativeptr<MSG>
+
 [<DllImport("user32.dll")>]
 extern BOOL ShowWindow(HWND hWnd, int nCmdShow)
 
@@ -171,5 +173,8 @@ extern BOOL TranslateMessage(MSG& lpMsg)
 
 [<DllImport("user32.dll")>]
 extern LRESULT DispatchMessage(MSG& lpmsg)
+
+[<DllImport("user32.dll")>]
+extern BOOL PeekMessage(LPMSG lpMsg, HWND hWnd, UINT wMsgFilterMin, UINT wMsgFilterMax, UINT wRemoveMsg)
 
 type WndProcDelegate = delegate of HWND * UINT * nativeint * nativeint -> nativeint

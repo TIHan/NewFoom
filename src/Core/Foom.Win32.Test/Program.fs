@@ -2,11 +2,23 @@
 open Foom.Game
 open Foom.Win32
 
+type Win32ServerGame() =
+    inherit AbstractServerGame()
+
+    override __.Update(_, _) = false
+    
+type Win32ClientGame() =
+    inherit AbstractClientGame()
+
+    override __.PreUpdate(_, _) = ()
+
+    override __.Update(_, _) = false
+
+    override __.Render(_, _) = ()
+
 [<EntryPoint>]
 let main argv =
 
-    match Win32.CreateWindow "F# Win32" with
-    | Ok(window) ->
-        GameLoop.start 30. (fun _ -> ()) (fun _ _ -> false) (fun _ _ -> window.Update())
-    | Error(id) -> printfn "Error %A" id
+    let game = Win32Game("F# Game", Win32ServerGame(), Win32ClientGame(), 30.)
+    game.Start()
     0

@@ -3,27 +3,18 @@
 open System
 open System.Runtime.InteropServices
 open FSharp.NativeInterop
-
+open Foom.Game
 open Foom.Win32Internal
 
 #nowarn "9"
 
-[<NoEquality;NoComparison>]
-type Window = Window of nativeint with
+[<Sealed>]
+type Win32Game (windowTitle: string, svGame: AbstractServerGame, clGame: AbstractClientGame, interval) =
 
-    member this.Update() =
-        match this with
-        | Window(hWnd) -> UpdateWindow(hWnd) |> ignore
-
-module Win32 =
-
-    let CreateWindow (title: string) =
-        use title = fixed (System.Text.Encoding.UTF8.GetBytes(title))
+    member __.Start() =
+        use title = fixed (System.Text.Encoding.UTF8.GetBytes(windowTitle))
         let title = title |> NativePtr.toNativeInt |> NativePtr.ofNativeInt
         let wndProc = WndProcDelegate(fun hWnd msg wParam lParam -> 
-            //match int msg with
-            //| msg when msg = WM_PAINT -> nativeint 0
-            //| _ ->
                 DefWindowProc(hWnd, msg, wParam, lParam)
         )
         let hInstance = Marshal.GetHINSTANCE(typeof<WNDCLASSEXW>.Module)
@@ -38,7 +29,6 @@ module Win32 =
 
         if (RegisterClassExW(&windowClass) = 0) then
             printfn "Failed Registering Window Class"
-            Error(GetLastError())
         else
 
         printfn "- Window Class Registered"
@@ -61,7 +51,6 @@ module Win32 =
 
         if hwnd = IntPtr.Zero then
             printfn "Failed Creating Window"
-            Error(GetLastError())
         else
 
         printfn "- Created Window"
@@ -70,8 +59,27 @@ module Win32 =
         printfn "UpdateWindow Result: %A" <| UpdateWindow(hwnd)
 
         let mutable msg = Unchecked.defaultof<MSG>
-        while GetMessage(&msg, NULL, 0u, 0u) <> 0uy do
-            TranslateMessage(&msg) |> ignore
-            DispatchMessage(&msg) |> ignore
+        let mutable gl = GameLoop.create interval
+        while not gl.WillQuit do
+            while PeekMessage(&&msg, nativeint 0, 0u, 0u, 0x0001u) <> 0uy do
+                TranslateMessage(&msg) |> ignore
+                DispatchMessage(&msg) |> ignore
 
-        Ok(Window(hwnd))
+            gl <- GameLoop.tick
+                    id
+                    (fun time interval ->
+                        let time = TimeSpan.FromTicks(time)
+                        let interval = TimeSpan.FromTicks(interval)
+
+                        clGame.PreUpdate(time, interval)
+                        let svWillQuit = svGame.Update(time, interval)
+                        let clWillQuit = clGame.Update(time, interval)
+
+                        svWillQuit || clWillQuit
+                    )
+                    (fun time deltaTime ->
+                        let time = TimeSpan.FromTicks(time)
+
+                        clGame.Render(time, deltaTime)
+                    )
+                    gl

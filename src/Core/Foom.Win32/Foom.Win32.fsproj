@@ -9,4 +9,8 @@
     <Compile Include="Win32.fs" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Foom.Core\Foom.Core.fsproj" />
+  </ItemGroup>
+
 </Project>
