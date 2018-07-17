@@ -10,9 +10,9 @@ type Win32ServerGame() =
 type Win32ClientGame() =
     inherit AbstractClientGame()
 
-    override __.PreUpdate(_, _) = ()
+    override __.PreUpdate(_, _, _) = ()
 
-    override __.Update(_, _) = false
+    override __.Update(_, _, _) = false
 
     override __.Render(_, _) = ()
 

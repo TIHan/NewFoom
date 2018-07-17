@@ -54,7 +54,7 @@ type ClientGame(em: EntityManager, input: IInput, renderer: IRenderer, network) 
 
         this.Enqueue(LoadMap "e1m1")
 
-    override this.PreUpdate(time, interval) =
+    override this.PreUpdate(time, interval, _) =
         input.PollEvents()
 
         inputState <- input.GetState()
@@ -100,7 +100,7 @@ type ClientGame(em: EntityManager, input: IInput, renderer: IRenderer, network) 
 
         | _ -> false
 
-    override __.Update(time, interval) = 
+    override __.Update(time, interval, _) = 
         base.Update(time, interval) |> ignore
 
         if renderTime.IsSome then

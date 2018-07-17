@@ -28,6 +28,7 @@
     <Compile Include="Packet\PacketStream.fsi" />
     <Compile Include="Packet\PacketStream.fs" />
     <Compile Include="Reactor.fs" />
+    <Compile Include="Game\Input.fs" />
     <Compile Include="Game\GameLoop.fs" />
     <Compile Include="Game\Game.fs" />
   </ItemGroup>
@@ -38,6 +39,5 @@
     <Folder Include="Message\" />
     <Folder Include="Serializer\" />
     <Folder Include="Packet\" />
-    <Folder Include="Game\" />
   </ItemGroup>
 </Project>

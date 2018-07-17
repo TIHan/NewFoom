@@ -71,9 +71,9 @@ type Win32Game (windowTitle: string, svGame: AbstractServerGame, clGame: Abstrac
                         let time = TimeSpan.FromTicks(time)
                         let interval = TimeSpan.FromTicks(interval)
 
-                        clGame.PreUpdate(time, interval)
+                        clGame.PreUpdate(time, interval, [])
                         let svWillQuit = svGame.Update(time, interval)
-                        let clWillQuit = clGame.Update(time, interval)
+                        let clWillQuit = clGame.Update(time, interval, [])
 
                         svWillQuit || clWillQuit
                     )

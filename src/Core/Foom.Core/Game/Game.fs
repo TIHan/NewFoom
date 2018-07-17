@@ -1,6 +1,7 @@
 ﻿namespace Foom.Game
 
 open System
+open Foom.Game.Input
 
 [<AbstractClass>]
 type AbstractServerGame() =
@@ -10,9 +11,9 @@ type AbstractServerGame() =
 [<AbstractClass>]
 type AbstractClientGame() =
 
-    abstract PreUpdate : time: TimeSpan * interval: TimeSpan -> unit
+    abstract PreUpdate : time: TimeSpan * interval: TimeSpan * inputEvents: InputEvent list -> unit
 
-    abstract Update : time: TimeSpan * interval: TimeSpan -> bool
+    abstract Update : time: TimeSpan * interval: TimeSpan * inputEvents: InputEvent list -> bool
 
     abstract Render : time: TimeSpan * deltaTime: float32 -> unit
 
@@ -27,9 +28,9 @@ type Game(svGame: AbstractServerGame, clGame: AbstractClientGame, interval) =
                 let time = TimeSpan.FromTicks(time)
                 let interval = TimeSpan.FromTicks(interval)
 
-                clGame.PreUpdate(time, interval)
+                clGame.PreUpdate(time, interval, [])
                 let svWillQuit = svGame.Update(time, interval)
-                let clWillQuit = clGame.Update(time, interval)
+                let clWillQuit = clGame.Update(time, interval, [])
 
                 svWillQuit || clWillQuit
             )
