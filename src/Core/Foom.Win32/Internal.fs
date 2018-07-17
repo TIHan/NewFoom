@@ -76,6 +76,8 @@ let WS_OVERLAPPEDWINDOW =
     WS_THICKFRAME |||
     WS_MINIMIZEBOX |||
     WS_MAXIMIZEBOX
+
+let NULL = IntPtr.Zero
     
 type DWORD = uint32
 type LPCWSTR = nativeptr<char>
@@ -90,6 +92,10 @@ type HCURSOR = nativeint
 type HBRUSH = nativeint
 type ATOM = int
 type BOOL = byte
+type WPARAM = UINT
+type LPARAM = int
+type LONG = int
+type LRESULT = nativeint
 
 [<Struct>]
 type WNDCLASSEXW =
@@ -126,6 +132,22 @@ extern nativeint CreateWindowExW(
     LPVOID lpParam
 )
 
+[<Struct>]
+type POINT =
+
+    val mutable x : LONG
+    val mutable y : LONG
+
+[<Struct>]
+type MSG =
+
+    val mutable hwnd : HWND
+    val mutable message : UINT
+    val mutable wParam : WPARAM
+    val mutable lParam : LPARAM
+    val mutable time : DWORD
+    val mutable pt : POINT
+
 [<DllImport("user32.dll")>]
 extern BOOL ShowWindow(HWND hWnd, int nCmdShow)
 
@@ -140,5 +162,14 @@ extern UINT GetLastError();
 
 [<DllImport("user32.dll")>]
 extern nativeint DefWindowProc(nativeint hWnd, uint32 msg, nativeint wParam, nativeint lParam)
+
+[<DllImport("user32.dll")>]
+extern BOOL GetMessage(MSG& lpMsg, HWND hWnd, UINT wMsgFilterMin, UINT uMsgFilterMax)
+
+[<DllImport("user32.dll")>]
+extern BOOL TranslateMessage(MSG& lpMsg)
+
+[<DllImport("user32.dll")>]
+extern LRESULT DispatchMessage(MSG& lpmsg)
 
 type WndProcDelegate = delegate of HWND * UINT * nativeint * nativeint -> nativeint

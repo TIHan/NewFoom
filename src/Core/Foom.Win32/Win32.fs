@@ -69,4 +69,9 @@ module Win32 =
         printfn "ShowWindow Result: %A" <| ShowWindow(hwnd, 1)
         printfn "UpdateWindow Result: %A" <| UpdateWindow(hwnd)
 
+        let mutable msg = Unchecked.defaultof<MSG>
+        while GetMessage(&msg, NULL, 0u, 0u) <> 0uy do
+            TranslateMessage(&msg) |> ignore
+            DispatchMessage(&msg) |> ignore
+
         Ok(Window(hwnd))
