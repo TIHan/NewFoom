@@ -10,7 +10,9 @@ type Win32ServerGame() =
 type Win32ClientGame() =
     inherit AbstractClientGame()
 
-    override __.PreUpdate(_, _, _) = ()
+    override __.PreUpdate(_, _, inputs) =
+        inputs
+        |> List.iter (printfn "%A")
 
     override __.Update(_, _, _) = false
 

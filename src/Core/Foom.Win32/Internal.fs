@@ -45,6 +45,7 @@ let WM_MOUSEACTIVATE               = 0x0021
 let WM_CHILDACTIVATE               = 0x0022
 let WM_QUEUESYNC                   = 0x0023
 let WM_GETMINMAXINFO               = 0x0024
+let WM_CHAR                        = 0x0102
 
 // Window Styles
 
@@ -177,4 +178,5 @@ extern LRESULT DispatchMessage(MSG& lpmsg)
 [<DllImport("user32.dll")>]
 extern BOOL PeekMessage(LPMSG lpMsg, HWND hWnd, UINT wMsgFilterMin, UINT wMsgFilterMax, UINT wRemoveMsg)
 
+[<UnmanagedFunctionPointer(CallingConvention.Cdecl)>]
 type WndProcDelegate = delegate of HWND * UINT * nativeint * nativeint -> nativeint

@@ -4,25 +4,30 @@ open System
 open System.Runtime.InteropServices
 open FSharp.NativeInterop
 open Foom.Game
+open Foom.Game.Input
 open Foom.Win32Internal
 
 #nowarn "9"
 
+
+
 [<Sealed>]
 type Win32Game (windowTitle: string, svGame: AbstractServerGame, clGame: AbstractClientGame, interval) =
+
+    let del = WndProcDelegate(Win32Game.WndProc)
+
+    static member WndProc hWnd msg wParam lParam =
+        DefWindowProc(hWnd, msg, wParam, lParam)
 
     member __.Start() =
         use title = fixed (System.Text.Encoding.UTF8.GetBytes(windowTitle))
         let title = title |> NativePtr.toNativeInt |> NativePtr.ofNativeInt
-        let wndProc = WndProcDelegate(fun hWnd msg wParam lParam -> 
-                DefWindowProc(hWnd, msg, wParam, lParam)
-        )
         let hInstance = Marshal.GetHINSTANCE(typeof<WNDCLASSEXW>.Module)
 
         let mutable windowClass = Unchecked.defaultof<WNDCLASSEXW>
         windowClass.cbSize <- uint32 sizeof<WNDCLASSEXW>
         windowClass.style <- uint32((* CS_HREDRAW *) 0x0002 ||| (* CS_VREDRAW *) 0x0001)
-        windowClass.lpfnWndProc <- Marshal.GetFunctionPointerForDelegate(wndProc)
+        windowClass.lpfnWndProc <- Marshal.GetFunctionPointerForDelegate(del)
         windowClass.hInstance <- hInstance
         windowClass.lpszClassName <- title
         windowClass.hCursor <- LoadCursor(IntPtr.Zero, (* IDC_ARROW *)32512)
@@ -60,10 +65,16 @@ type Win32Game (windowTitle: string, svGame: AbstractServerGame, clGame: Abstrac
 
         let mutable msg = Unchecked.defaultof<MSG>
         let mutable gl = GameLoop.create interval
+        let inputs = ResizeArray()
         while not gl.WillQuit do
             while PeekMessage(&&msg, nativeint 0, 0u, 0u, 0x0001u) <> 0uy do
                 TranslateMessage(&msg) |> ignore
                 DispatchMessage(&msg) |> ignore
+
+                match msg.message with
+                | x when int x = WM_CHAR ->
+                    inputs.Add(KeyPressed(char msg.lParam))
+                | _ -> ()
 
             gl <- GameLoop.tick
                     id
@@ -71,9 +82,12 @@ type Win32Game (windowTitle: string, svGame: AbstractServerGame, clGame: Abstrac
                         let time = TimeSpan.FromTicks(time)
                         let interval = TimeSpan.FromTicks(interval)
 
-                        clGame.PreUpdate(time, interval, [])
+                        let inputList = inputs |> Seq.toList
+                        inputs.Clear()
+
+                        clGame.PreUpdate(time, interval, inputList)
                         let svWillQuit = svGame.Update(time, interval)
-                        let clWillQuit = clGame.Update(time, interval, [])
+                        let clWillQuit = clGame.Update(time, interval, inputList)
 
                         svWillQuit || clWillQuit
                     )
