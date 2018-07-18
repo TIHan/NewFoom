@@ -46,6 +46,8 @@ let WM_CHILDACTIVATE               = 0x0022
 let WM_QUEUESYNC                   = 0x0023
 let WM_GETMINMAXINFO               = 0x0024
 let WM_CHAR                        = 0x0102
+let WM_KEYDOWN                     = 0x0100
+let WM_KEYUP                       = 0x0101
 
 // Window Styles
 

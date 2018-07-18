@@ -9,6 +9,8 @@ open Foom.Win32Internal
 
 #nowarn "9"
 
+open System.Collections.Generic
+
 
 
 [<Sealed>]
@@ -66,14 +68,19 @@ type Win32Game (windowTitle: string, svGame: AbstractServerGame, clGame: Abstrac
         let mutable msg = Unchecked.defaultof<MSG>
         let mutable gl = GameLoop.create interval
         let inputs = ResizeArray()
+        let hashKey = HashSet()
         while not gl.WillQuit do
             while PeekMessage(&&msg, nativeint 0, 0u, 0u, 0x0001u) <> 0uy do
                 TranslateMessage(&msg) |> ignore
                 DispatchMessage(&msg) |> ignore
 
                 match msg.message with
-                | x when int x = WM_CHAR ->
-                    inputs.Add(KeyPressed(char msg.lParam))
+                | x when int x = WM_KEYDOWN ->
+                    if hashKey.Add(char msg.lParam) then
+                        inputs.Add(KeyPressed(char msg.lParam))
+                | x when int x = WM_KEYUP ->
+                    if hashKey.Remove(char msg.lParam) then
+                        inputs.Add(KeyReleased(char msg.lParam))
                 | _ -> ()
 
             gl <- GameLoop.tick
