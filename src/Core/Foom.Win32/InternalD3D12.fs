@@ -1,22 +1,31 @@
 ﻿module Foom.InternalD3D12
 
 open System
+open System.Numerics
 open System.Threading
 open FSharp.NativeInterop
 open SharpDX
 open SharpDX.DXGI
 open SharpDX.Direct3D
 open SharpDX.Direct3D12
+open SharpDX.D3DCompiler
 open Foom.Win32Internal
 
 #nowarn "9"
 #nowarn "42"
 
+[<Struct>]
+type Vertex =
+    {
+        Position: Vector3
+        Color: Vector4
+    }
+
 let tryCreateDevice (factory: Factory2) =
     factory.Adapters1
     |> Array.tryPick (fun adapter ->
         if not(adapter.Description1.Flags.HasFlag(AdapterFlags.Software)) then
-            let device = new Device(adapter, FeatureLevel.Level_12_1)
+            let device = new Device(adapter, FeatureLevel.Level_11_0)
             Some(device)
         else
             None 
@@ -109,6 +118,12 @@ let moveToNextFrame (cmdQueue: CommandQueue) (swapChain: DXGI.SwapChain3) (fence
 
     fenceValues.[frameIndex]
 
+let createDebug () =
+    let debugInterface = DebugInterface.Get()
+    let debugController = debugInterface.QueryInterface<Debug1>()
+    debugController.EnableGPUBasedValidation <- Mathematics.Interop.RawBool.op_Implicit(true)
+    debugController
+
 
 [<Sealed>]
 type Direct3D12Pipeline(width, height, hwnd: nativeint) =
@@ -121,6 +136,7 @@ type Direct3D12Pipeline(width, height, hwnd: nativeint) =
     let factory = new Factory4()
 
     let device =                createDevice factory
+    let debug =                 createDebug ()
     let cmdQueue =              createCommandQueue device
     let swapChain =             createSwapChain factory cmdQueue frameCount width height hwnd
 
@@ -131,6 +147,8 @@ type Direct3D12Pipeline(width, height, hwnd: nativeint) =
     let cmdAllocs =             createCommandAllocators device frameCount
     let fence =                 createFence device fenceValues frameIndex
     let fenceEvent =            createNativeEvent () // Create an event handle to use for frame synchronization.
+
+    let mutable vertexBufferView = VertexBufferView()
 
     /// Prepare to render the next frame.
     member __.MoveToNextFrame () =
@@ -163,6 +181,87 @@ type Direct3D12Pipeline(width, height, hwnd: nativeint) =
 
 
     member this.LoadAssets() =
+
+        // Create an empty root signature.
+        let rootSignatureDesc = RootSignatureDescription(Flags = RootSignatureFlags.AllowInputAssemblerInputLayout)
+        let rootSignatureBlob = rootSignatureDesc.Serialize()
+        let rootSignatureDataPointer = DataPointer(rootSignatureBlob.BufferPointer, int rootSignatureBlob.BufferSize)
+        let rootSignature = device.CreateRootSignature(rootSignatureDataPointer)
+
+        // Create the pipeline state, which includes compiling and loading shaders.
+        let shaderFlags = ShaderFlags.Debug ||| ShaderFlags.SkipOptimization
+        let vertexShader = ShaderBytecode.CompileFromFile("default.hlsl", "VSMain", "vs_5_0", shaderFlags)
+        let pixelShader = ShaderBytecode.CompileFromFile("default.hlsl", "PSMain", "ps_5_0", shaderFlags)
+
+        // Define the vertex input layout.
+        let inputElements =
+            [|
+                InputElement("POSITION", 0, Format.R32G32B32_Float, 0, 0, InputClassification.PerVertexData, 0)
+                InputElement("COLOR", 0, Format.R32G32B32A32_Float, 0, 12, InputClassification.PerVertexData, 0)
+            |]
+
+        // Describe and create the graphics pipeline state object (PSO).
+        let psoDesc =
+            GraphicsPipelineStateDescription(
+                InputLayout = InputLayoutDescription(inputElements),
+                RootSignature = rootSignature,
+                VertexShader = SharpDX.Direct3D12.ShaderBytecode.op_Implicit(vertexShader.Bytecode.Data),
+                PixelShader = SharpDX.Direct3D12.ShaderBytecode.op_Implicit(pixelShader.Bytecode.Data),
+                RasterizerState = RasterizerStateDescription(),
+                BlendState = BlendStateDescription(),
+                SampleMask = Int32.MaxValue,
+                PrimitiveTopologyType = PrimitiveTopologyType.Triangle,
+                RenderTargetCount = 1
+            )
+
+        psoDesc.DepthStencilState.IsDepthEnabled <- Mathematics.Interop.RawBool.op_Implicit(false)
+        psoDesc.DepthStencilState.IsStencilEnabled <- Mathematics.Interop.RawBool.op_Implicit(false)
+        psoDesc.SampleDescription.Count <- 1
+        psoDesc.RenderTargetFormats.[0] <- Format.R8G8B8A8_UNorm
+
+        // Create pipeline state.
+        let pipelineState = device.CreateGraphicsPipelineState(psoDesc)
+
+        // Create the command list.
+        let commandList = device.CreateCommandList(CommandListType.Direct, cmdAllocs.[frameIndex], pipelineState)
+
+        // Command lists are created in the recording state, but there is nothing
+        // to record yet. The main loop expects it to be closed, so close it now.
+        commandList.Close()
+
+        // Create the vertex buffer.
+        let aspectRatio = float32 (width / height)
+        let triangleVertices =
+            [|
+                { Position = Vector3(0.f, 0.25f * aspectRatio, 0.f); Color = Vector4(1.f, 0.f, 0.f, 1.f) }
+                { Position = Vector3(0.25f, -0.25f * aspectRatio, 0.f); Color = Vector4(0.f, 1.f, 0.f, 1.f) }
+                { Position = Vector3(-0.25f, -0.25f * aspectRatio, 0.f); Color = Vector4(0.f, 0.f, 1.f, 1.f) }
+            |]
+
+        let vertexBufferSize = Utilities.SizeOf(triangleVertices) |> int64
+
+        // Note: using upload heaps to transfer static data like vert buffers is not 
+        // recommended. Every time the GPU needs it, the upload heap will be marshalled 
+        // over. Please read up on Default Heap usage. An upload heap is used here for 
+        // code simplicity and because there are very few verts to actually transfer.
+        let vertexBuffer =
+            device.CreateCommittedResource(
+                HeapProperties(HeapType.Upload),
+                HeapFlags.None,
+                ResourceDescription.Buffer(vertexBufferSize),
+                ResourceStates.GenericRead
+            )
+
+        // Copy the triangle data to the vertex buffer.
+        let mapped = Span<Vertex>(vertexBuffer.Map(0).ToPointer(), int vertexBufferSize)
+        triangleVertices.CopyTo(mapped)
+        vertexBuffer.Unmap(0)
+
+        // Initialize the vertex buffer view.
+        vertexBufferView.BufferLocation <- vertexBuffer.GPUVirtualAddress
+        vertexBufferView.StrideInBytes <- sizeof<Vertex>
+        vertexBufferView.SizeInBytes <- int vertexBufferSize
+
         // Wait for the command list to execute; we are reusing the same command 
         // list in our main loop but for now, we just want to wait for setup to 
         // complete before continuing.

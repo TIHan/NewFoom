@@ -5,12 +5,16 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Content Include="default.hlsl">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Compile Include="Internal.fs" />
     <Compile Include="InternalD3D12.fs" />
     <Compile Include="Win32.fs" />
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="SharpDX.D3DCompiler" Version="4.1.0" />
     <PackageReference Include="SharpDX.Direct3D12" Version="4.1.0" />
   </ItemGroup>
 

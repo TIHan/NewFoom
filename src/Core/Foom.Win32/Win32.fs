@@ -65,6 +65,7 @@ type Win32Game (windowTitle: string, svGame: AbstractServerGame, clGame: Abstrac
         printfn "UpdateWindow Result: %A" <| UpdateWindow(hwnd)
 
         use dx12 = new Direct3D12Pipeline(1280, 720, hwnd)
+        dx12.LoadAssets()
 
         let mutable msg = Unchecked.defaultof<MSG>
         let mutable gl = GameLoop.create interval
