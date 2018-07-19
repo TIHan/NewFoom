@@ -45,7 +45,7 @@ type AbstractNetworkClientGame<'Event>(network: Network) =
 
     member this.GetBeforeDeserializedEvent() = client.GetBeforeDeserializedEvent()
 
-    override this.Update(time, interval) =
+    override this.Update(time, interval, _) =
         let mutable willQuit = false
         client.Update(interval, {
             new IClientUpdate with

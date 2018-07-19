@@ -100,8 +100,8 @@ type ClientGame(em: EntityManager, input: IInput, renderer: IRenderer, network) 
 
         | _ -> false
 
-    override __.Update(time, interval, _) = 
-        base.Update(time, interval) |> ignore
+    override __.Update(time, interval, inputEvents) = 
+        base.Update(time, interval, inputEvents) |> ignore
 
         if renderTime.IsSome then
             renderTime <- Some(renderTime.Value + interval)
