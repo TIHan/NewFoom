@@ -21,20 +21,13 @@ type Vertex =
         Color: Vector4
     }
 
-let tryCreateDevice (factory: Factory2) =
-    factory.Adapters1
-    |> Array.tryPick (fun adapter ->
-        if not(adapter.Description1.Flags.HasFlag(AdapterFlags.Software)) then
-            let device = new Device(adapter, FeatureLevel.Level_11_0)
-            Some(device)
-        else
-            None 
-    )
-
-let createDevice factory =
-    match tryCreateDevice factory with
-    | Some(device) -> device
-    | _ -> failwith "Can't find DirectX12 device."
+let createDevice () =
+    let debugInterface = DebugInterface.Get()
+    debugInterface.EnableDebugLayer()
+    let debugController = debugInterface.QueryInterface<Debug1>()
+    debugController.EnableGPUBasedValidation <- Mathematics.Interop.RawBool.op_Implicit(true)
+ //   debugController
+    new Device(null, FeatureLevel.Level_11_0)
 
 let createCommandQueue (device: Device) =
     // Describe and create the command queue.
@@ -118,11 +111,11 @@ let moveToNextFrame (cmdQueue: CommandQueue) (swapChain: DXGI.SwapChain3) (fence
 
     fenceValues.[frameIndex]
 
-let createDebug () =
-    let debugInterface = DebugInterface.Get()
-    let debugController = debugInterface.QueryInterface<Debug1>()
-    debugController.EnableGPUBasedValidation <- Mathematics.Interop.RawBool.op_Implicit(true)
-    debugController
+//let createDebug () =
+//    let debugInterface = DebugInterface.Get()
+//    let debugController = debugInterface.QueryInterface<Debug1>()
+//    debugController.EnableGPUBasedValidation <- Mathematics.Interop.RawBool.op_Implicit(true)
+//    debugController
 
 
 [<Sealed>]
@@ -135,8 +128,8 @@ type Direct3D12Pipeline(width, height, hwnd: nativeint) =
     let fenceValues = Array.zeroCreate<int64> frameCount
     let factory = new Factory4()
 
-    let device =                createDevice factory
-    let debug =                 createDebug ()
+    let device =                createDevice ()
+    //let debug =                 createDebug ()
     let cmdQueue =              createCommandQueue device
     let swapChain =             createSwapChain factory cmdQueue frameCount width height hwnd
 
@@ -185,8 +178,7 @@ type Direct3D12Pipeline(width, height, hwnd: nativeint) =
         // Create an empty root signature.
         let rootSignatureDesc = RootSignatureDescription(Flags = RootSignatureFlags.AllowInputAssemblerInputLayout)
         let rootSignatureBlob = rootSignatureDesc.Serialize()
-        let rootSignatureDataPointer = DataPointer(rootSignatureBlob.BufferPointer, int rootSignatureBlob.BufferSize)
-        let rootSignature = device.CreateRootSignature(rootSignatureDataPointer)
+        let rootSignature = device.CreateRootSignature(Blob.op_Implicit(rootSignatureBlob))
 
         // Create the pipeline state, which includes compiling and loading shaders.
         let shaderFlags = ShaderFlags.Debug ||| ShaderFlags.SkipOptimization
@@ -207,8 +199,8 @@ type Direct3D12Pipeline(width, height, hwnd: nativeint) =
                 RootSignature = rootSignature,
                 VertexShader = SharpDX.Direct3D12.ShaderBytecode.op_Implicit(vertexShader.Bytecode.Data),
                 PixelShader = SharpDX.Direct3D12.ShaderBytecode.op_Implicit(pixelShader.Bytecode.Data),
-                RasterizerState = RasterizerStateDescription(),
-                BlendState = BlendStateDescription(),
+                RasterizerState = RasterizerStateDescription.Default(),
+                BlendState = BlendStateDescription.Default(),
                 SampleMask = Int32.MaxValue,
                 PrimitiveTopologyType = PrimitiveTopologyType.Triangle,
                 RenderTargetCount = 1
