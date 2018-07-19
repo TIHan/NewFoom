@@ -10,8 +10,7 @@ open Foom.Win32Internal
 #nowarn "9"
 
 open System.Collections.Generic
-
-
+open Foom.InternalD3D12
 
 [<Sealed>]
 type Win32Game (windowTitle: string, svGame: AbstractServerGame, clGame: AbstractClientGame, interval) =
@@ -64,6 +63,8 @@ type Win32Game (windowTitle: string, svGame: AbstractServerGame, clGame: Abstrac
 
         printfn "ShowWindow Result: %A" <| ShowWindow(hwnd, 1)
         printfn "UpdateWindow Result: %A" <| UpdateWindow(hwnd)
+
+        use dx12 = new Direct3D12Pipeline(1280, 720, hwnd)
 
         let mutable msg = Unchecked.defaultof<MSG>
         let mutable gl = GameLoop.create interval

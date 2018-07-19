@@ -64,9 +64,9 @@ Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "Foom.Game.Network", "src\Ga
 EndProject
 Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "Foom.Game.PerfTests", "src\Foom.Game.PerfTests\Foom.Game.PerfTests.fsproj", "{5F68A82D-BB82-4586-B57B-2B4EEDC97D91}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Foom.Win32", "src\Core\Foom.Win32\Foom.Win32.fsproj", "{98A37FB2-0F91-40C9-8ADB-6ACE4EBCC6A4}"
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "Foom.Win32", "src\Core\Foom.Win32\Foom.Win32.fsproj", "{98A37FB2-0F91-40C9-8ADB-6ACE4EBCC6A4}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Foom.Win32.Test", "src\Core\Foom.Win32.Test\Foom.Win32.Test.fsproj", "{81B27D2F-C143-43B6-B5EF-3EB0B2F1A2BF}"
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "Foom.Win32.Test", "src\Core\Foom.Win32.Test\Foom.Win32.Test.fsproj", "{81B27D2F-C143-43B6-B5EF-3EB0B2F1A2BF}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -99,6 +99,7 @@ type WPARAM = UINT
 type LPARAM = int
 type LONG = int
 type LRESULT = nativeint
+type HANDLE = nativeint
 
 [<Struct>]
 type WNDCLASSEXW =
@@ -179,6 +180,21 @@ extern LRESULT DispatchMessage(MSG& lpmsg)
 
 [<DllImport("user32.dll")>]
 extern BOOL PeekMessage(LPMSG lpMsg, HWND hWnd, UINT wMsgFilterMin, UINT wMsgFilterMax, UINT wRemoveMsg)
+
+[<DllImport("kernel32.dll")>]
+extern DWORD WaitForSingleObjectEx(HANDLE hHandle, DWORD dwMilliseconds, BOOL bAlertable)
+
+[<Struct>]
+type SECURITY_ATTRIBUTES =
+
+    val mutable nLength : DWORD
+    val mutable lpSecurityDescriptor : LPVOID
+    val mutable bInheritHandle : BOOL
+
+type LPSECURITY_ATTRIBUTES = nativeptr<SECURITY_ATTRIBUTES>
+
+[<DllImport("kernel32.dll")>]
+extern HANDLE CreateEventW(LPSECURITY_ATTRIBUTES lpEventAttributes, BOOL bManualReset, BOOL bInitialState, LPCWSTR lpName)
 
 [<UnmanagedFunctionPointer(CallingConvention.Cdecl)>]
 type WndProcDelegate = delegate of HWND * UINT * nativeint * nativeint -> nativeint
