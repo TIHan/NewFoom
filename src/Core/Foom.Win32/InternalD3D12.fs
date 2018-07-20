@@ -24,9 +24,8 @@ type Vertex =
 let createDevice () =
     let debugInterface = DebugInterface.Get()
     debugInterface.EnableDebugLayer()
-    let debugController = debugInterface.QueryInterface<Debug1>()
-    debugController.EnableGPUBasedValidation <- Mathematics.Interop.RawBool.op_Implicit(true)
- //   debugController
+   // let debugController = debugInterface.QueryInterface<Debug1>()
+   // debugController.EnableGPUBasedValidation <- Mathematics.Interop.RawBool.op_Implicit(true)
     new Device(null, FeatureLevel.Level_11_0)
 
 let createCommandQueue (device: Device) =
@@ -76,7 +75,7 @@ let createRenderTargets (device: Device) (swapChain: SwapChain3) (rtvHeap: Descr
         renderTargets.[i] <- rt
         rtvHandle <- rtvHandle + rtvHeapDescriptorSize
 
-    renderTargets
+    (renderTargets, rtvHeapDescriptorSize)
 
 let createCommandAllocators (device: Device) frameCount =
     let cmdAllocs = Array.zeroCreate<CommandAllocator> frameCount
@@ -98,25 +97,55 @@ let createNativeEvent () =
         failwith "Unable to create event."
     evt
 
-let moveToNextFrame (cmdQueue: CommandQueue) (swapChain: DXGI.SwapChain3) (fence: Fence) fenceEvent (fenceValues: int64 []) (frameIndex: byref<int>) =
-    let fenceValue = fenceValues.[frameIndex]
+let createRootSignature (device: Device) =
+    // Create an empty root signature.
+    let rootSignatureDesc = RootSignatureDescription(Flags = RootSignatureFlags.AllowInputAssemblerInputLayout)
+    let rootSignatureBlob = rootSignatureDesc.Serialize()
+    device.CreateRootSignature(Blob.op_Implicit(rootSignatureBlob))
 
-    cmdQueue.Signal(fence, fenceValue)
+let createPipelineState (device: Device) (rootSignature: RootSignature) =
+    // Create the pipeline state, which includes compiling and loading shaders.
+    let shaderFlags = ShaderFlags.Debug ||| ShaderFlags.SkipOptimization
+    let vertexShader = ShaderBytecode.CompileFromFile("default.hlsl", "VSMain", "vs_5_0", shaderFlags)
+    let pixelShader = ShaderBytecode.CompileFromFile("default.hlsl", "PSMain", "ps_5_0", shaderFlags)
 
-    frameIndex <- swapChain.CurrentBackBufferIndex
+    // Define the vertex input layout.
+    let inputElements =
+        [|
+            InputElement("POSITION", 0, Format.R32G32B32_Float, 0, 0, InputClassification.PerVertexData, 0)
+            InputElement("COLOR", 0, Format.R32G32B32A32_Float, 0, 12, InputClassification.PerVertexData, 0)
+        |]
 
-    if (fence.CompletedValue < fenceValues.[frameIndex]) then
-        fence.SetEventOnCompletion(fenceValues.[frameIndex], fenceEvent)
-        WaitForSingleObjectEx(fenceEvent, 0xFFFFFFFFu, 0uy) |> ignore
+    // Describe and create the graphics pipeline state object (PSO).
+    let psoDesc =
+        GraphicsPipelineStateDescription(
+            InputLayout = InputLayoutDescription(inputElements),
+            RootSignature = rootSignature,
+            VertexShader = SharpDX.Direct3D12.ShaderBytecode.op_Implicit(vertexShader.Bytecode.Data),
+            PixelShader = SharpDX.Direct3D12.ShaderBytecode.op_Implicit(pixelShader.Bytecode.Data),
+            RasterizerState = RasterizerStateDescription.Default(),
+            BlendState = BlendStateDescription.Default(),
+            SampleMask = Int32.MaxValue,
+            PrimitiveTopologyType = PrimitiveTopologyType.Triangle,
+            RenderTargetCount = 1
+        )
 
-    fenceValues.[frameIndex]
+    psoDesc.DepthStencilState.IsDepthEnabled <- Mathematics.Interop.RawBool.op_Implicit(false)
+    psoDesc.DepthStencilState.IsStencilEnabled <- Mathematics.Interop.RawBool.op_Implicit(false)
+    psoDesc.SampleDescription.Count <- 1
+    psoDesc.RenderTargetFormats.[0] <- Format.R8G8B8A8_UNorm
 
-//let createDebug () =
-//    let debugInterface = DebugInterface.Get()
-//    let debugController = debugInterface.QueryInterface<Debug1>()
-//    debugController.EnableGPUBasedValidation <- Mathematics.Interop.RawBool.op_Implicit(true)
-//    debugController
+    // Create pipeline state.
+    device.CreateGraphicsPipelineState(psoDesc)
 
+let createCommandList (device: Device) (cmdAllocs: CommandAllocator []) frameIndex (pipelineState: PipelineState) =
+    // Create the command list.
+    let commandList = device.CreateCommandList(CommandListType.Direct, cmdAllocs.[frameIndex], pipelineState)
+
+    // Command lists are created in the recording state, but there is nothing
+    // to record yet. The main loop expects it to be closed, so close it now.
+    commandList.Close()
+    commandList
 
 [<Sealed>]
 type Direct3D12Pipeline(width, height, hwnd: nativeint) =
@@ -127,19 +156,23 @@ type Direct3D12Pipeline(width, height, hwnd: nativeint) =
     let frameCount = 2
     let fenceValues = Array.zeroCreate<int64> frameCount
     let factory = new Factory4()
+    let viewPort = Mathematics.Interop.RawViewportF(Width = float32 width, Height = float32 height)
+    let scissorRect = Mathematics.Interop.RawRectangle(0, 0, width, height)
 
-    let device =                createDevice ()
-    //let debug =                 createDebug ()
-    let cmdQueue =              createCommandQueue device
-    let swapChain =             createSwapChain factory cmdQueue frameCount width height hwnd
+    let device =                                    createDevice ()
+    let cmdQueue =                                  createCommandQueue device
+    let swapChain =                                 createSwapChain factory cmdQueue frameCount width height hwnd
 
-    let mutable frameIndex =    swapChain.CurrentBackBufferIndex
+    let mutable frameIndex =                        swapChain.CurrentBackBufferIndex
 
-    let rtvHeap =               createDescriptorHeap device frameCount
-    let renderTargets =         createRenderTargets device swapChain rtvHeap frameCount
-    let cmdAllocs =             createCommandAllocators device frameCount
-    let fence =                 createFence device fenceValues frameIndex
-    let fenceEvent =            createNativeEvent () // Create an event handle to use for frame synchronization.
+    let rtvHeap =                                   createDescriptorHeap device frameCount
+    let renderTargets, rtvDescriptorSize =          createRenderTargets device swapChain rtvHeap frameCount
+    let cmdAllocs =                                 createCommandAllocators device frameCount
+    let fence =                                     createFence device fenceValues frameIndex
+    let fenceEvent =                                createNativeEvent () // Create an event handle to use for frame synchronization.
+    let rootSignature =                             createRootSignature device
+    let pipelineState =                             createPipelineState device rootSignature
+    let cmdList =                                   createCommandList device cmdAllocs frameIndex pipelineState
 
     let mutable vertexBufferView = VertexBufferView()
 
@@ -174,53 +207,6 @@ type Direct3D12Pipeline(width, height, hwnd: nativeint) =
 
 
     member this.LoadAssets() =
-
-        // Create an empty root signature.
-        let rootSignatureDesc = RootSignatureDescription(Flags = RootSignatureFlags.AllowInputAssemblerInputLayout)
-        let rootSignatureBlob = rootSignatureDesc.Serialize()
-        let rootSignature = device.CreateRootSignature(Blob.op_Implicit(rootSignatureBlob))
-
-        // Create the pipeline state, which includes compiling and loading shaders.
-        let shaderFlags = ShaderFlags.Debug ||| ShaderFlags.SkipOptimization
-        let vertexShader = ShaderBytecode.CompileFromFile("default.hlsl", "VSMain", "vs_5_0", shaderFlags)
-        let pixelShader = ShaderBytecode.CompileFromFile("default.hlsl", "PSMain", "ps_5_0", shaderFlags)
-
-        // Define the vertex input layout.
-        let inputElements =
-            [|
-                InputElement("POSITION", 0, Format.R32G32B32_Float, 0, 0, InputClassification.PerVertexData, 0)
-                InputElement("COLOR", 0, Format.R32G32B32A32_Float, 0, 12, InputClassification.PerVertexData, 0)
-            |]
-
-        // Describe and create the graphics pipeline state object (PSO).
-        let psoDesc =
-            GraphicsPipelineStateDescription(
-                InputLayout = InputLayoutDescription(inputElements),
-                RootSignature = rootSignature,
-                VertexShader = SharpDX.Direct3D12.ShaderBytecode.op_Implicit(vertexShader.Bytecode.Data),
-                PixelShader = SharpDX.Direct3D12.ShaderBytecode.op_Implicit(pixelShader.Bytecode.Data),
-                RasterizerState = RasterizerStateDescription.Default(),
-                BlendState = BlendStateDescription.Default(),
-                SampleMask = Int32.MaxValue,
-                PrimitiveTopologyType = PrimitiveTopologyType.Triangle,
-                RenderTargetCount = 1
-            )
-
-        psoDesc.DepthStencilState.IsDepthEnabled <- Mathematics.Interop.RawBool.op_Implicit(false)
-        psoDesc.DepthStencilState.IsStencilEnabled <- Mathematics.Interop.RawBool.op_Implicit(false)
-        psoDesc.SampleDescription.Count <- 1
-        psoDesc.RenderTargetFormats.[0] <- Format.R8G8B8A8_UNorm
-
-        // Create pipeline state.
-        let pipelineState = device.CreateGraphicsPipelineState(psoDesc)
-
-        // Create the command list.
-        let commandList = device.CreateCommandList(CommandListType.Direct, cmdAllocs.[frameIndex], pipelineState)
-
-        // Command lists are created in the recording state, but there is nothing
-        // to record yet. The main loop expects it to be closed, so close it now.
-        commandList.Close()
-
         // Create the vertex buffer.
         let aspectRatio = float32 (width / height)
         let triangleVertices =
@@ -258,6 +244,54 @@ type Direct3D12Pipeline(width, height, hwnd: nativeint) =
         // list in our main loop but for now, we just want to wait for setup to 
         // complete before continuing.
         this.WaitForGpu();
+
+    member __.PopulateCommandList() =
+        let cmdAlloc = cmdAllocs.[frameIndex]
+
+        // Command list allocators can only be reset when the associated 
+        // command lists have finished execution on the GPU; apps should use 
+        // fences to determine GPU execution progress.
+        cmdAlloc.Reset()
+
+        // However, when ExecuteCommandList() is called on a particular command 
+        // list, that command list can then be reset at any time and must be before 
+        // re-recording.
+        cmdList.Reset(cmdAlloc, pipelineState)
+
+        // Set necessary state.
+        cmdList.SetGraphicsRootSignature(rootSignature)
+        cmdList.SetViewports([|viewPort|])
+        cmdList.SetScissorRectangles([|scissorRect|])
+
+        // Indicate that the back buffer will be used as a render target.
+        cmdList.ResourceBarrierTransition(renderTargets.[frameIndex], ResourceStates.Present, ResourceStates.RenderTarget)
+
+        let mutable rtvHandle = rtvHeap.CPUDescriptorHandleForHeapStart
+        rtvHandle <- rtvHandle + (frameIndex * rtvDescriptorSize)
+        cmdList.SetRenderTargets([|rtvHandle|], Nullable())
+
+        // Record commands.
+        cmdList.ClearRenderTargetView(rtvHandle, Mathematics.Interop.RawColor4(0.f, 0.2f, 0.4f, 1.f), 0, null)
+        cmdList.PrimitiveTopology <- SharpDX.Direct3D.PrimitiveTopology.TriangleList
+        cmdList.SetVertexBuffer(0, vertexBufferView)
+        cmdList.DrawInstanced(3, 1, 0, 0)
+
+        // Indicate that the back buffer will now be used to present.
+        cmdList.ResourceBarrierTransition(renderTargets.[frameIndex], ResourceStates.RenderTarget, ResourceStates.Present)
+
+        cmdList.Close()
+
+    member this.Render() =
+        // Record all the commands we need to render the scene into the command list.
+        this.PopulateCommandList()
+
+        // Execute the command list.
+        cmdQueue.ExecuteCommandList(cmdList)
+
+        // Present the frame.
+        swapChain.Present(1, PresentFlags.None) |> ignore
+
+        this.MoveToNextFrame()
 
     interface IDisposable with
 
