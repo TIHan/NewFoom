@@ -41,6 +41,7 @@ let createSwapChain factory cmdQueue frameCount width height (hwnd: nativeint) =
             Width = width,
             Height = height,
             Format = DXGI.Format.R8G8B8A8_UNorm,
+            Usage = Usage.RenderTargetOutput,
             SwapEffect = DXGI.SwapEffect.FlipDiscard
         )
 
@@ -113,7 +114,7 @@ let createPipelineState (device: Device) (rootSignature: RootSignature) =
     let inputElements =
         [|
             InputElement("POSITION", 0, Format.R32G32B32_Float, 0, 0, InputClassification.PerVertexData, 0)
-            InputElement("COLOR", 0, Format.R32G32B32A32_Float, 0, 12, InputClassification.PerVertexData, 0)
+            InputElement("COLOR", 0, Format.R32G32B32A32_Float, 12, 0, InputClassification.PerVertexData, 0)
         |]
 
     // Describe and create the graphics pipeline state object (PSO).
@@ -127,7 +128,8 @@ let createPipelineState (device: Device) (rootSignature: RootSignature) =
             BlendState = BlendStateDescription.Default(),
             SampleMask = Int32.MaxValue,
             PrimitiveTopologyType = PrimitiveTopologyType.Triangle,
-            RenderTargetCount = 1
+            RenderTargetCount = 1,
+            DepthStencilFormat = Format.D32_Float
         )
 
     psoDesc.DepthStencilState.IsDepthEnabled <- Mathematics.Interop.RawBool.op_Implicit(false)
@@ -237,7 +239,7 @@ type Direct3D12Pipeline(width, height, hwnd: nativeint) =
 
         // Initialize the vertex buffer view.
         vertexBufferView.BufferLocation <- vertexBuffer.GPUVirtualAddress
-        vertexBufferView.StrideInBytes <- sizeof<Vertex>
+        vertexBufferView.StrideInBytes <- Utilities.SizeOf<Vertex>() //sizeof<Vertex>
         vertexBufferView.SizeInBytes <- int vertexBufferSize
 
         // Wait for the command list to execute; we are reusing the same command 
