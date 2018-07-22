@@ -5,8 +5,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Content Include="default.hlsl">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Compile Include="Library.fs" />
   </ItemGroup>
+
+  <ItemGroup />
 
   <ItemGroup>
     <PackageReference Include="SharpDX.D3DCompiler" Version="4.1.0" />

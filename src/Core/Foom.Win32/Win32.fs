@@ -10,7 +10,6 @@ open Foom.Win32Internal
 #nowarn "9"
 
 open System.Collections.Generic
-open Foom.InternalD3D12
 
 let private createWin32Window (windowTitle: string) (del: WndProcDelegate) =
     use title = fixed (System.Text.Encoding.UTF8.GetBytes(windowTitle))
@@ -64,17 +63,20 @@ type Win32Game (windowTitle: string, svGame: AbstractServerGame, clGame: Abstrac
 
     let del = WndProcDelegate(Win32Game.WndProc)
     let hwnd = createWin32Window windowTitle del
-    let dx12 = new Direct3D12Pipeline(1280, 720, hwnd)
 
     // Store this so it doesn't get collected cause a System.ExecutionEngineException.
     member val private WndProcDelegate = del
 
-    static member WndProc hWnd msg wParam lParam =
+    member __.Hwnd = hwnd
+
+    member __.Width = 1280
+
+    member __.Height = 720
+
+    static member private WndProc hWnd msg wParam lParam =
         DefWindowProc(hWnd, msg, wParam, lParam)
 
     member __.Start() =
-        dx12.LoadAssets()
-
         let mutable msg = Unchecked.defaultof<MSG>
         let mutable gl = GameLoop.create interval
         let inputs = ResizeArray()
@@ -112,6 +114,5 @@ type Win32Game (windowTitle: string, svGame: AbstractServerGame, clGame: Abstrac
                         let time = TimeSpan.FromTicks(time)
 
                         clGame.Render(time, deltaTime)
-                        dx12.Render()
                     )
                     gl
