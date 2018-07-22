@@ -68,6 +68,8 @@ Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "Foom.Win32", "src\Core\Foom
 EndProject
 Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "Foom.Win32.Test", "src\Core\Foom.Win32.Test\Foom.Win32.Test.fsproj", "{81B27D2F-C143-43B6-B5EF-3EB0B2F1A2BF}"
 EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Foom.Direct3D12", "src\Core\Foom.Direct3D12\Foom.Direct3D12.fsproj", "{595FAE24-1741-45AA-ACAA-CDBC5978F469}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -174,6 +176,10 @@ Global
 		{81B27D2F-C143-43B6-B5EF-3EB0B2F1A2BF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{81B27D2F-C143-43B6-B5EF-3EB0B2F1A2BF}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{81B27D2F-C143-43B6-B5EF-3EB0B2F1A2BF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{595FAE24-1741-45AA-ACAA-CDBC5978F469}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{595FAE24-1741-45AA-ACAA-CDBC5978F469}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{595FAE24-1741-45AA-ACAA-CDBC5978F469}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{595FAE24-1741-45AA-ACAA-CDBC5978F469}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -206,6 +212,7 @@ Global
 		{818AFAC3-8AC5-40D9-876D-3D17E72F558E} = {4B301C9A-5968-482A-9881-2DEBEE3F01AF}
 		{98A37FB2-0F91-40C9-8ADB-6ACE4EBCC6A4} = {33DEB521-F18C-467E-95E2-710E37167FB5}
 		{81B27D2F-C143-43B6-B5EF-3EB0B2F1A2BF} = {33DEB521-F18C-467E-95E2-710E37167FB5}
+		{595FAE24-1741-45AA-ACAA-CDBC5978F469} = {33DEB521-F18C-467E-95E2-710E37167FB5}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {2782F051-7E65-4A50-AB2B-45D308458EA2}

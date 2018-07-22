@@ -92,12 +92,6 @@ let createFence (device: Device) (fenceValues: int64 []) (frameIndex: int) =
     fenceValues.[frameIndex] <- fenceValues.[frameIndex] + 1L
     fence
 
-let createNativeEvent () =
-    let evt = CreateEventW(NativePtr.ofNativeInt IntPtr.Zero, 0uy, 0uy, NativePtr.ofNativeInt IntPtr.Zero)
-    if (evt = IntPtr.Zero) then
-        failwith "Unable to create event."
-    evt
-
 let createRootSignature (device: Device) =
     // Create an empty root signature.
     let rootSignatureDesc = RootSignatureDescription(Flags = RootSignatureFlags.AllowInputAssemblerInputLayout)
@@ -171,7 +165,7 @@ type Direct3D12Pipeline(width, height, hwnd: nativeint) =
     let renderTargets, rtvDescriptorSize =          createRenderTargets device swapChain rtvHeap frameCount
     let cmdAllocs =                                 createCommandAllocators device frameCount
     let fence =                                     createFence device fenceValues frameIndex
-    let fenceEvent =                                createNativeEvent () // Create an event handle to use for frame synchronization.
+    let fenceEvent =                                new AutoResetEvent(false) // Create an event handle to use for frame synchronization.
     let rootSignature =                             createRootSignature device
     let pipelineState =                             createPipelineState device rootSignature
     let cmdList =                                   createCommandList device cmdAllocs frameIndex pipelineState
@@ -189,8 +183,8 @@ type Direct3D12Pipeline(width, height, hwnd: nativeint) =
 
         // If the next frame is not ready to be rendered yet, wait until it is ready.
         if (fence.CompletedValue < fenceValues.[frameIndex]) then
-            fence.SetEventOnCompletion(fenceValues.[frameIndex], fenceEvent)
-            WaitForSingleObjectEx(fenceEvent, 0xFFFFFFFFu (* INFINITE *), 0uy (* FALSE *)) |> ignore
+            fence.SetEventOnCompletion(fenceValues.[frameIndex], fenceEvent.SafeWaitHandle.DangerousGetHandle())
+            WaitForSingleObjectEx(fenceEvent.SafeWaitHandle.DangerousGetHandle(), 0xFFFFFFFFu (* INFINITE *), 0uy (* FALSE *)) |> ignore
 
         // Set the fence value for the next frame.
         fenceValues.[frameIndex] <- fenceValue + 1L
@@ -201,8 +195,8 @@ type Direct3D12Pipeline(width, height, hwnd: nativeint) =
         cmdQueue.Signal(fence, fenceValues.[frameIndex])
 
         // Wait until the fence has been processed.
-        fence.SetEventOnCompletion(fenceValues.[frameIndex], fenceEvent)
-        WaitForSingleObjectEx(fenceEvent, 0xFFFFFFFFu (* INFINITE *), 0uy (* FALSE *)) |> ignore
+        fence.SetEventOnCompletion(fenceValues.[frameIndex], fenceEvent.SafeWaitHandle.DangerousGetHandle())
+        WaitForSingleObjectEx(fenceEvent.SafeWaitHandle.DangerousGetHandle(), 0xFFFFFFFFu (* INFINITE *), 0uy (* FALSE *)) |> ignore
 
         // Increment the fence value for the current frame.
         fenceValues.[frameIndex] <- fenceValues.[frameIndex] + 1L
