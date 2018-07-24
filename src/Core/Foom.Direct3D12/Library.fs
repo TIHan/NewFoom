@@ -95,10 +95,101 @@ module private Helpers =
         fence
 
     let createRootSignature (device: Device) =
-        // Create an empty root signature.
-        let rootSignatureDesc = RootSignatureDescription(Flags = RootSignatureFlags.AllowInputAssemblerInputLayout)
+        let range = 
+            DescriptorRange(
+                RangeType = DescriptorRangeType.ShaderResourceView,
+                DescriptorCount = 1,
+                BaseShaderRegister = 0,
+                RegisterSpace = 0
+                //Flags = DescriptorRangeFlags.DataStatic
+            )
+        let rootParameter = RootParameter(ShaderVisibility.Pixel, [|range|])
+        let samplerDesc = 
+            StaticSamplerDescription(
+                Filter = Filter.MinMagMipPoint,
+                AddressU = TextureAddressMode.Border,
+                AddressV = TextureAddressMode.Border,
+                AddressW = TextureAddressMode.Border,
+                MipLODBias = 0.f,
+                MaxAnisotropy = 0,
+                ComparisonFunc = Comparison.Never,
+                BorderColor = StaticBorderColor.TransparentBlack,
+                MinLOD = 0.f,
+                MaxLOD = Single.MaxValue,
+                ShaderRegister = 0,
+                RegisterSpace = 0,
+                ShaderVisibility = ShaderVisibility.Pixel
+            )
+        let rootSignatureDesc = RootSignatureDescription(RootSignatureFlags.AllowInputAssemblerInputLayout, [|rootParameter|], [|samplerDesc|])
         let rootSignatureBlob = rootSignatureDesc.Serialize()
         device.CreateRootSignature(Blob.op_Implicit(rootSignatureBlob))
+
+    let createTexture (device: Device) (cmdList: GraphicsCommandList) =
+        // Describe and create a Texture2D.
+        let textureDesc =
+            ResourceDescription(
+                MipLevels = 1s,
+                Format = Format.R8G8B8A8_UNorm,
+                Width = 256L,
+                Height = 256,
+                Flags = ResourceFlags.None,
+                DepthOrArraySize = 1s,
+                Dimension = ResourceDimension.Texture2D
+            )
+
+        textureDesc.SampleDescription.Count <- 1
+        textureDesc.SampleDescription.Quality <- 0
+        
+        let texture = device.CreateCommittedResource(HeapProperties(HeapType.Default), HeapFlags.None, textureDesc, ResourceStates.CopyDestination)
+
+        let uploadBufferSize = 
+            let mutable desc = texture.Description
+            let mutable requiredSize = 0L
+            device.GetCopyableFootprints(&desc, 0, 1, 0L, null, null, null, &requiredSize)
+            requiredSize
+
+        // Create the GPU upload buffer.
+        let textureUploadHeap = device.CreateCommittedResource(HeapProperties(HeapType.Upload), HeapFlags.None, ResourceDescription.Buffer(int64 uploadBufferSize), ResourceStates.GenericRead) 
+
+        let textureData =
+            let rowPitch = 256 * 4
+            let cellPitch = rowPitch >>> 3
+            let cellHeight = 256 >>> 3
+            let textureSize = rowPitch * 256
+            
+            let data = Array.zeroCreate textureSize
+            let mutable n = 0
+            while (n < textureSize) do
+                let x = n % rowPitch
+                let y = n % rowPitch
+                let i = x / cellPitch
+                let j = y / cellHeight
+
+                if i % 2 = j % 2 then
+                    data.[n] <- 0x00uy // r
+                    data.[n + 1] <- 0x00uy // g
+                    data.[n + 2] <- 0x00uy // b
+                    data.[n + 3] <- 0xffuy // a
+                else
+                    data.[n] <- 0xffuy
+                    data.[n + 1] <- 0xffuy
+                    data.[n + 2] <- 0xffuy
+                    data.[n + 3] <- 0xffuy
+
+                n <- n + 4
+
+            data
+        
+        // Copy data to the intermediate upload heap and then schedule a copy 
+        // from the upload heap to the Texture2D.
+        use ptr = fixed textureData
+        textureUploadHeap.WriteToSubresource(0, Nullable(), NativePtr.toNativeInt ptr, 4 * 256, textureData.Length)
+
+        cmdList.CopyTextureRegion(TextureCopyLocation(texture, 0), 0, 0, 0, TextureCopyLocation(textureUploadHeap, 0), Nullable())
+        cmdList.ResourceBarrierTransition(texture, ResourceStates.CopyDestination, ResourceStates.PixelShaderResource)
+
+        // TODO: Describe and create a srv for the texture
+        texture
 
     let createPipelineState (device: Device) (rootSignature: RootSignature) =
         // Create the pipeline state, which includes compiling and loading shaders.
