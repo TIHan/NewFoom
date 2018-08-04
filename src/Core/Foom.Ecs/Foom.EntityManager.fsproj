@@ -14,4 +14,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Foom.Core\Foom.Core.fsproj" />
   </ItemGroup>
+  <ItemGroup>
+    <PackageReference Update="FSharp.Core" Version="4.5.2" />
+  </ItemGroup>
 </Project>

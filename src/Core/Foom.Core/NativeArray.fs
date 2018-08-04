@@ -3,6 +3,7 @@
 open System
 open System.Collections.Generic
 open System.Runtime.InteropServices
+open System.Runtime.CompilerServices
 open FSharp.NativeInterop
 
 #nowarn "9"
@@ -40,9 +41,10 @@ type NativeArray<'T when 'T : unmanaged> =
             Length = length
         }
 
-
-    member inline this.Item
-        with get index = NativePtr.toByRef (NativePtr.add this.Buffer index)
+    member this.Item
+        with [<MethodImpl(MethodImplOptions.NoInlining)>] get index = 
+            &Unsafe.Add<'T>(&Unsafe.AsRef<'T>(NativePtr.toVoidPtr this.Buffer), int index)
+            //NativePtr.toByRef (NativePtr.add this.Buffer index)
 
     member inline this.ToSpan() =
         Span<'T>((this.Buffer |> NativePtr.toNativeInt).ToPointer(), this.Length * sizeof<'T>)

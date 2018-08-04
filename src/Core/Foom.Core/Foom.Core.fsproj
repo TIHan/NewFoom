@@ -34,10 +34,14 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="System.Memory" Version="4.4.0-preview1-25305-02" />
+    <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="4.5.1" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Message\" />
     <Folder Include="Serializer\" />
     <Folder Include="Packet\" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Update="FSharp.Core" Version="4.5.2" />
   </ItemGroup>
 </Project>
