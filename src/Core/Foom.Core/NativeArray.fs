@@ -15,7 +15,7 @@ module private NativeArrayHelpers =
     let inline assertLengthNonNegative length =
         if length < 0 then failwithf "Length cannot be negative. Length: %i" length
 
-[<Sealed;AllowNullLiteral>]
+[<Struct>]
 type NativeArray<'T when 'T : unmanaged> =
 
     val Buffer : nativeptr<'T>
@@ -32,7 +32,7 @@ type NativeArray<'T when 'T : unmanaged> =
         }
 
     new (narr: NativeArray<'T>, length) =
-        if narr = null then nullArg "narr"
+        if narr.Buffer |> NativePtr.toNativeInt = IntPtr.Zero then failwith "Buffer is zero."
         assertLengthNonNegative length
         {
             Buffer = 
@@ -41,10 +41,10 @@ type NativeArray<'T when 'T : unmanaged> =
             Length = length
         }
 
-    member this.Item
-        with [<MethodImpl(MethodImplOptions.NoInlining)>] get index = 
-            &Unsafe.Add<'T>(&Unsafe.AsRef<'T>(NativePtr.toVoidPtr this.Buffer), int index)
-            //NativePtr.toByRef (NativePtr.add this.Buffer index)
+    member inline this.Item
+        with get index = 
+            //&Unsafe.Add<'T>(&Unsafe.AsRef<'T>(NativePtr.toVoidPtr this.Buffer), int index)
+            NativePtr.toByRef (NativePtr.add this.Buffer index)
 
     member inline this.ToSpan() =
         Span<'T>((this.Buffer |> NativePtr.toNativeInt).ToPointer(), this.Length * sizeof<'T>)

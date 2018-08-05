@@ -162,8 +162,8 @@ and [<Sealed>] EntityManager(maxEntityAmount) =
         if lookup.TryGetValue (typeof<'T>, &bit) then
             let data = lookupType.[bit] :?> EntityLookupData<'T>
 
-            let count = data.Entities.Count
             let entities = data.Entities
+            let count = entities.Count
             let components = data.Components
 
             for i = 0 to count - 1 do
@@ -179,18 +179,18 @@ and [<Sealed>] EntityManager(maxEntityAmount) =
             let data1 = data1 :?> EntityLookupData<'T1>
             let data2 = data2 :?> EntityLookupData<'T2>
 
-            let count = data.Entities.Count
-            let entities = data.Entities.ToSpan()
+            let entities = data.Entities
+            let count = entities.Count
             let components1 = data1.Components
             let components2 = data2.Components
             let lookup1 = data1.IndexLookup
             let lookup2 = data2.IndexLookup
     
             for i = 0 to count - 1 do
-                let ent = entities.[i]
-    
-                let comp1Index = lookup1.[ent.Index]
-                let comp2Index = lookup2.[ent.Index]
+                let ent = &entities.[i]
+                let index = ent.Index
+                let comp1Index = lookup1.[index]
+                let comp2Index = lookup2.[index]
 
                 if comp1Index >= 0 && comp2Index >= 0 then
                     f.Invoke(ent, &components1.[comp1Index], &components2.[comp2Index])
@@ -214,8 +214,8 @@ and [<Sealed>] EntityManager(maxEntityAmount) =
             let data4 = data4 :?> EntityLookupData<'T4>
             let data5 = data5 :?> EntityLookupData<'T5>
 
-            let count = data.Entities.Count
             let entities = data.Entities
+            let count = entities.Count
             let components1 = data1.Components
             let components2 = data2.Components
             let components3 = data3.Components
@@ -228,13 +228,13 @@ and [<Sealed>] EntityManager(maxEntityAmount) =
             let lookup5 = data5.IndexLookup
     
             for i = 0 to count - 1 do
-                let ent = entities.[i]
-    
-                let comp1Index = lookup1.[ent.Index]
-                let comp2Index = lookup2.[ent.Index]
-                let comp3Index = lookup3.[ent.Index]
-                let comp4Index = lookup4.[ent.Index]
-                let comp5Index = lookup5.[ent.Index]
+                let ent = &entities.[i]
+                let index = ent.Index
+                let comp1Index = lookup1.[index]
+                let comp2Index = lookup2.[index]
+                let comp3Index = lookup3.[index]
+                let comp4Index = lookup4.[index]
+                let comp5Index = lookup5.[index]
 
                 if comp1Index >= 0 && comp2Index >= 0 && comp3Index >= 0 && comp4Index >= 0 && comp5Index >= 0 then
                     f.Invoke(ent, &components1.[comp1Index], &components2.[comp2Index], &components3.[comp3Index], &components4.[comp4Index], &components5.[comp5Index])
