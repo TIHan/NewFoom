@@ -35,9 +35,9 @@ module private Helpers =
         let desc = CommandQueueDescription(CommandListType.Direct)
         device.CreateCommandQueue(desc)
 
-    let createSwapChain factory cmdQueue frameCount width height (hwnd: nativeint) =
+    let createSwapChain (factory: Factory2) (cmdQueue: CommandQueue) frameCount width height (hwnd: nativeint) =
         // Describe and create the swap chain.
-        let swapChainDesc = 
+        let mutable swapChainDesc = 
             SwapChainDescription1(
                 BufferCount = frameCount,
                 Width = width,

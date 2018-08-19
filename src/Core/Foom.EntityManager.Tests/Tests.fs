@@ -20,20 +20,20 @@ let ``EntityManager - Simple Iteration`` () =
     let em = EntityManager(1024)
     em.RegisterComponent<TestComponent>()
 
-    let ent = em.Spawn()
-    //let test = em.Add<TestComponent>(ent)
-
-    //test.x <- 1
-    //test.y <- 2
-    //test.z <- 3
+    for i = 1 to 1024 do
+        let ent = em.Spawn()
+        em.Add<TestComponent>(ent, { x = 1; y = 2; z = 3 })
 
     let mutable happenedOnce = false
+    let mutable count = 0
 
     em.ForEach<TestComponent>(fun _ comp ->
         happenedOnce <- true
         Assert.Equal(1, comp.x)
         Assert.Equal(2, comp.y)
         Assert.Equal(3, comp.z)
+        count <- count + 1
     )
 
     Assert.True(happenedOnce)
+    Assert.Equal(1024, count)

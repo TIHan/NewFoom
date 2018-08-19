@@ -123,6 +123,7 @@ let main argv =
             let ent = queue.Dequeue()
            // em.Remove<TestComponent5>(ent)
             em.Destroy(ent)
+
         destroyEntityTime.Stop()
 
         printfn "Spawn 1000: %A" spawnEntityTime.Elapsed.TotalMilliseconds

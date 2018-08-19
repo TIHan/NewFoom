@@ -15,6 +15,8 @@ module private NativeArrayHelpers =
     let inline assertLengthNonNegative length =
         if length < 0 then failwithf "Length cannot be negative. Length: %i" length
 
+    let inline fastAdd<'T when 'T : unmanaged> (address: nativeptr<'T>) (offset: int32) = (# "add" address offset: nativeptr<'T> #)
+
 [<Struct>]
 type NativeArray<'T when 'T : unmanaged> =
 
@@ -24,10 +26,13 @@ type NativeArray<'T when 'T : unmanaged> =
     new (length) =
         assertLengthNonNegative length
         let size = sizeof<'T> * length
-        {
-            Buffer = 
+        let buffer =
+            if size = 0 then IntPtr.Zero |> NativePtr.ofNativeInt<'T>
+            else
                 Marshal.AllocHGlobal(size) 
                 |> NativePtr.ofNativeInt<'T>
+        {
+            Buffer = buffer
             Length = length
         }
 
@@ -41,7 +46,7 @@ type NativeArray<'T when 'T : unmanaged> =
             Length = length
         }
 
-    member inline this.Item
+    member this.Item
         with get index = 
             //&Unsafe.Add<'T>(&Unsafe.AsRef<'T>(NativePtr.toVoidPtr this.Buffer), int index)
             NativePtr.toByRef (NativePtr.add this.Buffer index)
@@ -58,6 +63,8 @@ type NativeArray<'T when 'T : unmanaged> =
             Marshal.FreeHGlobal(NativePtr.toNativeInt this.Buffer)
 
 module NativeArray =
+
+    let empty<'T when 'T : unmanaged> = new NativeArray<'T>(0) 
 
     let inline zeroCreate<'T when 'T : unmanaged> count =
         new NativeArray<'T> (count)
