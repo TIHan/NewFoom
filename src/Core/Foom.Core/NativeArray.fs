@@ -61,29 +61,3 @@ type NativeArray<'T when 'T : unmanaged> =
 
         member this.Dispose() =
             Marshal.FreeHGlobal(NativePtr.toNativeInt this.Buffer)
-
-module NativeArray =
-
-    let empty<'T when 'T : unmanaged> = new NativeArray<'T>(0) 
-
-    let inline zeroCreate<'T when 'T : unmanaged> count =
-        new NativeArray<'T> (count)
-
-    let inline init<'T when 'T : unmanaged> count f =
-        let arr = new NativeArray<'T>(count)
-
-        for i = 0 to arr.Length - 1 do
-            arr.[i] <- f i
-
-        arr
-
-    let inline iter<'T when 'T : unmanaged> f (arr: NativeArray<'T>) =
-        for i = 0 to arr.Length - 1 do
-            f arr.[i]
-
-    let inline iteri<'T when 'T : unmanaged> f (arr: NativeArray<'T>) =
-        for i = 0 to arr.Length - 1 do
-            f i arr.[i]
-
-    let inline resize<'T when 'T : unmanaged> length (narr: NativeArray<'T>) =
-        new NativeArray<'T>(narr, length)

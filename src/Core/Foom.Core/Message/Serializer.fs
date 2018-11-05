@@ -11,7 +11,7 @@ type internal Serializer(lookup: MessagePoolBase []) =
 
     let beforeSerializedEvents = ConcurrentDictionary<byte, Event<Message>>()
 
-    let buffer = NativeArray.zeroCreate<byte> 65536
+    let buffer = new NativeArray<byte>(65536)
     let mutable nextSeqId = 0us
 
     member __.GetBeforeSerializedEvent(typeId: byte) =

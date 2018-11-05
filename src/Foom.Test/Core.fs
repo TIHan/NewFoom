@@ -355,7 +355,7 @@ type Snapshot =
     val mutable playerCount : int
     val mutable playerSnapshots : NativeArray<PlayerSnapshot>
 
-    new () = { snapshotId = 0L; serverTime = TimeSpan.Zero; playerCount = 0; playerSnapshots = NativeArray.empty }
+    new () = { snapshotId = 0L; serverTime = TimeSpan.Zero; playerCount = 0; playerSnapshots = new NativeArray<PlayerSnapshot>(0) }
 
     override this.NetSerialize(writer, stream) =
         writer.WriteInt64(stream, &this.snapshotId)
@@ -366,4 +366,5 @@ type Snapshot =
             writer.Write(stream, &r)
 
     override this.NetReset() =
-        this.playerSnapshots <- NativeArray.empty
+      //  (this.playerSnapshots :> IDisposable).Dispose() // TODO: Fix this.
+        this.playerSnapshots <- new NativeArray<PlayerSnapshot>(0)

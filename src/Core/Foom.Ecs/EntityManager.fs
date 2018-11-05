@@ -119,8 +119,8 @@ and [<Sealed>] EntityManager(maxEntityAmount) =
 
     let lookup = Dictionary<Type, int> ()
     let lookupType = Array.zeroCreate 252
-    let activeVersions = NativeArray.init maxEntityAmount (fun _ -> 1u)
-    let entComps = NativeArray.init maxEntityAmount (fun _ -> { count = 0 })
+    let activeVersions = new NativeArray<uint32>(maxEntityAmount)
+    let entComps = new NativeArray<EntityComponents>(maxEntityAmount)
 
     let mutable nextEntityIndex = 0
     let mutable nextCompBit = 0
@@ -128,14 +128,21 @@ and [<Sealed>] EntityManager(maxEntityAmount) =
 
     let mutable currentIterations = 0
 
+    do
+        for i = 0 to activeVersions.Length - 1 do
+            activeVersions.[i] <- 1u
+
     member inline __.IsValidEntity(entity: Entity) =
         let ref = activeVersions.[entity.Index]
         ref.Equals entity.Version
 
     member __.RegisterComponent<'T when 'T : unmanaged and 'T :> IComponent>() =
+        let indexLookup = new NativeArray<int>(maxEntityAmount)
+        for i = 0 to indexLookup.Length - 1 do
+            indexLookup.[i] <- -1 // -1 means that no component exists for that entity
         let data =
             {
-                IndexLookup = NativeArray.init maxEntityAmount (fun _ -> -1) // -1 means that no component exists for that entity
+                IndexLookup = indexLookup
                 Entities = new NativeResizeArray<Entity>(1)
                 Components = new NativeResizeArray<'T>(1)
 

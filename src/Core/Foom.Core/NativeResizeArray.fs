@@ -28,8 +28,12 @@ type NativeResizeArray<'T when 'T : unmanaged>(capacity) =
         if newLength >= uint32 Int32.MaxValue then
             failwith "Length is bigger than the maximum number of elements in the array"
 
+        let newBuffer = new NativeArray<'T>(buffer, length)
+
+        (buffer :> IDisposable).Dispose()
+
         length <- int newLength
-        buffer <- NativeArray.resize length buffer
+        buffer <- newBuffer
         ptr <- buffer.Buffer
 
     [<MethodImpl(MethodImplOptions.AggressiveInlining)>]

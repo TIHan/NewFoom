@@ -37,7 +37,7 @@ type ClientGame(em: EntityManager, input: IInput, renderer: IRenderer, network) 
     let spriteStates = Array.zeroCreate<int> 10000
     let mutable clientId = ClientId.Local
 
-    let masterPlayerSnapshots = Array.init<NativeArray<PlayerSnapshot>> 30 (fun _ -> NativeArray.init 32768 (fun _ -> PlayerSnapshot()))
+    let masterPlayerSnapshots = Array.init<NativeArray<PlayerSnapshot>> 30 (fun _ -> new NativeArray<PlayerSnapshot>(32768))
     let sortedList = SortedList()
 
     let mutable renderTime = None

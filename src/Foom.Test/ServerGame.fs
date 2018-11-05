@@ -43,7 +43,7 @@ type ServerGame(em: EntityManager, server: IServer) =
 
     let mutable snapshotId = 0L
 
-    let masterPlayerSnapshots = Array.init<NativeArray<PlayerSnapshot>> 30 (fun _ -> NativeArray.init 32768 (fun _ -> PlayerSnapshot()))
+    let masterPlayerSnapshots = Array.init<NativeArray<PlayerSnapshot>> 30 (fun _ -> new NativeArray<PlayerSnapshot>(32768))
 
     override __.Update(time, interval) =
         server.ProcessMessages(function
