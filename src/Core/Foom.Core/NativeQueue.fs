@@ -48,3 +48,8 @@ type NativeQueue<'T when 'T : unmanaged>(capacity) =
         startIndex <- (startIndex + 1) % capacity
         count <- count - 1
         item <- buffer.[index]
+
+    interface IDisposable with
+
+        member __.Dispose() =
+            (buffer :> IDisposable).Dispose()
