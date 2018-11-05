@@ -5,6 +5,7 @@
   <ItemGroup>
     <Compile Include="NativeArray.fs" />
     <Compile Include="NativeResizeArray.fs" />
+    <Compile Include="NativeQueue.fs" />
     <Compile Include="EventAggregator.fs" />
     <Compile Include="Manager.fs" />
     <Compile Include="TaskQueue.fs" />
