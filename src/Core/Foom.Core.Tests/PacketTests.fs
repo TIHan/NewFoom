@@ -161,6 +161,39 @@ let ``Reliable - Packet Loss - Recovery - Soak`` () =
                 failwithf "Index %i, doesn't match. Expected: %A Actual: %A. Iteration: %i" i buffer.[i] outputBuffer.[i] iteration
             Assert.Equal(buffer.[i], outputBuffer.[i])
 
+open Foom.IO.FastPacket
+open System.Buffers
 
+[<Fact>]
+let ``Fast Packet - Basic`` () =
+    let mutable str = "BEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEF"
 
+    let mutable w = Writer(WriterType.CountOnly)
+    for i = 0 to 100 do
+        w.WriteString(Span.Empty, &str)
+    let size = w.position
 
+    let bytes = ArrayPool<byte>.Shared.Rent(size)
+
+    let bytesSpan = Span(bytes, 0, size)
+
+    let mutable w = Writer(WriterType.Default)
+    for i = 0 to 100 do
+        w.WriteString(bytesSpan, &str)
+
+    let packetFactory = PacketFactory()
+    
+    let packets = packetFactory.CreatePackets(bytesSpan.AsReadOnly, 0us, TimeSpan.Zero, 0u)
+    Assert.Equal(8, packets.Count)
+
+    let defragmenter = DataDefragmenter()
+
+    let data = defragmenter.TryGetData(packets)
+
+    let hasData = match data with | ValueSome(_) -> true | _ -> false
+    Assert.True(hasData)
+
+    defragmenter.RecycleData(data.Value)
+    packetFactory.RecyclePackets(packets)
+
+    ArrayPool<byte>.Shared.Return(bytes)   

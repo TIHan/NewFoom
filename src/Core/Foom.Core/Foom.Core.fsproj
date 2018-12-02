@@ -10,6 +10,7 @@
     <Compile Include="Manager.fs" />
     <Compile Include="TaskQueue.fs" />
     <Compile Include="Serializer\SpanExtensions.fs" />
+    <Compile Include="Serializer\FastPacket.fs" />
     <Compile Include="Message\Message.fsi" />
     <Compile Include="Message\Message.fs" />
     <Compile Include="Message\Serializer.fsi" />
@@ -40,7 +41,6 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Message\" />
-    <Folder Include="Serializer\" />
     <Folder Include="Packet\" />
   </ItemGroup>
   <ItemGroup>

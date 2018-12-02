@@ -264,3 +264,9 @@ type Writer =
             Type = if isReading then WriterType.ReadOnly else WriterType.Default
             position = 0 
         }
+
+    new (typ) =
+        {
+            Type = typ
+            position = 0
+        }
