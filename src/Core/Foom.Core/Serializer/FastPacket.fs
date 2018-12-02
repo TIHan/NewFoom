@@ -18,18 +18,15 @@ module PacketConstants =
     [<Literal>]
     let PoolAmount = 1024
 
-    [<Literal>]
-    let MaxFragments = 32
-
 [<Struct>]
 type PacketHeader(
-                    sequenceId: uint16,
-                    dataSize: uint32,
+                    sequenceId: uint32,
+                    dataSize: int,
                     timeStamp: TimeSpan,
                     flags: uint32,
-                    fragmentId: byte,
-                    fragmentCount: byte,
-                    fragmentDataSize: uint32) =
+                    fragmentId: int,
+                    fragmentCount: int,
+                    fragmentDataSize: int) =
 
     member __.SequenceId = sequenceId
 
@@ -41,15 +38,15 @@ type PacketHeader(
 
     member __.FragmentId = fragmentId
 
-    member this.FragmentIndex = int (this.FragmentId - 1uy)
+    member this.FragmentIndex = int (this.FragmentId - 1)
 
     member __.FragmentCount = fragmentCount
 
     member __.FragmentDataSize = fragmentDataSize
 
-    member this.MainSequenceId = this.SequenceId - uint16 this.FragmentId
+    member this.MainSequenceId = this.SequenceId - uint32 this.FragmentId
 
-    member this.IsDataFragmented = this.FragmentCount > 1uy
+    member this.IsDataFragmented = this.FragmentCount > 1
 
     member this.IsLastFragment = this.FragmentId = this.FragmentCount
 
@@ -69,153 +66,181 @@ module PacketSenderHelpers =
 [<Struct>]
 type Packet =
     private {
-        length: int
         packetBytes: byte []
     }
 
-    member this.AsSpan = Span(this.packetBytes, 0, this.length)
+    member this.Header =
+        ReadOnlySpan(this.packetBytes, 0, sizeof<PacketHeader>).Read<PacketHeader>(0)
+
+    member this.AsSpan = 
+        Span(this.packetBytes, 0, this.Header.FragmentDataSize + sizeof<PacketHeader>)
 
 type ForEachSpanDelegate = delegate of Span<byte> -> unit
 
 [<Struct>]
 type Packets =
     private {
-        count: int
         packets: Packet []
     }
 
-    member this.Count = this.count
+    member this.MainHeader = this.packets.[0].Header
+
+    member this.Count = this.MainHeader.FragmentCount
 
     member this.ForEachReadOnlySpan(f: ForEachSpanDelegate) =
-        for i = 0 to this.count do
+        for i = 0 to this.Count do
             f.Invoke(this.packets.[i].AsSpan)
 
-let createPacketHeader seqId dataLength timeStamp flags fragId fragCount =
-    let length =
-        if fragId = fragCount then dataLength - ((fragCount - 1) * PacketConstants.MaxFragmentDataSize)
+let createPacketHeader seqId dataSize timeStamp flags fragId fragCount =
+    let fragSize =
+        if fragId = fragCount then dataSize - ((fragCount - 1) * PacketConstants.MaxFragmentDataSize)
         else PacketConstants.MaxFragmentDataSize
 
-    PacketHeader(seqId, uint32 dataLength, timeStamp, flags, byte fragId, byte fragCount, uint32 length)
+    PacketHeader(seqId, dataSize, timeStamp, flags, fragId, fragCount, fragSize)
 
-let createPacket (packetBytesPool: ArrayPool<byte>) (packetHeader: PacketHeader) (data: ReadOnlySpan<byte>) =
+let createPacket (packetByteArrayPool: ArrayPool<byte>) (packetHeader: PacketHeader) (data: ReadOnlySpan<byte>) =
     let start = packetHeader.FragmentIndex * PacketConstants.MaxFragmentDataSize
-    let length = int packetHeader.FragmentDataSize
-    let packetBytes = packetBytesPool.Rent(length + sizeof<PacketHeader>)
+    let dataSize = packetHeader.FragmentDataSize
+
+    let packetBytes = packetByteArrayPool.Rent(dataSize + sizeof<PacketHeader>)
     let packetBytesSpan = Span(packetBytes)
 
     // Write header and data
     packetBytesSpan.Write<PacketHeader>(0, &packetHeader)
-    data.Slice(start, length).CopyTo(packetBytesSpan.Slice(sizeof<PacketHeader>))
+    data.Slice(start, dataSize).CopyTo(packetBytesSpan.Slice(sizeof<PacketHeader>))
 
-    { length = length + sizeof<PacketHeader>; packetBytes = packetBytes }
+    { packetBytes = packetBytes }
 
 [<Sealed>]
 type PacketFactory() =
 
-    let packetBytesPool = ArrayPool<byte>.Create(sizeof<PacketHeader> * PacketConstants.MaxFragmentDataSize, PacketConstants.PoolAmount)
-    let packetsPool = ArrayPool<Packet>.Create(PacketConstants.MaxFragments, PacketConstants.PoolAmount)
+    let packetByteArrayPool = ArrayPool<byte>.Create(sizeof<PacketHeader> * PacketConstants.MaxFragmentDataSize, PacketConstants.PoolAmount)
+    let packetArrayPool = ArrayPool<Packet>.Create(64, PacketConstants.PoolAmount)
 
     member __.CreatePackets(data: ReadOnlySpan<byte>, seqId, timeStamp, flags) =
         let fragCount = (data.Length / PacketConstants.MaxFragmentDataSize) + 1
 
-        // Validation
-        if fragCount > PacketConstants.MaxFragments then 
-            failwith (ErrorStrings.DataTooBigForFragments())
-
-        let packets = packetsPool.Rent(fragCount)
+        let packets = packetArrayPool.Rent(fragCount)
 
         for fragId = 1 to fragCount do
-            let seqId = seqId + uint16 fragId
+            let seqId = seqId + uint32 fragId
             let packetHeader = createPacketHeader seqId data.Length timeStamp flags fragId fragCount
-            packets.[packetHeader.FragmentIndex] <- createPacket packetBytesPool packetHeader data
+            packets.[packetHeader.FragmentIndex] <- createPacket packetByteArrayPool packetHeader data
 
-        { count = fragCount; packets = packets }
+        { packets = packets }
+
+    member __.CreatePacket(packetData: ReadOnlySpan<byte>) =
+        if packetData.Length > (PacketConstants.MaxFragmentDataSize + sizeof<PacketHeader>) then
+            failwith "Packet data too big."
+
+        let packetBytes = packetByteArrayPool.Rent(packetData.Length)
+        packetData.CopyTo(Span(packetBytes, 0, packetData.Length))
+
+        // TODO: Add validation
+
+        { packetBytes = packetBytes }
 
     member __.RecyclePackets(packets: Packets) =
-        for i = 0 to packets.count - 1 do
-            packetBytesPool.Return(packets.packets.[i].packetBytes)
-        packetsPool.Return(packets.packets)
+        for i = 0 to packets.Count - 1 do
+            packetByteArrayPool.Return(packets.packets.[i].packetBytes)
+        packetArrayPool.Return(packets.packets)
+
+    member __.RecyclePacket(packet: Packet) =
+        packetByteArrayPool.Return(packet.packetBytes)
      
 [<Struct>]
 type Data =
     private {
-        length: int
         dataBytes: byte []
-        packets: Packet []
+        dataSize: int
     }
 
-    member this.AsSpan = Span(this.dataBytes, 0, this.length)
+    member this.AsSpan = Span(this.dataBytes, 0, this.dataSize)
 
-    member this.ForEachPacket(f) =
-        for packet in this.packets do
-            f packet
+type FragMask = int
 
 [<Sealed>]
 type DataDefragmenter() =
 
-    let dataBytesPool = ArrayPool<byte>.Shared
-    let packetsPool = ArrayPool<Packet>.Create(PacketConstants.MaxFragments, PacketConstants.PoolAmount)
+    let dataByteArrayPool = ArrayPool<byte>.Shared
+    let packetArrayPool = ArrayPool<Packet>.Create(64, PacketConstants.PoolAmount)
+    let fragMaskArrayPool = ArrayPool<FragMask>.Create(64, PacketConstants.PoolAmount)
 
-    let frags = ConcurrentDictionary<uint16, struct (int * Packet [])>()
+    let frags = ConcurrentDictionary<uint32, struct (FragMask [] * Packet [])>()
+
+    (*
+    32 = 50 - (0 * 32)
+    *)
+    let hasAllFragments (fragMasks: FragMask []) fragCount =
+        let mutable hasAll = true
+        let maskCount = fragCount / 32
+        for i = 0 to maskCount do
+            let fragMask = fragMasks.[i]
+            let finalMask = if maskCount = i then ~~~(-1 <<< fragCount) else -1
+            if fragMask <> finalMask then
+                hasAll <- false
+        hasAll
 
     member this.TryGetData(packets: Packets) =
         let mutable result = ValueNone
-        for i = 0 to packets.count - 1 do
+        for i = 0 to packets.Count - 1 do
             result <- this.TryGetData(packets.packets.[i])
         result
 
     member __.TryGetData(packet: Packet) =
-        let header = packet.AsSpan.AsReadOnly.Read<PacketHeader>(0)
+        let header = packet.Header
 
-        let fragId = int header.FragmentId
-        let fragCount = int header.FragmentCount
+        let fragId = header.FragmentId
+        let fragCount = header.FragmentCount
 
         // Validation
-        if fragId > PacketConstants.MaxFragments || fragCount > PacketConstants.MaxFragments || fragId <= 0 || fragCount <= 0 then
+        if fragId <= 0 || fragCount <= 0 then
             failwith "Invalid fragment header."
 
-        if header.IsDataFragmented then
-            let mainSeqId = header.MainSequenceId
+        let mainSeqId = header.MainSequenceId
 
-            let struct(frag, packets) =
-                match frags.TryGetValue(mainSeqId) with
-                | true, x -> x
-                | _ -> 
-                    let frag = 0
-                    let packets = packetsPool.Rent(fragCount)
-                    frags.[mainSeqId] <- struct(frag, packets)
-                    struct(frag, packets)
+        let struct(fragMasks, packets) =
+            match frags.TryGetValue(mainSeqId) with
+            | true, x -> x
+            | _ -> 
+                let packets = packetArrayPool.Rent(fragCount)
+                let fragMasks = fragMaskArrayPool.Rent((fragCount / 32) + 1)
+                frags.[mainSeqId] <- struct(fragMasks, packets)
+                struct(fragMasks, packets)
 
-            let fragIndex = fragId - 1
-            let fragMask = frag ||| (1 <<< fragIndex)
-            let finalMask = ~~~(-1 <<< (fragCount))
+        packets.[header.FragmentIndex] <- packet
 
-            packets.[fragIndex] <- packet
-            frags.[mainSeqId] <- struct(fragMask, packets)
+        let index = (fragId - 1) / 32
+        let indexMod = (fragId - 1) % 32
+        fragMasks.[index] <- fragMasks.[index] ||| (1 <<< indexMod)
 
-            // We have all fragments
-            if fragMask = finalMask then
-                frags.TryRemove(mainSeqId) |> ignore
+        // We have all fragments
+        if hasAllFragments fragMasks fragCount then
+            frags.TryRemove(mainSeqId) |> ignore
+            fragMaskArrayPool.Return(fragMasks)
 
-                let dataBytes = dataBytesPool.Rent(int header.DataSize)
-                let dataBytesSpan = Span(dataBytes, 0, int header.DataSize)
+            let dataBytes = dataByteArrayPool.Rent(header.DataSize)
+            let dataBytesSpan = Span(dataBytes, 0, header.DataSize)
 
-                for i = 0 to fragCount - 1 do
-                    let packet = packets.[i]
-                    let packetHeader = packet.AsSpan.AsReadOnly.Read<PacketHeader>(0)
+            for i = 0 to fragCount - 1 do
+                let packet = packets.[i]
 
-                    let start = packetHeader.FragmentIndex * PacketConstants.MaxFragmentDataSize
-                    let packetSpan = packet.AsSpan
-                    packetSpan.Slice(sizeof<PacketHeader>, packetSpan.Length - sizeof<PacketHeader>).CopyTo(dataBytesSpan.Slice(start, int packetHeader.FragmentDataSize))
+                if packet.packetBytes = null then
+                    failwith "there are no packet bytes"
 
-                ValueSome({ length = int header.DataSize; dataBytes = dataBytes; packets = packets })
-            else
-                ValueNone
+                let packetHeader = packet.Header
+                let start = packetHeader.FragmentIndex * PacketConstants.MaxFragmentDataSize
+                let packetSpan = packet.AsSpan
+
+                packetSpan.Slice(sizeof<PacketHeader>, packetHeader.FragmentDataSize).CopyTo(dataBytesSpan.Slice(start, packetHeader.FragmentDataSize))
+
+            let mainHeader = packets.[0].Header
+
+            packetArrayPool.Return(packets)
+
+            ValueSome({ dataBytes = dataBytes; dataSize = mainHeader.DataSize })
         else
-            let dataBytes = dataBytesPool.Rent(int header.DataSize)
-            let packets = packetsPool.Rent(1)
-            ValueSome({ length = int header.DataSize; dataBytes = dataBytes; packets = packets })
+            ValueNone
             
     member __.RecycleData(data: Data) =
-        dataBytesPool.Return(data.dataBytes)
-        packetsPool.Return(data.packets)
+        dataByteArrayPool.Return(data.dataBytes)

@@ -164,36 +164,55 @@ let ``Reliable - Packet Loss - Recovery - Soak`` () =
 open Foom.IO.FastPacket
 open System.Buffers
 
-[<Fact>]
-let ``Fast Packet - Basic`` () =
-    let mutable str = "BEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEF"
+[<AutoOpen>]
+module TestHelpers =
 
-    let mutable w = Writer(WriterType.CountOnly)
-    for i = 0 to 100 do
-        w.WriteString(Span.Empty, &str)
-    let size = w.position
+    let stringTest count =
+        let mutable str = "BEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEF"
 
-    let bytes = ArrayPool<byte>.Shared.Rent(size)
+        let mutable w = Writer(WriterType.CountOnly)
+        for _i = 1 to count do
+            w.WriteString(Span.Empty, &str)
+        let size = w.position
 
-    let bytesSpan = Span(bytes, 0, size)
+        let bytes = ArrayPool<byte>.Shared.Rent(size)
 
-    let mutable w = Writer(WriterType.Default)
-    for i = 0 to 100 do
-        w.WriteString(bytesSpan, &str)
+        let bytesSpan = Span(bytes, 0, size)
 
-    let packetFactory = PacketFactory()
+        let mutable w = Writer(WriterType.Default)
+        for _i = 1 to count do
+            w.WriteString(bytesSpan, &str)
+
+        let packetFactory = PacketFactory()
     
-    let packets = packetFactory.CreatePackets(bytesSpan.AsReadOnly, 0us, TimeSpan.Zero, 0u)
-    Assert.Equal(8, packets.Count)
+        let packets = packetFactory.CreatePackets(bytesSpan.AsReadOnly, 0u, TimeSpan.Zero, 0u)
+        Assert.Equal((bytesSpan.Length / PacketConstants.MaxFragmentDataSize) + 1, packets.Count)
 
-    let defragmenter = DataDefragmenter()
+        let defragmenter = DataDefragmenter()
 
-    let data = defragmenter.TryGetData(packets)
+        let data = defragmenter.TryGetData(packets)
 
-    let hasData = match data with | ValueSome(_) -> true | _ -> false
-    Assert.True(hasData)
+        let hasData = match data with | ValueSome(_) -> true | _ -> false
+        Assert.True(hasData)
 
-    defragmenter.RecycleData(data.Value)
-    packetFactory.RecyclePackets(packets)
+        Assert.Equal(bytesSpan.Length, data.Value.AsSpan.Length)
 
-    ArrayPool<byte>.Shared.Return(bytes)   
+        for i = 0 to bytesSpan.Length - 1 do
+            Assert.Equal(bytesSpan.[i], data.Value.AsSpan.[i])
+
+        defragmenter.RecycleData(data.Value)
+        packetFactory.RecyclePackets(packets)
+
+        ArrayPool<byte>.Shared.Return(bytes)   
+
+[<Fact>]
+let ``Fast Packet - 100 strings`` () =
+    stringTest 100
+
+[<Fact>]
+let ``Fast Packet - 1000 strings`` () =
+    stringTest 1000
+
+[<Fact>]
+let ``Fast Packet - 1000000 strings`` () =
+    stringTest 1000000
