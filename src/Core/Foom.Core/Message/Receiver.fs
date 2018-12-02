@@ -99,7 +99,7 @@ type internal Receiver(receiverType: ReceiverType, lookup: MessagePoolBase []) =
         match lookup.[int typeId] with
         | null -> failwithf "Can't find message type with TypeId, %i." typeId
         | pool ->
-            let seqId = LittleEndian.read16 data 1
+            let seqId = LittleEndian.read16 data.AsReadOnly 1
 
             if sequenceMoreRecent seqId latest then
                 latest <- seqId
