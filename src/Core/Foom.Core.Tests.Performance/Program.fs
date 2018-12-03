@@ -31,6 +31,7 @@ let stringTest count =
 
     let data = defragmenter.TryGetData(packets)
 
+    printfn "Any Data?: %A" (match data with | ValueSome _ -> true | _ -> false)
     defragmenter.RecycleData(data.Value)
     packetFactory.RecyclePackets(packets)
 
@@ -40,7 +41,7 @@ let stringTest count =
 let main argv =
     for i = 0 to 10 do
         let s = System.Diagnostics.Stopwatch.StartNew()
-        stringTest 10000000
+        stringTest 1000000
         s.Stop()
         printfn "Time: %A ms" s.Elapsed.TotalMilliseconds
 

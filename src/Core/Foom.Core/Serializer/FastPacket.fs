@@ -5,6 +5,8 @@ open System
 open System.Buffers
 open System.Collections.Generic
 open System.Collections.Concurrent
+open System.Threading.Tasks
+open System.Threading
 
 open Foom.IO.Serializer
 open System.Runtime.InteropServices
@@ -166,7 +168,9 @@ type DataDefragmenter() =
     let packetArrayPool = ArrayPool<Packet>.Create(64, PacketConstants.PoolAmount)
     let fragMaskArrayPool = ArrayPool<FragMask>.Create(64, PacketConstants.PoolAmount)
 
-    let frags = ConcurrentDictionary<uint32, struct (FragMask [] * Packet [])>()
+    let frags = ConcurrentDictionary<uint32, Lazy<struct (FragMask [] * Packet [])>>()
+
+    let gate = obj ()
 
     (*
     32 = 50 - (0 * 32)
@@ -183,8 +187,10 @@ type DataDefragmenter() =
 
     member this.TryGetData(packets: Packets) =
         let mutable result = ValueNone
-        for i = 0 to packets.Count - 1 do
+        Parallel.For(0, packets.Count, fun i ->
+        //for i = 0 to packets.Count - 1 do
             result <- this.TryGetData(packets.packets.[i])
+        ) |> ignore
         result
 
     member __.TryGetData(packet: Packet) =
@@ -199,20 +205,24 @@ type DataDefragmenter() =
 
         let mainSeqId = header.MainSequenceId
 
-        let struct(fragMasks, packets) =
-            match frags.TryGetValue(mainSeqId) with
-            | true, x -> x
-            | _ -> 
-                let packets = packetArrayPool.Rent(fragCount)
-                let fragMasks = fragMaskArrayPool.Rent((fragCount / 32) + 1)
-                frags.[mainSeqId] <- struct(fragMasks, packets)
-                struct(fragMasks, packets)
+        let delayed =
+            let add = fun _ ->
+                lazy
+                    let packets = packetArrayPool.Rent(fragCount)
+                    let fragMasks = fragMaskArrayPool.Rent((fragCount / 32) + 1)
+                    printfn "adding"
+                    struct(fragMasks, packets)
+
+            frags.GetOrAdd(mainSeqId, add)
+
+        let struct(fragMasks, packets) = delayed.Value
 
         packets.[header.FragmentIndex] <- packet
 
         let index = (fragId - 1) / 32
         let indexMod = (fragId - 1) % 32
-        fragMasks.[index] <- fragMasks.[index] ||| (1 <<< indexMod)
+
+        lock gate (fun () -> fragMasks.[index] <- fragMasks.[index] ||| (1 <<< indexMod))
 
         // We have all fragments
         if hasAllFragments fragMasks fragCount then
