@@ -13,8 +13,6 @@ let stringTest count =
         w.WriteString(Span.Empty, &str)
     let size = w.position
 
-    printfn "Gigs of data: %A" (single size / 1024.f / 1024.f / 1024.f)
-
     let bytes = ArrayPool<byte>.Shared.Rent(size)
 
     let bytesSpan = Span(bytes, 0, size)
@@ -23,15 +21,21 @@ let stringTest count =
     for _i = 1 to count do
         w.WriteString(bytesSpan, &str)
 
+    let s = System.Diagnostics.Stopwatch.StartNew()
     let packetFactory = PacketFactory()
     
     let packets = packetFactory.CreatePackets(bytesSpan.AsReadOnly, 0u, TimeSpan.Zero, 0u)
+    s.Stop()
+    printfn "Packets - Time: %A ms" s.Elapsed.TotalMilliseconds
 
+    let s = System.Diagnostics.Stopwatch.StartNew()
     let defragmenter = DataDefragmenter()
 
     let data = defragmenter.TryGetData(packets)
+    s.Stop()
+    printfn "Data - Time: %A ms" s.Elapsed.TotalMilliseconds
+    printfn "====="
 
-    printfn "Any Data?: %A" (match data with | ValueSome _ -> true | _ -> false)
     defragmenter.RecycleData(data.Value)
     packetFactory.RecyclePackets(packets)
 
@@ -40,10 +44,7 @@ let stringTest count =
 [<EntryPoint>]
 let main argv =
     for i = 0 to 10 do
-        let s = System.Diagnostics.Stopwatch.StartNew()
-        stringTest 1000000
-        s.Stop()
-        printfn "Time: %A ms" s.Elapsed.TotalMilliseconds
+        stringTest 1000
 
 
     0

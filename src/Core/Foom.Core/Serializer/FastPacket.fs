@@ -113,6 +113,7 @@ let createPacket (packetByteArrayPool: ArrayPool<byte>) (packetHeader: PacketHea
 
     { packetBytes = packetBytes }
 
+/// Thread safe and atomic
 [<Sealed>]
 type PacketFactory() =
 
@@ -159,8 +160,9 @@ type Data =
 
     member this.AsSpan = Span(this.dataBytes, 0, this.dataSize)
 
-type FragMask = int
+type FragMask = int64
 
+/// Thread safe and atomic
 [<Sealed>]
 type DataDefragmenter() =
 
@@ -172,25 +174,20 @@ type DataDefragmenter() =
 
     let gate = obj ()
 
-    (*
-    32 = 50 - (0 * 32)
-    *)
     let hasAllFragments (fragMasks: FragMask []) fragCount =
         let mutable hasAll = true
-        let maskCount = fragCount / 32
+        let maskCount = fragCount / 64
         for i = 0 to maskCount do
             let fragMask = fragMasks.[i]
-            let finalMask = if maskCount = i then ~~~(-1 <<< fragCount) else -1
+            let finalMask = if maskCount = i then ~~~(-1L <<< fragCount) else -1L
             if fragMask <> finalMask then
                 hasAll <- false
         hasAll
 
     member this.TryGetData(packets: Packets) =
         let mutable result = ValueNone
-        Parallel.For(0, packets.Count, fun i ->
-        //for i = 0 to packets.Count - 1 do
+        for i = 0 to packets.Count - 1 do
             result <- this.TryGetData(packets.packets.[i])
-        ) |> ignore
         result
 
     member __.TryGetData(packet: Packet) =
@@ -209,8 +206,7 @@ type DataDefragmenter() =
             let add = fun _ ->
                 lazy
                     let packets = packetArrayPool.Rent(fragCount)
-                    let fragMasks = fragMaskArrayPool.Rent((fragCount / 32) + 1)
-                    printfn "adding"
+                    let fragMasks = fragMaskArrayPool.Rent((fragCount / 64) + 1)
                     struct(fragMasks, packets)
 
             frags.GetOrAdd(mainSeqId, add)
@@ -219,13 +215,16 @@ type DataDefragmenter() =
 
         packets.[header.FragmentIndex] <- packet
 
-        let index = (fragId - 1) / 32
-        let indexMod = (fragId - 1) % 32
-
-        lock gate (fun () -> fragMasks.[index] <- fragMasks.[index] ||| (1 <<< indexMod))
+        let index = (fragId - 1) / 64
+        let indexMod = (fragId - 1) % 64
+        
+        let hasAllFragments = lock gate (fun () -> 
+            fragMasks.[index] <- fragMasks.[index] ||| (1L <<< indexMod)
+            hasAllFragments fragMasks fragCount
+        )
 
         // We have all fragments
-        if hasAllFragments fragMasks fragCount then
+        if hasAllFragments then
             frags.TryRemove(mainSeqId) |> ignore
             fragMaskArrayPool.Return(fragMasks)
 
