@@ -185,7 +185,7 @@ module TestHelpers =
 
         let packetFactory = PacketFactory()
     
-        let packets = packetFactory.CreatePackets(bytesSpan.AsReadOnly, 0u, TimeSpan.Zero, 0u)
+        let packets = packetFactory.CreatePackets(bytesSpan.AsReadOnly, 0u, 0u)
         Assert.Equal((bytesSpan.Length / PacketConstants.MaxFragmentDataSize) + 1, packets.Count)
 
         let defragmenter = DataDefragmenter()

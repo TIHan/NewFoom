@@ -23,34 +23,29 @@ module PacketConstants =
 [<Struct>]
 type PacketHeader(
                     sequenceId: uint32,
+                    sequenceVersion: uint32,
                     dataSize: int,
-                    timeStamp: TimeSpan,
-                    flags: uint32,
-                    fragmentId: int,
+                    fragmentIndex: int,
                     fragmentCount: int,
                     fragmentDataSize: int) =
 
     member __.SequenceId = sequenceId
 
+    member __.SequenceVersion = sequenceVersion
+
     member __.DataSize = dataSize
 
-    member __.TimeStamp = timeStamp
-
-    member __.Flags = flags
-
-    member __.FragmentId = fragmentId
-
-    member this.FragmentIndex = int (this.FragmentId - 1)
+    member __.FragmentIndex = fragmentIndex
 
     member __.FragmentCount = fragmentCount
 
     member __.FragmentDataSize = fragmentDataSize
 
-    member this.MainSequenceId = this.SequenceId - uint32 this.FragmentId
+    member this.MainSequenceId = this.SequenceId - uint32 this.FragmentIndex
 
     member this.IsDataFragmented = this.FragmentCount > 1
 
-    member this.IsLastFragment = this.FragmentId = this.FragmentCount
+    member this.IsLastFragment = this.FragmentIndex = this.FragmentCount - 1
 
 [<AutoOpen>]
 module PacketSenderHelpers =
@@ -93,12 +88,12 @@ type Packets =
         for i = 0 to this.Count do
             f.Invoke(this.packets.[i].AsSpan)
 
-let createPacketHeader seqId dataSize timeStamp flags fragId fragCount =
+let createPacketHeader seqId seqVer dataSize fragIndex fragCount =
     let fragSize =
-        if fragId = fragCount then dataSize - ((fragCount - 1) * PacketConstants.MaxFragmentDataSize)
+        if fragIndex = fragCount - 1 then dataSize - ((fragCount - 1) * PacketConstants.MaxFragmentDataSize)
         else PacketConstants.MaxFragmentDataSize
 
-    PacketHeader(seqId, dataSize, timeStamp, flags, fragId, fragCount, fragSize)
+    PacketHeader(seqId, seqVer, dataSize, fragIndex, fragCount, fragSize)
 
 let createPacket (packetByteArrayPool: ArrayPool<byte>) (packetHeader: PacketHeader) (data: ReadOnlySpan<byte>) =
     let start = packetHeader.FragmentIndex * PacketConstants.MaxFragmentDataSize
@@ -120,14 +115,14 @@ type PacketFactory() =
     let packetByteArrayPool = ArrayPool<byte>.Create(sizeof<PacketHeader> * PacketConstants.MaxFragmentDataSize, PacketConstants.PoolAmount)
     let packetArrayPool = ArrayPool<Packet>.Create(64, PacketConstants.PoolAmount)
 
-    member __.CreatePackets(data: ReadOnlySpan<byte>, seqId, timeStamp, flags) =
+    member __.CreatePackets(data: ReadOnlySpan<byte>, seqId, seqVer) =
         let fragCount = (data.Length / PacketConstants.MaxFragmentDataSize) + 1
 
         let packets = packetArrayPool.Rent(fragCount)
 
-        for fragId = 1 to fragCount do
-            let seqId = seqId + uint32 fragId
-            let packetHeader = createPacketHeader seqId data.Length timeStamp flags fragId fragCount
+        for fragIndex = 0 to fragCount - 1 do
+            let seqId = seqId + uint32 fragIndex
+            let packetHeader = createPacketHeader seqId seqVer data.Length fragIndex fragCount
             packets.[packetHeader.FragmentIndex] <- createPacket packetByteArrayPool packetHeader data
 
         { packets = packets }
@@ -193,11 +188,11 @@ type DataDefragmenter() =
     member __.TryGetData(packet: Packet) =
         let header = packet.Header
 
-        let fragId = header.FragmentId
+        let fragIndex = header.FragmentIndex
         let fragCount = header.FragmentCount
 
         // Validation
-        if fragId <= 0 || fragCount <= 0 then
+        if fragIndex < 0 || fragCount <= 0 then
             failwith "Invalid fragment header."
 
         let mainSeqId = header.MainSequenceId
@@ -215,8 +210,8 @@ type DataDefragmenter() =
 
         packets.[header.FragmentIndex] <- packet
 
-        let index = (fragId - 1) / 64
-        let indexMod = (fragId - 1) % 64
+        let index = fragIndex / 64
+        let indexMod = fragIndex % 64
         
         let hasAllFragments = lock gate (fun () -> 
             fragMasks.[index] <- fragMasks.[index] ||| (1L <<< indexMod)
