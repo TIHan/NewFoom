@@ -37,6 +37,8 @@ let stringTest count =
     printfn "====="
 
     defragmenter.ReturnData(data.Value)
+
+    packets.ForEach(packetPool.Return)
     packetPool.ReturnPackets(packets)
 
     ArrayPool<byte>.Shared.Return(bytes) 

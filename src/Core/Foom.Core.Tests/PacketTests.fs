@@ -201,6 +201,8 @@ module TestHelpers =
             Assert.Equal(bytesSpan.[i], data.Value.AsSpan.[i])
 
         defragmenter.ReturnData(data.Value)
+
+        packets.ForEach(packetPool.Return)
         packetPool.ReturnPackets(packets)
 
         ArrayPool<byte>.Shared.Return(bytes)   

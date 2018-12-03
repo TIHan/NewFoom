@@ -84,9 +84,9 @@ type Packets =
 
     member this.Count = this.MainHeader.FragmentCount
 
-    member this.ForEachReadOnlySpan(f: ForEachSpanDelegate) =
-        for i = 0 to this.Count do
-            f.Invoke(this.packets.[i].AsSpan)
+    member this.ForEach(f) =
+        for i = 0 to this.Count - 1 do
+            f this.packets.[i]
 
 let createPacketHeader seqId seqVer dataSize fragIndex fragCount =
     let fragSize =
@@ -139,8 +139,6 @@ type PacketPool() =
         { packetBytes = packetBytes }
 
     member __.ReturnPackets(packets: Packets) =
-        for i = 0 to packets.Count - 1 do
-            packetByteArrayPool.Return(packets.packets.[i].packetBytes)
         packetArrayPool.Return(packets.packets)
 
     member __.Return(packet: Packet) =
@@ -248,3 +246,17 @@ type DataDefragmenter() =
             
     member __.ReturnData(data: Data) =
         dataByteArrayPool.Return(data.dataBytes)
+
+//type PacketFactory() =
+
+//    let ackMaskArrayPool = ArrayPool<int64>.Create(64, PacketConstants.PoolAmount)
+
+//    let packetPool = PacketPool()
+
+//    let acks = ConcurrentDictionary()
+
+//    member __.CreatePacket(data) =
+//        let packets = packetPool.RentPackets(data, 0u, 0u)
+//        let ackMask = ackMaskArrayPool.Rent(packets.MainHeader.FragmentCount)
+//        acks.[packets.MainHeader.SequenceId] <- struct(packets, )
+//        ()
