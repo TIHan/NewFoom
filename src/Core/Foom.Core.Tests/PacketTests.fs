@@ -183,14 +183,14 @@ module TestHelpers =
         for _i = 1 to count do
             w.WriteString(bytesSpan, &str)
 
-        let packetFactory = PacketFactory()
+        let packetPool = PacketPool()
     
-        let packets = packetFactory.CreatePackets(bytesSpan.AsReadOnly, 0u, 0u)
+        let packets = packetPool.RentPackets(bytesSpan.AsReadOnly, 0u, 0u)
         Assert.Equal((bytesSpan.Length / PacketConstants.MaxFragmentDataSize) + 1, packets.Count)
 
         let defragmenter = DataDefragmenter()
 
-        let data = defragmenter.TryGetData(packets)
+        let data = defragmenter.TryRentData(packets)
 
         let hasData = match data with | ValueSome(_) -> true | _ -> false
         Assert.True(hasData)
@@ -200,8 +200,8 @@ module TestHelpers =
         for i = 0 to bytesSpan.Length - 1 do
             Assert.Equal(bytesSpan.[i], data.Value.AsSpan.[i])
 
-        defragmenter.RecycleData(data.Value)
-        packetFactory.RecyclePackets(packets)
+        defragmenter.ReturnData(data.Value)
+        packetPool.ReturnPackets(packets)
 
         ArrayPool<byte>.Shared.Return(bytes)   
 

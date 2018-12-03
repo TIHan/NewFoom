@@ -22,22 +22,22 @@ let stringTest count =
         w.WriteString(bytesSpan, &str)
 
     let s = System.Diagnostics.Stopwatch.StartNew()
-    let packetFactory = PacketFactory()
+    let packetPool = PacketPool()
     
-    let packets = packetFactory.CreatePackets(bytesSpan.AsReadOnly, 0u, TimeSpan.Zero, 0u)
+    let packets = packetPool.RentPackets(bytesSpan.AsReadOnly, 0u, 0u)
     s.Stop()
     printfn "Packets - Time: %A ms" s.Elapsed.TotalMilliseconds
 
     let s = System.Diagnostics.Stopwatch.StartNew()
     let defragmenter = DataDefragmenter()
 
-    let data = defragmenter.TryGetData(packets)
+    let data = defragmenter.TryRentData(packets)
     s.Stop()
     printfn "Data - Time: %A ms" s.Elapsed.TotalMilliseconds
     printfn "====="
 
-    defragmenter.RecycleData(data.Value)
-    packetFactory.RecyclePackets(packets)
+    defragmenter.ReturnData(data.Value)
+    packetPool.ReturnPackets(packets)
 
     ArrayPool<byte>.Shared.Return(bytes) 
 

@@ -110,12 +110,12 @@ let createPacket (packetByteArrayPool: ArrayPool<byte>) (packetHeader: PacketHea
 
 /// Thread safe and atomic
 [<Sealed>]
-type PacketFactory() =
+type PacketPool() =
 
     let packetByteArrayPool = ArrayPool<byte>.Create(sizeof<PacketHeader> * PacketConstants.MaxFragmentDataSize, PacketConstants.PoolAmount)
     let packetArrayPool = ArrayPool<Packet>.Create(64, PacketConstants.PoolAmount)
 
-    member __.CreatePackets(data: ReadOnlySpan<byte>, seqId, seqVer) =
+    member __.RentPackets(data: ReadOnlySpan<byte>, seqId, seqVer) =
         let fragCount = (data.Length / PacketConstants.MaxFragmentDataSize) + 1
 
         let packets = packetArrayPool.Rent(fragCount)
@@ -127,7 +127,7 @@ type PacketFactory() =
 
         { packets = packets }
 
-    member __.CreatePacket(packetData: ReadOnlySpan<byte>) =
+    member __.Rent(packetData: ReadOnlySpan<byte>) =
         if packetData.Length > (PacketConstants.MaxFragmentDataSize + sizeof<PacketHeader>) then
             failwith "Packet data too big."
 
@@ -138,12 +138,12 @@ type PacketFactory() =
 
         { packetBytes = packetBytes }
 
-    member __.RecyclePackets(packets: Packets) =
+    member __.ReturnPackets(packets: Packets) =
         for i = 0 to packets.Count - 1 do
             packetByteArrayPool.Return(packets.packets.[i].packetBytes)
         packetArrayPool.Return(packets.packets)
 
-    member __.RecyclePacket(packet: Packet) =
+    member __.Return(packet: Packet) =
         packetByteArrayPool.Return(packet.packetBytes)
      
 [<Struct>]
@@ -179,13 +179,13 @@ type DataDefragmenter() =
                 hasAll <- false
         hasAll
 
-    member this.TryGetData(packets: Packets) =
+    member this.TryRentData(packets: Packets) =
         let mutable result = ValueNone
         for i = 0 to packets.Count - 1 do
-            result <- this.TryGetData(packets.packets.[i])
+            result <- this.TryRentData(packets.packets.[i])
         result
 
-    member __.TryGetData(packet: Packet) =
+    member __.TryRentData(packet: Packet) =
         let header = packet.Header
 
         let fragIndex = header.FragmentIndex
@@ -246,5 +246,5 @@ type DataDefragmenter() =
         else
             ValueNone
             
-    member __.RecycleData(data: Data) =
+    member __.ReturnData(data: Data) =
         dataByteArrayPool.Return(data.dataBytes)
