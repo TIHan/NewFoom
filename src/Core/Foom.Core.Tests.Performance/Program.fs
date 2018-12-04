@@ -2,8 +2,10 @@
 
 open System
 open System.Buffers
+open Foom.IO
 open Foom.IO.FastPacket
 open Foom.IO.Serializer
+open System.Threading.Tasks
 
 let stringTest count =
     let mutable str = "BEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEF"
@@ -43,10 +45,24 @@ let stringTest count =
 
     ArrayPool<byte>.Shared.Return(bytes) 
 
+
+
 [<EntryPoint>]
 let main argv =
+    //for i = 0 to 100 do
+    //    stringTest 1000
+
+    let x = Array.init 1024 (fun _ -> Array.zeroCreate<byte> 1024)
     for i = 0 to 100 do
-        stringTest 1000
+        let x = ChunkedByteStream(x, 1024, 1024 * 1024)
+        let s = System.Diagnostics.Stopwatch.StartNew()
+
+      //  Parallel.ForEach(
+        for i = 0 to 262143 do
+            x.WriteInt(i)
+
+        s.Stop()
+        printfn "Data - Time: %A ms" s.Elapsed.TotalMilliseconds
 
 
     0

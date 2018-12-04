@@ -10,6 +10,7 @@
     <Compile Include="Manager.fs" />
     <Compile Include="TaskQueue.fs" />
     <Compile Include="Serializer\SpanExtensions.fs" />
+    <Compile Include="Serializer\ByteArrayExtensions.fs" />
     <Compile Include="Serializer\FastPacket.fs" />
     <Compile Include="Message\Message.fsi" />
     <Compile Include="Message\Message.fs" />
