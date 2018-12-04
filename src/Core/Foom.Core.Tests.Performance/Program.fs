@@ -60,7 +60,7 @@ let main argv =
     //    Parallel.For(0, 262144, fun i ->
         for i = 0 to 262143 do
             xChunk.WriteInt(i)
-      //  ) |> ignore
+     //   ) |> ignore
 
         s.Stop()
         printfn "Data - Time: %A ms" s.Elapsed.TotalMilliseconds

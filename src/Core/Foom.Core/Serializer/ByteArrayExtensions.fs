@@ -47,6 +47,7 @@ type ChunkedByteStream =
         let position2 = position1 + 1
         let position3 = position2 + 1
         let position4 = position3 + 1
+        let nextPosition = position4 + 1
 
         if position4 >= this.chunkSize then
             this.[position1] <- byte value
@@ -54,7 +55,7 @@ type ChunkedByteStream =
             this.[position3] <- byte (value >>> 16)
             this.[position4] <- byte (value >>> 24)
 
-            this.state <- { position = state.chunkIndex + 1; chunkIndex = state.position % this.chunkSize }
+            this.state <- { position = nextPosition % this.chunkSize; chunkIndex = state.chunkIndex + 1 }
         else
             let data = this.chunks.[state.chunkIndex]
             data.[position1] <- byte value
@@ -62,4 +63,4 @@ type ChunkedByteStream =
             data.[position3] <- byte (value >>> 16)
             data.[position4] <- byte (value >>> 24)
 
-            this.state <- { state with position = position4 + 1 }
+            this.state <- { state with position = nextPosition }
