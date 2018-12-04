@@ -45,7 +45,7 @@ let stringTest count =
 
 [<EntryPoint>]
 let main argv =
-    for i = 0 to 10 do
+    for i = 0 to 100 do
         stringTest 1000
 
 

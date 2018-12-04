@@ -21,31 +21,19 @@ module PacketConstants =
     let PoolAmount = 1024
 
 [<Struct>]
-type PacketHeader(
-                    sequenceId: uint32,
-                    sequenceVersion: uint32,
-                    dataSize: int,
-                    fragmentIndex: int,
-                    fragmentCount: int,
-                    fragmentDataSize: int) =
-
-    member __.SequenceId = sequenceId
-
-    member __.SequenceVersion = sequenceVersion
-
-    member __.DataSize = dataSize
-
-    member __.FragmentIndex = fragmentIndex
-
-    member __.FragmentCount = fragmentCount
-
-    member __.FragmentDataSize = fragmentDataSize
+type PacketHeader =
+    {
+        SequenceId: uint32
+        SequenceVersion: uint32
+        DataSize: int
+        FragmentIndex: int
+        FragmentCount: int
+        FragmentDataSize: int
+    }
 
     member this.MainSequenceId = this.SequenceId - uint32 this.FragmentIndex
 
     member this.IsDataFragmented = this.FragmentCount > 1
-
-    member this.IsLastFragment = this.FragmentIndex = this.FragmentCount - 1
 
 [<AutoOpen>]
 module PacketSenderHelpers =
@@ -66,8 +54,9 @@ type Packet =
         packetBytes: byte []
     }
 
-    member this.Header =
-        ReadOnlySpan(this.packetBytes, 0, sizeof<PacketHeader>).Read<PacketHeader>(0)
+    member this.Header 
+        with get () =
+            ReadOnlySpan(this.packetBytes, 0, sizeof<PacketHeader>).Read<PacketHeader>(0)
 
     member this.AsSpan = 
         Span(this.packetBytes, 0, this.Header.FragmentDataSize + sizeof<PacketHeader>)
@@ -82,6 +71,22 @@ type Packets =
 
     member this.MainHeader = this.packets.[0].Header
 
+    member private this.LastPacket = this.packets.[this.packets.Length - 1]
+
+    member this.ExtraSpaceAmount = PacketConstants.MaxFragmentDataSize - this.LastPacket.Header.FragmentDataSize
+
+    member this.TryFillExtraSpace(data: ReadOnlySpan<byte>) =
+        if data.Length <= this.ExtraSpaceAmount then
+            let lastPacket = this.LastPacket
+            let header = lastPacket.Header
+            data.CopyTo(this.LastPacket.AsSpan.Slice(sizeof<PacketHeader> + header.FragmentDataSize, sizeof<PacketHeader> + PacketConstants.MaxFragmentDataSize))
+            let header =  { header with FragmentDataSize = header.FragmentDataSize + data.Length }
+            lastPacket.AsSpan.Write<PacketHeader>(0, &header)
+            true
+        else
+            false
+            
+
     member this.Count = this.MainHeader.FragmentCount
 
     member this.ForEach(f) =
@@ -93,13 +98,20 @@ let createPacketHeader seqId seqVer dataSize fragIndex fragCount =
         if fragIndex = fragCount - 1 then dataSize - ((fragCount - 1) * PacketConstants.MaxFragmentDataSize)
         else PacketConstants.MaxFragmentDataSize
 
-    PacketHeader(seqId, seqVer, dataSize, fragIndex, fragCount, fragSize)
+    {
+        SequenceId = seqId
+        SequenceVersion = seqVer
+        DataSize = dataSize
+        FragmentIndex = fragIndex
+        FragmentCount = fragCount
+        FragmentDataSize = fragSize
+    }
 
 let createPacket (packetByteArrayPool: ArrayPool<byte>) (packetHeader: PacketHeader) (data: ReadOnlySpan<byte>) =
     let start = packetHeader.FragmentIndex * PacketConstants.MaxFragmentDataSize
     let dataSize = packetHeader.FragmentDataSize
 
-    let packetBytes = packetByteArrayPool.Rent(dataSize + sizeof<PacketHeader>)
+    let packetBytes = packetByteArrayPool.Rent(PacketConstants.MaxFragmentDataSize + sizeof<PacketHeader>)
     let packetBytesSpan = Span(packetBytes)
 
     // Write header and data
@@ -247,9 +259,9 @@ type DataDefragmenter() =
     member __.ReturnData(data: Data) =
         dataByteArrayPool.Return(data.dataBytes)
 
-//type PacketFactory() =
+//type PacketChannel(channelNumber: int) =
 
-//    let ackMaskArrayPool = ArrayPool<int64>.Create(64, PacketConstants.PoolAmount)
+//    let ackMaskArrayPool = ArrayPool<int64>.Create(128, PacketConstants.PoolAmount)
 
 //    let packetPool = PacketPool()
 
@@ -257,6 +269,4 @@ type DataDefragmenter() =
 
 //    member __.CreatePacket(data) =
 //        let packets = packetPool.RentPackets(data, 0u, 0u)
-//        let ackMask = ackMaskArrayPool.Rent(packets.MainHeader.FragmentCount)
-//        acks.[packets.MainHeader.SequenceId] <- struct(packets, )
 //        ()
