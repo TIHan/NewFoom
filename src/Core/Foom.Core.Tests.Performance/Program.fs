@@ -54,12 +54,13 @@ let main argv =
 
     let x = Array.init 1024 (fun _ -> Array.zeroCreate<byte> 1024)
     for i = 0 to 100 do
-        let x = ChunkedByteStream(x, 1024, 1024 * 1024)
+        let xChunk = ChunkedByteStream(x, 1024, 1024 * 1024)
         let s = System.Diagnostics.Stopwatch.StartNew()
 
-      //  Parallel.ForEach(
+    //    Parallel.For(0, 262144, fun i ->
         for i = 0 to 262143 do
-            x.WriteInt(i)
+            xChunk.WriteInt(i)
+      //  ) |> ignore
 
         s.Stop()
         printfn "Data - Time: %A ms" s.Elapsed.TotalMilliseconds
