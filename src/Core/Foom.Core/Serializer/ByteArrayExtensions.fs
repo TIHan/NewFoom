@@ -40,7 +40,8 @@ type ChunkedByteStream =
         and [<MethodImpl(MethodImplOptions.AggressiveInlining)>] set i value =
             this.chunks.[i / this.chunkSize].[i % this.chunkSize] <- value
 
-    member this.WriteInt(value: int) =
+    member this.WriteInt(value: byref<int>) =
+        let value = value
         let state = this.state
 
         let position1 = state.position
@@ -64,3 +65,17 @@ type ChunkedByteStream =
             data.[position4] <- byte (value >>> 24)
 
             this.state <- { state with position = nextPosition }
+
+/// Thread safe but not atomic
+[<Sealed>]
+type CountOnlyByteStream =
+    
+    val mutable position : int
+
+    new () =
+        {
+            position = 0
+        }
+
+    member this.WriteInt(_value: byref<int>) =
+        this.position <- this.position + 4

@@ -52,14 +52,24 @@ let main argv =
     //for i = 0 to 100 do
     //    stringTest 1000
 
-    let x = Array.init 1024 (fun _ -> Array.zeroCreate<byte> 1024)
+    //let x = Array.init (1024 * 200) (fun _ -> Array.zeroCreate<byte> 1024)
     for i = 0 to 100 do
-        let xChunk = ChunkedByteStream(x, 1024, 1024 * 1024)
         let s = System.Diagnostics.Stopwatch.StartNew()
+        let countOnly = CountOnlyByteStream()
+
+        for j = 0 to 200 - 1 do
+            for i = 0 to 262143 do
+                let mutable i = 0
+                countOnly.WriteInt(&i)
+
+        let x = Array.init (countOnly.position / 1024) (fun _ -> Array.zeroCreate<byte> 1024)
+        let xChunk = ChunkedByteStream(x, 1024, countOnly.position)
 
     //    Parallel.For(0, 262144, fun i ->
-        for i = 0 to 262143 do
-            xChunk.WriteInt(i)
+        for j = 0 to 200 - 1 do
+            for i = 0 to 262143 do
+                let mutable i = 0
+                xChunk.WriteInt(&i)
      //   ) |> ignore
 
         s.Stop()
