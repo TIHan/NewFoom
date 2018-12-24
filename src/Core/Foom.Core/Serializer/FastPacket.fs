@@ -124,37 +124,38 @@ let createPacket (packetByteArrayPool: ArrayPool<byte>) (packetHeader: PacketHea
 [<Sealed>]
 type PacketPool() =
 
-    let packetByteArrayPool = ArrayPool<byte>.Create(sizeof<PacketHeader> * PacketConstants.MaxFragmentDataSize, PacketConstants.PoolAmount)
-    let packetArrayPool = ArrayPool<Packet>.Create(64, PacketConstants.PoolAmount)
+    //let packetByteArrayPool = ArrayPool<byte>.Create(sizeof<PacketHeader> * PacketConstants.MaxFragmentDataSize, PacketConstants.PoolAmount)
+    //let packetArrayPool = ArrayPool<Packet>.Create(64, PacketConstants.PoolAmount)
 
-    member __.RentPackets(data: ReadOnlySpan<byte>, seqId, seqVer) =
-        let fragCount = (data.Length / PacketConstants.MaxFragmentDataSize) + 1
+    member __.AssignHeaders(byteStream: ChunkedByteStream, seqId, seqVer) =
+        if byteStream.ChunkLength <> (sizeof<PacketHeader> + PacketConstants.MaxFragmentDataSize) then
+            failwith "Invalid chunk length"
 
-        let packets = packetArrayPool.Rent(fragCount)
+        let fragCount = (byteStream.Length / (sizeof<PacketHeader> + PacketConstants.MaxFragmentDataSize)) + 1
 
         for fragIndex = 0 to fragCount - 1 do
             let seqId = seqId + uint32 fragIndex
-            let packetHeader = createPacketHeader seqId seqVer data.Length fragIndex fragCount
-            packets.[packetHeader.FragmentIndex] <- createPacket packetByteArrayPool packetHeader data
+            let mutable packetHeader = createPacketHeader seqId seqVer byteStream.Length fragIndex fragCount
+            byteStream.Chunks.[fragIndex].Span.Write(0, &packetHeader)
 
-        { packets = packets }
+        ()
 
-    member __.Rent(packetData: ReadOnlySpan<byte>) =
-        if packetData.Length > (PacketConstants.MaxFragmentDataSize + sizeof<PacketHeader>) then
-            failwith "Packet data too big."
+    //member __.Rent(packetData: ReadOnlySpan<byte>) =
+    //    if packetData.Length > (PacketConstants.MaxFragmentDataSize + sizeof<PacketHeader>) then
+    //        failwith "Packet data too big."
 
-        let packetBytes = packetByteArrayPool.Rent(packetData.Length)
-        packetData.CopyTo(Span(packetBytes, 0, packetData.Length))
+    //    let packetBytes = packetByteArrayPool.Rent(packetData.Length)
+    //    packetData.CopyTo(Span(packetBytes, 0, packetData.Length))
 
-        // TODO: Add validation
+    //    // TODO: Add validation
 
-        { packetBytes = packetBytes }
+    //    { packetBytes = packetBytes }
 
-    member __.ReturnPackets(packets: Packets) =
-        packetArrayPool.Return(packets.packets)
+    //member __.ReturnPackets(packets: Packets) =
+    //    packetArrayPool.Return(packets.packets)
 
-    member __.Return(packet: Packet) =
-        packetByteArrayPool.Return(packet.packetBytes)
+    //member __.Return(packet: Packet) =
+    //    packetByteArrayPool.Return(packet.packetBytes)
      
 [<Struct>]
 type Data =
