@@ -10,6 +10,29 @@ open System.Runtime.InteropServices
 open FSharp.NativeInterop
 open System.Buffers
 
+[<Sealed>]
+type ChunkedArray<'T> =
+
+    val private chunks : 'T[][]
+    val private chunkSize : int
+    val Length : int
+
+    new (chunkSize, length) =
+        let chunkCount = (length / chunkSize) + 1
+        let chunks = Array.init chunkCount (fun _ -> Array.zeroCreate<'T> chunkSize)
+        {
+            chunks = chunks
+            chunkSize = chunkSize
+            Length = length
+        }
+
+    member this.Item 
+        with get i =
+            this.chunks.[i / this.chunkSize].[(i % this.chunkSize)]
+        and set i value =
+            this.chunks.[i / this.chunkSize].[(i % this.chunkSize)] <- value
+    
+
 [<Struct>]
 type ChunkedByteStreamState =
     {
