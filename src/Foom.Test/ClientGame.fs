@@ -151,7 +151,7 @@ type ClientGame(em: EntityManager, input: IInput, renderer: IRenderer, network) 
 
     static member Create(em, network) =
         let app = Backend.init()
-        let input = Foom.Input.Desktop.DesktopInput(app.Window) :> IInput
+        let input = Foom.Input.Desktop.DesktopInput(nativeint 0) :> IInput
 
         let desktopGL = DesktopGL(app)
         let renderer = Renderer(desktopGL) :> IRenderer

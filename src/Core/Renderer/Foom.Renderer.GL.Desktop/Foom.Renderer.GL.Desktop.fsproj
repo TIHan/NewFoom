@@ -16,11 +16,11 @@
     <Compile Include="DesktopGL.fs" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="OpenTK" Version="3.1.0" />
     <PackageReference Include="System.Numerics.Vectors" Version="4.4.0" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Foom.Math\Foom.Math.fsproj" />
-    <ProjectReference Include="..\..\..\Ferop\Ferop\Ferop.fsproj" />
     <ProjectReference Include="..\Foom.Renderer.GL.Core\Foom.Renderer.GL.Core.fsproj" />
     <ProjectReference Include="..\Foom.Renderer\Foom.Renderer.fsproj" />
   </ItemGroup>

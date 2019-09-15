@@ -153,9 +153,7 @@ type DesktopGL (app: Application) =
             Backend.stencil2 ()
 
         member this.LoadProgram (vertexSource, fragmentSource) =
-            let vertexBytes = System.Text.Encoding.UTF8.GetBytes (vertexSource)
-            let fragmentBytes = System.Text.Encoding.UTF8.GetBytes (fragmentSource)
-            Backend.loadShaders vertexBytes fragmentBytes
+            Backend.loadShaders vertexSource fragmentSource
 
         member this.UseProgram programId =
             Backend.useProgram programId

@@ -16,7 +16,9 @@
     <Compile Include="Input.fs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\Ferop\Ferop\Ferop.fsproj" />
+    <PackageReference Include="OpenTK" Version="3.1.0" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\Foom.Input\Foom.Input.fsproj" />
   </ItemGroup>
 </Project>

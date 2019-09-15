@@ -46,11 +46,12 @@ type MouseMoveEvent =
     val YRel : int
 
 [<Struct>]
-type MousePosition =
-    val X : int
-    val Y : int
-    val XRel : int
-    val YRel : int
+type MousePosition(x: int, y: int, xrel: int, yrel: int) =
+
+    member __.X = x
+    member __.Y = y
+    member __.XRel = xrel
+    member __.YRel = yrel
 
 type IInput =
 

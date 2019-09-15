@@ -26,13 +26,4 @@
     <ProjectReference Include="..\Core\Foom.Core\Foom.Core.fsproj" />
     <ProjectReference Include="..\Game\Foom.Game.Network\Foom.Game.Network.fsproj" />
   </ItemGroup>
-  <Target Name="PreBuild" BeforeTargets="PreBuildEvent">
-    <Exec Command="&quot;$(MSBuildBinPath)\MSBuild.exe&quot; &quot;$(ProjectDir)..\Ferop\Ferop.Compiler\Ferop.Compiler.fsproj&quot;" Condition=" '$(OS)' == 'WINDOWS_NT'" />
-    <Exec Command="&quot;msbuild&quot; &quot;$(ProjectDir)..\Ferop\Ferop.Compiler\Ferop.Compiler.fsproj&quot;" Condition=" '$(OS)' == 'Unix'" />
-  </Target>
-  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="$(ProjectDir)..\Ferop\Ferop.Compiler\bin\Debug\net462\Ferop.Compiler.exe $(OutDir)Foom.Renderer.GL.Desktop.dll $(OutDir)Foom.Input.Desktop.dll" />
-    <Copy SourceFiles="$(ProjectDir)..\..\Foom-deps\libs\SDL2\lib\x64\SDL2.dll" DestinationFiles="$(OutDir)SDL2.dll" />
-    <Copy SourceFiles="$(ProjectDir)..\..\Foom-deps\libs\glew\bin\Release\x64\glew32.dll" DestinationFiles="$(OutDir)glew32.dll" /> 
-  </Target>
 </Project>
