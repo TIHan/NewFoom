@@ -16,7 +16,6 @@
     <ProjectReference Include="..\Wad\Foom.Wad\Foom.Wad.fsproj" />
     <PackageReference Include="System.Collections.Immutable" Version="1.4.0" />
     <PackageReference Include="System.Numerics.Vectors" Version="4.4.0" />
-    <ProjectReference Include="..\Ferop\Ferop\Ferop.fsproj" />
     <ProjectReference Include="..\Core\Renderer\Foom.Renderer\Foom.Renderer.fsproj" />
     <ProjectReference Include="..\Core\Renderer\Foom.Renderer.GL.Core\Foom.Renderer.GL.Core.fsproj" />
     <ProjectReference Include="..\Core\Renderer\Foom.Renderer.GL.Desktop\Foom.Renderer.GL.Desktop.fsproj" />
