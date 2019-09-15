@@ -19,7 +19,10 @@ open System.Numerics
 type Application =
     private {
         window: NativeWindow
+        glContext: Graphics.GraphicsContext
     }
+
+    member this.Window = this.window
 
 [<Struct>]
 type RenderColor =
@@ -42,16 +45,24 @@ module Backend =
     let init () : Application =
         let graphicsMode = new Graphics.GraphicsMode(Graphics.ColorFormat(32), 24, 8)
         let window = new NativeWindow(1280, 720, "Foom", GameWindowFlags.FixedWindow, graphicsMode, DisplayDevice.Default)
+
+        let glContext = new Graphics.GraphicsContext(graphicsMode, window.WindowInfo, 3, 2, Graphics.GraphicsContextFlags.Default)
+        glContext.LoadAll()
+
         let mutable vao = 0
         GL.GenVertexArrays(1, &vao)
 
         GL.BindVertexArray vao
 
+        window.Visible <- true
+        window.ProcessEvents()
         {
             window = window
+            glContext = glContext
         }
 
     let exit (app: Application) : int =
+        app.glContext.Dispose()
         app.window.Close()
         app.window.Dispose()
         0
@@ -61,6 +72,7 @@ module Backend =
 
     let draw (app: Application) : unit = 
         app.window.ProcessEvents()
+        app.glContext.SwapBuffers()
 
     let makeVbo () : int =
         let mutable vbo = 0
