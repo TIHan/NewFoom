@@ -11,7 +11,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Foom.Core\Foom.Core.fsproj" />
-    <ProjectReference Include="..\Foom.Direct3D12\Foom.Direct3D12.fsproj" />
     <ProjectReference Include="..\Foom.Win32\Foom.Win32.fsproj" />
   </ItemGroup>
 

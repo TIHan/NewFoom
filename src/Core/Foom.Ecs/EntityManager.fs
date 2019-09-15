@@ -66,7 +66,6 @@ type EntityLookupData<'T when 'T : unmanaged and 'T :> IComponent> =
                 true
             else
                 false
-            
     
 type ForEachDelegate<'T when 'T : unmanaged and 'T :> IComponent> = delegate of Entity * byref<'T> -> unit
 type ForEachDelegate<'T1, 'T2 when 'T1 : unmanaged and 'T2 : unmanaged and 'T1 :> IComponent and 'T2 :> IComponent> = delegate of Entity * byref<'T1> * byref<'T2> -> unit
