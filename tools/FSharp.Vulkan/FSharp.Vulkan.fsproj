@@ -5,7 +5,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Include="FSharp.Vulkan.config">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <Compile Include="vk.fs" />
   </ItemGroup>
+
+  <ItemGroup />
 
 </Project>
