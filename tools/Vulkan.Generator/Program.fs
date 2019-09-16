@@ -20,6 +20,10 @@ type VkTypeKind =
 
 and VkType = VkType of name: string * comment: string option * VkTypeKind
 
+type VkBinding = VkBinding of name: string * value: string * comment: string option 
+
+type VkCommand = VkCommand of name: string * parTypes: string list * returnType: string
+
 type Vk = XmlProvider<"vk.xml">
 let vk = Vk.Load("vk.xml")
 
@@ -256,6 +260,39 @@ let tryGetVkType env (vkXmlType: Vk.Type) =
     | _ ->
         None, env
 
+let getVkBindings () =
+    vk.Enums
+    |> Seq.map (fun x ->
+        match x.Name, x.Type with
+        | _, None ->
+            x.Enums
+            |> Seq.choose (fun x ->
+                let valueOpt = 
+                    if x.XElement.FirstAttribute.Name.LocalName = "value" then
+                        Some x.XElement.FirstAttribute.Value
+                    else
+                        None
+                match valueOpt, x.Alias with
+                | Some value, None -> 
+                    let value =
+                        // special cases
+                        match value with
+                        | "(~0U)" -> "~~~0u"
+                        | "(~0ULL)" -> "~~~0UL"
+                        | "(~0U-1)" -> "~~~0u-1u"
+                        | "(~0U-2)" -> "~~~0u-2u"
+                        | _ -> value
+                    VkBinding(x.Name, value, x.Comment) |> Some
+                | None, Some alias -> VkBinding(x.Name, alias, x.Comment) |> Some
+                | _ -> None
+            )
+            |> List.ofSeq
+        | _ ->
+            []
+    )
+    |> List.ofSeq
+    |> List.concat
+
 let genVkEnumCase vkEnumCase =
     match vkEnumCase with
     | VkEnumCase(name, value, Some comment) ->
@@ -353,10 +390,25 @@ let genVkType env vkType =
 
         decl + body
 
-let genVkTypes env (vkTypes: VkType list) =
+let genVkTypes env vkTypes =
     vkTypes
     |> List.map (genVkType env)
     |> List.reduce (fun x y -> x + "\n\n" + y)
+
+let genVkBinding vkBinding =
+    match vkBinding with
+    | VkBinding(name, value, comment) ->
+        let comment =
+            match comment with
+            | Some comment -> sprintf "/// %s\n" comment
+            | _ -> String.Empty
+
+        sprintf "%slet %s = %s" comment name value
+
+let genVkBindings vkBindings =
+    vkBindings
+    |> List.map genVkBinding
+    |> List.reduce (fun x y -> x + "\n" + y)
 
 let genSource () =
     let primTypes =
@@ -389,13 +441,17 @@ let genSource () =
     let vkTypes =
         vkTypes
         |> List.rev
+
+    let vkBindings = getVkBindings()
+
     "// File is generated. Do not modify.\n" +
     "module rec FSharp.Vulkan\n\n" +
     "open System\n" +
     "open System.Runtime.InteropServices\n\n" +
     """#nowarn "9" """ + "\n\n" +
     genVkTypes env vkEnumTypes + "\n\n" +
-    genVkTypes env vkTypes
+    genVkTypes env vkTypes + "\n\n" +
+    genVkBindings vkBindings
 
 open System.IO
 open System.Reflection

@@ -6502,3 +6502,30 @@ type VkPhysicalDeviceCoherentMemoryFeaturesAMD =
     val mutable sType: VkStructureType
     val mutable pNext: nativeint
     val mutable deviceCoherentMemory: VkBool32
+
+let VK_MAX_PHYSICAL_DEVICE_NAME_SIZE = 256
+let VK_UUID_SIZE = 16
+let VK_LUID_SIZE = 8
+let VK_LUID_SIZE_KHR = VK_LUID_SIZE
+let VK_MAX_EXTENSION_NAME_SIZE = 256
+let VK_MAX_DESCRIPTION_SIZE = 256
+let VK_MAX_MEMORY_TYPES = 32
+/// The maximum number of unique memory heaps, each of which supporting 1 or more memory types
+let VK_MAX_MEMORY_HEAPS = 16
+let VK_LOD_CLAMP_NONE = 1000.0f
+let VK_REMAINING_MIP_LEVELS = ~~~0u
+let VK_REMAINING_ARRAY_LAYERS = ~~~0u
+let VK_WHOLE_SIZE = ~~~0UL
+let VK_ATTACHMENT_UNUSED = ~~~0u
+let VK_TRUE = 1
+let VK_FALSE = 0
+let VK_QUEUE_FAMILY_IGNORED = ~~~0u
+let VK_QUEUE_FAMILY_EXTERNAL = ~~~0u-1u
+let VK_QUEUE_FAMILY_EXTERNAL_KHR = VK_QUEUE_FAMILY_EXTERNAL
+let VK_QUEUE_FAMILY_FOREIGN_EXT = ~~~0u-2u
+let VK_SUBPASS_EXTERNAL = ~~~0u
+let VK_MAX_DEVICE_GROUP_SIZE = 32
+let VK_MAX_DEVICE_GROUP_SIZE_KHR = VK_MAX_DEVICE_GROUP_SIZE
+let VK_MAX_DRIVER_NAME_SIZE_KHR = 256
+let VK_MAX_DRIVER_INFO_SIZE_KHR = 256
+let VK_SHADER_UNUSED_NV = ~~~0u
