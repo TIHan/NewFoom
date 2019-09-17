@@ -568,13 +568,14 @@ let genFixedArrayType env typeName =
             "[<Struct;StructLayout(LayoutKind.Sequential, Size = " + string size + ");UnsafeValueType;DebuggerDisplay(\"{AsString}\")>]\n" +
             "type " + typeName + " =\n" +
             "    val mutable private _" + destTypeName + ": " + destTypeName + "\n\n" +
-            "    member x.Item with get i = NativePtr.get (&&x |> NativePtr.toNativeInt |> NativePtr.ofNativeInt<" + destTypeName + ">) i and set i value = NativePtr.set (&&x |> NativePtr.toNativeInt |> NativePtr.ofNativeInt<" + destTypeName + ">) i value\n" +
+            "    member x.Item with get i = NativePtr.get x.UnsafePtr i and set i value = NativePtr.set x.UnsafePtr i value\n" +
             "    member x.Length = " + string count + "\n" +
             "    member x.AsString =\n" +
             "        let bytes = Array.zeroCreate<byte> " + string size + "\n" +
             "        use p = fixed bytes\n" +
             "        Marshal.Copy(&&x |> NativePtr.toNativeInt, bytes, 0, " + string size + ")\n" +
-            "        UTF8Encoding.UTF8.GetString bytes\n\n"
+            "        UTF8Encoding.UTF8.GetString bytes\n" +
+            "    member x.UnsafePtr = &&x |> NativePtr.toNativeInt |> NativePtr.ofNativeInt<" + destTypeName + ">\n\n"
 
         let delay = VkDelayFixedArray(typeName, destTypeName, count, gen)
         delay, { env with delayGen = Map.add typeName delay env.delayGen }
@@ -841,6 +842,8 @@ let genSource () =
     "let inline vkMarshalString(str: string) : nativeptr<byte> = 
     let bytes = UTF8Encoding.UTF8.GetBytes str
     vkMarshalArray bytes" + "\n" +
+    "let inline vkCreateUnmanagedArray<'T when 'T : unmanaged> (count: uint32) = Marshal.AllocHGlobal(sizeof<'T> * int count) |> NativePtr.ofNativeInt<'T>\n" +
+    "let inline vkCast<'T, 'U when 'T : unmanaged and 'U : unmanaged> (ptr: nativeptr<'T>) = ptr |> NativePtr.toNativeInt |> NativePtr.ofNativeInt<'U>\n" +
     "let inline vkNull<'T when 'T : unmanaged> = nativeint 0 |> NativePtr.ofNativeInt<'T>" + "\n" +
     "let inline vkFree o = Marshal.FreeHGlobal o" + "\n\n" +
     (if env.delayGen.IsEmpty then "" else env.delayGen |> Seq.map (fun pair -> pair.Value.Gen) |> Seq.reduce (+))

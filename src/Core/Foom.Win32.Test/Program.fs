@@ -19,19 +19,18 @@ let createInstance() =
     appInfo.engineVersion <- VK_MAKE_VERSION(1u, 0u, 0u)
     appInfo.apiVersion <- VK_API_VERSION_1_0
 
+    let mutable extensionCount = 0u
     let extensions =
-        let mutable extCount = 0u
-        vkEnumerateInstanceExtensionProperties(vkNull, &&extCount, vkNull) |> checkResult
-        let extensions = Array.zeroCreate (int extCount)
-        use p = fixed extensions
-        vkEnumerateInstanceExtensionProperties(vkNull, &&extCount, p) |> checkResult
+        vkEnumerateInstanceExtensionProperties(vkNull, &&extensionCount, vkNull) |> checkResult
+        let extensions = vkCreateUnmanagedArray extensionCount
+        vkEnumerateInstanceExtensionProperties(vkNull, &&extensionCount, extensions) |> checkResult
         extensions
 
     let mutable createInfo = VkInstanceCreateInfo()
     createInfo.sType <- VkStructureType.VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO
     createInfo.pApplicationInfo <- vkMarshal appInfo
-    createInfo.enabledExtensionCount <- uint32 extensions.Length
-    createInfo.ppEnabledExtensionNames <- vkMarshalArray extensions
+    createInfo.enabledExtensionCount <- extensionCount
+    createInfo.ppEnabledExtensionNames <- vkCast extensions
     createInfo.enabledLayerCount <- 0u
 
     let mutable instance = VkInstance()

@@ -10973,6 +10973,8 @@ let inline vkMarshalArray(xs: 'T [] when 'T : unmanaged and 'U : unmanaged) : na
 let inline vkMarshalString(str: string) : nativeptr<byte> = 
     let bytes = UTF8Encoding.UTF8.GetBytes str
     vkMarshalArray bytes
+let inline vkCreateUnmanagedArray<'T when 'T : unmanaged> (count: uint32) = Marshal.AllocHGlobal(sizeof<'T> * int count) |> NativePtr.ofNativeInt<'T>
+let inline vkCast<'T, 'U when 'T : unmanaged and 'U : unmanaged> (ptr: nativeptr<'T>) = ptr |> NativePtr.toNativeInt |> NativePtr.ofNativeInt<'U>
 let inline vkNull<'T when 'T : unmanaged> = nativeint 0 |> NativePtr.ofNativeInt<'T>
 let inline vkFree o = Marshal.FreeHGlobal o
 
@@ -10980,95 +10982,103 @@ let inline vkFree o = Marshal.FreeHGlobal o
 type VkFixedArray_VkDeviceSize_16 =
     val mutable private _VkDeviceSize: VkDeviceSize
 
-    member x.Item with get i = NativePtr.get (&&x |> NativePtr.toNativeInt |> NativePtr.ofNativeInt<VkDeviceSize>) i and set i value = NativePtr.set (&&x |> NativePtr.toNativeInt |> NativePtr.ofNativeInt<VkDeviceSize>) i value
+    member x.Item with get i = NativePtr.get x.UnsafePtr i and set i value = NativePtr.set x.UnsafePtr i value
     member x.Length = 16
     member x.AsString =
         let bytes = Array.zeroCreate<byte> 128
         use p = fixed bytes
         Marshal.Copy(&&x |> NativePtr.toNativeInt, bytes, 0, 128)
         UTF8Encoding.UTF8.GetString bytes
+    member x.UnsafePtr = &&x |> NativePtr.toNativeInt |> NativePtr.ofNativeInt<VkDeviceSize>
 
 [<Struct;StructLayout(LayoutKind.Sequential, Size = 192);UnsafeValueType;DebuggerDisplay("{AsString}")>]
 type VkFixedArray_VkMemoryHeap_16 =
     val mutable private _VkMemoryHeap: VkMemoryHeap
 
-    member x.Item with get i = NativePtr.get (&&x |> NativePtr.toNativeInt |> NativePtr.ofNativeInt<VkMemoryHeap>) i and set i value = NativePtr.set (&&x |> NativePtr.toNativeInt |> NativePtr.ofNativeInt<VkMemoryHeap>) i value
+    member x.Item with get i = NativePtr.get x.UnsafePtr i and set i value = NativePtr.set x.UnsafePtr i value
     member x.Length = 16
     member x.AsString =
         let bytes = Array.zeroCreate<byte> 192
         use p = fixed bytes
         Marshal.Copy(&&x |> NativePtr.toNativeInt, bytes, 0, 192)
         UTF8Encoding.UTF8.GetString bytes
+    member x.UnsafePtr = &&x |> NativePtr.toNativeInt |> NativePtr.ofNativeInt<VkMemoryHeap>
 
 [<Struct;StructLayout(LayoutKind.Sequential, Size = 256);UnsafeValueType;DebuggerDisplay("{AsString}")>]
 type VkFixedArray_VkMemoryType_32 =
     val mutable private _VkMemoryType: VkMemoryType
 
-    member x.Item with get i = NativePtr.get (&&x |> NativePtr.toNativeInt |> NativePtr.ofNativeInt<VkMemoryType>) i and set i value = NativePtr.set (&&x |> NativePtr.toNativeInt |> NativePtr.ofNativeInt<VkMemoryType>) i value
+    member x.Item with get i = NativePtr.get x.UnsafePtr i and set i value = NativePtr.set x.UnsafePtr i value
     member x.Length = 32
     member x.AsString =
         let bytes = Array.zeroCreate<byte> 256
         use p = fixed bytes
         Marshal.Copy(&&x |> NativePtr.toNativeInt, bytes, 0, 256)
         UTF8Encoding.UTF8.GetString bytes
+    member x.UnsafePtr = &&x |> NativePtr.toNativeInt |> NativePtr.ofNativeInt<VkMemoryType>
 
 [<Struct;StructLayout(LayoutKind.Sequential, Size = 256);UnsafeValueType;DebuggerDisplay("{AsString}")>]
 type VkFixedArray_VkPhysicalDevice_32 =
     val mutable private _VkPhysicalDevice: VkPhysicalDevice
 
-    member x.Item with get i = NativePtr.get (&&x |> NativePtr.toNativeInt |> NativePtr.ofNativeInt<VkPhysicalDevice>) i and set i value = NativePtr.set (&&x |> NativePtr.toNativeInt |> NativePtr.ofNativeInt<VkPhysicalDevice>) i value
+    member x.Item with get i = NativePtr.get x.UnsafePtr i and set i value = NativePtr.set x.UnsafePtr i value
     member x.Length = 32
     member x.AsString =
         let bytes = Array.zeroCreate<byte> 256
         use p = fixed bytes
         Marshal.Copy(&&x |> NativePtr.toNativeInt, bytes, 0, 256)
         UTF8Encoding.UTF8.GetString bytes
+    member x.UnsafePtr = &&x |> NativePtr.toNativeInt |> NativePtr.ofNativeInt<VkPhysicalDevice>
 
 [<Struct;StructLayout(LayoutKind.Sequential, Size = 16);UnsafeValueType;DebuggerDisplay("{AsString}")>]
 type VkFixedArray_byte_16 =
     val mutable private _byte: byte
 
-    member x.Item with get i = NativePtr.get (&&x |> NativePtr.toNativeInt |> NativePtr.ofNativeInt<byte>) i and set i value = NativePtr.set (&&x |> NativePtr.toNativeInt |> NativePtr.ofNativeInt<byte>) i value
+    member x.Item with get i = NativePtr.get x.UnsafePtr i and set i value = NativePtr.set x.UnsafePtr i value
     member x.Length = 16
     member x.AsString =
         let bytes = Array.zeroCreate<byte> 16
         use p = fixed bytes
         Marshal.Copy(&&x |> NativePtr.toNativeInt, bytes, 0, 16)
         UTF8Encoding.UTF8.GetString bytes
+    member x.UnsafePtr = &&x |> NativePtr.toNativeInt |> NativePtr.ofNativeInt<byte>
 
 [<Struct;StructLayout(LayoutKind.Sequential, Size = 256);UnsafeValueType;DebuggerDisplay("{AsString}")>]
 type VkFixedArray_byte_256 =
     val mutable private _byte: byte
 
-    member x.Item with get i = NativePtr.get (&&x |> NativePtr.toNativeInt |> NativePtr.ofNativeInt<byte>) i and set i value = NativePtr.set (&&x |> NativePtr.toNativeInt |> NativePtr.ofNativeInt<byte>) i value
+    member x.Item with get i = NativePtr.get x.UnsafePtr i and set i value = NativePtr.set x.UnsafePtr i value
     member x.Length = 256
     member x.AsString =
         let bytes = Array.zeroCreate<byte> 256
         use p = fixed bytes
         Marshal.Copy(&&x |> NativePtr.toNativeInt, bytes, 0, 256)
         UTF8Encoding.UTF8.GetString bytes
+    member x.UnsafePtr = &&x |> NativePtr.toNativeInt |> NativePtr.ofNativeInt<byte>
 
 [<Struct;StructLayout(LayoutKind.Sequential, Size = 8);UnsafeValueType;DebuggerDisplay("{AsString}")>]
 type VkFixedArray_byte_8 =
     val mutable private _byte: byte
 
-    member x.Item with get i = NativePtr.get (&&x |> NativePtr.toNativeInt |> NativePtr.ofNativeInt<byte>) i and set i value = NativePtr.set (&&x |> NativePtr.toNativeInt |> NativePtr.ofNativeInt<byte>) i value
+    member x.Item with get i = NativePtr.get x.UnsafePtr i and set i value = NativePtr.set x.UnsafePtr i value
     member x.Length = 8
     member x.AsString =
         let bytes = Array.zeroCreate<byte> 8
         use p = fixed bytes
         Marshal.Copy(&&x |> NativePtr.toNativeInt, bytes, 0, 8)
         UTF8Encoding.UTF8.GetString bytes
+    member x.UnsafePtr = &&x |> NativePtr.toNativeInt |> NativePtr.ofNativeInt<byte>
 
 [<Struct;StructLayout(LayoutKind.Sequential, Size = 128);UnsafeValueType;DebuggerDisplay("{AsString}")>]
 type VkFixedArray_uint32_32 =
     val mutable private _uint32: uint32
 
-    member x.Item with get i = NativePtr.get (&&x |> NativePtr.toNativeInt |> NativePtr.ofNativeInt<uint32>) i and set i value = NativePtr.set (&&x |> NativePtr.toNativeInt |> NativePtr.ofNativeInt<uint32>) i value
+    member x.Item with get i = NativePtr.get x.UnsafePtr i and set i value = NativePtr.set x.UnsafePtr i value
     member x.Length = 32
     member x.AsString =
         let bytes = Array.zeroCreate<byte> 128
         use p = fixed bytes
         Marshal.Copy(&&x |> NativePtr.toNativeInt, bytes, 0, 128)
         UTF8Encoding.UTF8.GetString bytes
+    member x.UnsafePtr = &&x |> NativePtr.toNativeInt |> NativePtr.ofNativeInt<uint32>
 
