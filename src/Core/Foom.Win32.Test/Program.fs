@@ -23,7 +23,12 @@ let createApplicationInfo (appName: string) (engineName: string) =
     appInfo.apiVersion <- VK_API_VERSION_1_0
     appInfo
 
-let createInstance appName engineName =
+[<Flags>]
+type VulkanInstanceFlags =
+    | Empty                     = 0x0
+    | EnableValidationLayers    = 0x1
+
+let createInstance appName engineName flags =
     let appInfo = createApplicationInfo appName engineName
     
     let mutable extensionCount = 0u
@@ -34,13 +39,27 @@ let createInstance appName engineName =
 
         let mutable extensionNames = NativePtr.stackalloc(int extensionCount)
         vkMap extensions extensionCount extensionNames (fun x -> x.extensionName.UnsafePtr)
+
+    let validationLayers = ["VK_LAYER_KHRONOS_validation"]
+    let mutable layerCount = 0u
+    let layerNames =
+        if flags &&& VulkanInstanceFlags.EnableValidationLayers = VulkanInstanceFlags.EnableValidationLayers then
+            vkEnumerateInstanceLayerProperties(&&layerCount, vkNull) |> checkResult
+            let layers = NativePtr.stackalloc(int layerCount)
+            vkEnumerateInstanceLayerProperties(&&layerCount, layers) |> checkResult
+
+            let mutable layerNames = NativePtr.stackalloc(int layerCount)
+            vkMap layers layerCount layerNames (fun x -> x.layerName.UnsafePtr)
+        else
+            vkNull
         
     let mutable createInfo = VkInstanceCreateInfo()
     createInfo.sType <- VkStructureType.VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO
     createInfo.pApplicationInfo <- &&appInfo
     createInfo.enabledExtensionCount <- extensionCount
     createInfo.ppEnabledExtensionNames <- extensionNames
-    createInfo.enabledLayerCount <- 0u
+    createInfo.enabledLayerCount <- layerCount
+    createInfo.ppEnabledLayerNames <- layerNames
 
     let mutable instance = VkInstance()
     vkCreateInstance(&&createInfo, vkNull, &&instance) |> checkResult
@@ -57,7 +76,7 @@ type Win32ClientGame() =
     let mutable dx12 = None
 
     member __.Init(width, height, hwnd) =
-        createInstance "App" "Engine"
+        createInstance "App" "Engine" (VulkanInstanceFlags.EnableValidationLayers)
         ()
 
     override __.PreUpdate(_, _, inputs) =
