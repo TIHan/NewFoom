@@ -6,7 +6,7 @@ open FSharp.Vulkan.Interop
 #nowarn "9"
 #nowarn "51"
 
-let checkResult result =
+let inline checkResult result =
     if result <> VkResult.VK_SUCCESS then
         failwithf "%A" result
 
@@ -30,8 +30,13 @@ let createInstance() =
     let mutable createInfo = VkInstanceCreateInfo()
     createInfo.sType <- VkStructureType.VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO
     createInfo.pApplicationInfo <- vkMarshal appInfo
-    createInfo.enabledExtensionCount <- extensions.Length
-    createInfo.ppEnabledExtensionNames <- 
+    createInfo.enabledExtensionCount <- uint32 extensions.Length
+    createInfo.ppEnabledExtensionNames <- vkMarshalArray extensions
+    createInfo.enabledLayerCount <- 0u
+
+    let mutable instance = VkInstance()
+    vkCreateInstance(&&createInfo, vkNull, &&instance) |> checkResult
+    instance
 
 type Win32ServerGame() =
     inherit AbstractServerGame()
@@ -44,6 +49,7 @@ type Win32ClientGame() =
     let mutable dx12 = None
 
     member __.Init(width, height, hwnd) =
+        createInstance()
         ()
 
     override __.PreUpdate(_, _, inputs) =

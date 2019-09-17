@@ -11,6 +11,4 @@
     <Compile Include="vk.fs" />
   </ItemGroup>
 
-  <ItemGroup />
-
 </Project>
