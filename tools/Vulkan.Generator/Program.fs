@@ -829,23 +829,35 @@ let genSource () =
     genVkBindings vkBindings + "\n\n" +
     genVkFunctions env vkFunctions + "\n\n" +
     genVkBindings vkBindingsForExtensions +
+
     "let inline vkMarshal(o: 'T when 'T : unmanaged and 'U : unmanaged) : nativeptr<'U> =
     let p = Marshal.AllocHGlobal(sizeof<'T>)
     Marshal.StructureToPtr(o, p, false)
     p |> NativePtr.ofNativeInt<'U>" + "\n" +
+
     "let inline vkMarshalArray(xs: 'T [] when 'T : unmanaged and 'U : unmanaged) : nativeptr<'U> =
     let size = sizeof<'T> * xs.Length
     let p = Marshal.AllocHGlobal size |> NativePtr.ofNativeInt
     use p2 = fixed xs
     Buffer.MemoryCopy(p2 |> NativePtr.toVoidPtr, p |> NativePtr.toVoidPtr, uint64 size, uint64 size)
     p" + "\n" +
+
     "let inline vkMarshalString(str: string) : nativeptr<byte> = 
     let bytes = UTF8Encoding.UTF8.GetBytes str
     vkMarshalArray bytes" + "\n" +
-    "let inline vkCreateUnmanagedArray<'T when 'T : unmanaged> (count: uint32) = Marshal.AllocHGlobal(sizeof<'T> * int count) |> NativePtr.ofNativeInt<'T>\n" +
+
+    "let inline vkAlloc<'T when 'T : unmanaged>(count: uint32) = Marshal.AllocHGlobal(sizeof<'T> * int count) |> NativePtr.ofNativeInt<'T>\n" +
+    "let inline vkMap<'T, 'U when 'T : unmanaged and 'U : unmanaged> (count: uint32) (p: nativeptr<'T>) (f: 'T -> 'U) =
+    let count = int count
+    let size = sizeof<'T> * count
+    let p2 = Marshal.AllocHGlobal size |> NativePtr.ofNativeInt
+    for i = 0 to count - 1 do
+        NativePtr.set p2 i (f (NativePtr.get p i))
+    p2" + "\n" +
+
     "let inline vkCast<'T, 'U when 'T : unmanaged and 'U : unmanaged> (ptr: nativeptr<'T>) = ptr |> NativePtr.toNativeInt |> NativePtr.ofNativeInt<'U>\n" +
     "let inline vkNull<'T when 'T : unmanaged> = nativeint 0 |> NativePtr.ofNativeInt<'T>" + "\n" +
-    "let inline vkFree o = Marshal.FreeHGlobal o" + "\n\n" +
+    "let inline vkFree(o: nativeptr<_>) = Marshal.FreeHGlobal(o |> NativePtr.toNativeInt)" + "\n\n" +
     (if env.delayGen.IsEmpty then "" else env.delayGen |> Seq.map (fun pair -> pair.Value.Gen) |> Seq.reduce (+))
 
 open System.IO

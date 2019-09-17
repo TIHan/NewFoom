@@ -11,30 +11,41 @@ let inline checkResult result =
         failwithf "%A" result
 
 let createInstance() =
+    let applicationName = vkMarshalString "Win32Game"
+    let engineName = vkMarshalString "Win32Engine"
     let mutable appInfo = VkApplicationInfo()
     appInfo.sType <- VkStructureType.VK_STRUCTURE_TYPE_APPLICATION_INFO
-    appInfo.pApplicationName <- vkMarshalString "Win32Game"
+    appInfo.pApplicationName <- applicationName
     appInfo.applicationVersion <- VK_MAKE_VERSION(1u, 0u, 0u)
-    appInfo.pEngineName <- vkMarshalString "Win32Engine"
+    appInfo.pEngineName <- engineName
     appInfo.engineVersion <- VK_MAKE_VERSION(1u, 0u, 0u)
     appInfo.apiVersion <- VK_API_VERSION_1_0
-
+    
     let mutable extensionCount = 0u
     let extensions =
         vkEnumerateInstanceExtensionProperties(vkNull, &&extensionCount, vkNull) |> checkResult
-        let extensions = vkCreateUnmanagedArray extensionCount
+        let extensions = vkAlloc extensionCount
         vkEnumerateInstanceExtensionProperties(vkNull, &&extensionCount, extensions) |> checkResult
         extensions
-
+        
+    let appInfo = vkMarshal appInfo
+    let extensionNames = vkMap extensionCount extensions (fun x -> x.extensionName.UnsafePtr)
     let mutable createInfo = VkInstanceCreateInfo()
     createInfo.sType <- VkStructureType.VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO
-    createInfo.pApplicationInfo <- vkMarshal appInfo
+    createInfo.pApplicationInfo <- appInfo
     createInfo.enabledExtensionCount <- extensionCount
-    createInfo.ppEnabledExtensionNames <- vkCast extensions
+    createInfo.ppEnabledExtensionNames <- extensionNames
     createInfo.enabledLayerCount <- 0u
 
     let mutable instance = VkInstance()
     vkCreateInstance(&&createInfo, vkNull, &&instance) |> checkResult
+
+    vkFree applicationName
+    vkFree engineName
+    vkFree appInfo
+    vkFree extensions
+    vkFree extensionNames
+
     instance
 
 type Win32ServerGame() =

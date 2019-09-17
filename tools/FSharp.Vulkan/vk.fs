@@ -10973,10 +10973,17 @@ let inline vkMarshalArray(xs: 'T [] when 'T : unmanaged and 'U : unmanaged) : na
 let inline vkMarshalString(str: string) : nativeptr<byte> = 
     let bytes = UTF8Encoding.UTF8.GetBytes str
     vkMarshalArray bytes
-let inline vkCreateUnmanagedArray<'T when 'T : unmanaged> (count: uint32) = Marshal.AllocHGlobal(sizeof<'T> * int count) |> NativePtr.ofNativeInt<'T>
+let inline vkAlloc<'T when 'T : unmanaged>(count: uint32) = Marshal.AllocHGlobal(sizeof<'T> * int count) |> NativePtr.ofNativeInt<'T>
+let inline vkMap<'T, 'U when 'T : unmanaged and 'U : unmanaged> (count: uint32) (p: nativeptr<'T>) (f: 'T -> 'U) =
+    let count = int count
+    let size = sizeof<'T> * count
+    let p2 = Marshal.AllocHGlobal size |> NativePtr.ofNativeInt
+    for i = 0 to count - 1 do
+        NativePtr.set p2 i (f (NativePtr.get p i))
+    p2
 let inline vkCast<'T, 'U when 'T : unmanaged and 'U : unmanaged> (ptr: nativeptr<'T>) = ptr |> NativePtr.toNativeInt |> NativePtr.ofNativeInt<'U>
 let inline vkNull<'T when 'T : unmanaged> = nativeint 0 |> NativePtr.ofNativeInt<'T>
-let inline vkFree o = Marshal.FreeHGlobal o
+let inline vkFree(o: nativeptr<_>) = Marshal.FreeHGlobal(o |> NativePtr.toNativeInt)
 
 [<Struct;StructLayout(LayoutKind.Sequential, Size = 128);UnsafeValueType;DebuggerDisplay("{AsString}")>]
 type VkFixedArray_VkDeviceSize_16 =
