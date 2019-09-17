@@ -10,6 +10,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\..\tools\FSharp.Vulkan\FSharp.Vulkan.fsproj" />
     <ProjectReference Include="..\Foom.Core\Foom.Core.fsproj" />
     <ProjectReference Include="..\Foom.Win32\Foom.Win32.fsproj" />
   </ItemGroup>

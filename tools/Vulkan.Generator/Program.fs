@@ -11,19 +11,19 @@ type VkEnumCaseValue =
 
 type VkEnumCase = VkEnumCase of name: string * value: VkEnumCaseValue * comment: string option
 
-type VkMember = VkMember of name: string * typeName: string * isMutable: bool * comment: string option
+type VkMember = VkMember of name: string * typeName: string * comment: string option
 
-type VkUnionCase = VkUnionCase of name: string * typeName: string * count: int * isMutable: bool * comment: string option
+type VkUnionCase = VkUnionCase of name: string * typeName: string * comment: string option
 
 type VkTypeKind = 
     | VkEnum of cases: VkEnumCase list
     | VkFlags of cases: VkEnumCase list
-    | VkAlias of targetName: string
+    | VkAliasOrDefine of targetName: string
     | VkStruct of members: VkMember list * extendedTypes: string list
     | VkFuncPointer of parTypes: string list * returnType: string
     | VkUnion of members: VkUnionCase list
 
-and VkType = VkType of name: string * comment: string option * VkTypeKind
+and VkType = | VkType of name: string * comment: string option * VkTypeKind
 
 type VkBinding = 
     | VkBinding of name: string * value: string * comment: string option * obsoleteDescription: string option
@@ -36,6 +36,18 @@ type VkFunction = VkFunction of name: string * pars: VkParam list * returnType: 
 type Vk = XmlProvider<"vk.xml">
 let vk = Vk.Load("vk.xml")
 
+let maxPhysicalDeviceNameSize =
+    let enum =
+        vk.Enums
+        |> Array.pick (fun x -> x.Enums |> Array.find (fun x -> x.Name = "VK_MAX_PHYSICAL_DEVICE_NAME_SIZE") |> Some)
+    enum.XElement.FirstAttribute.Value |> Int32.Parse
+
+let maxExtensionNameSize =
+    let enum =
+        vk.Enums
+        |> Array.pick (fun x -> x.Enums |> Array.find (fun x -> x.Name = "VK_MAX_EXTENSION_NAME_SIZE") |> Some)
+    enum.XElement.FirstAttribute.Value |> Int32.Parse
+
 type env =
     {
         types: Map<string, VkType>
@@ -43,6 +55,11 @@ type env =
 
         extEnums: Map<string, VkEnumCase list>
     }
+
+let isVkFuncPointer env typeName =
+    match env.types.TryFind typeName with
+    | Some(VkType(_, _, VkFuncPointer _)) -> true
+    | _ -> false
 
 let rec getFixedSize env = function
     | "byte" -> sizeof<byte>
@@ -62,7 +79,7 @@ let rec getFixedSize env = function
         match vkTy with
         | VkType(_, _, VkEnum _) -> sizeof<int>
         | VkType(_, _, VkFlags _) -> sizeof<int>
-        | VkType(_, _, VkAlias target) -> getFixedSize env target
+        | VkType(_, _, VkAliasOrDefine target) -> getFixedSize env target
         | VkType(_, _, VkStruct(members, _)) ->
             members
             |> List.map (function VkMember(typeName=n) -> getFixedSize env n)
@@ -140,26 +157,27 @@ let tryGetVkEnum env (vkXmlEnums: Vk.Enums) =
     | _ ->
         None
 
-let rec isPointer (node: XNode) =
+let rec getPointerCount (node: XNode) =
     if node <> null then
         match node.NodeType with
         | XmlNodeType.Element ->
             let node = node.NextNode
             if node <> null && node.NodeType = XmlNodeType.Text then        
                 let node = node :> obj :?> XText
-                node.Value.Contains "*"
+                node.Value |> String.filter (fun x -> x = '*') |> String.length
             else
-                false
+                0
         | XmlNodeType.Text ->
             let node = node :> obj :?> XText
-            if node.Value.Contains "*" then
-                true
+            let count = node.Value |> String.filter (fun x -> x = '*') |> String.length
+            if count > 0 then
+                count
             else
-                isPointer (node.NextNode)
+                getPointerCount node.NextNode
         | _ -> 
-            isPointer (node.NextNode)
+            getPointerCount node.NextNode
     else
-        false
+        0
 
 let getTypeName env typeName (node: XNode) =
     let typeName =
@@ -167,37 +185,51 @@ let getTypeName env typeName (node: XNode) =
         | Some typeName -> typeName
         | _ -> typeName
         
-    let isPointer = isPointer node
+    let pointerCount = getPointerCount node
 
-    match typeName, isPointer with
-    | "void", true -> "nativeint"
-    | _, true -> "nativeptr<" + typeName + ">"
-    | _ -> typeName
+    match typeName, pointerCount with
+    | "void", 1 -> "nativeint"
+    | _, 1 -> "nativeptr<" + typeName + ">"
+    | _, 2 -> "nativeptr<nativeptr<" + typeName + ">>"
+    | _, 0 -> typeName
+    | _ ->
+        failwithf "Nested pointer not handled."
+
+let getVkMemberCount (vkXmlMember: Vk.Member) =
+    if vkXmlMember.XElement.Value.Contains "VK_MAX_PHYSICAL_DEVICE_NAME_SIZE" then
+        maxPhysicalDeviceNameSize
+    elif vkXmlMember.XElement.Value.Contains "VK_MAX_EXTENSION_NAME_SIZE" then
+        maxExtensionNameSize
+    else
+        1
 
 let getVkMember env (vkXmlMember: Vk.Member) =
     let typeName =
         let typeName = vkXmlMember.Type
         getTypeName env typeName vkXmlMember.XElement.FirstNode
 
-    let isMutable = not (vkXmlMember.XElement.Value.Contains "const")
+    let count = getVkMemberCount vkXmlMember
 
     let memberName = vkXmlMember.Name
     // Special case this, we cannot have a member name of "type" or "module"
     let memberName = if memberName = "type" then "typ" elif memberName = "module" then "modul" else memberName
-    VkMember(memberName, typeName, isMutable, vkXmlMember.Comment)
+
+    let typeName =
+        if count = 1 then typeName
+        else typeName + "[" + string count + "]"
+
+    VkMember(memberName, typeName, vkXmlMember.Comment)
 
 let getVkUnionCase env (vkXmlMember: Vk.Member) =
     let typeName =
         let typeName = vkXmlMember.Type
         getTypeName env typeName vkXmlMember.XElement
 
-    let isMutable = not (vkXmlMember.XElement.Value.Contains "const")
-
     let memberName = vkXmlMember.Name
     // Special case this, we cannot have a member name of "type" or "module"
     let memberName = if memberName = "type" then "typ" elif memberName = "module" then "modul" else memberName
 
-    VkUnionCase(memberName, typeName, 0, isMutable, vkXmlMember.Comment)
+    VkUnionCase(memberName, typeName, vkXmlMember.Comment)
 
 let validName = function
     | "void"
@@ -218,7 +250,7 @@ let tryGetVkType env (vkXmlType: Vk.Type) =
     match vkXmlType.Category, vkXmlType.Name, vkXmlType.Name2, vkXmlType.Alias with
     | Some catName, None, Some name, None when (catName = "basetype" || catName = "bitmask" || catName = "handle") && vkXmlType.Types.Length = 1 ->
         if catName = "handle" then
-            let vkTy = VkType(name, vkXmlType.Comment, VkAlias "nativeint")
+            let vkTy = VkType(name, vkXmlType.Comment, VkAliasOrDefine "nativeint")
             Some vkTy, { env with types = Map.add name vkTy env.types }
         else
             let target = 
@@ -227,11 +259,11 @@ let tryGetVkType env (vkXmlType: Vk.Type) =
                 | Some target -> target
                 | _ -> target
 
-            let vkTy = VkType(name, vkXmlType.Comment, VkAlias target)
+            let vkTy = VkType(name, vkXmlType.Comment, VkAliasOrDefine target)
             Some vkTy, { env with types = Map.add name vkTy env.types }
 
     | Some "struct", Some name, None, Some target ->
-        let vkTy = VkType(name, vkXmlType.Comment, VkAlias target)
+        let vkTy = VkType(name, vkXmlType.Comment, VkAliasOrDefine target)
         Some vkTy, { env with types = Map.add name vkTy env.types }
 
     | Some "struct", Some name, None, None ->
@@ -298,11 +330,11 @@ let tryGetVkType env (vkXmlType: Vk.Type) =
         Some vkTy, { env with types = Map.add name vkTy env.types }
 
     | None, Some name, None, None when validName name ->
-        let vkTy = VkType(name, vkXmlType.Comment, VkAlias "nativeint")
+        let vkTy = VkType(name, vkXmlType.Comment, VkAliasOrDefine "nativeint")
         Some vkTy, { env with types = Map.add name vkTy env.types }
 
     | Some "define", None, Some name, None when validName name ->
-        let vkTy = VkType(name, vkXmlType.Comment, VkAlias "nativeint")
+        let vkTy = VkType(name, vkXmlType.Comment, VkAliasOrDefine "nativeint")
         Some vkTy, { env with types = Map.add name vkTy env.types }
 
     | _ ->
@@ -428,13 +460,13 @@ let getVkBindingsForExtensions env =
                             | Some "-" -> -1
                             | _ -> 1
                         let value = dir * (1000000000 + ((x.Number - 1) * 1000) + offset)
-                        VkBinding(z.Name, string (uint32 value), z.Comment, None)
+                        VkBinding(z.Name, string (uint32 value), z.Comment, obsoleteDescription)
                         |> Some
                     | _ ->
                         match z.Bitpos with
                         | Some bitpos ->
                             let value = 1u <<< bitpos
-                            VkBinding(z.Name, string value, z.Comment, None)
+                            VkBinding(z.Name, string value, z.Comment, obsoleteDescription)
                             |> Some
                         | _ ->
                             tryMkVkBinding z.Name z.Alias z.Comment z.XElement
@@ -474,17 +506,17 @@ let getVkBindingsForExtensions env =
         )
     vkBindings, env
 
-let genVkEnumCase env vkEnumCase =
+let genVkEnumCase env cases vkEnumCase =
     match vkEnumCase with
     | VkEnumCase(name, value, comment) ->
-        let comment = filterComment comment
+        let comment = if comment.IsSome then "    " + filterComment comment else String.Empty
         let value =
             match value with
             | VkEnumCaseValue.UInt32 value -> string value + "u"
             | VkEnumCaseValue.Ext (extends, value) ->
                 let rec findDeepExt (extends: string) (value: string) = 
-                    let cases = env.extEnums.[extends]
-                    cases
+                    let extCases = env.extEnums.[extends]
+                    extCases @ cases
                     |> List.pick (fun x -> 
                         match x with
                         | VkEnumCase(name2, VkEnumCaseValue.Ext (extends2, value2), _) when value = name2 ->
@@ -495,52 +527,31 @@ let genVkEnumCase env vkEnumCase =
                             None
                     )
                 findDeepExt extends value
-        "    " + comment + sprintf "    | %s = %s" name value
+        comment + sprintf "    | %s = %s" name value
 
 let genVkMember vkMember =
     match vkMember with
-    | VkMember(name, typeName, isMutable, Some comment) ->
-        let mutableStr = if isMutable then "mutable " else ""
-        sprintf "    /// %s\n    val %s%s: %s" comment mutableStr name typeName
-    | VkMember(name, typeName, isMutable, _) ->
-        let mutableStr = if isMutable then "mutable " else ""
-        sprintf "    val %s%s: %s" mutableStr name typeName
+    | VkMember(name, typeName, comment) ->
+        let comment = if comment.IsSome then "    " + filterComment comment else String.Empty
+        comment + sprintf "    [<DefaultValue(false)>]\n    val mutable %s: %s" name typeName
 
 let genVkUnionCase env vkUnionCase =
     match vkUnionCase with
-    | VkUnionCase(name, typeName, count, isMutable, Some comment) ->
-        let mutableStr = if isMutable then "mutable " else ""
-        if count = 0 then
-            sprintf "    /// %s\n    [<FieldOffset(0)>] val %s%s: %s" comment mutableStr name typeName
-        else
-            let typeSize = getFixedSize env typeName
-            List.init count (fun i -> "name_" + string i)
-            |> List.mapi (fun i name ->
-                let offset = i * typeSize
-                sprintf "    /// %s\n    [<FieldOffset(%i)>] val %s%s: %s" comment offset mutableStr name typeName
-            )
-            |> List.reduce (fun x y -> x + "\n" + y)
-    | VkUnionCase(name, typeName, count, isMutable, _) ->
-        let mutableStr = if isMutable then "mutable " else ""
-        if count = 0 then
-            sprintf "    [<FieldOffset(0)>] val %s%s: %s" mutableStr name typeName
-        else
-            let typeSize = getFixedSize env typeName
-            List.init count (fun i -> "name_" + string i)
-            |> List.mapi (fun i name ->
-                let offset = i * typeSize
-                sprintf "    [<FieldOffset(%i)>] val %s%s: %s" offset mutableStr name typeName
-            )
-            |> List.reduce (fun x y -> x + "\n" + y)
+    | VkUnionCase(name, typeName, Some comment) ->
+        sprintf "    /// %s\n    [<FieldOffset(0);DefaultValue(false)>]\n    val mutable %s: %s" comment name typeName
 
-let genVkType env vkType =
+    | VkUnionCase(name, typeName, _) ->
+        sprintf "    [<FieldOffset(0);DefaultValue(false)>]\n    val mutable %s: %s" name typeName
+
+let tryGenVkType env vkType =
     match vkType with
     | VkType(name, comment, kind) ->
         let attribs =
             match kind with
             | VkFlags _ -> ["[<Flags>]\n"]
-            | VkStruct _ -> ["[<Struct>]\n"]
-            | VkUnion _ -> ["[<Struct;StructLayout(LayoutKind.Explicit)>]\n"]
+            | VkStruct _ -> ["[<Struct;NoEquality;NoComparison>]\n"]
+            | VkUnion _ -> ["[<Struct;StructLayout(LayoutKind.Explicit);NoEquality;NoComparison>]\n"]
+            //| VkFuncPointer _ -> ["[<UnmanagedFunctionPointer(CallingConvention.Winapi)>]\n"]
             | _ -> [""]
             |> List.reduce(fun x y -> x + y)
 
@@ -555,17 +566,17 @@ let genVkType env vkType =
             match kind with
             | VkEnum cases ->
                 cases
-                |> List.map (genVkEnumCase env)
+                |> List.map (genVkEnumCase env cases)
                 |> List.reduce (fun x y -> x + "\n" + y)
                 |> (+) "\n"
 
             | VkFlags cases ->
                 cases
-                |> List.map (genVkEnumCase env)
+                |> List.map (genVkEnumCase env cases)
                 |> List.reduce (fun x y -> x + "\n" + y)
                 |> (+) "\n"
 
-            | VkAlias targetName ->
+            | VkAliasOrDefine targetName ->
                 " " + targetName
 
             | VkStruct(members, _) ->
@@ -574,10 +585,11 @@ let genVkType env vkType =
                 |> List.reduce (fun x y -> x + "\n" + y)
                 |> (+) "\n"
 
-            | VkFuncPointer (parTypes, returnType) ->
-                " delegate of " +
-                (parTypes |> List.reduce (fun x y -> x + " * " + y)) +
-                " -> " + returnType
+            | VkFuncPointer (_parTypes, _returnType) ->
+                " " + "nativeint"
+                //" delegate of " +
+                //(parTypes |> List.reduce (fun x y -> x + " * " + y)) +
+                //" -> " + returnType
 
             | VkUnion cases ->
                 cases
@@ -585,11 +597,45 @@ let genVkType env vkType =
                 |> List.reduce (fun x y -> x + "\n" + y)
                 |> (+) "\n"
 
-        decl + body
+        // Define heuristics
+        match name with
+        | "VK_MAKE_VERSION" -> 
+            "let inline VK_MAKE_VERSION(major: uint32, minor: uint32, patch: uint32) = ((major <<< 22) ||| (minor <<< 12) ||| patch)"
+            |> Some
+        | "VK_VERSION_MAJOR" ->
+            "let inline VK_VERSION_MAJOR(version: uint32) = version >>> 22"
+            |> Some
+        | "VK_VERSION_MINOR" ->
+            "let inline VK_VERSION_MINOR(version: uint32) = (version >>> 12) &&& 0x3ffu"
+            |> Some
+        | "VK_VERSION_PATCH" ->
+            "let inline VK_VERSION_PATCH(version: uint32) = (version &&& 0xfffu)"
+            |> Some
+        | "VK_API_VERSION" ->
+            None // Deprecated
+        | "VK_API_VERSION_1_0" ->
+            "let VK_API_VERSION_1_0 = VK_MAKE_VERSION(1u, 0u, 0u)"
+            |> Some
+        | "VK_API_VERSION_1_1" ->
+            "let VK_API_VERSION_1_1 = VK_MAKE_VERSION(1u, 1u, 0u)"
+            |> Some
+        | "VK_HEADER_VERSION" ->
+            None // Not relevant
+        | "VK_DEFINE_HANDLE" ->
+            None // Not relevant
+        | "VK_NULL_HANDLE" ->
+            "let VK_NULL_HANDLE = nativeint 0"
+            |> Some
+        | _ ->
+            if name.Contains "VK_" then
+                failwithf "%s not handled." name
+            else
+                decl + body
+                |> Some
 
 let genVkTypes env vkTypes =
     vkTypes
-    |> List.map (genVkType env)
+    |> List.choose (tryGenVkType env)
     |> List.reduce (fun x y -> x + "\n\n" + y)
 
 let tryGenVkBinding vkBinding =
@@ -606,37 +652,52 @@ let tryGenVkBinding vkBinding =
         None
 
 let genVkBindings vkBindings =
-    vkBindings
-    |> List.choose tryGenVkBinding
-    |> List.reduce (fun x y -> x + "\n" + y)
+    let xs =
+        vkBindings
+        |> List.choose tryGenVkBinding
+    if xs.IsEmpty then
+        String.Empty
+    else
+        xs
+        |> List.reduce (fun x y -> x + "\n" + y)
 
-let filterParamAndReturnType typeName =
+let filterParamAndReturnType env typeName =
     match typeName with
     | "unit" -> "void"
     | "nativeint" -> "void*"
     | _ when typeName.StartsWith("nativeptr") ->
-        typeName.Replace("nativeptr<", String.Empty).Replace(">", String.Empty) + "&"
+        let typeName = typeName.Replace("nativeptr<", String.Empty).Replace(">", String.Empty)
+        if isVkFuncPointer env typeName then
+            typeName
+        else
+            typeName + "*"
+    | _ when typeName.StartsWith("nativeptr<nativeptr<") ->
+        let typeName = typeName.Replace("nativeptr<nativeptr<", String.Empty).Replace(">>", String.Empty)
+        if isVkFuncPointer env typeName then
+            typeName
+        else
+            typeName + "**"
     | _ -> typeName
 
-let genVkParams vkParams =
+let genVkParams env vkParams =
     if List.isEmpty vkParams then
         String.Empty
     else
         vkParams
-        |> List.map (function VkParam(name, typeName) -> filterParamAndReturnType typeName + " " + name)
+        |> List.map (function VkParam(name, typeName) -> filterParamAndReturnType env typeName + " " + name)
         |> List.reduce (fun x y -> x + ", " + y)
 
-let genVkFunction vkFunction =
+let genVkFunction env vkFunction =
     match vkFunction with
     | VkFunction(name, vkParams, returnType, comment) ->
         filterComment comment + 
         """[<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]""" + "\n" +
-        sprintf "extern %s %s" (filterParamAndReturnType returnType) name +
-        "(" + genVkParams vkParams + ")"
+        sprintf "extern %s %s" (filterParamAndReturnType env returnType) name +
+        "(" + genVkParams env vkParams + ")"
 
-let genVkFunctions vkFunctions =
+let genVkFunctions env vkFunctions =
     vkFunctions
-    |> List.map genVkFunction
+    |> List.map (genVkFunction env)
     |> List.reduce (fun x y -> x + "\n\n" + y)
 
 let genSource () =
@@ -679,13 +740,27 @@ let genSource () =
     "// File is generated. Do not modify.\n" +
     "module rec FSharp.Vulkan.Interop\n\n" +
     "open System\n" +
-    "open System.Runtime.InteropServices\n\n" +
+    "open System.Runtime.InteropServices\n" +
+    "open FSharp.NativeInterop\n\n" +
     """#nowarn "9" """ + "\n\n" +
     genVkTypes env vkEnumTypes + "\n\n" +
     genVkTypes env vkTypes + "\n\n" +
     genVkBindings vkBindings + "\n\n" +
-    genVkFunctions vkFunctions + "\n\n" +
-    genVkBindings vkBindingsForExtensions
+    genVkFunctions env vkFunctions + "\n\n" +
+    genVkBindings vkBindingsForExtensions +
+    "let inline vkMarshalString str = Marshal.StringToHGlobalAnsi str |> NativePtr.ofNativeInt<char>" + "\n" +
+    "let inline vkMarshal(o: 'T when 'T : unmanaged) : nativeptr<'T> =
+    let p = Marshal.AllocHGlobal(sizeof<'T>)
+    Marshal.StructureToPtr(o, p, false)
+    p |> NativePtr.ofNativeInt<'T>" + "\n" +
+    "let inline vkMarshalArray(xs: 'T [] when 'T : unmanaged) : nativeptr<'T> =
+    let size = sizeof<'T> * xs.Length
+    let p = Marshal.AllocHGlobal size |> NativePtr.ofNativeInt
+    use p2 = fixed xs
+    Buffer.MemoryCopy(p2 |> NativePtr.toVoidPtr, p |> NativePtr.toVoidPtr, uint64 size, uint64 size)
+    p" + "\n" +
+    "let inline vkNull<'T when 'T : unmanaged> = nativeint 0 |> NativePtr.ofNativeInt<'T>" + "\n" +
+    "let inline vkFree o = Marshal.FreeHGlobal o"
 
 open System.IO
 open System.Reflection

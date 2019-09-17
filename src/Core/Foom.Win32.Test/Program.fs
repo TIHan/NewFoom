@@ -1,7 +1,37 @@
 ﻿open System
 open Foom.Game
 open Foom.Win32
-open Foom.Direct3D12
+open FSharp.Vulkan.Interop
+
+#nowarn "9"
+#nowarn "51"
+
+let checkResult result =
+    if result <> VkResult.VK_SUCCESS then
+        failwithf "%A" result
+
+let createInstance() =
+    let mutable appInfo = VkApplicationInfo()
+    appInfo.sType <- VkStructureType.VK_STRUCTURE_TYPE_APPLICATION_INFO
+    appInfo.pApplicationName <- vkMarshalString "Win32Game"
+    appInfo.applicationVersion <- VK_MAKE_VERSION(1u, 0u, 0u)
+    appInfo.pEngineName <- vkMarshalString "Win32Engine"
+    appInfo.engineVersion <- VK_MAKE_VERSION(1u, 0u, 0u)
+    appInfo.apiVersion <- VK_API_VERSION_1_0
+
+    let extensions =
+        let mutable extCount = 0u
+        vkEnumerateInstanceExtensionProperties(vkNull, &&extCount, vkNull) |> checkResult
+        let extensions = Array.zeroCreate (int extCount)
+        use p = fixed extensions
+        vkEnumerateInstanceExtensionProperties(vkNull, &&extCount, p) |> checkResult
+        extensions
+
+    let mutable createInfo = VkInstanceCreateInfo()
+    createInfo.sType <- VkStructureType.VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO
+    createInfo.pApplicationInfo <- vkMarshal appInfo
+    createInfo.enabledExtensionCount <- extensions.Length
+    createInfo.ppEnabledExtensionNames <- 
 
 type Win32ServerGame() =
     inherit AbstractServerGame()
@@ -14,8 +44,7 @@ type Win32ClientGame() =
     let mutable dx12 = None
 
     member __.Init(width, height, hwnd) =
-        dx12 <- Some(new Direct3D12Pipeline(width, height, hwnd))
-        dx12.Value.LoadAssets()
+        ()
 
     override __.PreUpdate(_, _, inputs) =
         inputs
@@ -24,8 +53,7 @@ type Win32ClientGame() =
     override __.Update(_, _, _) = false
 
     override __.Render(_, _) =
-        dx12
-        |> Option.iter (fun dx12 -> dx12.Render())
+        ()
 
 [<EntryPoint>]
 let main argv =

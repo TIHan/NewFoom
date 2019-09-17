@@ -3,6 +3,7 @@ module rec FSharp.Vulkan.Interop
 
 open System
 open System.Runtime.InteropServices
+open FSharp.NativeInterop
 
 #nowarn "9" 
 
@@ -31,6 +32,8 @@ type VkImageLayout =
     | VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL = 1000117001u
     | VK_IMAGE_LAYOUT_SHADING_RATE_OPTIMAL_NV = 1000164003u
     | VK_IMAGE_LAYOUT_FRAGMENT_DENSITY_MAP_OPTIMAL_EXT = 1000218000u
+    | VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL_KHR = 1000117001u
+    | VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL_KHR = 1000117000u
 
 type VkAttachmentLoadOp =
     | VK_ATTACHMENT_LOAD_OP_LOAD = 0u
@@ -142,6 +145,7 @@ type VkFilter =
     | VK_FILTER_NEAREST = 0u
     | VK_FILTER_LINEAR = 1u
     | VK_FILTER_CUBIC_IMG = 1000015000u
+    | VK_FILTER_CUBIC_EXT = 1000015000u
 
 type VkSamplerMipmapMode =
     /// Choose nearest mip level
@@ -156,6 +160,8 @@ type VkSamplerAddressMode =
     | VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER = 3u
     /// Note that this defines what was previously a core enum, and so uses the 'value' attribute rather than 'offset', and does not have a suffix. This is a special case, and should not be repeated
     | VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE = 4u
+    /// Alias introduced for consistency with extension suffixing rules
+    | VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE_KHR = 4u
 
 type VkCompareOp =
     | VK_COMPARE_OP_NEVER = 0u
@@ -550,6 +556,40 @@ type VkFormat =
     | VK_FORMAT_G16_B16_R16_3PLANE_422_UNORM = 1000156031u
     | VK_FORMAT_G16_B16R16_2PLANE_422_UNORM = 1000156032u
     | VK_FORMAT_G16_B16_R16_3PLANE_444_UNORM = 1000156033u
+    | VK_FORMAT_B10X6G10X6R10X6G10X6_422_UNORM_4PACK16_KHR = 1000156011u
+    | VK_FORMAT_B12X4G12X4R12X4G12X4_422_UNORM_4PACK16_KHR = 1000156021u
+    | VK_FORMAT_B16G16R16G16_422_UNORM_KHR = 1000156028u
+    | VK_FORMAT_B8G8R8G8_422_UNORM_KHR = 1000156001u
+    | VK_FORMAT_G10X6B10X6G10X6R10X6_422_UNORM_4PACK16_KHR = 1000156010u
+    | VK_FORMAT_G10X6_B10X6R10X6_2PLANE_420_UNORM_3PACK16_KHR = 1000156013u
+    | VK_FORMAT_G10X6_B10X6R10X6_2PLANE_422_UNORM_3PACK16_KHR = 1000156015u
+    | VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_420_UNORM_3PACK16_KHR = 1000156012u
+    | VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_422_UNORM_3PACK16_KHR = 1000156014u
+    | VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_444_UNORM_3PACK16_KHR = 1000156016u
+    | VK_FORMAT_G12X4B12X4G12X4R12X4_422_UNORM_4PACK16_KHR = 1000156020u
+    | VK_FORMAT_G12X4_B12X4R12X4_2PLANE_420_UNORM_3PACK16_KHR = 1000156023u
+    | VK_FORMAT_G12X4_B12X4R12X4_2PLANE_422_UNORM_3PACK16_KHR = 1000156025u
+    | VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_420_UNORM_3PACK16_KHR = 1000156022u
+    | VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_422_UNORM_3PACK16_KHR = 1000156024u
+    | VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_444_UNORM_3PACK16_KHR = 1000156026u
+    | VK_FORMAT_G16B16G16R16_422_UNORM_KHR = 1000156027u
+    | VK_FORMAT_G16_B16R16_2PLANE_420_UNORM_KHR = 1000156030u
+    | VK_FORMAT_G16_B16R16_2PLANE_422_UNORM_KHR = 1000156032u
+    | VK_FORMAT_G16_B16_R16_3PLANE_420_UNORM_KHR = 1000156029u
+    | VK_FORMAT_G16_B16_R16_3PLANE_422_UNORM_KHR = 1000156031u
+    | VK_FORMAT_G16_B16_R16_3PLANE_444_UNORM_KHR = 1000156033u
+    | VK_FORMAT_G8B8G8R8_422_UNORM_KHR = 1000156000u
+    | VK_FORMAT_G8_B8R8_2PLANE_420_UNORM_KHR = 1000156003u
+    | VK_FORMAT_G8_B8R8_2PLANE_422_UNORM_KHR = 1000156005u
+    | VK_FORMAT_G8_B8_R8_3PLANE_420_UNORM_KHR = 1000156002u
+    | VK_FORMAT_G8_B8_R8_3PLANE_422_UNORM_KHR = 1000156004u
+    | VK_FORMAT_G8_B8_R8_3PLANE_444_UNORM_KHR = 1000156006u
+    | VK_FORMAT_R10X6G10X6B10X6A10X6_UNORM_4PACK16_KHR = 1000156009u
+    | VK_FORMAT_R10X6G10X6_UNORM_2PACK16_KHR = 1000156008u
+    | VK_FORMAT_R10X6_UNORM_PACK16_KHR = 1000156007u
+    | VK_FORMAT_R12X4G12X4B12X4A12X4_UNORM_4PACK16_KHR = 1000156019u
+    | VK_FORMAT_R12X4G12X4_UNORM_2PACK16_KHR = 1000156018u
+    | VK_FORMAT_R12X4_UNORM_PACK16_KHR = 1000156017u
 
 /// Structure type enumerant
 type VkStructureType =
@@ -931,6 +971,74 @@ type VkStructureType =
     | VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DEMOTE_TO_HELPER_INVOCATION_FEATURES_EXT = 1000276000u
     | VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXEL_BUFFER_ALIGNMENT_FEATURES_EXT = 1000281000u
     | VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXEL_BUFFER_ALIGNMENT_PROPERTIES_EXT = 1000281001u
+    | VK_STRUCTURE_TYPE_BIND_BUFFER_MEMORY_DEVICE_GROUP_INFO_KHR = 1000060013u
+    | VK_STRUCTURE_TYPE_BIND_BUFFER_MEMORY_INFO_KHR = 1000157000u
+    | VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_DEVICE_GROUP_INFO_KHR = 1000060014u
+    | VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_INFO_KHR = 1000157001u
+    | VK_STRUCTURE_TYPE_BIND_IMAGE_PLANE_MEMORY_INFO_KHR = 1000156002u
+    | VK_STRUCTURE_TYPE_BUFFER_MEMORY_REQUIREMENTS_INFO_2_KHR = 1000146000u
+    /// Backwards-compatible alias containing a typo
+    | VK_STRUCTURE_TYPE_DEBUG_REPORT_CREATE_INFO_EXT = 1000011000u
+    | VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_SUPPORT_KHR = 1000168001u
+    | VK_STRUCTURE_TYPE_DESCRIPTOR_UPDATE_TEMPLATE_CREATE_INFO_KHR = 1000085000u
+    | VK_STRUCTURE_TYPE_DEVICE_GROUP_BIND_SPARSE_INFO_KHR = 1000060006u
+    | VK_STRUCTURE_TYPE_DEVICE_GROUP_COMMAND_BUFFER_BEGIN_INFO_KHR = 1000060004u
+    | VK_STRUCTURE_TYPE_DEVICE_GROUP_DEVICE_CREATE_INFO_KHR = 1000070001u
+    | VK_STRUCTURE_TYPE_DEVICE_GROUP_RENDER_PASS_BEGIN_INFO_KHR = 1000060003u
+    | VK_STRUCTURE_TYPE_DEVICE_GROUP_SUBMIT_INFO_KHR = 1000060005u
+    | VK_STRUCTURE_TYPE_EXPORT_FENCE_CREATE_INFO_KHR = 1000113000u
+    | VK_STRUCTURE_TYPE_EXPORT_MEMORY_ALLOCATE_INFO_KHR = 1000072002u
+    | VK_STRUCTURE_TYPE_EXPORT_SEMAPHORE_CREATE_INFO_KHR = 1000077000u
+    | VK_STRUCTURE_TYPE_EXTERNAL_BUFFER_PROPERTIES_KHR = 1000071003u
+    | VK_STRUCTURE_TYPE_EXTERNAL_FENCE_PROPERTIES_KHR = 1000112001u
+    | VK_STRUCTURE_TYPE_EXTERNAL_IMAGE_FORMAT_PROPERTIES_KHR = 1000071001u
+    | VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_BUFFER_CREATE_INFO_KHR = 1000072000u
+    | VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO_KHR = 1000072001u
+    | VK_STRUCTURE_TYPE_EXTERNAL_SEMAPHORE_PROPERTIES_KHR = 1000076001u
+    | VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_2_KHR = 1000059002u
+    | VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2_KHR = 1000059003u
+    | VK_STRUCTURE_TYPE_IMAGE_MEMORY_REQUIREMENTS_INFO_2_KHR = 1000146001u
+    | VK_STRUCTURE_TYPE_IMAGE_PLANE_MEMORY_REQUIREMENTS_INFO_KHR = 1000156003u
+    | VK_STRUCTURE_TYPE_IMAGE_SPARSE_MEMORY_REQUIREMENTS_INFO_2_KHR = 1000146002u
+    | VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO_KHR = 1000117002u
+    | VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO_KHR = 1000060000u
+    | VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO_KHR = 1000127001u
+    | VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS_KHR = 1000127000u
+    | VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2_KHR = 1000146003u
+    | VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_16BIT_STORAGE_FEATURES_KHR = 1000083000u
+    | VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_ADDRESS_FEATURES_EXT = 1000244000u
+    | VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_BUFFER_INFO_KHR = 1000071002u
+    | VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_FENCE_INFO_KHR = 1000112000u
+    | VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_IMAGE_FORMAT_INFO_KHR = 1000071000u
+    | VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_SEMAPHORE_INFO_KHR = 1000076000u
+    | VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2_KHR = 1000059000u
+    | VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GROUP_PROPERTIES_KHR = 1000070000u
+    | VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES_KHR = 1000071004u
+    | VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2_KHR = 1000059004u
+    | VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_3_PROPERTIES_KHR = 1000168000u
+    | VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_PROPERTIES_2_KHR = 1000059006u
+    | VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_FEATURES_KHR = 1000053001u
+    | VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PROPERTIES_KHR = 1000053002u
+    | VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_POINT_CLIPPING_PROPERTIES_KHR = 1000117000u
+    | VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2_KHR = 1000059001u
+    | VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_YCBCR_CONVERSION_FEATURES_KHR = 1000156004u
+    | VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETER_FEATURES = 1000063000u
+    | VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT16_INT8_FEATURES_KHR = 1000082000u
+    | VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SPARSE_IMAGE_FORMAT_INFO_2_KHR = 1000059008u
+    | VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTER_FEATURES = 1000120000u
+    | VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTER_FEATURES_KHR = 1000120000u
+    | VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTERS_FEATURES_KHR = 1000120000u
+    | VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_DOMAIN_ORIGIN_STATE_CREATE_INFO_KHR = 1000117003u
+    | VK_STRUCTURE_TYPE_QUEUE_FAMILY_PROPERTIES_2_KHR = 1000059005u
+    | VK_STRUCTURE_TYPE_RENDER_PASS_INPUT_ATTACHMENT_ASPECT_CREATE_INFO_KHR = 1000117001u
+    | VK_STRUCTURE_TYPE_RENDER_PASS_MULTIVIEW_CREATE_INFO_KHR = 1000053000u
+    | VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_CREATE_INFO_KHR = 1000156000u
+    | VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_IMAGE_FORMAT_PROPERTIES_KHR = 1000156005u
+    | VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO_KHR = 1000156001u
+    | VK_STRUCTURE_TYPE_SPARSE_IMAGE_FORMAT_PROPERTIES_2_KHR = 1000059007u
+    | VK_STRUCTURE_TYPE_SPARSE_IMAGE_MEMORY_REQUIREMENTS_2_KHR = 1000146004u
+    /// Backwards-compatible alias containing a typo
+    | VK_STRUCTURE_TYPE_SURFACE_CAPABILITIES2_EXT = 1000090000u
 
 type VkSubpassContents =
     | VK_SUBPASS_CONTENTS_INLINE = 0u
@@ -988,6 +1096,8 @@ type VkResult =
     | VK_ERROR_OUT_OF_DEVICE_MEMORY = 4294967294u
     /// A host memory allocation has failed
     | VK_ERROR_OUT_OF_HOST_MEMORY = 4294967295u
+    | VK_ERROR_INVALID_EXTERNAL_HANDLE_KHR = 3294895293u
+    | VK_ERROR_OUT_OF_POOL_MEMORY_KHR = 3294898296u
 
 type VkDynamicState =
     | VK_DYNAMIC_STATE_VIEWPORT = 0u
@@ -1012,6 +1122,7 @@ type VkDescriptorUpdateTemplateType =
     | VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_DESCRIPTOR_SET = 0u
     /// Create descriptor update template for pushed descriptor updates
     | VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_PUSH_DESCRIPTORS_KHR = 1u
+    | VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_DESCRIPTOR_SET_KHR = 0u
 
 /// Enums to track objects of various types
 type VkObjectType =
@@ -1088,6 +1199,8 @@ type VkObjectType =
     | VK_OBJECT_TYPE_VALIDATION_CACHE_EXT = 1000160000u
     | VK_OBJECT_TYPE_ACCELERATION_STRUCTURE_NV = 1000165000u
     | VK_OBJECT_TYPE_PERFORMANCE_CONFIGURATION_INTEL = 1000210000u
+    | VK_OBJECT_TYPE_DESCRIPTOR_UPDATE_TEMPLATE_KHR = 1000085000u
+    | VK_OBJECT_TYPE_SAMPLER_YCBCR_CONVERSION_KHR = 1000156000u
 
 [<Flags>]
 type VkQueueFlagBits =
@@ -1137,6 +1250,7 @@ type VkMemoryHeapFlagBits =
     | VK_MEMORY_HEAP_DEVICE_LOCAL_BIT = 1u
     /// If set, heap allocations allocate multiple instances by default
     | VK_MEMORY_HEAP_MULTI_INSTANCE_BIT = 2u
+    | VK_MEMORY_HEAP_MULTI_INSTANCE_BIT_KHR = 2u
 
 [<Flags>]
 type VkAccessFlagBits =
@@ -1305,6 +1419,12 @@ type VkImageCreateFlagBits =
     | VK_IMAGE_CREATE_SAMPLE_LOCATIONS_COMPATIBLE_DEPTH_BIT_EXT = 4096u
     | VK_IMAGE_CREATE_CORNER_SAMPLED_BIT_NV = 8192u
     | VK_IMAGE_CREATE_SUBSAMPLED_BIT_EXT = 16384u
+    | VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT_KHR = 32u
+    | VK_IMAGE_CREATE_ALIAS_BIT_KHR = 1024u
+    | VK_IMAGE_CREATE_BLOCK_TEXEL_VIEW_COMPATIBLE_BIT_KHR = 128u
+    | VK_IMAGE_CREATE_DISJOINT_BIT_KHR = 512u
+    | VK_IMAGE_CREATE_EXTENDED_USAGE_BIT_KHR = 256u
+    | VK_IMAGE_CREATE_SPLIT_INSTANCE_BIND_REGIONS_BIT_KHR = 64u
 
 [<Flags>]
 type VkImageViewCreateFlagBits =
@@ -1325,6 +1445,8 @@ type VkPipelineCreateFlagBits =
     | VK_PIPELINE_CREATE_DEFER_COMPILE_BIT_NV = 32u
     | VK_PIPELINE_CREATE_CAPTURE_STATISTICS_BIT_KHR = 64u
     | VK_PIPELINE_CREATE_CAPTURE_INTERNAL_REPRESENTATIONS_BIT_KHR = 128u
+    | VK_PIPELINE_CREATE_DISPATCH_BASE_KHR = 16u
+    | VK_PIPELINE_CREATE_VIEW_INDEX_FROM_DEVICE_INDEX_BIT_KHR = 8u
 
 [<Flags>]
 type VkPipelineShaderStageCreateFlagBits =
@@ -1396,6 +1518,16 @@ type VkFormatFeatureFlagBits =
     | VK_FORMAT_FEATURE_RESERVED_26_BIT_KHR = 67108864u
     | VK_FORMAT_FEATURE_RESERVED_27_BIT_KHR = 134217728u
     | VK_FORMAT_FEATURE_RESERVED_28_BIT_KHR = 268435456u
+    | VK_FORMAT_FEATURE_COSITED_CHROMA_SAMPLES_BIT_KHR = 8388608u
+    | VK_FORMAT_FEATURE_DISJOINT_BIT_KHR = 4194304u
+    | VK_FORMAT_FEATURE_MIDPOINT_CHROMA_SAMPLES_BIT_KHR = 131072u
+    | VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_CUBIC_BIT_EXT = 8192u
+    | VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_CHROMA_RECONSTRUCTION_EXPLICIT_BIT_KHR = 1048576u
+    | VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_CHROMA_RECONSTRUCTION_EXPLICIT_FORCEABLE_BIT_KHR = 2097152u
+    | VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_LINEAR_FILTER_BIT_KHR = 262144u
+    | VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_SEPARATE_RECONSTRUCTION_FILTER_BIT_KHR = 524288u
+    | VK_FORMAT_FEATURE_TRANSFER_DST_BIT_KHR = 32768u
+    | VK_FORMAT_FEATURE_TRANSFER_SRC_BIT_KHR = 16384u
 
 [<Flags>]
 type VkQueryControlFlagBits =
@@ -1458,6 +1590,9 @@ type VkImageAspectFlagBits =
     | VK_IMAGE_ASPECT_MEMORY_PLANE_1_BIT_EXT = 256u
     | VK_IMAGE_ASPECT_MEMORY_PLANE_2_BIT_EXT = 512u
     | VK_IMAGE_ASPECT_MEMORY_PLANE_3_BIT_EXT = 1024u
+    | VK_IMAGE_ASPECT_PLANE_0_BIT_KHR = 16u
+    | VK_IMAGE_ASPECT_PLANE_1_BIT_KHR = 32u
+    | VK_IMAGE_ASPECT_PLANE_2_BIT_KHR = 64u
 
 [<Flags>]
 type VkSparseImageFormatFlagBits =
@@ -1585,6 +1720,8 @@ type VkDependencyFlagBits =
     | VK_DEPENDENCY_VIEW_LOCAL_BIT = 2u
     /// Dependency is across devices
     | VK_DEPENDENCY_DEVICE_GROUP_BIT = 4u
+    | VK_DEPENDENCY_DEVICE_GROUP_BIT_KHR = 4u
+    | VK_DEPENDENCY_VIEW_LOCAL_BIT_KHR = 2u
 
 type VkPresentModeKHR =
     | VK_PRESENT_MODE_IMMEDIATE_KHR = 0u
@@ -1611,6 +1748,8 @@ type VkColorSpaceKHR =
     | VK_COLOR_SPACE_PASS_THROUGH_EXT = 1000104013u
     | VK_COLOR_SPACE_EXTENDED_SRGB_NONLINEAR_EXT = 1000104014u
     | VK_COLOR_SPACE_DISPLAY_NATIVE_AMD = 1000213000u
+    /// Deprecated name for backwards compatibility
+    | VK_COLOR_SPACE_DCI_P3_LINEAR_EXT = 1000104003u
 
 [<Flags>]
 type VkDisplayPlaneAlphaFlagBitsKHR =
@@ -1694,6 +1833,8 @@ type VkDebugReportObjectTypeEXT =
     | VK_DEBUG_REPORT_OBJECT_TYPE_DESCRIPTOR_UPDATE_TEMPLATE_EXT = 1000011000u
     | VK_DEBUG_REPORT_OBJECT_TYPE_SAMPLER_YCBCR_CONVERSION_EXT = 1000156000u
     | VK_DEBUG_REPORT_OBJECT_TYPE_ACCELERATION_STRUCTURE_NV_EXT = 1000165000u
+    | VK_DEBUG_REPORT_OBJECT_TYPE_DESCRIPTOR_UPDATE_TEMPLATE_KHR_EXT = 1000011000u
+    | VK_DEBUG_REPORT_OBJECT_TYPE_SAMPLER_YCBCR_CONVERSION_KHR_EXT = 1000011000u
 
 type VkRasterizationOrderAMD =
     | VK_RASTERIZATION_ORDER_STRICT_AMD = 0u
@@ -1798,12 +1939,22 @@ type VkExternalMemoryHandleTypeFlagBits =
     | VK_EXTERNAL_MEMORY_HANDLE_TYPE_HOST_MAPPED_FOREIGN_MEMORY_BIT_EXT = 256u
     | VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT = 512u
     | VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID = 1024u
+    | VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D11_TEXTURE_BIT_KHR = 8u
+    | VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D11_TEXTURE_KMT_BIT_KHR = 16u
+    | VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D12_HEAP_BIT_KHR = 32u
+    | VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D12_RESOURCE_BIT_KHR = 64u
+    | VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT_KHR = 1u
+    | VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT_KHR = 2u
+    | VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT_KHR = 4u
 
 [<Flags>]
 type VkExternalMemoryFeatureFlagBits =
     | VK_EXTERNAL_MEMORY_FEATURE_DEDICATED_ONLY_BIT = 1u
     | VK_EXTERNAL_MEMORY_FEATURE_EXPORTABLE_BIT = 2u
     | VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT = 4u
+    | VK_EXTERNAL_MEMORY_FEATURE_DEDICATED_ONLY_BIT_KHR = 1u
+    | VK_EXTERNAL_MEMORY_FEATURE_EXPORTABLE_BIT_KHR = 2u
+    | VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT_KHR = 4u
 
 [<Flags>]
 type VkExternalSemaphoreHandleTypeFlagBits =
@@ -1812,15 +1963,23 @@ type VkExternalSemaphoreHandleTypeFlagBits =
     | VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT = 4u
     | VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_D3D12_FENCE_BIT = 8u
     | VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT = 16u
+    | VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_D3D12_FENCE_BIT_KHR = 8u
+    | VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_FD_BIT_KHR = 1u
+    | VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_BIT_KHR = 2u
+    | VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT_KHR = 4u
+    | VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT_KHR = 16u
 
 [<Flags>]
 type VkExternalSemaphoreFeatureFlagBits =
     | VK_EXTERNAL_SEMAPHORE_FEATURE_EXPORTABLE_BIT = 1u
     | VK_EXTERNAL_SEMAPHORE_FEATURE_IMPORTABLE_BIT = 2u
+    | VK_EXTERNAL_SEMAPHORE_FEATURE_EXPORTABLE_BIT_KHR = 1u
+    | VK_EXTERNAL_SEMAPHORE_FEATURE_IMPORTABLE_BIT_KHR = 2u
 
 [<Flags>]
 type VkSemaphoreImportFlagBits =
     | VK_SEMAPHORE_IMPORT_TEMPORARY_BIT = 1u
+    | VK_SEMAPHORE_IMPORT_TEMPORARY_BIT_KHR = 1u
 
 [<Flags>]
 type VkExternalFenceHandleTypeFlagBits =
@@ -1828,15 +1987,22 @@ type VkExternalFenceHandleTypeFlagBits =
     | VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_WIN32_BIT = 2u
     | VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT = 4u
     | VK_EXTERNAL_FENCE_HANDLE_TYPE_SYNC_FD_BIT = 8u
+    | VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_FD_BIT_KHR = 1u
+    | VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_WIN32_BIT_KHR = 2u
+    | VK_EXTERNAL_FENCE_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT_KHR = 4u
+    | VK_EXTERNAL_FENCE_HANDLE_TYPE_SYNC_FD_BIT_KHR = 8u
 
 [<Flags>]
 type VkExternalFenceFeatureFlagBits =
     | VK_EXTERNAL_FENCE_FEATURE_EXPORTABLE_BIT = 1u
     | VK_EXTERNAL_FENCE_FEATURE_IMPORTABLE_BIT = 2u
+    | VK_EXTERNAL_FENCE_FEATURE_EXPORTABLE_BIT_KHR = 1u
+    | VK_EXTERNAL_FENCE_FEATURE_IMPORTABLE_BIT_KHR = 2u
 
 [<Flags>]
 type VkFenceImportFlagBits =
     | VK_FENCE_IMPORT_TEMPORARY_BIT = 1u
+    | VK_FENCE_IMPORT_TEMPORARY_BIT_KHR = 1u
 
 [<Flags>]
 type VkSurfaceCounterFlagBitsEXT =
@@ -1863,11 +2029,16 @@ type VkPeerMemoryFeatureFlagBits =
     | VK_PEER_MEMORY_FEATURE_GENERIC_SRC_BIT = 4u
     /// Can write with and access type/command
     | VK_PEER_MEMORY_FEATURE_GENERIC_DST_BIT = 8u
+    | VK_PEER_MEMORY_FEATURE_COPY_DST_BIT_KHR = 2u
+    | VK_PEER_MEMORY_FEATURE_COPY_SRC_BIT_KHR = 1u
+    | VK_PEER_MEMORY_FEATURE_GENERIC_DST_BIT_KHR = 8u
+    | VK_PEER_MEMORY_FEATURE_GENERIC_SRC_BIT_KHR = 4u
 
 [<Flags>]
 type VkMemoryAllocateFlagBits =
     /// Force allocation on specific devices
     | VK_MEMORY_ALLOCATE_DEVICE_MASK_BIT = 1u
+    | VK_MEMORY_ALLOCATE_DEVICE_MASK_BIT_KHR = 1u
 
 [<Flags>]
 type VkDeviceGroupPresentModeFlagBitsKHR =
@@ -1912,6 +2083,8 @@ type VkSubpassDescriptionFlagBits =
 type VkPointClippingBehavior =
     | VK_POINT_CLIPPING_BEHAVIOR_ALL_CLIP_PLANES = 0u
     | VK_POINT_CLIPPING_BEHAVIOR_USER_CLIP_PLANES_ONLY = 1u
+    | VK_POINT_CLIPPING_BEHAVIOR_ALL_CLIP_PLANES_KHR = 0u
+    | VK_POINT_CLIPPING_BEHAVIOR_USER_CLIP_PLANES_ONLY_KHR = 1u
 
 type VkSamplerReductionModeEXT =
     | VK_SAMPLER_REDUCTION_MODE_WEIGHTED_AVERAGE_EXT = 0u
@@ -1921,6 +2094,8 @@ type VkSamplerReductionModeEXT =
 type VkTessellationDomainOrigin =
     | VK_TESSELLATION_DOMAIN_ORIGIN_UPPER_LEFT = 0u
     | VK_TESSELLATION_DOMAIN_ORIGIN_LOWER_LEFT = 1u
+    | VK_TESSELLATION_DOMAIN_ORIGIN_LOWER_LEFT_KHR = 1u
+    | VK_TESSELLATION_DOMAIN_ORIGIN_UPPER_LEFT_KHR = 0u
 
 type VkSamplerYcbcrModelConversion =
     | VK_SAMPLER_YCBCR_MODEL_CONVERSION_RGB_IDENTITY = 0u
@@ -1932,16 +2107,25 @@ type VkSamplerYcbcrModelConversion =
     | VK_SAMPLER_YCBCR_MODEL_CONVERSION_YCBCR_601 = 3u
     /// aka UHD YUV
     | VK_SAMPLER_YCBCR_MODEL_CONVERSION_YCBCR_2020 = 4u
+    | VK_SAMPLER_YCBCR_MODEL_CONVERSION_RGB_IDENTITY_KHR = 0u
+    | VK_SAMPLER_YCBCR_MODEL_CONVERSION_YCBCR_2020_KHR = 4u
+    | VK_SAMPLER_YCBCR_MODEL_CONVERSION_YCBCR_601_KHR = 3u
+    | VK_SAMPLER_YCBCR_MODEL_CONVERSION_YCBCR_709_KHR = 2u
+    | VK_SAMPLER_YCBCR_MODEL_CONVERSION_YCBCR_IDENTITY_KHR = 1u
 
 type VkSamplerYcbcrRange =
     /// Luma 0..1 maps to 0..255, chroma -0.5..0.5 to 1..255 (clamped)
     | VK_SAMPLER_YCBCR_RANGE_ITU_FULL = 0u
     /// Luma 0..1 maps to 16..235, chroma -0.5..0.5 to 16..240
     | VK_SAMPLER_YCBCR_RANGE_ITU_NARROW = 1u
+    | VK_SAMPLER_YCBCR_RANGE_ITU_FULL_KHR = 0u
+    | VK_SAMPLER_YCBCR_RANGE_ITU_NARROW_KHR = 1u
 
 type VkChromaLocation =
     | VK_CHROMA_LOCATION_COSITED_EVEN = 0u
     | VK_CHROMA_LOCATION_MIDPOINT = 1u
+    | VK_CHROMA_LOCATION_COSITED_EVEN_KHR = 0u
+    | VK_CHROMA_LOCATION_MIDPOINT_KHR = 1u
 
 type VkBlendOverlapEXT =
     | VK_BLEND_OVERLAP_UNCORRELATED_EXT = 0u
@@ -2225,25 +2409,19 @@ type GgpStreamDescriptor = nativeint
 
 type GgpFrameToken = nativeint
 
-type VK_MAKE_VERSION = nativeint
+let inline VK_MAKE_VERSION(major: uint32, minor: uint32, patch: uint32) = ((major <<< 22) ||| (minor <<< 12) ||| patch)
 
-type VK_VERSION_MAJOR = nativeint
+let inline VK_VERSION_MAJOR(version: uint32) = version >>> 22
 
-type VK_VERSION_MINOR = nativeint
+let inline VK_VERSION_MINOR(version: uint32) = (version >>> 12) &&& 0x3ffu
 
-type VK_VERSION_PATCH = nativeint
+let inline VK_VERSION_PATCH(version: uint32) = (version &&& 0xfffu)
 
-type VK_API_VERSION = nativeint
+let VK_API_VERSION_1_0 = VK_MAKE_VERSION(1u, 0u, 0u)
 
-type VK_API_VERSION_1_0 = nativeint
+let VK_API_VERSION_1_1 = VK_MAKE_VERSION(1u, 1u, 0u)
 
-type VK_API_VERSION_1_1 = nativeint
-
-type VK_HEADER_VERSION = nativeint
-
-type VK_DEFINE_HANDLE = nativeint
-
-type VK_NULL_HANDLE = nativeint
+let VK_NULL_HANDLE = nativeint 0
 
 type ANativeWindow = nativeint
 
@@ -2575,2084 +2753,3160 @@ type VkDebugReportCallbackEXT = nativeint
 
 type VkDebugUtilsMessengerEXT = nativeint
 
-type PFN_vkInternalAllocationNotification = delegate of nativeint * unativeint * VkInternalAllocationType * VkSystemAllocationScope -> unit
+type PFN_vkInternalAllocationNotification = nativeint
 
-type PFN_vkInternalFreeNotification = delegate of nativeint * unativeint * VkInternalAllocationType * VkSystemAllocationScope -> unit
+type PFN_vkInternalFreeNotification = nativeint
 
-type PFN_vkReallocationFunction = delegate of nativeint * nativeint * unativeint * unativeint * VkSystemAllocationScope -> nativeint
+type PFN_vkReallocationFunction = nativeint
 
-type PFN_vkAllocationFunction = delegate of nativeint * unativeint * unativeint * VkSystemAllocationScope -> nativeint
+type PFN_vkAllocationFunction = nativeint
 
-type PFN_vkFreeFunction = delegate of nativeint * nativeint -> unit
+type PFN_vkFreeFunction = nativeint
 
-type PFN_vkVoidFunction = delegate of unit -> unit
+type PFN_vkVoidFunction = nativeint
 
-type PFN_vkDebugReportCallbackEXT = delegate of VkDebugReportFlagsEXT * VkDebugReportObjectTypeEXT * uint64 * unativeint * nativeptr<int> * nativeptr<char> * nativeptr<char> * nativeint -> VkBool32
+type PFN_vkDebugReportCallbackEXT = nativeint
 
-type PFN_vkDebugUtilsMessengerCallbackEXT = delegate of VkDebugUtilsMessageSeverityFlagBitsEXT * nativeptr<VkDebugUtilsMessageTypeFlagsEXT> * nativeptr<VkDebugUtilsMessengerCallbackDataEXT> * nativeint -> VkBool32
+type PFN_vkDebugUtilsMessengerCallbackEXT = nativeint
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkBaseOutStructure =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeptr<VkBaseOutStructure>
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkBaseInStructure =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeptr<VkBaseInStructure>
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeptr<VkBaseInStructure>
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkOffset2D =
+    [<DefaultValue(false)>]
     val mutable x: int
+    [<DefaultValue(false)>]
     val mutable y: int
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkOffset3D =
+    [<DefaultValue(false)>]
     val mutable x: int
+    [<DefaultValue(false)>]
     val mutable y: int
+    [<DefaultValue(false)>]
     val mutable z: int
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkExtent2D =
+    [<DefaultValue(false)>]
     val mutable width: uint32
+    [<DefaultValue(false)>]
     val mutable height: uint32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkExtent3D =
+    [<DefaultValue(false)>]
     val mutable width: uint32
+    [<DefaultValue(false)>]
     val mutable height: uint32
+    [<DefaultValue(false)>]
     val mutable depth: uint32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkViewport =
+    [<DefaultValue(false)>]
     val mutable x: float32
+    [<DefaultValue(false)>]
     val mutable y: float32
+    [<DefaultValue(false)>]
     val mutable width: float32
+    [<DefaultValue(false)>]
     val mutable height: float32
+    [<DefaultValue(false)>]
     val mutable minDepth: float32
+    [<DefaultValue(false)>]
     val mutable maxDepth: float32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkRect2D =
+    [<DefaultValue(false)>]
     val mutable offset: VkOffset2D
+    [<DefaultValue(false)>]
     val mutable extent: VkExtent2D
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkClearRect =
+    [<DefaultValue(false)>]
     val mutable rect: VkRect2D
+    [<DefaultValue(false)>]
     val mutable baseArrayLayer: uint32
+    [<DefaultValue(false)>]
     val mutable layerCount: uint32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkComponentMapping =
+    [<DefaultValue(false)>]
     val mutable r: VkComponentSwizzle
+    [<DefaultValue(false)>]
     val mutable g: VkComponentSwizzle
+    [<DefaultValue(false)>]
     val mutable b: VkComponentSwizzle
+    [<DefaultValue(false)>]
     val mutable a: VkComponentSwizzle
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceProperties =
+    [<DefaultValue(false)>]
     val mutable apiVersion: uint32
+    [<DefaultValue(false)>]
     val mutable driverVersion: uint32
+    [<DefaultValue(false)>]
     val mutable vendorID: uint32
+    [<DefaultValue(false)>]
     val mutable deviceID: uint32
+    [<DefaultValue(false)>]
     val mutable deviceType: VkPhysicalDeviceType
-    val mutable deviceName: char
+    [<DefaultValue(false)>]
+    val mutable deviceName: char[256]
+    [<DefaultValue(false)>]
     val mutable pipelineCacheUUID: byte
+    [<DefaultValue(false)>]
     val mutable limits: VkPhysicalDeviceLimits
+    [<DefaultValue(false)>]
     val mutable sparseProperties: VkPhysicalDeviceSparseProperties
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkExtensionProperties =
     /// extension name
-    val mutable extensionName: char
+    [<DefaultValue(false)>]
+    val mutable extensionName: char[256]
     /// version of the extension specification implemented
+    [<DefaultValue(false)>]
     val mutable specVersion: uint32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkLayerProperties =
     /// layer name
-    val mutable layerName: char
+    [<DefaultValue(false)>]
+    val mutable layerName: char[256]
     /// version of the layer specification implemented
+    [<DefaultValue(false)>]
     val mutable specVersion: uint32
     /// build or release version of the layer's library
+    [<DefaultValue(false)>]
     val mutable implementationVersion: uint32
     /// Free-form description of the layer
+    [<DefaultValue(false)>]
     val mutable description: char
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkApplicationInfo =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
-    val pApplicationName: nativeptr<char>
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pApplicationName: nativeptr<char>
+    [<DefaultValue(false)>]
     val mutable applicationVersion: uint32
-    val pEngineName: nativeptr<char>
+    [<DefaultValue(false)>]
+    val mutable pEngineName: nativeptr<char>
+    [<DefaultValue(false)>]
     val mutable engineVersion: uint32
+    [<DefaultValue(false)>]
     val mutable apiVersion: uint32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkAllocationCallbacks =
+    [<DefaultValue(false)>]
     val mutable pUserData: nativeint
+    [<DefaultValue(false)>]
     val mutable pfnAllocation: PFN_vkAllocationFunction
+    [<DefaultValue(false)>]
     val mutable pfnReallocation: PFN_vkReallocationFunction
+    [<DefaultValue(false)>]
     val mutable pfnFree: PFN_vkFreeFunction
+    [<DefaultValue(false)>]
     val mutable pfnInternalAllocation: PFN_vkInternalAllocationNotification
+    [<DefaultValue(false)>]
     val mutable pfnInternalFree: PFN_vkInternalFreeNotification
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkDeviceQueueCreateInfo =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable flags: VkDeviceQueueCreateFlags
+    [<DefaultValue(false)>]
     val mutable queueFamilyIndex: uint32
+    [<DefaultValue(false)>]
     val mutable queueCount: uint32
-    val pQueuePriorities: nativeptr<float32>
+    [<DefaultValue(false)>]
+    val mutable pQueuePriorities: nativeptr<float32>
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkDeviceCreateInfo =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable flags: VkDeviceCreateFlags
+    [<DefaultValue(false)>]
     val mutable queueCreateInfoCount: uint32
-    val pQueueCreateInfos: nativeptr<VkDeviceQueueCreateInfo>
+    [<DefaultValue(false)>]
+    val mutable pQueueCreateInfos: nativeptr<VkDeviceQueueCreateInfo>
+    [<DefaultValue(false)>]
     val mutable enabledLayerCount: uint32
     /// Ordered list of layer names to be enabled
-    val ppEnabledLayerNames: nativeptr<char>
+    [<DefaultValue(false)>]
+    val mutable ppEnabledLayerNames: nativeptr<nativeptr<char>>
+    [<DefaultValue(false)>]
     val mutable enabledExtensionCount: uint32
-    val ppEnabledExtensionNames: nativeptr<char>
-    val pEnabledFeatures: nativeptr<VkPhysicalDeviceFeatures>
+    [<DefaultValue(false)>]
+    val mutable ppEnabledExtensionNames: nativeptr<nativeptr<char>>
+    [<DefaultValue(false)>]
+    val mutable pEnabledFeatures: nativeptr<VkPhysicalDeviceFeatures>
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkInstanceCreateInfo =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable flags: VkInstanceCreateFlags
-    val pApplicationInfo: nativeptr<VkApplicationInfo>
+    [<DefaultValue(false)>]
+    val mutable pApplicationInfo: nativeptr<VkApplicationInfo>
+    [<DefaultValue(false)>]
     val mutable enabledLayerCount: uint32
     /// Ordered list of layer names to be enabled
-    val ppEnabledLayerNames: nativeptr<char>
+    [<DefaultValue(false)>]
+    val mutable ppEnabledLayerNames: nativeptr<nativeptr<char>>
+    [<DefaultValue(false)>]
     val mutable enabledExtensionCount: uint32
     /// Extension names to be enabled
-    val ppEnabledExtensionNames: nativeptr<char>
+    [<DefaultValue(false)>]
+    val mutable ppEnabledExtensionNames: nativeptr<nativeptr<char>>
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkQueueFamilyProperties =
     /// Queue flags
+    [<DefaultValue(false)>]
     val mutable queueFlags: VkQueueFlags
+    [<DefaultValue(false)>]
     val mutable queueCount: uint32
+    [<DefaultValue(false)>]
     val mutable timestampValidBits: uint32
     /// Minimum alignment requirement for image transfers
+    [<DefaultValue(false)>]
     val mutable minImageTransferGranularity: VkExtent3D
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceMemoryProperties =
+    [<DefaultValue(false)>]
     val mutable memoryTypeCount: uint32
+    [<DefaultValue(false)>]
     val mutable memoryTypes: VkMemoryType
+    [<DefaultValue(false)>]
     val mutable memoryHeapCount: uint32
+    [<DefaultValue(false)>]
     val mutable memoryHeaps: VkMemoryHeap
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkMemoryAllocateInfo =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
     /// Size of memory allocation
+    [<DefaultValue(false)>]
     val mutable allocationSize: VkDeviceSize
     /// Index of the of the memory type to allocate from
+    [<DefaultValue(false)>]
     val mutable memoryTypeIndex: uint32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkMemoryRequirements =
     /// Specified in bytes
+    [<DefaultValue(false)>]
     val mutable size: VkDeviceSize
     /// Specified in bytes
+    [<DefaultValue(false)>]
     val mutable alignment: VkDeviceSize
     /// Bitmask of the allowed memory type indices into memoryTypes[] for this object
+    [<DefaultValue(false)>]
     val mutable memoryTypeBits: uint32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkSparseImageFormatProperties =
+    [<DefaultValue(false)>]
     val mutable aspectMask: VkImageAspectFlags
+    [<DefaultValue(false)>]
     val mutable imageGranularity: VkExtent3D
+    [<DefaultValue(false)>]
     val mutable flags: VkSparseImageFormatFlags
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkSparseImageMemoryRequirements =
+    [<DefaultValue(false)>]
     val mutable formatProperties: VkSparseImageFormatProperties
+    [<DefaultValue(false)>]
     val mutable imageMipTailFirstLod: uint32
     /// Specified in bytes, must be a multiple of sparse block size in bytes / alignment
+    [<DefaultValue(false)>]
     val mutable imageMipTailSize: VkDeviceSize
     /// Specified in bytes, must be a multiple of sparse block size in bytes / alignment
+    [<DefaultValue(false)>]
     val mutable imageMipTailOffset: VkDeviceSize
     /// Specified in bytes, must be a multiple of sparse block size in bytes / alignment
+    [<DefaultValue(false)>]
     val mutable imageMipTailStride: VkDeviceSize
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkMemoryType =
     /// Memory properties of this memory type
+    [<DefaultValue(false)>]
     val mutable propertyFlags: VkMemoryPropertyFlags
     /// Index of the memory heap allocations of this memory type are taken from
+    [<DefaultValue(false)>]
     val mutable heapIndex: uint32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkMemoryHeap =
     /// Available memory in the heap
+    [<DefaultValue(false)>]
     val mutable size: VkDeviceSize
     /// Flags for the heap
+    [<DefaultValue(false)>]
     val mutable flags: VkMemoryHeapFlags
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkMappedMemoryRange =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
     /// Mapped memory object
+    [<DefaultValue(false)>]
     val mutable memory: VkDeviceMemory
     /// Offset within the memory object where the range starts
+    [<DefaultValue(false)>]
     val mutable offset: VkDeviceSize
     /// Size of the range within the memory object
+    [<DefaultValue(false)>]
     val mutable size: VkDeviceSize
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkFormatProperties =
     /// Format features in case of linear tiling
+    [<DefaultValue(false)>]
     val mutable linearTilingFeatures: VkFormatFeatureFlags
     /// Format features in case of optimal tiling
+    [<DefaultValue(false)>]
     val mutable optimalTilingFeatures: VkFormatFeatureFlags
     /// Format features supported by buffers
+    [<DefaultValue(false)>]
     val mutable bufferFeatures: VkFormatFeatureFlags
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkImageFormatProperties =
     /// max image dimensions for this resource type
+    [<DefaultValue(false)>]
     val mutable maxExtent: VkExtent3D
     /// max number of mipmap levels for this resource type
+    [<DefaultValue(false)>]
     val mutable maxMipLevels: uint32
     /// max array size for this resource type
+    [<DefaultValue(false)>]
     val mutable maxArrayLayers: uint32
     /// supported sample counts for this resource type
+    [<DefaultValue(false)>]
     val mutable sampleCounts: VkSampleCountFlags
     /// max size (in bytes) of this resource type
+    [<DefaultValue(false)>]
     val mutable maxResourceSize: VkDeviceSize
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkDescriptorBufferInfo =
     /// Buffer used for this descriptor slot.
+    [<DefaultValue(false)>]
     val mutable buffer: VkBuffer
     /// Base offset from buffer start in bytes to update in the descriptor set.
+    [<DefaultValue(false)>]
     val mutable offset: VkDeviceSize
     /// Size in bytes of the buffer resource for this descriptor update.
+    [<DefaultValue(false)>]
     val mutable range: VkDeviceSize
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkDescriptorImageInfo =
     /// Sampler to write to the descriptor in case it is a SAMPLER or COMBINED_IMAGE_SAMPLER descriptor. Ignored otherwise.
+    [<DefaultValue(false)>]
     val mutable sampler: VkSampler
     /// Image view to write to the descriptor in case it is a SAMPLED_IMAGE, STORAGE_IMAGE, COMBINED_IMAGE_SAMPLER, or INPUT_ATTACHMENT descriptor. Ignored otherwise.
+    [<DefaultValue(false)>]
     val mutable imageView: VkImageView
     /// Layout the image is expected to be in when accessed using this descriptor (only used if imageView is not VK_NULL_HANDLE).
+    [<DefaultValue(false)>]
     val mutable imageLayout: VkImageLayout
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkWriteDescriptorSet =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
     /// Destination descriptor set
+    [<DefaultValue(false)>]
     val mutable dstSet: VkDescriptorSet
     /// Binding within the destination descriptor set to write
+    [<DefaultValue(false)>]
     val mutable dstBinding: uint32
     /// Array element within the destination binding to write
+    [<DefaultValue(false)>]
     val mutable dstArrayElement: uint32
     /// Number of descriptors to write (determines the size of the array pointed by pDescriptors)
+    [<DefaultValue(false)>]
     val mutable descriptorCount: uint32
     /// Descriptor type to write (determines which members of the array pointed by pDescriptors are going to be used)
+    [<DefaultValue(false)>]
     val mutable descriptorType: VkDescriptorType
     /// Sampler, image view, and layout for SAMPLER, COMBINED_IMAGE_SAMPLER, {SAMPLED,STORAGE}_IMAGE, and INPUT_ATTACHMENT descriptor types.
-    val pImageInfo: nativeptr<VkDescriptorImageInfo>
+    [<DefaultValue(false)>]
+    val mutable pImageInfo: nativeptr<VkDescriptorImageInfo>
     /// Raw buffer, size, and offset for {UNIFORM,STORAGE}_BUFFER[_DYNAMIC] descriptor types.
-    val pBufferInfo: nativeptr<VkDescriptorBufferInfo>
+    [<DefaultValue(false)>]
+    val mutable pBufferInfo: nativeptr<VkDescriptorBufferInfo>
     /// Buffer view to write to the descriptor for {UNIFORM,STORAGE}_TEXEL_BUFFER descriptor types.
-    val pTexelBufferView: nativeptr<VkBufferView>
+    [<DefaultValue(false)>]
+    val mutable pTexelBufferView: nativeptr<VkBufferView>
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkCopyDescriptorSet =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
     /// Source descriptor set
+    [<DefaultValue(false)>]
     val mutable srcSet: VkDescriptorSet
     /// Binding within the source descriptor set to copy from
+    [<DefaultValue(false)>]
     val mutable srcBinding: uint32
     /// Array element within the source binding to copy from
+    [<DefaultValue(false)>]
     val mutable srcArrayElement: uint32
     /// Destination descriptor set
+    [<DefaultValue(false)>]
     val mutable dstSet: VkDescriptorSet
     /// Binding within the destination descriptor set to copy to
+    [<DefaultValue(false)>]
     val mutable dstBinding: uint32
     /// Array element within the destination binding to copy to
+    [<DefaultValue(false)>]
     val mutable dstArrayElement: uint32
     /// Number of descriptors to write (determines the size of the array pointed by pDescriptors)
+    [<DefaultValue(false)>]
     val mutable descriptorCount: uint32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkBufferCreateInfo =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
     /// Buffer creation flags
+    [<DefaultValue(false)>]
     val mutable flags: VkBufferCreateFlags
     /// Specified in bytes
+    [<DefaultValue(false)>]
     val mutable size: VkDeviceSize
     /// Buffer usage flags
+    [<DefaultValue(false)>]
     val mutable usage: VkBufferUsageFlags
+    [<DefaultValue(false)>]
     val mutable sharingMode: VkSharingMode
+    [<DefaultValue(false)>]
     val mutable queueFamilyIndexCount: uint32
-    val pQueueFamilyIndices: nativeptr<uint32>
+    [<DefaultValue(false)>]
+    val mutable pQueueFamilyIndices: nativeptr<uint32>
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkBufferViewCreateInfo =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable flags: VkBufferViewCreateFlags
+    [<DefaultValue(false)>]
     val mutable buffer: VkBuffer
     /// Optionally specifies format of elements
+    [<DefaultValue(false)>]
     val mutable format: VkFormat
     /// Specified in bytes
+    [<DefaultValue(false)>]
     val mutable offset: VkDeviceSize
     /// View size specified in bytes
+    [<DefaultValue(false)>]
     val mutable range: VkDeviceSize
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkImageSubresource =
+    [<DefaultValue(false)>]
     val mutable aspectMask: VkImageAspectFlags
+    [<DefaultValue(false)>]
     val mutable mipLevel: uint32
+    [<DefaultValue(false)>]
     val mutable arrayLayer: uint32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkImageSubresourceLayers =
+    [<DefaultValue(false)>]
     val mutable aspectMask: VkImageAspectFlags
+    [<DefaultValue(false)>]
     val mutable mipLevel: uint32
+    [<DefaultValue(false)>]
     val mutable baseArrayLayer: uint32
+    [<DefaultValue(false)>]
     val mutable layerCount: uint32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkImageSubresourceRange =
+    [<DefaultValue(false)>]
     val mutable aspectMask: VkImageAspectFlags
+    [<DefaultValue(false)>]
     val mutable baseMipLevel: uint32
+    [<DefaultValue(false)>]
     val mutable levelCount: uint32
+    [<DefaultValue(false)>]
     val mutable baseArrayLayer: uint32
+    [<DefaultValue(false)>]
     val mutable layerCount: uint32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkMemoryBarrier =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
     /// Memory accesses from the source of the dependency to synchronize
+    [<DefaultValue(false)>]
     val mutable srcAccessMask: VkAccessFlags
     /// Memory accesses from the destination of the dependency to synchronize
+    [<DefaultValue(false)>]
     val mutable dstAccessMask: VkAccessFlags
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkBufferMemoryBarrier =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
     /// Memory accesses from the source of the dependency to synchronize
+    [<DefaultValue(false)>]
     val mutable srcAccessMask: VkAccessFlags
     /// Memory accesses from the destination of the dependency to synchronize
+    [<DefaultValue(false)>]
     val mutable dstAccessMask: VkAccessFlags
     /// Queue family to transition ownership from
+    [<DefaultValue(false)>]
     val mutable srcQueueFamilyIndex: uint32
     /// Queue family to transition ownership to
+    [<DefaultValue(false)>]
     val mutable dstQueueFamilyIndex: uint32
     /// Buffer to sync
+    [<DefaultValue(false)>]
     val mutable buffer: VkBuffer
     /// Offset within the buffer to sync
+    [<DefaultValue(false)>]
     val mutable offset: VkDeviceSize
     /// Amount of bytes to sync
+    [<DefaultValue(false)>]
     val mutable size: VkDeviceSize
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkImageMemoryBarrier =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
     /// Memory accesses from the source of the dependency to synchronize
+    [<DefaultValue(false)>]
     val mutable srcAccessMask: VkAccessFlags
     /// Memory accesses from the destination of the dependency to synchronize
+    [<DefaultValue(false)>]
     val mutable dstAccessMask: VkAccessFlags
     /// Current layout of the image
+    [<DefaultValue(false)>]
     val mutable oldLayout: VkImageLayout
     /// New layout to transition the image to
+    [<DefaultValue(false)>]
     val mutable newLayout: VkImageLayout
     /// Queue family to transition ownership from
+    [<DefaultValue(false)>]
     val mutable srcQueueFamilyIndex: uint32
     /// Queue family to transition ownership to
+    [<DefaultValue(false)>]
     val mutable dstQueueFamilyIndex: uint32
     /// Image to sync
+    [<DefaultValue(false)>]
     val mutable image: VkImage
     /// Subresource range to sync
+    [<DefaultValue(false)>]
     val mutable subresourceRange: VkImageSubresourceRange
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkImageCreateInfo =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
     /// Image creation flags
+    [<DefaultValue(false)>]
     val mutable flags: VkImageCreateFlags
+    [<DefaultValue(false)>]
     val mutable imageType: VkImageType
+    [<DefaultValue(false)>]
     val mutable format: VkFormat
+    [<DefaultValue(false)>]
     val mutable extent: VkExtent3D
+    [<DefaultValue(false)>]
     val mutable mipLevels: uint32
+    [<DefaultValue(false)>]
     val mutable arrayLayers: uint32
+    [<DefaultValue(false)>]
     val mutable samples: VkSampleCountFlagBits
+    [<DefaultValue(false)>]
     val mutable tiling: VkImageTiling
     /// Image usage flags
+    [<DefaultValue(false)>]
     val mutable usage: VkImageUsageFlags
     /// Cross-queue-family sharing mode
+    [<DefaultValue(false)>]
     val mutable sharingMode: VkSharingMode
     /// Number of queue families to share across
+    [<DefaultValue(false)>]
     val mutable queueFamilyIndexCount: uint32
     /// Array of queue family indices to share across
-    val pQueueFamilyIndices: nativeptr<uint32>
+    [<DefaultValue(false)>]
+    val mutable pQueueFamilyIndices: nativeptr<uint32>
     /// Initial image layout for all subresources
+    [<DefaultValue(false)>]
     val mutable initialLayout: VkImageLayout
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkSubresourceLayout =
     /// Specified in bytes
+    [<DefaultValue(false)>]
     val mutable offset: VkDeviceSize
     /// Specified in bytes
+    [<DefaultValue(false)>]
     val mutable size: VkDeviceSize
     /// Specified in bytes
+    [<DefaultValue(false)>]
     val mutable rowPitch: VkDeviceSize
     /// Specified in bytes
+    [<DefaultValue(false)>]
     val mutable arrayPitch: VkDeviceSize
     /// Specified in bytes
+    [<DefaultValue(false)>]
     val mutable depthPitch: VkDeviceSize
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkImageViewCreateInfo =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable flags: VkImageViewCreateFlags
+    [<DefaultValue(false)>]
     val mutable image: VkImage
+    [<DefaultValue(false)>]
     val mutable viewType: VkImageViewType
+    [<DefaultValue(false)>]
     val mutable format: VkFormat
+    [<DefaultValue(false)>]
     val mutable components: VkComponentMapping
+    [<DefaultValue(false)>]
     val mutable subresourceRange: VkImageSubresourceRange
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkBufferCopy =
     /// Specified in bytes
+    [<DefaultValue(false)>]
     val mutable srcOffset: VkDeviceSize
     /// Specified in bytes
+    [<DefaultValue(false)>]
     val mutable dstOffset: VkDeviceSize
     /// Specified in bytes
+    [<DefaultValue(false)>]
     val mutable size: VkDeviceSize
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkSparseMemoryBind =
     /// Specified in bytes
+    [<DefaultValue(false)>]
     val mutable resourceOffset: VkDeviceSize
     /// Specified in bytes
+    [<DefaultValue(false)>]
     val mutable size: VkDeviceSize
+    [<DefaultValue(false)>]
     val mutable memory: VkDeviceMemory
     /// Specified in bytes
+    [<DefaultValue(false)>]
     val mutable memoryOffset: VkDeviceSize
+    [<DefaultValue(false)>]
     val mutable flags: VkSparseMemoryBindFlags
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkSparseImageMemoryBind =
+    [<DefaultValue(false)>]
     val mutable subresource: VkImageSubresource
+    [<DefaultValue(false)>]
     val mutable offset: VkOffset3D
+    [<DefaultValue(false)>]
     val mutable extent: VkExtent3D
+    [<DefaultValue(false)>]
     val mutable memory: VkDeviceMemory
     /// Specified in bytes
+    [<DefaultValue(false)>]
     val mutable memoryOffset: VkDeviceSize
+    [<DefaultValue(false)>]
     val mutable flags: VkSparseMemoryBindFlags
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkSparseBufferMemoryBindInfo =
+    [<DefaultValue(false)>]
     val mutable buffer: VkBuffer
+    [<DefaultValue(false)>]
     val mutable bindCount: uint32
-    val pBinds: nativeptr<VkSparseMemoryBind>
+    [<DefaultValue(false)>]
+    val mutable pBinds: nativeptr<VkSparseMemoryBind>
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkSparseImageOpaqueMemoryBindInfo =
+    [<DefaultValue(false)>]
     val mutable image: VkImage
+    [<DefaultValue(false)>]
     val mutable bindCount: uint32
-    val pBinds: nativeptr<VkSparseMemoryBind>
+    [<DefaultValue(false)>]
+    val mutable pBinds: nativeptr<VkSparseMemoryBind>
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkSparseImageMemoryBindInfo =
+    [<DefaultValue(false)>]
     val mutable image: VkImage
+    [<DefaultValue(false)>]
     val mutable bindCount: uint32
-    val pBinds: nativeptr<VkSparseImageMemoryBind>
+    [<DefaultValue(false)>]
+    val mutable pBinds: nativeptr<VkSparseImageMemoryBind>
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkBindSparseInfo =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable waitSemaphoreCount: uint32
-    val pWaitSemaphores: nativeptr<VkSemaphore>
+    [<DefaultValue(false)>]
+    val mutable pWaitSemaphores: nativeptr<VkSemaphore>
+    [<DefaultValue(false)>]
     val mutable bufferBindCount: uint32
-    val pBufferBinds: nativeptr<VkSparseBufferMemoryBindInfo>
+    [<DefaultValue(false)>]
+    val mutable pBufferBinds: nativeptr<VkSparseBufferMemoryBindInfo>
+    [<DefaultValue(false)>]
     val mutable imageOpaqueBindCount: uint32
-    val pImageOpaqueBinds: nativeptr<VkSparseImageOpaqueMemoryBindInfo>
+    [<DefaultValue(false)>]
+    val mutable pImageOpaqueBinds: nativeptr<VkSparseImageOpaqueMemoryBindInfo>
+    [<DefaultValue(false)>]
     val mutable imageBindCount: uint32
-    val pImageBinds: nativeptr<VkSparseImageMemoryBindInfo>
+    [<DefaultValue(false)>]
+    val mutable pImageBinds: nativeptr<VkSparseImageMemoryBindInfo>
+    [<DefaultValue(false)>]
     val mutable signalSemaphoreCount: uint32
-    val pSignalSemaphores: nativeptr<VkSemaphore>
+    [<DefaultValue(false)>]
+    val mutable pSignalSemaphores: nativeptr<VkSemaphore>
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkImageCopy =
+    [<DefaultValue(false)>]
     val mutable srcSubresource: VkImageSubresourceLayers
     /// Specified in pixels for both compressed and uncompressed images
+    [<DefaultValue(false)>]
     val mutable srcOffset: VkOffset3D
+    [<DefaultValue(false)>]
     val mutable dstSubresource: VkImageSubresourceLayers
     /// Specified in pixels for both compressed and uncompressed images
+    [<DefaultValue(false)>]
     val mutable dstOffset: VkOffset3D
     /// Specified in pixels for both compressed and uncompressed images
+    [<DefaultValue(false)>]
     val mutable extent: VkExtent3D
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkImageBlit =
+    [<DefaultValue(false)>]
     val mutable srcSubresource: VkImageSubresourceLayers
     /// Specified in pixels for both compressed and uncompressed images
+    [<DefaultValue(false)>]
     val mutable srcOffsets: VkOffset3D
+    [<DefaultValue(false)>]
     val mutable dstSubresource: VkImageSubresourceLayers
     /// Specified in pixels for both compressed and uncompressed images
+    [<DefaultValue(false)>]
     val mutable dstOffsets: VkOffset3D
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkBufferImageCopy =
     /// Specified in bytes
+    [<DefaultValue(false)>]
     val mutable bufferOffset: VkDeviceSize
     /// Specified in texels
+    [<DefaultValue(false)>]
     val mutable bufferRowLength: uint32
+    [<DefaultValue(false)>]
     val mutable bufferImageHeight: uint32
+    [<DefaultValue(false)>]
     val mutable imageSubresource: VkImageSubresourceLayers
     /// Specified in pixels for both compressed and uncompressed images
+    [<DefaultValue(false)>]
     val mutable imageOffset: VkOffset3D
     /// Specified in pixels for both compressed and uncompressed images
+    [<DefaultValue(false)>]
     val mutable imageExtent: VkExtent3D
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkImageResolve =
+    [<DefaultValue(false)>]
     val mutable srcSubresource: VkImageSubresourceLayers
+    [<DefaultValue(false)>]
     val mutable srcOffset: VkOffset3D
+    [<DefaultValue(false)>]
     val mutable dstSubresource: VkImageSubresourceLayers
+    [<DefaultValue(false)>]
     val mutable dstOffset: VkOffset3D
+    [<DefaultValue(false)>]
     val mutable extent: VkExtent3D
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkShaderModuleCreateInfo =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable flags: VkShaderModuleCreateFlags
     /// Specified in bytes
+    [<DefaultValue(false)>]
     val mutable codeSize: unativeint
     /// Binary code of size codeSize
-    val pCode: nativeptr<uint32>
+    [<DefaultValue(false)>]
+    val mutable pCode: nativeptr<uint32>
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkDescriptorSetLayoutBinding =
     /// Binding number for this entry
+    [<DefaultValue(false)>]
     val mutable binding: uint32
     /// Type of the descriptors in this binding
+    [<DefaultValue(false)>]
     val mutable descriptorType: VkDescriptorType
     /// Number of descriptors in this binding
+    [<DefaultValue(false)>]
     val mutable descriptorCount: uint32
     /// Shader stages this binding is visible to
+    [<DefaultValue(false)>]
     val mutable stageFlags: VkShaderStageFlags
     /// Immutable samplers (used if descriptor type is SAMPLER or COMBINED_IMAGE_SAMPLER, is either NULL or contains count number of elements)
-    val pImmutableSamplers: nativeptr<VkSampler>
+    [<DefaultValue(false)>]
+    val mutable pImmutableSamplers: nativeptr<VkSampler>
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkDescriptorSetLayoutCreateInfo =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable flags: VkDescriptorSetLayoutCreateFlags
     /// Number of bindings in the descriptor set layout
+    [<DefaultValue(false)>]
     val mutable bindingCount: uint32
     /// Array of descriptor set layout bindings
-    val pBindings: nativeptr<VkDescriptorSetLayoutBinding>
+    [<DefaultValue(false)>]
+    val mutable pBindings: nativeptr<VkDescriptorSetLayoutBinding>
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkDescriptorPoolSize =
+    [<DefaultValue(false)>]
     val mutable typ: VkDescriptorType
+    [<DefaultValue(false)>]
     val mutable descriptorCount: uint32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkDescriptorPoolCreateInfo =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable flags: VkDescriptorPoolCreateFlags
+    [<DefaultValue(false)>]
     val mutable maxSets: uint32
+    [<DefaultValue(false)>]
     val mutable poolSizeCount: uint32
-    val pPoolSizes: nativeptr<VkDescriptorPoolSize>
+    [<DefaultValue(false)>]
+    val mutable pPoolSizes: nativeptr<VkDescriptorPoolSize>
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkDescriptorSetAllocateInfo =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable descriptorPool: VkDescriptorPool
+    [<DefaultValue(false)>]
     val mutable descriptorSetCount: uint32
-    val pSetLayouts: nativeptr<VkDescriptorSetLayout>
+    [<DefaultValue(false)>]
+    val mutable pSetLayouts: nativeptr<VkDescriptorSetLayout>
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkSpecializationMapEntry =
     /// The SpecConstant ID specified in the BIL
-    val constantID: uint32
+    [<DefaultValue(false)>]
+    val mutable constantID: uint32
     /// Offset of the value in the data block
+    [<DefaultValue(false)>]
     val mutable offset: uint32
     /// Size in bytes of the SpecConstant
+    [<DefaultValue(false)>]
     val mutable size: unativeint
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkSpecializationInfo =
     /// Number of entries in the map
+    [<DefaultValue(false)>]
     val mutable mapEntryCount: uint32
     /// Array of map entries
-    val pMapEntries: nativeptr<VkSpecializationMapEntry>
+    [<DefaultValue(false)>]
+    val mutable pMapEntries: nativeptr<VkSpecializationMapEntry>
     /// Size in bytes of pData
+    [<DefaultValue(false)>]
     val mutable dataSize: unativeint
     /// Pointer to SpecConstant data
-    val pData: nativeint
+    [<DefaultValue(false)>]
+    val mutable pData: nativeint
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPipelineShaderStageCreateInfo =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable flags: VkPipelineShaderStageCreateFlags
     /// Shader stage
+    [<DefaultValue(false)>]
     val mutable stage: VkShaderStageFlagBits
     /// Module containing entry point
+    [<DefaultValue(false)>]
     val mutable modul: VkShaderModule
     /// Null-terminated entry point name
-    val pName: nativeptr<char>
-    val pSpecializationInfo: nativeptr<VkSpecializationInfo>
+    [<DefaultValue(false)>]
+    val mutable pName: nativeptr<char>
+    [<DefaultValue(false)>]
+    val mutable pSpecializationInfo: nativeptr<VkSpecializationInfo>
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkComputePipelineCreateInfo =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
     /// Pipeline creation flags
+    [<DefaultValue(false)>]
     val mutable flags: VkPipelineCreateFlags
+    [<DefaultValue(false)>]
     val mutable stage: VkPipelineShaderStageCreateInfo
     /// Interface layout of the pipeline
+    [<DefaultValue(false)>]
     val mutable layout: VkPipelineLayout
     /// If VK_PIPELINE_CREATE_DERIVATIVE_BIT is set and this value is nonzero, it specifies the handle of the base pipeline this is a derivative of
+    [<DefaultValue(false)>]
     val mutable basePipelineHandle: VkPipeline
     /// If VK_PIPELINE_CREATE_DERIVATIVE_BIT is set and this value is not -1, it specifies an index into pCreateInfos of the base pipeline this is a derivative of
+    [<DefaultValue(false)>]
     val mutable basePipelineIndex: int
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkVertexInputBindingDescription =
     /// Vertex buffer binding id
+    [<DefaultValue(false)>]
     val mutable binding: uint32
     /// Distance between vertices in bytes (0 = no advancement)
+    [<DefaultValue(false)>]
     val mutable stride: uint32
     /// The rate at which the vertex data is consumed
+    [<DefaultValue(false)>]
     val mutable inputRate: VkVertexInputRate
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkVertexInputAttributeDescription =
     /// location of the shader vertex attrib
+    [<DefaultValue(false)>]
     val mutable location: uint32
     /// Vertex buffer binding id
+    [<DefaultValue(false)>]
     val mutable binding: uint32
     /// format of source data
+    [<DefaultValue(false)>]
     val mutable format: VkFormat
     /// Offset of first element in bytes from base of vertex
+    [<DefaultValue(false)>]
     val mutable offset: uint32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPipelineVertexInputStateCreateInfo =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable flags: VkPipelineVertexInputStateCreateFlags
     /// number of bindings
+    [<DefaultValue(false)>]
     val mutable vertexBindingDescriptionCount: uint32
-    val pVertexBindingDescriptions: nativeptr<VkVertexInputBindingDescription>
+    [<DefaultValue(false)>]
+    val mutable pVertexBindingDescriptions: nativeptr<VkVertexInputBindingDescription>
     /// number of attributes
+    [<DefaultValue(false)>]
     val mutable vertexAttributeDescriptionCount: uint32
-    val pVertexAttributeDescriptions: nativeptr<VkVertexInputAttributeDescription>
+    [<DefaultValue(false)>]
+    val mutable pVertexAttributeDescriptions: nativeptr<VkVertexInputAttributeDescription>
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPipelineInputAssemblyStateCreateInfo =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable flags: VkPipelineInputAssemblyStateCreateFlags
+    [<DefaultValue(false)>]
     val mutable topology: VkPrimitiveTopology
+    [<DefaultValue(false)>]
     val mutable primitiveRestartEnable: VkBool32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPipelineTessellationStateCreateInfo =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable flags: VkPipelineTessellationStateCreateFlags
+    [<DefaultValue(false)>]
     val mutable patchControlPoints: uint32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPipelineViewportStateCreateInfo =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable flags: VkPipelineViewportStateCreateFlags
+    [<DefaultValue(false)>]
     val mutable viewportCount: uint32
-    val pViewports: nativeptr<VkViewport>
+    [<DefaultValue(false)>]
+    val mutable pViewports: nativeptr<VkViewport>
+    [<DefaultValue(false)>]
     val mutable scissorCount: uint32
-    val pScissors: nativeptr<VkRect2D>
+    [<DefaultValue(false)>]
+    val mutable pScissors: nativeptr<VkRect2D>
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPipelineRasterizationStateCreateInfo =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable flags: VkPipelineRasterizationStateCreateFlags
+    [<DefaultValue(false)>]
     val mutable depthClampEnable: VkBool32
+    [<DefaultValue(false)>]
     val mutable rasterizerDiscardEnable: VkBool32
     /// optional (GL45)
+    [<DefaultValue(false)>]
     val mutable polygonMode: VkPolygonMode
+    [<DefaultValue(false)>]
     val mutable cullMode: VkCullModeFlags
+    [<DefaultValue(false)>]
     val mutable frontFace: VkFrontFace
+    [<DefaultValue(false)>]
     val mutable depthBiasEnable: VkBool32
+    [<DefaultValue(false)>]
     val mutable depthBiasConstantFactor: float32
+    [<DefaultValue(false)>]
     val mutable depthBiasClamp: float32
+    [<DefaultValue(false)>]
     val mutable depthBiasSlopeFactor: float32
+    [<DefaultValue(false)>]
     val mutable lineWidth: float32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPipelineMultisampleStateCreateInfo =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable flags: VkPipelineMultisampleStateCreateFlags
     /// Number of samples used for rasterization
+    [<DefaultValue(false)>]
     val mutable rasterizationSamples: VkSampleCountFlagBits
     /// optional (GL45)
+    [<DefaultValue(false)>]
     val mutable sampleShadingEnable: VkBool32
     /// optional (GL45)
+    [<DefaultValue(false)>]
     val mutable minSampleShading: float32
     /// Array of sampleMask words
-    val pSampleMask: nativeptr<VkSampleMask>
+    [<DefaultValue(false)>]
+    val mutable pSampleMask: nativeptr<VkSampleMask>
+    [<DefaultValue(false)>]
     val mutable alphaToCoverageEnable: VkBool32
+    [<DefaultValue(false)>]
     val mutable alphaToOneEnable: VkBool32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPipelineColorBlendAttachmentState =
+    [<DefaultValue(false)>]
     val mutable blendEnable: VkBool32
+    [<DefaultValue(false)>]
     val mutable srcColorBlendFactor: VkBlendFactor
+    [<DefaultValue(false)>]
     val mutable dstColorBlendFactor: VkBlendFactor
+    [<DefaultValue(false)>]
     val mutable colorBlendOp: VkBlendOp
+    [<DefaultValue(false)>]
     val mutable srcAlphaBlendFactor: VkBlendFactor
+    [<DefaultValue(false)>]
     val mutable dstAlphaBlendFactor: VkBlendFactor
+    [<DefaultValue(false)>]
     val mutable alphaBlendOp: VkBlendOp
+    [<DefaultValue(false)>]
     val mutable colorWriteMask: VkColorComponentFlags
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPipelineColorBlendStateCreateInfo =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable flags: VkPipelineColorBlendStateCreateFlags
+    [<DefaultValue(false)>]
     val mutable logicOpEnable: VkBool32
+    [<DefaultValue(false)>]
     val mutable logicOp: VkLogicOp
     /// # of pAttachments
+    [<DefaultValue(false)>]
     val mutable attachmentCount: uint32
-    val pAttachments: nativeptr<VkPipelineColorBlendAttachmentState>
+    [<DefaultValue(false)>]
+    val mutable pAttachments: nativeptr<VkPipelineColorBlendAttachmentState>
+    [<DefaultValue(false)>]
     val mutable blendConstants: float32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPipelineDynamicStateCreateInfo =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable flags: VkPipelineDynamicStateCreateFlags
+    [<DefaultValue(false)>]
     val mutable dynamicStateCount: uint32
-    val pDynamicStates: nativeptr<VkDynamicState>
+    [<DefaultValue(false)>]
+    val mutable pDynamicStates: nativeptr<VkDynamicState>
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkStencilOpState =
+    [<DefaultValue(false)>]
     val mutable failOp: VkStencilOp
+    [<DefaultValue(false)>]
     val mutable passOp: VkStencilOp
+    [<DefaultValue(false)>]
     val mutable depthFailOp: VkStencilOp
+    [<DefaultValue(false)>]
     val mutable compareOp: VkCompareOp
+    [<DefaultValue(false)>]
     val mutable compareMask: uint32
+    [<DefaultValue(false)>]
     val mutable writeMask: uint32
+    [<DefaultValue(false)>]
     val mutable reference: uint32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPipelineDepthStencilStateCreateInfo =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable flags: VkPipelineDepthStencilStateCreateFlags
+    [<DefaultValue(false)>]
     val mutable depthTestEnable: VkBool32
+    [<DefaultValue(false)>]
     val mutable depthWriteEnable: VkBool32
+    [<DefaultValue(false)>]
     val mutable depthCompareOp: VkCompareOp
     /// optional (depth_bounds_test)
+    [<DefaultValue(false)>]
     val mutable depthBoundsTestEnable: VkBool32
+    [<DefaultValue(false)>]
     val mutable stencilTestEnable: VkBool32
+    [<DefaultValue(false)>]
     val mutable front: VkStencilOpState
+    [<DefaultValue(false)>]
     val mutable back: VkStencilOpState
+    [<DefaultValue(false)>]
     val mutable minDepthBounds: float32
+    [<DefaultValue(false)>]
     val mutable maxDepthBounds: float32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkGraphicsPipelineCreateInfo =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
     /// Pipeline creation flags
+    [<DefaultValue(false)>]
     val mutable flags: VkPipelineCreateFlags
+    [<DefaultValue(false)>]
     val mutable stageCount: uint32
     /// One entry for each active shader stage
-    val pStages: nativeptr<VkPipelineShaderStageCreateInfo>
-    val pVertexInputState: nativeptr<VkPipelineVertexInputStateCreateInfo>
-    val pInputAssemblyState: nativeptr<VkPipelineInputAssemblyStateCreateInfo>
-    val pTessellationState: nativeptr<VkPipelineTessellationStateCreateInfo>
-    val pViewportState: nativeptr<VkPipelineViewportStateCreateInfo>
-    val pRasterizationState: nativeptr<VkPipelineRasterizationStateCreateInfo>
-    val pMultisampleState: nativeptr<VkPipelineMultisampleStateCreateInfo>
-    val pDepthStencilState: nativeptr<VkPipelineDepthStencilStateCreateInfo>
-    val pColorBlendState: nativeptr<VkPipelineColorBlendStateCreateInfo>
-    val pDynamicState: nativeptr<VkPipelineDynamicStateCreateInfo>
+    [<DefaultValue(false)>]
+    val mutable pStages: nativeptr<VkPipelineShaderStageCreateInfo>
+    [<DefaultValue(false)>]
+    val mutable pVertexInputState: nativeptr<VkPipelineVertexInputStateCreateInfo>
+    [<DefaultValue(false)>]
+    val mutable pInputAssemblyState: nativeptr<VkPipelineInputAssemblyStateCreateInfo>
+    [<DefaultValue(false)>]
+    val mutable pTessellationState: nativeptr<VkPipelineTessellationStateCreateInfo>
+    [<DefaultValue(false)>]
+    val mutable pViewportState: nativeptr<VkPipelineViewportStateCreateInfo>
+    [<DefaultValue(false)>]
+    val mutable pRasterizationState: nativeptr<VkPipelineRasterizationStateCreateInfo>
+    [<DefaultValue(false)>]
+    val mutable pMultisampleState: nativeptr<VkPipelineMultisampleStateCreateInfo>
+    [<DefaultValue(false)>]
+    val mutable pDepthStencilState: nativeptr<VkPipelineDepthStencilStateCreateInfo>
+    [<DefaultValue(false)>]
+    val mutable pColorBlendState: nativeptr<VkPipelineColorBlendStateCreateInfo>
+    [<DefaultValue(false)>]
+    val mutable pDynamicState: nativeptr<VkPipelineDynamicStateCreateInfo>
     /// Interface layout of the pipeline
+    [<DefaultValue(false)>]
     val mutable layout: VkPipelineLayout
+    [<DefaultValue(false)>]
     val mutable renderPass: VkRenderPass
+    [<DefaultValue(false)>]
     val mutable subpass: uint32
     /// If VK_PIPELINE_CREATE_DERIVATIVE_BIT is set and this value is nonzero, it specifies the handle of the base pipeline this is a derivative of
+    [<DefaultValue(false)>]
     val mutable basePipelineHandle: VkPipeline
     /// If VK_PIPELINE_CREATE_DERIVATIVE_BIT is set and this value is not -1, it specifies an index into pCreateInfos of the base pipeline this is a derivative of
+    [<DefaultValue(false)>]
     val mutable basePipelineIndex: int
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPipelineCacheCreateInfo =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable flags: VkPipelineCacheCreateFlags
     /// Size of initial data to populate cache, in bytes
+    [<DefaultValue(false)>]
     val mutable initialDataSize: unativeint
     /// Initial data to populate cache
-    val pInitialData: nativeint
+    [<DefaultValue(false)>]
+    val mutable pInitialData: nativeint
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPushConstantRange =
     /// Which stages use the range
+    [<DefaultValue(false)>]
     val mutable stageFlags: VkShaderStageFlags
     /// Start of the range, in bytes
+    [<DefaultValue(false)>]
     val mutable offset: uint32
     /// Size of the range, in bytes
+    [<DefaultValue(false)>]
     val mutable size: uint32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPipelineLayoutCreateInfo =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable flags: VkPipelineLayoutCreateFlags
     /// Number of descriptor sets interfaced by the pipeline
+    [<DefaultValue(false)>]
     val mutable setLayoutCount: uint32
     /// Array of setCount number of descriptor set layout objects defining the layout of the
-    val pSetLayouts: nativeptr<VkDescriptorSetLayout>
+    [<DefaultValue(false)>]
+    val mutable pSetLayouts: nativeptr<VkDescriptorSetLayout>
     /// Number of push-constant ranges used by the pipeline
-    val pushConstantRangeCount: uint32
+    [<DefaultValue(false)>]
+    val mutable pushConstantRangeCount: uint32
     /// Array of pushConstantRangeCount number of ranges used by various shader stages
-    val pPushConstantRanges: nativeptr<VkPushConstantRange>
+    [<DefaultValue(false)>]
+    val mutable pPushConstantRanges: nativeptr<VkPushConstantRange>
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkSamplerCreateInfo =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable flags: VkSamplerCreateFlags
     /// Filter mode for magnification
+    [<DefaultValue(false)>]
     val mutable magFilter: VkFilter
     /// Filter mode for minifiation
+    [<DefaultValue(false)>]
     val mutable minFilter: VkFilter
     /// Mipmap selection mode
+    [<DefaultValue(false)>]
     val mutable mipmapMode: VkSamplerMipmapMode
+    [<DefaultValue(false)>]
     val mutable addressModeU: VkSamplerAddressMode
+    [<DefaultValue(false)>]
     val mutable addressModeV: VkSamplerAddressMode
+    [<DefaultValue(false)>]
     val mutable addressModeW: VkSamplerAddressMode
+    [<DefaultValue(false)>]
     val mutable mipLodBias: float32
+    [<DefaultValue(false)>]
     val mutable anisotropyEnable: VkBool32
+    [<DefaultValue(false)>]
     val mutable maxAnisotropy: float32
+    [<DefaultValue(false)>]
     val mutable compareEnable: VkBool32
+    [<DefaultValue(false)>]
     val mutable compareOp: VkCompareOp
+    [<DefaultValue(false)>]
     val mutable minLod: float32
+    [<DefaultValue(false)>]
     val mutable maxLod: float32
+    [<DefaultValue(false)>]
     val mutable borderColor: VkBorderColor
+    [<DefaultValue(false)>]
     val mutable unnormalizedCoordinates: VkBool32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkCommandPoolCreateInfo =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
     /// Command pool creation flags
+    [<DefaultValue(false)>]
     val mutable flags: VkCommandPoolCreateFlags
+    [<DefaultValue(false)>]
     val mutable queueFamilyIndex: uint32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkCommandBufferAllocateInfo =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable commandPool: VkCommandPool
+    [<DefaultValue(false)>]
     val mutable level: VkCommandBufferLevel
+    [<DefaultValue(false)>]
     val mutable commandBufferCount: uint32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkCommandBufferInheritanceInfo =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
     /// Render pass for secondary command buffers
+    [<DefaultValue(false)>]
     val mutable renderPass: VkRenderPass
+    [<DefaultValue(false)>]
     val mutable subpass: uint32
     /// Framebuffer for secondary command buffers
+    [<DefaultValue(false)>]
     val mutable framebuffer: VkFramebuffer
     /// Whether this secondary command buffer may be executed during an occlusion query
+    [<DefaultValue(false)>]
     val mutable occlusionQueryEnable: VkBool32
     /// Query flags used by this secondary command buffer, if executed during an occlusion query
+    [<DefaultValue(false)>]
     val mutable queryFlags: VkQueryControlFlags
     /// Pipeline statistics that may be counted for this secondary command buffer
+    [<DefaultValue(false)>]
     val mutable pipelineStatistics: VkQueryPipelineStatisticFlags
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkCommandBufferBeginInfo =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
     /// Command buffer usage flags
+    [<DefaultValue(false)>]
     val mutable flags: VkCommandBufferUsageFlags
     /// Pointer to inheritance info for secondary command buffers
-    val pInheritanceInfo: nativeptr<VkCommandBufferInheritanceInfo>
+    [<DefaultValue(false)>]
+    val mutable pInheritanceInfo: nativeptr<VkCommandBufferInheritanceInfo>
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkRenderPassBeginInfo =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable renderPass: VkRenderPass
+    [<DefaultValue(false)>]
     val mutable framebuffer: VkFramebuffer
+    [<DefaultValue(false)>]
     val mutable renderArea: VkRect2D
+    [<DefaultValue(false)>]
     val mutable clearValueCount: uint32
-    val pClearValues: nativeptr<VkClearValue>
+    [<DefaultValue(false)>]
+    val mutable pClearValues: nativeptr<VkClearValue>
 
 /// // Union allowing specification of floating point, integer, or unsigned integer color data. Actual value selected is based on image/attachment being cleared.
-[<Struct;StructLayout(LayoutKind.Explicit)>]
+[<Struct;StructLayout(LayoutKind.Explicit);NoEquality;NoComparison>]
 type VkClearColorValue =
-    [<FieldOffset(0)>] val mutable float32: float32
-    [<FieldOffset(0)>] val mutable int32: int
-    [<FieldOffset(0)>] val mutable uint32: uint32
+    [<FieldOffset(0);DefaultValue(false)>]
+    val mutable float32: float32
+    [<FieldOffset(0);DefaultValue(false)>]
+    val mutable int32: int
+    [<FieldOffset(0);DefaultValue(false)>]
+    val mutable uint32: uint32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkClearDepthStencilValue =
+    [<DefaultValue(false)>]
     val mutable depth: float32
+    [<DefaultValue(false)>]
     val mutable stencil: uint32
 
 /// // Union allowing specification of color or depth and stencil values. Actual value selected is based on attachment being cleared.
-[<Struct;StructLayout(LayoutKind.Explicit)>]
+[<Struct;StructLayout(LayoutKind.Explicit);NoEquality;NoComparison>]
 type VkClearValue =
-    [<FieldOffset(0)>] val mutable color: VkClearColorValue
-    [<FieldOffset(0)>] val mutable depthStencil: VkClearDepthStencilValue
+    [<FieldOffset(0);DefaultValue(false)>]
+    val mutable color: VkClearColorValue
+    [<FieldOffset(0);DefaultValue(false)>]
+    val mutable depthStencil: VkClearDepthStencilValue
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkClearAttachment =
+    [<DefaultValue(false)>]
     val mutable aspectMask: VkImageAspectFlags
+    [<DefaultValue(false)>]
     val mutable colorAttachment: uint32
+    [<DefaultValue(false)>]
     val mutable clearValue: VkClearValue
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkAttachmentDescription =
+    [<DefaultValue(false)>]
     val mutable flags: VkAttachmentDescriptionFlags
+    [<DefaultValue(false)>]
     val mutable format: VkFormat
+    [<DefaultValue(false)>]
     val mutable samples: VkSampleCountFlagBits
     /// Load operation for color or depth data
+    [<DefaultValue(false)>]
     val mutable loadOp: VkAttachmentLoadOp
     /// Store operation for color or depth data
+    [<DefaultValue(false)>]
     val mutable storeOp: VkAttachmentStoreOp
     /// Load operation for stencil data
+    [<DefaultValue(false)>]
     val mutable stencilLoadOp: VkAttachmentLoadOp
     /// Store operation for stencil data
+    [<DefaultValue(false)>]
     val mutable stencilStoreOp: VkAttachmentStoreOp
+    [<DefaultValue(false)>]
     val mutable initialLayout: VkImageLayout
+    [<DefaultValue(false)>]
     val mutable finalLayout: VkImageLayout
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkAttachmentReference =
+    [<DefaultValue(false)>]
     val mutable attachment: uint32
+    [<DefaultValue(false)>]
     val mutable layout: VkImageLayout
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkSubpassDescription =
+    [<DefaultValue(false)>]
     val mutable flags: VkSubpassDescriptionFlags
     /// Must be VK_PIPELINE_BIND_POINT_GRAPHICS for now
+    [<DefaultValue(false)>]
     val mutable pipelineBindPoint: VkPipelineBindPoint
+    [<DefaultValue(false)>]
     val mutable inputAttachmentCount: uint32
-    val pInputAttachments: nativeptr<VkAttachmentReference>
+    [<DefaultValue(false)>]
+    val mutable pInputAttachments: nativeptr<VkAttachmentReference>
+    [<DefaultValue(false)>]
     val mutable colorAttachmentCount: uint32
-    val pColorAttachments: nativeptr<VkAttachmentReference>
-    val pResolveAttachments: nativeptr<VkAttachmentReference>
-    val pDepthStencilAttachment: nativeptr<VkAttachmentReference>
+    [<DefaultValue(false)>]
+    val mutable pColorAttachments: nativeptr<VkAttachmentReference>
+    [<DefaultValue(false)>]
+    val mutable pResolveAttachments: nativeptr<VkAttachmentReference>
+    [<DefaultValue(false)>]
+    val mutable pDepthStencilAttachment: nativeptr<VkAttachmentReference>
+    [<DefaultValue(false)>]
     val mutable preserveAttachmentCount: uint32
-    val pPreserveAttachments: nativeptr<uint32>
+    [<DefaultValue(false)>]
+    val mutable pPreserveAttachments: nativeptr<uint32>
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkSubpassDependency =
+    [<DefaultValue(false)>]
     val mutable srcSubpass: uint32
+    [<DefaultValue(false)>]
     val mutable dstSubpass: uint32
+    [<DefaultValue(false)>]
     val mutable srcStageMask: VkPipelineStageFlags
+    [<DefaultValue(false)>]
     val mutable dstStageMask: VkPipelineStageFlags
     /// Memory accesses from the source of the dependency to synchronize
+    [<DefaultValue(false)>]
     val mutable srcAccessMask: VkAccessFlags
     /// Memory accesses from the destination of the dependency to synchronize
+    [<DefaultValue(false)>]
     val mutable dstAccessMask: VkAccessFlags
+    [<DefaultValue(false)>]
     val mutable dependencyFlags: VkDependencyFlags
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkRenderPassCreateInfo =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable flags: VkRenderPassCreateFlags
+    [<DefaultValue(false)>]
     val mutable attachmentCount: uint32
-    val pAttachments: nativeptr<VkAttachmentDescription>
+    [<DefaultValue(false)>]
+    val mutable pAttachments: nativeptr<VkAttachmentDescription>
+    [<DefaultValue(false)>]
     val mutable subpassCount: uint32
-    val pSubpasses: nativeptr<VkSubpassDescription>
+    [<DefaultValue(false)>]
+    val mutable pSubpasses: nativeptr<VkSubpassDescription>
+    [<DefaultValue(false)>]
     val mutable dependencyCount: uint32
-    val pDependencies: nativeptr<VkSubpassDependency>
+    [<DefaultValue(false)>]
+    val mutable pDependencies: nativeptr<VkSubpassDependency>
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkEventCreateInfo =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
     /// Event creation flags
+    [<DefaultValue(false)>]
     val mutable flags: VkEventCreateFlags
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkFenceCreateInfo =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
     /// Fence creation flags
+    [<DefaultValue(false)>]
     val mutable flags: VkFenceCreateFlags
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceFeatures =
     /// out of bounds buffer accesses are well defined
+    [<DefaultValue(false)>]
     val mutable robustBufferAccess: VkBool32
     /// full 32-bit range of indices for indexed draw calls
+    [<DefaultValue(false)>]
     val mutable fullDrawIndexUint32: VkBool32
     /// image views which are arrays of cube maps
+    [<DefaultValue(false)>]
     val mutable imageCubeArray: VkBool32
     /// blending operations are controlled per-attachment
+    [<DefaultValue(false)>]
     val mutable independentBlend: VkBool32
     /// geometry stage
+    [<DefaultValue(false)>]
     val mutable geometryShader: VkBool32
     /// tessellation control and evaluation stage
+    [<DefaultValue(false)>]
     val mutable tessellationShader: VkBool32
     /// per-sample shading and interpolation
+    [<DefaultValue(false)>]
     val mutable sampleRateShading: VkBool32
     /// blend operations which take two sources
+    [<DefaultValue(false)>]
     val mutable dualSrcBlend: VkBool32
     /// logic operations
+    [<DefaultValue(false)>]
     val mutable logicOp: VkBool32
     /// multi draw indirect
+    [<DefaultValue(false)>]
     val mutable multiDrawIndirect: VkBool32
     /// indirect draws can use non-zero firstInstance
+    [<DefaultValue(false)>]
     val mutable drawIndirectFirstInstance: VkBool32
     /// depth clamping
+    [<DefaultValue(false)>]
     val mutable depthClamp: VkBool32
     /// depth bias clamping
+    [<DefaultValue(false)>]
     val mutable depthBiasClamp: VkBool32
     /// point and wireframe fill modes
+    [<DefaultValue(false)>]
     val mutable fillModeNonSolid: VkBool32
     /// depth bounds test
+    [<DefaultValue(false)>]
     val mutable depthBounds: VkBool32
     /// lines with width greater than 1
+    [<DefaultValue(false)>]
     val mutable wideLines: VkBool32
     /// points with size greater than 1
+    [<DefaultValue(false)>]
     val mutable largePoints: VkBool32
     /// the fragment alpha component can be forced to maximum representable alpha value
+    [<DefaultValue(false)>]
     val mutable alphaToOne: VkBool32
     /// viewport arrays
+    [<DefaultValue(false)>]
     val mutable multiViewport: VkBool32
     /// anisotropic sampler filtering
+    [<DefaultValue(false)>]
     val mutable samplerAnisotropy: VkBool32
     /// ETC texture compression formats
+    [<DefaultValue(false)>]
     val mutable textureCompressionETC2: VkBool32
     /// ASTC LDR texture compression formats
+    [<DefaultValue(false)>]
     val mutable textureCompressionASTC_LDR: VkBool32
     /// BC1-7 texture compressed formats
+    [<DefaultValue(false)>]
     val mutable textureCompressionBC: VkBool32
     /// precise occlusion queries returning actual sample counts
+    [<DefaultValue(false)>]
     val mutable occlusionQueryPrecise: VkBool32
     /// pipeline statistics query
+    [<DefaultValue(false)>]
     val mutable pipelineStatisticsQuery: VkBool32
     /// stores and atomic ops on storage buffers and images are supported in vertex, tessellation, and geometry stages
+    [<DefaultValue(false)>]
     val mutable vertexPipelineStoresAndAtomics: VkBool32
     /// stores and atomic ops on storage buffers and images are supported in the fragment stage
+    [<DefaultValue(false)>]
     val mutable fragmentStoresAndAtomics: VkBool32
     /// tessellation and geometry stages can export point size
+    [<DefaultValue(false)>]
     val mutable shaderTessellationAndGeometryPointSize: VkBool32
     /// image gather with run-time values and independent offsets
+    [<DefaultValue(false)>]
     val mutable shaderImageGatherExtended: VkBool32
     /// the extended set of formats can be used for storage images
+    [<DefaultValue(false)>]
     val mutable shaderStorageImageExtendedFormats: VkBool32
     /// multisample images can be used for storage images
+    [<DefaultValue(false)>]
     val mutable shaderStorageImageMultisample: VkBool32
     /// read from storage image does not require format qualifier
+    [<DefaultValue(false)>]
     val mutable shaderStorageImageReadWithoutFormat: VkBool32
     /// write to storage image does not require format qualifier
+    [<DefaultValue(false)>]
     val mutable shaderStorageImageWriteWithoutFormat: VkBool32
     /// arrays of uniform buffers can be accessed with dynamically uniform indices
+    [<DefaultValue(false)>]
     val mutable shaderUniformBufferArrayDynamicIndexing: VkBool32
     /// arrays of sampled images can be accessed with dynamically uniform indices
+    [<DefaultValue(false)>]
     val mutable shaderSampledImageArrayDynamicIndexing: VkBool32
     /// arrays of storage buffers can be accessed with dynamically uniform indices
+    [<DefaultValue(false)>]
     val mutable shaderStorageBufferArrayDynamicIndexing: VkBool32
     /// arrays of storage images can be accessed with dynamically uniform indices
+    [<DefaultValue(false)>]
     val mutable shaderStorageImageArrayDynamicIndexing: VkBool32
     /// clip distance in shaders
+    [<DefaultValue(false)>]
     val mutable shaderClipDistance: VkBool32
     /// cull distance in shaders
+    [<DefaultValue(false)>]
     val mutable shaderCullDistance: VkBool32
     /// 64-bit floats (doubles) in shaders
+    [<DefaultValue(false)>]
     val mutable shaderFloat64: VkBool32
     /// 64-bit integers in shaders
+    [<DefaultValue(false)>]
     val mutable shaderInt64: VkBool32
     /// 16-bit integers in shaders
+    [<DefaultValue(false)>]
     val mutable shaderInt16: VkBool32
     /// shader can use texture operations that return resource residency information (requires sparseNonResident support)
+    [<DefaultValue(false)>]
     val mutable shaderResourceResidency: VkBool32
     /// shader can use texture operations that specify minimum resource LOD
+    [<DefaultValue(false)>]
     val mutable shaderResourceMinLod: VkBool32
     /// Sparse resources support: Resource memory can be managed at opaque page level rather than object level
+    [<DefaultValue(false)>]
     val mutable sparseBinding: VkBool32
     /// Sparse resources support: GPU can access partially resident buffers 
+    [<DefaultValue(false)>]
     val mutable sparseResidencyBuffer: VkBool32
     /// Sparse resources support: GPU can access partially resident 2D (non-MSAA non-depth/stencil) images 
+    [<DefaultValue(false)>]
     val mutable sparseResidencyImage2D: VkBool32
     /// Sparse resources support: GPU can access partially resident 3D images 
+    [<DefaultValue(false)>]
     val mutable sparseResidencyImage3D: VkBool32
     /// Sparse resources support: GPU can access partially resident MSAA 2D images with 2 samples
+    [<DefaultValue(false)>]
     val mutable sparseResidency2Samples: VkBool32
     /// Sparse resources support: GPU can access partially resident MSAA 2D images with 4 samples
+    [<DefaultValue(false)>]
     val mutable sparseResidency4Samples: VkBool32
     /// Sparse resources support: GPU can access partially resident MSAA 2D images with 8 samples
+    [<DefaultValue(false)>]
     val mutable sparseResidency8Samples: VkBool32
     /// Sparse resources support: GPU can access partially resident MSAA 2D images with 16 samples
+    [<DefaultValue(false)>]
     val mutable sparseResidency16Samples: VkBool32
     /// Sparse resources support: GPU can correctly access data aliased into multiple locations (opt-in)
+    [<DefaultValue(false)>]
     val mutable sparseResidencyAliased: VkBool32
     /// multisample rate must be the same for all pipelines in a subpass
+    [<DefaultValue(false)>]
     val mutable variableMultisampleRate: VkBool32
     /// Queries may be inherited from primary to secondary command buffers
+    [<DefaultValue(false)>]
     val mutable inheritedQueries: VkBool32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceSparseProperties =
     /// Sparse resources support: GPU will access all 2D (single sample) sparse resources using the standard sparse image block shapes (based on pixel format)
+    [<DefaultValue(false)>]
     val mutable residencyStandard2DBlockShape: VkBool32
     /// Sparse resources support: GPU will access all 2D (multisample) sparse resources using the standard sparse image block shapes (based on pixel format)
+    [<DefaultValue(false)>]
     val mutable residencyStandard2DMultisampleBlockShape: VkBool32
     /// Sparse resources support: GPU will access all 3D sparse resources using the standard sparse image block shapes (based on pixel format)
+    [<DefaultValue(false)>]
     val mutable residencyStandard3DBlockShape: VkBool32
     /// Sparse resources support: Images with mip level dimensions that are NOT a multiple of the sparse image block dimensions will be placed in the mip tail
+    [<DefaultValue(false)>]
     val mutable residencyAlignedMipSize: VkBool32
     /// Sparse resources support: GPU can consistently access non-resident regions of a resource, all reads return as if data is 0, writes are discarded
+    [<DefaultValue(false)>]
     val mutable residencyNonResidentStrict: VkBool32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceLimits =
     /// max 1D image dimension
+    [<DefaultValue(false)>]
     val mutable maxImageDimension1D: uint32
     /// max 2D image dimension
+    [<DefaultValue(false)>]
     val mutable maxImageDimension2D: uint32
     /// max 3D image dimension
+    [<DefaultValue(false)>]
     val mutable maxImageDimension3D: uint32
     /// max cubemap image dimension
+    [<DefaultValue(false)>]
     val mutable maxImageDimensionCube: uint32
     /// max layers for image arrays
+    [<DefaultValue(false)>]
     val mutable maxImageArrayLayers: uint32
     /// max texel buffer size (fstexels)
+    [<DefaultValue(false)>]
     val mutable maxTexelBufferElements: uint32
     /// max uniform buffer range (bytes)
+    [<DefaultValue(false)>]
     val mutable maxUniformBufferRange: uint32
     /// max storage buffer range (bytes)
+    [<DefaultValue(false)>]
     val mutable maxStorageBufferRange: uint32
     /// max size of the push constants pool (bytes)
-    val maxPushConstantsSize: uint32
+    [<DefaultValue(false)>]
+    val mutable maxPushConstantsSize: uint32
     /// max number of device memory allocations supported
+    [<DefaultValue(false)>]
     val mutable maxMemoryAllocationCount: uint32
     /// max number of samplers that can be allocated on a device
+    [<DefaultValue(false)>]
     val mutable maxSamplerAllocationCount: uint32
     /// Granularity (in bytes) at which buffers and images can be bound to adjacent memory for simultaneous usage
+    [<DefaultValue(false)>]
     val mutable bufferImageGranularity: VkDeviceSize
     /// Total address space available for sparse allocations (bytes)
+    [<DefaultValue(false)>]
     val mutable sparseAddressSpaceSize: VkDeviceSize
     /// max number of descriptors sets that can be bound to a pipeline
+    [<DefaultValue(false)>]
     val mutable maxBoundDescriptorSets: uint32
     /// max number of samplers allowed per-stage in a descriptor set
+    [<DefaultValue(false)>]
     val mutable maxPerStageDescriptorSamplers: uint32
     /// max number of uniform buffers allowed per-stage in a descriptor set
+    [<DefaultValue(false)>]
     val mutable maxPerStageDescriptorUniformBuffers: uint32
     /// max number of storage buffers allowed per-stage in a descriptor set
+    [<DefaultValue(false)>]
     val mutable maxPerStageDescriptorStorageBuffers: uint32
     /// max number of sampled images allowed per-stage in a descriptor set
+    [<DefaultValue(false)>]
     val mutable maxPerStageDescriptorSampledImages: uint32
     /// max number of storage images allowed per-stage in a descriptor set
+    [<DefaultValue(false)>]
     val mutable maxPerStageDescriptorStorageImages: uint32
     /// max number of input attachments allowed per-stage in a descriptor set
+    [<DefaultValue(false)>]
     val mutable maxPerStageDescriptorInputAttachments: uint32
     /// max number of resources allowed by a single stage
+    [<DefaultValue(false)>]
     val mutable maxPerStageResources: uint32
     /// max number of samplers allowed in all stages in a descriptor set
+    [<DefaultValue(false)>]
     val mutable maxDescriptorSetSamplers: uint32
     /// max number of uniform buffers allowed in all stages in a descriptor set
+    [<DefaultValue(false)>]
     val mutable maxDescriptorSetUniformBuffers: uint32
     /// max number of dynamic uniform buffers allowed in all stages in a descriptor set
+    [<DefaultValue(false)>]
     val mutable maxDescriptorSetUniformBuffersDynamic: uint32
     /// max number of storage buffers allowed in all stages in a descriptor set
+    [<DefaultValue(false)>]
     val mutable maxDescriptorSetStorageBuffers: uint32
     /// max number of dynamic storage buffers allowed in all stages in a descriptor set
+    [<DefaultValue(false)>]
     val mutable maxDescriptorSetStorageBuffersDynamic: uint32
     /// max number of sampled images allowed in all stages in a descriptor set
+    [<DefaultValue(false)>]
     val mutable maxDescriptorSetSampledImages: uint32
     /// max number of storage images allowed in all stages in a descriptor set
+    [<DefaultValue(false)>]
     val mutable maxDescriptorSetStorageImages: uint32
     /// max number of input attachments allowed in all stages in a descriptor set
+    [<DefaultValue(false)>]
     val mutable maxDescriptorSetInputAttachments: uint32
     /// max number of vertex input attribute slots
+    [<DefaultValue(false)>]
     val mutable maxVertexInputAttributes: uint32
     /// max number of vertex input binding slots
+    [<DefaultValue(false)>]
     val mutable maxVertexInputBindings: uint32
     /// max vertex input attribute offset added to vertex buffer offset
+    [<DefaultValue(false)>]
     val mutable maxVertexInputAttributeOffset: uint32
     /// max vertex input binding stride
+    [<DefaultValue(false)>]
     val mutable maxVertexInputBindingStride: uint32
     /// max number of output components written by vertex shader
+    [<DefaultValue(false)>]
     val mutable maxVertexOutputComponents: uint32
     /// max level supported by tessellation primitive generator
+    [<DefaultValue(false)>]
     val mutable maxTessellationGenerationLevel: uint32
     /// max patch size (vertices)
+    [<DefaultValue(false)>]
     val mutable maxTessellationPatchSize: uint32
     /// max number of input components per-vertex in TCS
+    [<DefaultValue(false)>]
     val mutable maxTessellationControlPerVertexInputComponents: uint32
     /// max number of output components per-vertex in TCS
+    [<DefaultValue(false)>]
     val mutable maxTessellationControlPerVertexOutputComponents: uint32
     /// max number of output components per-patch in TCS
+    [<DefaultValue(false)>]
     val mutable maxTessellationControlPerPatchOutputComponents: uint32
     /// max total number of per-vertex and per-patch output components in TCS
+    [<DefaultValue(false)>]
     val mutable maxTessellationControlTotalOutputComponents: uint32
     /// max number of input components per vertex in TES
+    [<DefaultValue(false)>]
     val mutable maxTessellationEvaluationInputComponents: uint32
     /// max number of output components per vertex in TES
+    [<DefaultValue(false)>]
     val mutable maxTessellationEvaluationOutputComponents: uint32
     /// max invocation count supported in geometry shader
+    [<DefaultValue(false)>]
     val mutable maxGeometryShaderInvocations: uint32
     /// max number of input components read in geometry stage
+    [<DefaultValue(false)>]
     val mutable maxGeometryInputComponents: uint32
     /// max number of output components written in geometry stage
+    [<DefaultValue(false)>]
     val mutable maxGeometryOutputComponents: uint32
     /// max number of vertices that can be emitted in geometry stage
+    [<DefaultValue(false)>]
     val mutable maxGeometryOutputVertices: uint32
     /// max total number of components (all vertices) written in geometry stage
+    [<DefaultValue(false)>]
     val mutable maxGeometryTotalOutputComponents: uint32
     /// max number of input components read in fragment stage
+    [<DefaultValue(false)>]
     val mutable maxFragmentInputComponents: uint32
     /// max number of output attachments written in fragment stage
+    [<DefaultValue(false)>]
     val mutable maxFragmentOutputAttachments: uint32
     /// max number of output attachments written when using dual source blending
+    [<DefaultValue(false)>]
     val mutable maxFragmentDualSrcAttachments: uint32
     /// max total number of storage buffers, storage images and output buffers
+    [<DefaultValue(false)>]
     val mutable maxFragmentCombinedOutputResources: uint32
     /// max total storage size of work group local storage (bytes)
+    [<DefaultValue(false)>]
     val mutable maxComputeSharedMemorySize: uint32
     /// max num of compute work groups that may be dispatched by a single command (x,y,z)
+    [<DefaultValue(false)>]
     val mutable maxComputeWorkGroupCount: uint32
     /// max total compute invocations in a single local work group
+    [<DefaultValue(false)>]
     val mutable maxComputeWorkGroupInvocations: uint32
     /// max local size of a compute work group (x,y,z)
+    [<DefaultValue(false)>]
     val mutable maxComputeWorkGroupSize: uint32
     /// number bits of subpixel precision in screen x and y
+    [<DefaultValue(false)>]
     val mutable subPixelPrecisionBits: uint32
     /// number bits of precision for selecting texel weights
+    [<DefaultValue(false)>]
     val mutable subTexelPrecisionBits: uint32
     /// number bits of precision for selecting mipmap weights
+    [<DefaultValue(false)>]
     val mutable mipmapPrecisionBits: uint32
     /// max index value for indexed draw calls (for 32-bit indices)
+    [<DefaultValue(false)>]
     val mutable maxDrawIndexedIndexValue: uint32
     /// max draw count for indirect draw calls
+    [<DefaultValue(false)>]
     val mutable maxDrawIndirectCount: uint32
     /// max absolute sampler LOD bias
+    [<DefaultValue(false)>]
     val mutable maxSamplerLodBias: float32
     /// max degree of sampler anisotropy
+    [<DefaultValue(false)>]
     val mutable maxSamplerAnisotropy: float32
     /// max number of active viewports
+    [<DefaultValue(false)>]
     val mutable maxViewports: uint32
     /// max viewport dimensions (x,y)
+    [<DefaultValue(false)>]
     val mutable maxViewportDimensions: uint32
     /// viewport bounds range (min,max)
+    [<DefaultValue(false)>]
     val mutable viewportBoundsRange: float32
     /// number bits of subpixel precision for viewport
+    [<DefaultValue(false)>]
     val mutable viewportSubPixelBits: uint32
     /// min required alignment of pointers returned by MapMemory (bytes)
+    [<DefaultValue(false)>]
     val mutable minMemoryMapAlignment: unativeint
     /// min required alignment for texel buffer offsets (bytes) 
+    [<DefaultValue(false)>]
     val mutable minTexelBufferOffsetAlignment: VkDeviceSize
     /// min required alignment for uniform buffer sizes and offsets (bytes)
+    [<DefaultValue(false)>]
     val mutable minUniformBufferOffsetAlignment: VkDeviceSize
     /// min required alignment for storage buffer offsets (bytes)
+    [<DefaultValue(false)>]
     val mutable minStorageBufferOffsetAlignment: VkDeviceSize
     /// min texel offset for OpTextureSampleOffset
+    [<DefaultValue(false)>]
     val mutable minTexelOffset: int
     /// max texel offset for OpTextureSampleOffset
+    [<DefaultValue(false)>]
     val mutable maxTexelOffset: uint32
     /// min texel offset for OpTextureGatherOffset
+    [<DefaultValue(false)>]
     val mutable minTexelGatherOffset: int
     /// max texel offset for OpTextureGatherOffset
+    [<DefaultValue(false)>]
     val mutable maxTexelGatherOffset: uint32
     /// furthest negative offset for interpolateAtOffset
+    [<DefaultValue(false)>]
     val mutable minInterpolationOffset: float32
     /// furthest positive offset for interpolateAtOffset
+    [<DefaultValue(false)>]
     val mutable maxInterpolationOffset: float32
     /// number of subpixel bits for interpolateAtOffset
+    [<DefaultValue(false)>]
     val mutable subPixelInterpolationOffsetBits: uint32
     /// max width for a framebuffer
+    [<DefaultValue(false)>]
     val mutable maxFramebufferWidth: uint32
     /// max height for a framebuffer
+    [<DefaultValue(false)>]
     val mutable maxFramebufferHeight: uint32
     /// max layer count for a layered framebuffer
+    [<DefaultValue(false)>]
     val mutable maxFramebufferLayers: uint32
     /// supported color sample counts for a framebuffer
+    [<DefaultValue(false)>]
     val mutable framebufferColorSampleCounts: VkSampleCountFlags
     /// supported depth sample counts for a framebuffer
+    [<DefaultValue(false)>]
     val mutable framebufferDepthSampleCounts: VkSampleCountFlags
     /// supported stencil sample counts for a framebuffer
+    [<DefaultValue(false)>]
     val mutable framebufferStencilSampleCounts: VkSampleCountFlags
     /// supported sample counts for a framebuffer with no attachments
+    [<DefaultValue(false)>]
     val mutable framebufferNoAttachmentsSampleCounts: VkSampleCountFlags
     /// max number of color attachments per subpass
+    [<DefaultValue(false)>]
     val mutable maxColorAttachments: uint32
     /// supported color sample counts for a non-integer sampled image
+    [<DefaultValue(false)>]
     val mutable sampledImageColorSampleCounts: VkSampleCountFlags
     /// supported sample counts for an integer image
+    [<DefaultValue(false)>]
     val mutable sampledImageIntegerSampleCounts: VkSampleCountFlags
     /// supported depth sample counts for a sampled image
+    [<DefaultValue(false)>]
     val mutable sampledImageDepthSampleCounts: VkSampleCountFlags
     /// supported stencil sample counts for a sampled image
+    [<DefaultValue(false)>]
     val mutable sampledImageStencilSampleCounts: VkSampleCountFlags
     /// supported sample counts for a storage image
+    [<DefaultValue(false)>]
     val mutable storageImageSampleCounts: VkSampleCountFlags
     /// max number of sample mask words
+    [<DefaultValue(false)>]
     val mutable maxSampleMaskWords: uint32
     /// timestamps on graphics and compute queues
+    [<DefaultValue(false)>]
     val mutable timestampComputeAndGraphics: VkBool32
     /// number of nanoseconds it takes for timestamp query value to increment by 1
+    [<DefaultValue(false)>]
     val mutable timestampPeriod: float32
     /// max number of clip distances
+    [<DefaultValue(false)>]
     val mutable maxClipDistances: uint32
     /// max number of cull distances
+    [<DefaultValue(false)>]
     val mutable maxCullDistances: uint32
     /// max combined number of user clipping
+    [<DefaultValue(false)>]
     val mutable maxCombinedClipAndCullDistances: uint32
     /// distinct queue priorities available 
+    [<DefaultValue(false)>]
     val mutable discreteQueuePriorities: uint32
     /// range (min,max) of supported point sizes
+    [<DefaultValue(false)>]
     val mutable pointSizeRange: float32
     /// range (min,max) of supported line widths
+    [<DefaultValue(false)>]
     val mutable lineWidthRange: float32
     /// granularity of supported point sizes
+    [<DefaultValue(false)>]
     val mutable pointSizeGranularity: float32
     /// granularity of supported line widths
+    [<DefaultValue(false)>]
     val mutable lineWidthGranularity: float32
     /// line rasterization follows preferred rules
+    [<DefaultValue(false)>]
     val mutable strictLines: VkBool32
     /// supports standard sample locations for all supported sample counts
+    [<DefaultValue(false)>]
     val mutable standardSampleLocations: VkBool32
     /// optimal offset of buffer copies
+    [<DefaultValue(false)>]
     val mutable optimalBufferCopyOffsetAlignment: VkDeviceSize
     /// optimal pitch of buffer copies
+    [<DefaultValue(false)>]
     val mutable optimalBufferCopyRowPitchAlignment: VkDeviceSize
     /// minimum size and alignment for non-coherent host-mapped device memory access
+    [<DefaultValue(false)>]
     val mutable nonCoherentAtomSize: VkDeviceSize
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkSemaphoreCreateInfo =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
     /// Semaphore creation flags
+    [<DefaultValue(false)>]
     val mutable flags: VkSemaphoreCreateFlags
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkQueryPoolCreateInfo =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable flags: VkQueryPoolCreateFlags
+    [<DefaultValue(false)>]
     val mutable queryType: VkQueryType
+    [<DefaultValue(false)>]
     val mutable queryCount: uint32
     /// Optional
+    [<DefaultValue(false)>]
     val mutable pipelineStatistics: VkQueryPipelineStatisticFlags
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkFramebufferCreateInfo =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable flags: VkFramebufferCreateFlags
+    [<DefaultValue(false)>]
     val mutable renderPass: VkRenderPass
+    [<DefaultValue(false)>]
     val mutable attachmentCount: uint32
-    val pAttachments: nativeptr<VkImageView>
+    [<DefaultValue(false)>]
+    val mutable pAttachments: nativeptr<VkImageView>
+    [<DefaultValue(false)>]
     val mutable width: uint32
+    [<DefaultValue(false)>]
     val mutable height: uint32
+    [<DefaultValue(false)>]
     val mutable layers: uint32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkDrawIndirectCommand =
+    [<DefaultValue(false)>]
     val mutable vertexCount: uint32
+    [<DefaultValue(false)>]
     val mutable instanceCount: uint32
+    [<DefaultValue(false)>]
     val mutable firstVertex: uint32
+    [<DefaultValue(false)>]
     val mutable firstInstance: uint32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkDrawIndexedIndirectCommand =
+    [<DefaultValue(false)>]
     val mutable indexCount: uint32
+    [<DefaultValue(false)>]
     val mutable instanceCount: uint32
+    [<DefaultValue(false)>]
     val mutable firstIndex: uint32
+    [<DefaultValue(false)>]
     val mutable vertexOffset: int
+    [<DefaultValue(false)>]
     val mutable firstInstance: uint32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkDispatchIndirectCommand =
+    [<DefaultValue(false)>]
     val mutable x: uint32
+    [<DefaultValue(false)>]
     val mutable y: uint32
+    [<DefaultValue(false)>]
     val mutable z: uint32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkSubmitInfo =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable waitSemaphoreCount: uint32
-    val pWaitSemaphores: nativeptr<VkSemaphore>
-    val pWaitDstStageMask: nativeptr<VkPipelineStageFlags>
+    [<DefaultValue(false)>]
+    val mutable pWaitSemaphores: nativeptr<VkSemaphore>
+    [<DefaultValue(false)>]
+    val mutable pWaitDstStageMask: nativeptr<VkPipelineStageFlags>
+    [<DefaultValue(false)>]
     val mutable commandBufferCount: uint32
-    val pCommandBuffers: nativeptr<VkCommandBuffer>
+    [<DefaultValue(false)>]
+    val mutable pCommandBuffers: nativeptr<VkCommandBuffer>
+    [<DefaultValue(false)>]
     val mutable signalSemaphoreCount: uint32
-    val pSignalSemaphores: nativeptr<VkSemaphore>
+    [<DefaultValue(false)>]
+    val mutable pSignalSemaphores: nativeptr<VkSemaphore>
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkDisplayPropertiesKHR =
     /// Handle of the display object
+    [<DefaultValue(false)>]
     val mutable display: VkDisplayKHR
     /// Name of the display
-    val displayName: nativeptr<char>
+    [<DefaultValue(false)>]
+    val mutable displayName: nativeptr<char>
     /// In millimeters?
+    [<DefaultValue(false)>]
     val mutable physicalDimensions: VkExtent2D
     /// Max resolution for CRT?
+    [<DefaultValue(false)>]
     val mutable physicalResolution: VkExtent2D
     /// one or more bits from VkSurfaceTransformFlagsKHR
+    [<DefaultValue(false)>]
     val mutable supportedTransforms: VkSurfaceTransformFlagsKHR
     /// VK_TRUE if the overlay plane's z-order can be changed on this display.
+    [<DefaultValue(false)>]
     val mutable planeReorderPossible: VkBool32
     /// VK_TRUE if this is a "smart" display that supports self-refresh/internal buffering.
+    [<DefaultValue(false)>]
     val mutable persistentContent: VkBool32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkDisplayPlanePropertiesKHR =
     /// Display the plane is currently associated with.  Will be VK_NULL_HANDLE if the plane is not in use.
+    [<DefaultValue(false)>]
     val mutable currentDisplay: VkDisplayKHR
     /// Current z-order of the plane.
+    [<DefaultValue(false)>]
     val mutable currentStackIndex: uint32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkDisplayModeParametersKHR =
     /// Visible scanout region.
+    [<DefaultValue(false)>]
     val mutable visibleRegion: VkExtent2D
     /// Number of times per second the display is updated.
+    [<DefaultValue(false)>]
     val mutable refreshRate: uint32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkDisplayModePropertiesKHR =
     /// Handle of this display mode.
+    [<DefaultValue(false)>]
     val mutable displayMode: VkDisplayModeKHR
     /// The parameters this mode uses.
+    [<DefaultValue(false)>]
     val mutable parameters: VkDisplayModeParametersKHR
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkDisplayModeCreateInfoKHR =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable flags: VkDisplayModeCreateFlagsKHR
     /// The parameters this mode uses.
+    [<DefaultValue(false)>]
     val mutable parameters: VkDisplayModeParametersKHR
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkDisplayPlaneCapabilitiesKHR =
     /// Types of alpha blending supported, if any.
+    [<DefaultValue(false)>]
     val mutable supportedAlpha: VkDisplayPlaneAlphaFlagsKHR
     /// Does the plane have any position and extent restrictions?
+    [<DefaultValue(false)>]
     val mutable minSrcPosition: VkOffset2D
+    [<DefaultValue(false)>]
     val mutable maxSrcPosition: VkOffset2D
+    [<DefaultValue(false)>]
     val mutable minSrcExtent: VkExtent2D
+    [<DefaultValue(false)>]
     val mutable maxSrcExtent: VkExtent2D
+    [<DefaultValue(false)>]
     val mutable minDstPosition: VkOffset2D
+    [<DefaultValue(false)>]
     val mutable maxDstPosition: VkOffset2D
+    [<DefaultValue(false)>]
     val mutable minDstExtent: VkExtent2D
+    [<DefaultValue(false)>]
     val mutable maxDstExtent: VkExtent2D
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkDisplaySurfaceCreateInfoKHR =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable flags: VkDisplaySurfaceCreateFlagsKHR
     /// The mode to use when displaying this surface
+    [<DefaultValue(false)>]
     val mutable displayMode: VkDisplayModeKHR
     /// The plane on which this surface appears.  Must be between 0 and the value returned by vkGetPhysicalDeviceDisplayPlanePropertiesKHR() in pPropertyCount.
+    [<DefaultValue(false)>]
     val mutable planeIndex: uint32
     /// The z-order of the plane.
+    [<DefaultValue(false)>]
     val mutable planeStackIndex: uint32
     /// Transform to apply to the images as part of the scanout operation
+    [<DefaultValue(false)>]
     val mutable transform: VkSurfaceTransformFlagBitsKHR
     /// Global alpha value.  Must be between 0 and 1, inclusive.  Ignored if alphaMode is not VK_DISPLAY_PLANE_ALPHA_GLOBAL_BIT_KHR
+    [<DefaultValue(false)>]
     val mutable globalAlpha: float32
     /// What type of alpha blending to use.  Must be a bit from vkGetDisplayPlanePropertiesKHR::supportedAlpha.
+    [<DefaultValue(false)>]
     val mutable alphaMode: VkDisplayPlaneAlphaFlagBitsKHR
     /// size of the images to use with this surface
+    [<DefaultValue(false)>]
     val mutable imageExtent: VkExtent2D
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkDisplayPresentInfoKHR =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
     /// Rectangle within the presentable image to read pixel data from when presenting to the display.
+    [<DefaultValue(false)>]
     val mutable srcRect: VkRect2D
     /// Rectangle within the current display mode's visible region to display srcRectangle in.
+    [<DefaultValue(false)>]
     val mutable dstRect: VkRect2D
     /// For smart displays, use buffered mode.  If the display properties member "persistentMode" is VK_FALSE, this member must always be VK_FALSE.
+    [<DefaultValue(false)>]
     val mutable persistent: VkBool32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkSurfaceCapabilitiesKHR =
     /// Supported minimum number of images for the surface
+    [<DefaultValue(false)>]
     val mutable minImageCount: uint32
     /// Supported maximum number of images for the surface, 0 for unlimited
+    [<DefaultValue(false)>]
     val mutable maxImageCount: uint32
     /// Current image width and height for the surface, (0, 0) if undefined
+    [<DefaultValue(false)>]
     val mutable currentExtent: VkExtent2D
     /// Supported minimum image width and height for the surface
+    [<DefaultValue(false)>]
     val mutable minImageExtent: VkExtent2D
     /// Supported maximum image width and height for the surface
+    [<DefaultValue(false)>]
     val mutable maxImageExtent: VkExtent2D
     /// Supported maximum number of image layers for the surface
+    [<DefaultValue(false)>]
     val mutable maxImageArrayLayers: uint32
     /// 1 or more bits representing the transforms supported
+    [<DefaultValue(false)>]
     val mutable supportedTransforms: VkSurfaceTransformFlagsKHR
     /// The surface's current transform relative to the device's natural orientation
+    [<DefaultValue(false)>]
     val mutable currentTransform: VkSurfaceTransformFlagBitsKHR
     /// 1 or more bits representing the alpha compositing modes supported
+    [<DefaultValue(false)>]
     val mutable supportedCompositeAlpha: VkCompositeAlphaFlagsKHR
     /// Supported image usage flags for the surface
+    [<DefaultValue(false)>]
     val mutable supportedUsageFlags: VkImageUsageFlags
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkAndroidSurfaceCreateInfoKHR =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable flags: VkAndroidSurfaceCreateFlagsKHR
+    [<DefaultValue(false)>]
     val mutable window: nativeptr<ANativeWindow>
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkViSurfaceCreateInfoNN =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable flags: VkViSurfaceCreateFlagsNN
+    [<DefaultValue(false)>]
     val mutable window: nativeint
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkWaylandSurfaceCreateInfoKHR =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable flags: VkWaylandSurfaceCreateFlagsKHR
+    [<DefaultValue(false)>]
     val mutable display: nativeptr<wl_display>
+    [<DefaultValue(false)>]
     val mutable surface: nativeptr<wl_surface>
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkWin32SurfaceCreateInfoKHR =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable flags: VkWin32SurfaceCreateFlagsKHR
+    [<DefaultValue(false)>]
     val mutable hinstance: HINSTANCE
+    [<DefaultValue(false)>]
     val mutable hwnd: HWND
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkXlibSurfaceCreateInfoKHR =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable flags: VkXlibSurfaceCreateFlagsKHR
+    [<DefaultValue(false)>]
     val mutable dpy: nativeptr<Display>
+    [<DefaultValue(false)>]
     val mutable window: Window
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkXcbSurfaceCreateInfoKHR =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable flags: VkXcbSurfaceCreateFlagsKHR
+    [<DefaultValue(false)>]
     val mutable connection: nativeptr<xcb_connection_t>
+    [<DefaultValue(false)>]
     val mutable window: xcb_window_t
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkImagePipeSurfaceCreateInfoFUCHSIA =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable flags: VkImagePipeSurfaceCreateFlagsFUCHSIA
+    [<DefaultValue(false)>]
     val mutable imagePipeHandle: zx_handle_t
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkStreamDescriptorSurfaceCreateInfoGGP =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable flags: VkStreamDescriptorSurfaceCreateFlagsGGP
+    [<DefaultValue(false)>]
     val mutable streamDescriptor: GgpStreamDescriptor
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkSurfaceFormatKHR =
     /// Supported pair of rendering format
+    [<DefaultValue(false)>]
     val mutable format: VkFormat
     /// and color space for the surface
+    [<DefaultValue(false)>]
     val mutable colorSpace: VkColorSpaceKHR
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkSwapchainCreateInfoKHR =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable flags: VkSwapchainCreateFlagsKHR
     /// The swapchain's target surface
+    [<DefaultValue(false)>]
     val mutable surface: VkSurfaceKHR
     /// Minimum number of presentation images the application needs
+    [<DefaultValue(false)>]
     val mutable minImageCount: uint32
     /// Format of the presentation images
+    [<DefaultValue(false)>]
     val mutable imageFormat: VkFormat
     /// Colorspace of the presentation images
+    [<DefaultValue(false)>]
     val mutable imageColorSpace: VkColorSpaceKHR
     /// Dimensions of the presentation images
+    [<DefaultValue(false)>]
     val mutable imageExtent: VkExtent2D
     /// Determines the number of views for multiview/stereo presentation
+    [<DefaultValue(false)>]
     val mutable imageArrayLayers: uint32
     /// Bits indicating how the presentation images will be used
+    [<DefaultValue(false)>]
     val mutable imageUsage: VkImageUsageFlags
     /// Sharing mode used for the presentation images
+    [<DefaultValue(false)>]
     val mutable imageSharingMode: VkSharingMode
     /// Number of queue families having access to the images in case of concurrent sharing mode
+    [<DefaultValue(false)>]
     val mutable queueFamilyIndexCount: uint32
     /// Array of queue family indices having access to the images in case of concurrent sharing mode
-    val pQueueFamilyIndices: nativeptr<uint32>
+    [<DefaultValue(false)>]
+    val mutable pQueueFamilyIndices: nativeptr<uint32>
     /// The transform, relative to the device's natural orientation, applied to the image content prior to presentation
+    [<DefaultValue(false)>]
     val mutable preTransform: VkSurfaceTransformFlagBitsKHR
     /// The alpha blending mode used when compositing this surface with other surfaces in the window system
+    [<DefaultValue(false)>]
     val mutable compositeAlpha: VkCompositeAlphaFlagBitsKHR
     /// Which presentation mode to use for presents on this swap chain
+    [<DefaultValue(false)>]
     val mutable presentMode: VkPresentModeKHR
     /// Specifies whether presentable images may be affected by window clip regions
+    [<DefaultValue(false)>]
     val mutable clipped: VkBool32
     /// Existing swap chain to replace, if any
+    [<DefaultValue(false)>]
     val mutable oldSwapchain: VkSwapchainKHR
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPresentInfoKHR =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
     /// Number of semaphores to wait for before presenting
+    [<DefaultValue(false)>]
     val mutable waitSemaphoreCount: uint32
     /// Semaphores to wait for before presenting
-    val pWaitSemaphores: nativeptr<VkSemaphore>
+    [<DefaultValue(false)>]
+    val mutable pWaitSemaphores: nativeptr<VkSemaphore>
     /// Number of swapchains to present in this call
+    [<DefaultValue(false)>]
     val mutable swapchainCount: uint32
     /// Swapchains to present an image from
-    val pSwapchains: nativeptr<VkSwapchainKHR>
+    [<DefaultValue(false)>]
+    val mutable pSwapchains: nativeptr<VkSwapchainKHR>
     /// Indices of which presentable images to present
-    val pImageIndices: nativeptr<uint32>
+    [<DefaultValue(false)>]
+    val mutable pImageIndices: nativeptr<uint32>
     /// Optional (i.e. if non-NULL) VkResult for each swapchain
+    [<DefaultValue(false)>]
     val mutable pResults: nativeptr<VkResult>
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkDebugReportCallbackCreateInfoEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
     /// Indicates which events call this callback
+    [<DefaultValue(false)>]
     val mutable flags: VkDebugReportFlagsEXT
     /// Function pointer of a callback function
+    [<DefaultValue(false)>]
     val mutable pfnCallback: PFN_vkDebugReportCallbackEXT
     /// User data provided to callback function
+    [<DefaultValue(false)>]
     val mutable pUserData: nativeint
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkValidationFlagsEXT =
     /// Must be VK_STRUCTURE_TYPE_VALIDATION_FLAGS_EXT
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
     /// Number of validation checks to disable
+    [<DefaultValue(false)>]
     val mutable disabledValidationCheckCount: uint32
     /// Validation checks to disable
-    val pDisabledValidationChecks: nativeptr<VkValidationCheckEXT>
+    [<DefaultValue(false)>]
+    val mutable pDisabledValidationChecks: nativeptr<VkValidationCheckEXT>
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkValidationFeaturesEXT =
     /// Must be VK_STRUCTURE_TYPE_VALIDATION_FEATURES_EXT
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
     /// Number of validation features to enable
+    [<DefaultValue(false)>]
     val mutable enabledValidationFeatureCount: uint32
     /// Validation features to enable
-    val pEnabledValidationFeatures: nativeptr<VkValidationFeatureEnableEXT>
+    [<DefaultValue(false)>]
+    val mutable pEnabledValidationFeatures: nativeptr<VkValidationFeatureEnableEXT>
     /// Number of validation features to disable
+    [<DefaultValue(false)>]
     val mutable disabledValidationFeatureCount: uint32
     /// Validation features to disable
-    val pDisabledValidationFeatures: nativeptr<VkValidationFeatureDisableEXT>
+    [<DefaultValue(false)>]
+    val mutable pDisabledValidationFeatures: nativeptr<VkValidationFeatureDisableEXT>
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPipelineRasterizationStateRasterizationOrderAMD =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
     /// Rasterization order to use for the pipeline
+    [<DefaultValue(false)>]
     val mutable rasterizationOrder: VkRasterizationOrderAMD
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkDebugMarkerObjectNameInfoEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
     /// The type of the object
+    [<DefaultValue(false)>]
     val mutable objectType: VkDebugReportObjectTypeEXT
     /// The handle of the object, cast to uint64_t
+    [<DefaultValue(false)>]
     val mutable object: uint64
     /// Name to apply to the object
-    val pObjectName: nativeptr<char>
+    [<DefaultValue(false)>]
+    val mutable pObjectName: nativeptr<char>
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkDebugMarkerObjectTagInfoEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
     /// The type of the object
+    [<DefaultValue(false)>]
     val mutable objectType: VkDebugReportObjectTypeEXT
     /// The handle of the object, cast to uint64_t
+    [<DefaultValue(false)>]
     val mutable object: uint64
     /// The name of the tag to set on the object
+    [<DefaultValue(false)>]
     val mutable tagName: uint64
     /// The length in bytes of the tag data
+    [<DefaultValue(false)>]
     val mutable tagSize: unativeint
     /// Tag data to attach to the object
-    val pTag: nativeint
+    [<DefaultValue(false)>]
+    val mutable pTag: nativeint
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkDebugMarkerMarkerInfoEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
     /// Name of the debug marker
-    val pMarkerName: nativeptr<char>
+    [<DefaultValue(false)>]
+    val mutable pMarkerName: nativeptr<char>
     /// Optional color for debug marker
+    [<DefaultValue(false)>]
     val mutable color: float32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkDedicatedAllocationImageCreateInfoNV =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
     /// Whether this image uses a dedicated allocation
+    [<DefaultValue(false)>]
     val mutable dedicatedAllocation: VkBool32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkDedicatedAllocationBufferCreateInfoNV =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
     /// Whether this buffer uses a dedicated allocation
+    [<DefaultValue(false)>]
     val mutable dedicatedAllocation: VkBool32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkDedicatedAllocationMemoryAllocateInfoNV =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
     /// Image that this allocation will be bound to
+    [<DefaultValue(false)>]
     val mutable image: VkImage
     /// Buffer that this allocation will be bound to
+    [<DefaultValue(false)>]
     val mutable buffer: VkBuffer
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkExternalImageFormatPropertiesNV =
+    [<DefaultValue(false)>]
     val mutable imageFormatProperties: VkImageFormatProperties
+    [<DefaultValue(false)>]
     val mutable externalMemoryFeatures: VkExternalMemoryFeatureFlagsNV
+    [<DefaultValue(false)>]
     val mutable exportFromImportedHandleTypes: VkExternalMemoryHandleTypeFlagsNV
+    [<DefaultValue(false)>]
     val mutable compatibleHandleTypes: VkExternalMemoryHandleTypeFlagsNV
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkExternalMemoryImageCreateInfoNV =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable handleTypes: VkExternalMemoryHandleTypeFlagsNV
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkExportMemoryAllocateInfoNV =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable handleTypes: VkExternalMemoryHandleTypeFlagsNV
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkImportMemoryWin32HandleInfoNV =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable handleType: VkExternalMemoryHandleTypeFlagsNV
+    [<DefaultValue(false)>]
     val mutable handle: HANDLE
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkExportMemoryWin32HandleInfoNV =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
-    val pAttributes: nativeptr<SECURITY_ATTRIBUTES>
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pAttributes: nativeptr<SECURITY_ATTRIBUTES>
+    [<DefaultValue(false)>]
     val mutable dwAccess: DWORD
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkWin32KeyedMutexAcquireReleaseInfoNV =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable acquireCount: uint32
-    val pAcquireSyncs: nativeptr<VkDeviceMemory>
-    val pAcquireKeys: nativeptr<uint64>
-    val pAcquireTimeoutMilliseconds: nativeptr<uint32>
+    [<DefaultValue(false)>]
+    val mutable pAcquireSyncs: nativeptr<VkDeviceMemory>
+    [<DefaultValue(false)>]
+    val mutable pAcquireKeys: nativeptr<uint64>
+    [<DefaultValue(false)>]
+    val mutable pAcquireTimeoutMilliseconds: nativeptr<uint32>
+    [<DefaultValue(false)>]
     val mutable releaseCount: uint32
-    val pReleaseSyncs: nativeptr<VkDeviceMemory>
-    val pReleaseKeys: nativeptr<uint64>
+    [<DefaultValue(false)>]
+    val mutable pReleaseSyncs: nativeptr<VkDeviceMemory>
+    [<DefaultValue(false)>]
+    val mutable pReleaseKeys: nativeptr<uint64>
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkDeviceGeneratedCommandsFeaturesNVX =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable computeBindingPointSupport: VkBool32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkDeviceGeneratedCommandsLimitsNVX =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable maxIndirectCommandsLayoutTokenCount: uint32
+    [<DefaultValue(false)>]
     val mutable maxObjectEntryCounts: uint32
+    [<DefaultValue(false)>]
     val mutable minSequenceCountBufferOffsetAlignment: uint32
+    [<DefaultValue(false)>]
     val mutable minSequenceIndexBufferOffsetAlignment: uint32
+    [<DefaultValue(false)>]
     val mutable minCommandsTokenBufferOffsetAlignment: uint32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkIndirectCommandsTokenNVX =
+    [<DefaultValue(false)>]
     val mutable tokenType: VkIndirectCommandsTokenTypeNVX
     /// buffer containing tableEntries and additional data for indirectCommands
+    [<DefaultValue(false)>]
     val mutable buffer: VkBuffer
     /// offset from the base address of the buffer
+    [<DefaultValue(false)>]
     val mutable offset: VkDeviceSize
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkIndirectCommandsLayoutTokenNVX =
+    [<DefaultValue(false)>]
     val mutable tokenType: VkIndirectCommandsTokenTypeNVX
     /// Binding unit for vertex attribute / descriptor set, offset for pushconstants
-    val bindingUnit: uint32
+    [<DefaultValue(false)>]
+    val mutable bindingUnit: uint32
     /// Number of variable dynamic values for descriptor set / push constants
-    val dynamicCount: uint32
+    [<DefaultValue(false)>]
+    val mutable dynamicCount: uint32
     /// Rate the which the array is advanced per element (must be power of 2, minimum 1)
+    [<DefaultValue(false)>]
     val mutable divisor: uint32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkIndirectCommandsLayoutCreateInfoNVX =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable pipelineBindPoint: VkPipelineBindPoint
+    [<DefaultValue(false)>]
     val mutable flags: VkIndirectCommandsLayoutUsageFlagsNVX
+    [<DefaultValue(false)>]
     val mutable tokenCount: uint32
-    val pTokens: nativeptr<VkIndirectCommandsLayoutTokenNVX>
+    [<DefaultValue(false)>]
+    val mutable pTokens: nativeptr<VkIndirectCommandsLayoutTokenNVX>
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkCmdProcessCommandsInfoNVX =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable objectTable: VkObjectTableNVX
+    [<DefaultValue(false)>]
     val mutable indirectCommandsLayout: VkIndirectCommandsLayoutNVX
+    [<DefaultValue(false)>]
     val mutable indirectCommandsTokenCount: uint32
-    val pIndirectCommandsTokens: nativeptr<VkIndirectCommandsTokenNVX>
+    [<DefaultValue(false)>]
+    val mutable pIndirectCommandsTokens: nativeptr<VkIndirectCommandsTokenNVX>
+    [<DefaultValue(false)>]
     val mutable maxSequencesCount: uint32
+    [<DefaultValue(false)>]
     val mutable targetCommandBuffer: VkCommandBuffer
+    [<DefaultValue(false)>]
     val mutable sequencesCountBuffer: VkBuffer
+    [<DefaultValue(false)>]
     val mutable sequencesCountOffset: VkDeviceSize
+    [<DefaultValue(false)>]
     val mutable sequencesIndexBuffer: VkBuffer
+    [<DefaultValue(false)>]
     val mutable sequencesIndexOffset: VkDeviceSize
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkCmdReserveSpaceForCommandsInfoNVX =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable objectTable: VkObjectTableNVX
+    [<DefaultValue(false)>]
     val mutable indirectCommandsLayout: VkIndirectCommandsLayoutNVX
+    [<DefaultValue(false)>]
     val mutable maxSequencesCount: uint32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkObjectTableCreateInfoNVX =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable objectCount: uint32
-    val pObjectEntryTypes: nativeptr<VkObjectEntryTypeNVX>
-    val pObjectEntryCounts: nativeptr<uint32>
-    val pObjectEntryUsageFlags: nativeptr<VkObjectEntryUsageFlagsNVX>
+    [<DefaultValue(false)>]
+    val mutable pObjectEntryTypes: nativeptr<VkObjectEntryTypeNVX>
+    [<DefaultValue(false)>]
+    val mutable pObjectEntryCounts: nativeptr<uint32>
+    [<DefaultValue(false)>]
+    val mutable pObjectEntryUsageFlags: nativeptr<VkObjectEntryUsageFlagsNVX>
+    [<DefaultValue(false)>]
     val mutable maxUniformBuffersPerDescriptor: uint32
+    [<DefaultValue(false)>]
     val mutable maxStorageBuffersPerDescriptor: uint32
+    [<DefaultValue(false)>]
     val mutable maxStorageImagesPerDescriptor: uint32
+    [<DefaultValue(false)>]
     val mutable maxSampledImagesPerDescriptor: uint32
+    [<DefaultValue(false)>]
     val mutable maxPipelineLayouts: uint32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkObjectTableEntryNVX =
+    [<DefaultValue(false)>]
     val mutable typ: VkObjectEntryTypeNVX
+    [<DefaultValue(false)>]
     val mutable flags: VkObjectEntryUsageFlagsNVX
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkObjectTablePipelineEntryNVX =
+    [<DefaultValue(false)>]
     val mutable typ: VkObjectEntryTypeNVX
+    [<DefaultValue(false)>]
     val mutable flags: VkObjectEntryUsageFlagsNVX
+    [<DefaultValue(false)>]
     val mutable pipeline: VkPipeline
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkObjectTableDescriptorSetEntryNVX =
+    [<DefaultValue(false)>]
     val mutable typ: VkObjectEntryTypeNVX
+    [<DefaultValue(false)>]
     val mutable flags: VkObjectEntryUsageFlagsNVX
+    [<DefaultValue(false)>]
     val mutable pipelineLayout: VkPipelineLayout
+    [<DefaultValue(false)>]
     val mutable descriptorSet: VkDescriptorSet
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkObjectTableVertexBufferEntryNVX =
+    [<DefaultValue(false)>]
     val mutable typ: VkObjectEntryTypeNVX
+    [<DefaultValue(false)>]
     val mutable flags: VkObjectEntryUsageFlagsNVX
+    [<DefaultValue(false)>]
     val mutable buffer: VkBuffer
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkObjectTableIndexBufferEntryNVX =
+    [<DefaultValue(false)>]
     val mutable typ: VkObjectEntryTypeNVX
+    [<DefaultValue(false)>]
     val mutable flags: VkObjectEntryUsageFlagsNVX
+    [<DefaultValue(false)>]
     val mutable buffer: VkBuffer
+    [<DefaultValue(false)>]
     val mutable indexType: VkIndexType
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkObjectTablePushConstantEntryNVX =
+    [<DefaultValue(false)>]
     val mutable typ: VkObjectEntryTypeNVX
+    [<DefaultValue(false)>]
     val mutable flags: VkObjectEntryUsageFlagsNVX
+    [<DefaultValue(false)>]
     val mutable pipelineLayout: VkPipelineLayout
+    [<DefaultValue(false)>]
     val mutable stageFlags: VkShaderStageFlags
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceFeatures2 =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable features: VkPhysicalDeviceFeatures
 
 type VkPhysicalDeviceFeatures2KHR = VkPhysicalDeviceFeatures2
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceProperties2 =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable properties: VkPhysicalDeviceProperties
 
 type VkPhysicalDeviceProperties2KHR = VkPhysicalDeviceProperties2
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkFormatProperties2 =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable formatProperties: VkFormatProperties
 
 type VkFormatProperties2KHR = VkFormatProperties2
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkImageFormatProperties2 =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable imageFormatProperties: VkImageFormatProperties
 
 type VkImageFormatProperties2KHR = VkImageFormatProperties2
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceImageFormatInfo2 =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable format: VkFormat
+    [<DefaultValue(false)>]
     val mutable typ: VkImageType
+    [<DefaultValue(false)>]
     val mutable tiling: VkImageTiling
+    [<DefaultValue(false)>]
     val mutable usage: VkImageUsageFlags
+    [<DefaultValue(false)>]
     val mutable flags: VkImageCreateFlags
 
 type VkPhysicalDeviceImageFormatInfo2KHR = VkPhysicalDeviceImageFormatInfo2
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkQueueFamilyProperties2 =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable queueFamilyProperties: VkQueueFamilyProperties
 
 type VkQueueFamilyProperties2KHR = VkQueueFamilyProperties2
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceMemoryProperties2 =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable memoryProperties: VkPhysicalDeviceMemoryProperties
 
 type VkPhysicalDeviceMemoryProperties2KHR = VkPhysicalDeviceMemoryProperties2
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkSparseImageFormatProperties2 =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable properties: VkSparseImageFormatProperties
 
 type VkSparseImageFormatProperties2KHR = VkSparseImageFormatProperties2
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceSparseImageFormatInfo2 =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable format: VkFormat
+    [<DefaultValue(false)>]
     val mutable typ: VkImageType
+    [<DefaultValue(false)>]
     val mutable samples: VkSampleCountFlagBits
+    [<DefaultValue(false)>]
     val mutable usage: VkImageUsageFlags
+    [<DefaultValue(false)>]
     val mutable tiling: VkImageTiling
 
 type VkPhysicalDeviceSparseImageFormatInfo2KHR = VkPhysicalDeviceSparseImageFormatInfo2
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDevicePushDescriptorPropertiesKHR =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable maxPushDescriptors: uint32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkConformanceVersionKHR =
+    [<DefaultValue(false)>]
     val mutable major: byte
+    [<DefaultValue(false)>]
     val mutable minor: byte
+    [<DefaultValue(false)>]
     val mutable subminor: byte
+    [<DefaultValue(false)>]
     val mutable patch: byte
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceDriverPropertiesKHR =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable driverID: VkDriverIdKHR
+    [<DefaultValue(false)>]
     val mutable driverName: char
+    [<DefaultValue(false)>]
     val mutable driverInfo: char
+    [<DefaultValue(false)>]
     val mutable conformanceVersion: VkConformanceVersionKHR
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPresentRegionsKHR =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
     /// Copy of VkPresentInfoKHR::swapchainCount
+    [<DefaultValue(false)>]
     val mutable swapchainCount: uint32
     /// The regions that have changed
-    val pRegions: nativeptr<VkPresentRegionKHR>
+    [<DefaultValue(false)>]
+    val mutable pRegions: nativeptr<VkPresentRegionKHR>
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPresentRegionKHR =
     /// Number of rectangles in pRectangles
+    [<DefaultValue(false)>]
     val mutable rectangleCount: uint32
     /// Array of rectangles that have changed in a swapchain's image(s)
-    val pRectangles: nativeptr<VkRectLayerKHR>
+    [<DefaultValue(false)>]
+    val mutable pRectangles: nativeptr<VkRectLayerKHR>
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkRectLayerKHR =
     /// upper-left corner of a rectangle that has not changed, in pixels of a presentation images
+    [<DefaultValue(false)>]
     val mutable offset: VkOffset2D
     /// Dimensions of a rectangle that has not changed, in pixels of a presentation images
+    [<DefaultValue(false)>]
     val mutable extent: VkExtent2D
     /// Layer of a swapchain's image(s), for stereoscopic-3D images
+    [<DefaultValue(false)>]
     val mutable layer: uint32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceVariablePointersFeatures =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable variablePointersStorageBuffer: VkBool32
+    [<DefaultValue(false)>]
     val mutable variablePointers: VkBool32
 
 type VkPhysicalDeviceVariablePointersFeaturesKHR = VkPhysicalDeviceVariablePointersFeatures
@@ -4661,2556 +5915,3964 @@ type VkPhysicalDeviceVariablePointerFeaturesKHR = VkPhysicalDeviceVariablePointe
 
 type VkPhysicalDeviceVariablePointerFeatures = VkPhysicalDeviceVariablePointersFeatures
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkExternalMemoryProperties =
+    [<DefaultValue(false)>]
     val mutable externalMemoryFeatures: VkExternalMemoryFeatureFlags
+    [<DefaultValue(false)>]
     val mutable exportFromImportedHandleTypes: VkExternalMemoryHandleTypeFlags
+    [<DefaultValue(false)>]
     val mutable compatibleHandleTypes: VkExternalMemoryHandleTypeFlags
 
 type VkExternalMemoryPropertiesKHR = VkExternalMemoryProperties
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceExternalImageFormatInfo =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable handleType: VkExternalMemoryHandleTypeFlagBits
 
 type VkPhysicalDeviceExternalImageFormatInfoKHR = VkPhysicalDeviceExternalImageFormatInfo
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkExternalImageFormatProperties =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable externalMemoryProperties: VkExternalMemoryProperties
 
 type VkExternalImageFormatPropertiesKHR = VkExternalImageFormatProperties
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceExternalBufferInfo =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable flags: VkBufferCreateFlags
+    [<DefaultValue(false)>]
     val mutable usage: VkBufferUsageFlags
+    [<DefaultValue(false)>]
     val mutable handleType: VkExternalMemoryHandleTypeFlagBits
 
 type VkPhysicalDeviceExternalBufferInfoKHR = VkPhysicalDeviceExternalBufferInfo
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkExternalBufferProperties =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable externalMemoryProperties: VkExternalMemoryProperties
 
 type VkExternalBufferPropertiesKHR = VkExternalBufferProperties
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceIDProperties =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable deviceUUID: byte
+    [<DefaultValue(false)>]
     val mutable driverUUID: byte
+    [<DefaultValue(false)>]
     val mutable deviceLUID: byte
+    [<DefaultValue(false)>]
     val mutable deviceNodeMask: uint32
+    [<DefaultValue(false)>]
     val mutable deviceLUIDValid: VkBool32
 
 type VkPhysicalDeviceIDPropertiesKHR = VkPhysicalDeviceIDProperties
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkExternalMemoryImageCreateInfo =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable handleTypes: VkExternalMemoryHandleTypeFlags
 
 type VkExternalMemoryImageCreateInfoKHR = VkExternalMemoryImageCreateInfo
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkExternalMemoryBufferCreateInfo =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable handleTypes: VkExternalMemoryHandleTypeFlags
 
 type VkExternalMemoryBufferCreateInfoKHR = VkExternalMemoryBufferCreateInfo
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkExportMemoryAllocateInfo =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable handleTypes: VkExternalMemoryHandleTypeFlags
 
 type VkExportMemoryAllocateInfoKHR = VkExportMemoryAllocateInfo
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkImportMemoryWin32HandleInfoKHR =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
-    val mutable handleType: VkExternalMemoryHandleTypeFlagBits
-    val mutable handle: HANDLE
-    val mutable name: LPCWSTR
-
-[<Struct>]
-type VkExportMemoryWin32HandleInfoKHR =
-    val mutable sType: VkStructureType
-    val pNext: nativeint
-    val pAttributes: nativeptr<SECURITY_ATTRIBUTES>
-    val mutable dwAccess: DWORD
-    val mutable name: LPCWSTR
-
-[<Struct>]
-type VkMemoryWin32HandlePropertiesKHR =
-    val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable handleType: VkExternalMemoryHandleTypeFlagBits
+    [<DefaultValue(false)>]
+    val mutable handle: HANDLE
+    [<DefaultValue(false)>]
+    val mutable name: LPCWSTR
+
+[<Struct;NoEquality;NoComparison>]
+type VkExportMemoryWin32HandleInfoKHR =
+    [<DefaultValue(false)>]
+    val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pAttributes: nativeptr<SECURITY_ATTRIBUTES>
+    [<DefaultValue(false)>]
+    val mutable dwAccess: DWORD
+    [<DefaultValue(false)>]
+    val mutable name: LPCWSTR
+
+[<Struct;NoEquality;NoComparison>]
+type VkMemoryWin32HandlePropertiesKHR =
+    [<DefaultValue(false)>]
+    val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable memoryTypeBits: uint32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkMemoryGetWin32HandleInfoKHR =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable memory: VkDeviceMemory
+    [<DefaultValue(false)>]
     val mutable handleType: VkExternalMemoryHandleTypeFlagBits
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkImportMemoryFdInfoKHR =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable handleType: VkExternalMemoryHandleTypeFlagBits
+    [<DefaultValue(false)>]
     val mutable fd: int
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkMemoryFdPropertiesKHR =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable memoryTypeBits: uint32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkMemoryGetFdInfoKHR =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable memory: VkDeviceMemory
+    [<DefaultValue(false)>]
     val mutable handleType: VkExternalMemoryHandleTypeFlagBits
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkWin32KeyedMutexAcquireReleaseInfoKHR =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable acquireCount: uint32
-    val pAcquireSyncs: nativeptr<VkDeviceMemory>
-    val pAcquireKeys: nativeptr<uint64>
-    val pAcquireTimeouts: nativeptr<uint32>
+    [<DefaultValue(false)>]
+    val mutable pAcquireSyncs: nativeptr<VkDeviceMemory>
+    [<DefaultValue(false)>]
+    val mutable pAcquireKeys: nativeptr<uint64>
+    [<DefaultValue(false)>]
+    val mutable pAcquireTimeouts: nativeptr<uint32>
+    [<DefaultValue(false)>]
     val mutable releaseCount: uint32
-    val pReleaseSyncs: nativeptr<VkDeviceMemory>
-    val pReleaseKeys: nativeptr<uint64>
+    [<DefaultValue(false)>]
+    val mutable pReleaseSyncs: nativeptr<VkDeviceMemory>
+    [<DefaultValue(false)>]
+    val mutable pReleaseKeys: nativeptr<uint64>
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceExternalSemaphoreInfo =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable handleType: VkExternalSemaphoreHandleTypeFlagBits
 
 type VkPhysicalDeviceExternalSemaphoreInfoKHR = VkPhysicalDeviceExternalSemaphoreInfo
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkExternalSemaphoreProperties =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable exportFromImportedHandleTypes: VkExternalSemaphoreHandleTypeFlags
+    [<DefaultValue(false)>]
     val mutable compatibleHandleTypes: VkExternalSemaphoreHandleTypeFlags
+    [<DefaultValue(false)>]
     val mutable externalSemaphoreFeatures: VkExternalSemaphoreFeatureFlags
 
 type VkExternalSemaphorePropertiesKHR = VkExternalSemaphoreProperties
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkExportSemaphoreCreateInfo =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable handleTypes: VkExternalSemaphoreHandleTypeFlags
 
 type VkExportSemaphoreCreateInfoKHR = VkExportSemaphoreCreateInfo
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkImportSemaphoreWin32HandleInfoKHR =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable semaphore: VkSemaphore
+    [<DefaultValue(false)>]
     val mutable flags: VkSemaphoreImportFlags
+    [<DefaultValue(false)>]
     val mutable handleType: VkExternalSemaphoreHandleTypeFlagBits
+    [<DefaultValue(false)>]
     val mutable handle: HANDLE
+    [<DefaultValue(false)>]
     val mutable name: LPCWSTR
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkExportSemaphoreWin32HandleInfoKHR =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
-    val pAttributes: nativeptr<SECURITY_ATTRIBUTES>
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pAttributes: nativeptr<SECURITY_ATTRIBUTES>
+    [<DefaultValue(false)>]
     val mutable dwAccess: DWORD
+    [<DefaultValue(false)>]
     val mutable name: LPCWSTR
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkD3D12FenceSubmitInfoKHR =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable waitSemaphoreValuesCount: uint32
-    val pWaitSemaphoreValues: nativeptr<uint64>
+    [<DefaultValue(false)>]
+    val mutable pWaitSemaphoreValues: nativeptr<uint64>
+    [<DefaultValue(false)>]
     val mutable signalSemaphoreValuesCount: uint32
-    val pSignalSemaphoreValues: nativeptr<uint64>
+    [<DefaultValue(false)>]
+    val mutable pSignalSemaphoreValues: nativeptr<uint64>
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkSemaphoreGetWin32HandleInfoKHR =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable semaphore: VkSemaphore
+    [<DefaultValue(false)>]
     val mutable handleType: VkExternalSemaphoreHandleTypeFlagBits
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkImportSemaphoreFdInfoKHR =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable semaphore: VkSemaphore
+    [<DefaultValue(false)>]
     val mutable flags: VkSemaphoreImportFlags
+    [<DefaultValue(false)>]
     val mutable handleType: VkExternalSemaphoreHandleTypeFlagBits
+    [<DefaultValue(false)>]
     val mutable fd: int
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkSemaphoreGetFdInfoKHR =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable semaphore: VkSemaphore
+    [<DefaultValue(false)>]
     val mutable handleType: VkExternalSemaphoreHandleTypeFlagBits
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceExternalFenceInfo =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable handleType: VkExternalFenceHandleTypeFlagBits
 
 type VkPhysicalDeviceExternalFenceInfoKHR = VkPhysicalDeviceExternalFenceInfo
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkExternalFenceProperties =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable exportFromImportedHandleTypes: VkExternalFenceHandleTypeFlags
+    [<DefaultValue(false)>]
     val mutable compatibleHandleTypes: VkExternalFenceHandleTypeFlags
+    [<DefaultValue(false)>]
     val mutable externalFenceFeatures: VkExternalFenceFeatureFlags
 
 type VkExternalFencePropertiesKHR = VkExternalFenceProperties
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkExportFenceCreateInfo =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable handleTypes: VkExternalFenceHandleTypeFlags
 
 type VkExportFenceCreateInfoKHR = VkExportFenceCreateInfo
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkImportFenceWin32HandleInfoKHR =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable fence: VkFence
+    [<DefaultValue(false)>]
     val mutable flags: VkFenceImportFlags
+    [<DefaultValue(false)>]
     val mutable handleType: VkExternalFenceHandleTypeFlagBits
+    [<DefaultValue(false)>]
     val mutable handle: HANDLE
+    [<DefaultValue(false)>]
     val mutable name: LPCWSTR
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkExportFenceWin32HandleInfoKHR =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
-    val pAttributes: nativeptr<SECURITY_ATTRIBUTES>
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pAttributes: nativeptr<SECURITY_ATTRIBUTES>
+    [<DefaultValue(false)>]
     val mutable dwAccess: DWORD
+    [<DefaultValue(false)>]
     val mutable name: LPCWSTR
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkFenceGetWin32HandleInfoKHR =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable fence: VkFence
+    [<DefaultValue(false)>]
     val mutable handleType: VkExternalFenceHandleTypeFlagBits
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkImportFenceFdInfoKHR =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable fence: VkFence
+    [<DefaultValue(false)>]
     val mutable flags: VkFenceImportFlags
+    [<DefaultValue(false)>]
     val mutable handleType: VkExternalFenceHandleTypeFlagBits
+    [<DefaultValue(false)>]
     val mutable fd: int
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkFenceGetFdInfoKHR =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable fence: VkFence
+    [<DefaultValue(false)>]
     val mutable handleType: VkExternalFenceHandleTypeFlagBits
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceMultiviewFeatures =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
     /// Multiple views in a renderpass
+    [<DefaultValue(false)>]
     val mutable multiview: VkBool32
     /// Multiple views in a renderpass w/ geometry shader
+    [<DefaultValue(false)>]
     val mutable multiviewGeometryShader: VkBool32
     /// Multiple views in a renderpass w/ tessellation shader
+    [<DefaultValue(false)>]
     val mutable multiviewTessellationShader: VkBool32
 
 type VkPhysicalDeviceMultiviewFeaturesKHR = VkPhysicalDeviceMultiviewFeatures
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceMultiviewProperties =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
     /// max number of views in a subpass
+    [<DefaultValue(false)>]
     val mutable maxMultiviewViewCount: uint32
     /// max instance index for a draw in a multiview subpass
+    [<DefaultValue(false)>]
     val mutable maxMultiviewInstanceIndex: uint32
 
 type VkPhysicalDeviceMultiviewPropertiesKHR = VkPhysicalDeviceMultiviewProperties
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkRenderPassMultiviewCreateInfo =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable subpassCount: uint32
-    val pViewMasks: nativeptr<uint32>
+    [<DefaultValue(false)>]
+    val mutable pViewMasks: nativeptr<uint32>
+    [<DefaultValue(false)>]
     val mutable dependencyCount: uint32
-    val pViewOffsets: nativeptr<int>
+    [<DefaultValue(false)>]
+    val mutable pViewOffsets: nativeptr<int>
+    [<DefaultValue(false)>]
     val mutable correlationMaskCount: uint32
-    val pCorrelationMasks: nativeptr<uint32>
+    [<DefaultValue(false)>]
+    val mutable pCorrelationMasks: nativeptr<uint32>
 
 type VkRenderPassMultiviewCreateInfoKHR = VkRenderPassMultiviewCreateInfo
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkSurfaceCapabilities2EXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
     /// Supported minimum number of images for the surface
+    [<DefaultValue(false)>]
     val mutable minImageCount: uint32
     /// Supported maximum number of images for the surface, 0 for unlimited
+    [<DefaultValue(false)>]
     val mutable maxImageCount: uint32
     /// Current image width and height for the surface, (0, 0) if undefined
+    [<DefaultValue(false)>]
     val mutable currentExtent: VkExtent2D
     /// Supported minimum image width and height for the surface
+    [<DefaultValue(false)>]
     val mutable minImageExtent: VkExtent2D
     /// Supported maximum image width and height for the surface
+    [<DefaultValue(false)>]
     val mutable maxImageExtent: VkExtent2D
     /// Supported maximum number of image layers for the surface
+    [<DefaultValue(false)>]
     val mutable maxImageArrayLayers: uint32
     /// 1 or more bits representing the transforms supported
+    [<DefaultValue(false)>]
     val mutable supportedTransforms: VkSurfaceTransformFlagsKHR
     /// The surface's current transform relative to the device's natural orientation
+    [<DefaultValue(false)>]
     val mutable currentTransform: VkSurfaceTransformFlagBitsKHR
     /// 1 or more bits representing the alpha compositing modes supported
+    [<DefaultValue(false)>]
     val mutable supportedCompositeAlpha: VkCompositeAlphaFlagsKHR
     /// Supported image usage flags for the surface
+    [<DefaultValue(false)>]
     val mutable supportedUsageFlags: VkImageUsageFlags
+    [<DefaultValue(false)>]
     val mutable supportedSurfaceCounters: VkSurfaceCounterFlagsEXT
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkDisplayPowerInfoEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable powerState: VkDisplayPowerStateEXT
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkDeviceEventInfoEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable deviceEvent: VkDeviceEventTypeEXT
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkDisplayEventInfoEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable displayEvent: VkDisplayEventTypeEXT
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkSwapchainCounterCreateInfoEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable surfaceCounters: VkSurfaceCounterFlagsEXT
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceGroupProperties =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable physicalDeviceCount: uint32
+    [<DefaultValue(false)>]
     val mutable physicalDevices: VkPhysicalDevice
+    [<DefaultValue(false)>]
     val mutable subsetAllocation: VkBool32
 
 type VkPhysicalDeviceGroupPropertiesKHR = VkPhysicalDeviceGroupProperties
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkMemoryAllocateFlagsInfo =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable flags: VkMemoryAllocateFlags
+    [<DefaultValue(false)>]
     val mutable deviceMask: uint32
 
 type VkMemoryAllocateFlagsInfoKHR = VkMemoryAllocateFlagsInfo
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkBindBufferMemoryInfo =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable buffer: VkBuffer
+    [<DefaultValue(false)>]
     val mutable memory: VkDeviceMemory
+    [<DefaultValue(false)>]
     val mutable memoryOffset: VkDeviceSize
 
 type VkBindBufferMemoryInfoKHR = VkBindBufferMemoryInfo
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkBindBufferMemoryDeviceGroupInfo =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable deviceIndexCount: uint32
-    val pDeviceIndices: nativeptr<uint32>
+    [<DefaultValue(false)>]
+    val mutable pDeviceIndices: nativeptr<uint32>
 
 type VkBindBufferMemoryDeviceGroupInfoKHR = VkBindBufferMemoryDeviceGroupInfo
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkBindImageMemoryInfo =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable image: VkImage
+    [<DefaultValue(false)>]
     val mutable memory: VkDeviceMemory
+    [<DefaultValue(false)>]
     val mutable memoryOffset: VkDeviceSize
 
 type VkBindImageMemoryInfoKHR = VkBindImageMemoryInfo
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkBindImageMemoryDeviceGroupInfo =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable deviceIndexCount: uint32
-    val pDeviceIndices: nativeptr<uint32>
+    [<DefaultValue(false)>]
+    val mutable pDeviceIndices: nativeptr<uint32>
+    [<DefaultValue(false)>]
     val mutable splitInstanceBindRegionCount: uint32
-    val pSplitInstanceBindRegions: nativeptr<VkRect2D>
+    [<DefaultValue(false)>]
+    val mutable pSplitInstanceBindRegions: nativeptr<VkRect2D>
 
 type VkBindImageMemoryDeviceGroupInfoKHR = VkBindImageMemoryDeviceGroupInfo
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkDeviceGroupRenderPassBeginInfo =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable deviceMask: uint32
+    [<DefaultValue(false)>]
     val mutable deviceRenderAreaCount: uint32
-    val pDeviceRenderAreas: nativeptr<VkRect2D>
+    [<DefaultValue(false)>]
+    val mutable pDeviceRenderAreas: nativeptr<VkRect2D>
 
 type VkDeviceGroupRenderPassBeginInfoKHR = VkDeviceGroupRenderPassBeginInfo
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkDeviceGroupCommandBufferBeginInfo =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable deviceMask: uint32
 
 type VkDeviceGroupCommandBufferBeginInfoKHR = VkDeviceGroupCommandBufferBeginInfo
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkDeviceGroupSubmitInfo =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable waitSemaphoreCount: uint32
-    val pWaitSemaphoreDeviceIndices: nativeptr<uint32>
+    [<DefaultValue(false)>]
+    val mutable pWaitSemaphoreDeviceIndices: nativeptr<uint32>
+    [<DefaultValue(false)>]
     val mutable commandBufferCount: uint32
-    val pCommandBufferDeviceMasks: nativeptr<uint32>
+    [<DefaultValue(false)>]
+    val mutable pCommandBufferDeviceMasks: nativeptr<uint32>
+    [<DefaultValue(false)>]
     val mutable signalSemaphoreCount: uint32
-    val pSignalSemaphoreDeviceIndices: nativeptr<uint32>
+    [<DefaultValue(false)>]
+    val mutable pSignalSemaphoreDeviceIndices: nativeptr<uint32>
 
 type VkDeviceGroupSubmitInfoKHR = VkDeviceGroupSubmitInfo
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkDeviceGroupBindSparseInfo =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable resourceDeviceIndex: uint32
+    [<DefaultValue(false)>]
     val mutable memoryDeviceIndex: uint32
 
 type VkDeviceGroupBindSparseInfoKHR = VkDeviceGroupBindSparseInfo
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkDeviceGroupPresentCapabilitiesKHR =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable presentMask: uint32
+    [<DefaultValue(false)>]
     val mutable modes: VkDeviceGroupPresentModeFlagsKHR
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkImageSwapchainCreateInfoKHR =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable swapchain: VkSwapchainKHR
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkBindImageMemorySwapchainInfoKHR =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable swapchain: VkSwapchainKHR
+    [<DefaultValue(false)>]
     val mutable imageIndex: uint32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkAcquireNextImageInfoKHR =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable swapchain: VkSwapchainKHR
+    [<DefaultValue(false)>]
     val mutable timeout: uint64
+    [<DefaultValue(false)>]
     val mutable semaphore: VkSemaphore
+    [<DefaultValue(false)>]
     val mutable fence: VkFence
+    [<DefaultValue(false)>]
     val mutable deviceMask: uint32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkDeviceGroupPresentInfoKHR =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable swapchainCount: uint32
-    val pDeviceMasks: nativeptr<uint32>
+    [<DefaultValue(false)>]
+    val mutable pDeviceMasks: nativeptr<uint32>
+    [<DefaultValue(false)>]
     val mutable mode: VkDeviceGroupPresentModeFlagBitsKHR
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkDeviceGroupDeviceCreateInfo =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable physicalDeviceCount: uint32
-    val pPhysicalDevices: nativeptr<VkPhysicalDevice>
+    [<DefaultValue(false)>]
+    val mutable pPhysicalDevices: nativeptr<VkPhysicalDevice>
 
 type VkDeviceGroupDeviceCreateInfoKHR = VkDeviceGroupDeviceCreateInfo
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkDeviceGroupSwapchainCreateInfoKHR =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable modes: VkDeviceGroupPresentModeFlagsKHR
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkDescriptorUpdateTemplateEntry =
     /// Binding within the destination descriptor set to write
+    [<DefaultValue(false)>]
     val mutable dstBinding: uint32
     /// Array element within the destination binding to write
+    [<DefaultValue(false)>]
     val mutable dstArrayElement: uint32
     /// Number of descriptors to write
+    [<DefaultValue(false)>]
     val mutable descriptorCount: uint32
     /// Descriptor type to write
+    [<DefaultValue(false)>]
     val mutable descriptorType: VkDescriptorType
     /// Offset into pData where the descriptors to update are stored
+    [<DefaultValue(false)>]
     val mutable offset: unativeint
     /// Stride between two descriptors in pData when writing more than one descriptor
+    [<DefaultValue(false)>]
     val mutable stride: unativeint
 
 type VkDescriptorUpdateTemplateEntryKHR = VkDescriptorUpdateTemplateEntry
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkDescriptorUpdateTemplateCreateInfo =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable flags: VkDescriptorUpdateTemplateCreateFlags
     /// Number of descriptor update entries to use for the update template
+    [<DefaultValue(false)>]
     val mutable descriptorUpdateEntryCount: uint32
     /// Descriptor update entries for the template
-    val pDescriptorUpdateEntries: nativeptr<VkDescriptorUpdateTemplateEntry>
+    [<DefaultValue(false)>]
+    val mutable pDescriptorUpdateEntries: nativeptr<VkDescriptorUpdateTemplateEntry>
+    [<DefaultValue(false)>]
     val mutable templateType: VkDescriptorUpdateTemplateType
+    [<DefaultValue(false)>]
     val mutable descriptorSetLayout: VkDescriptorSetLayout
+    [<DefaultValue(false)>]
     val mutable pipelineBindPoint: VkPipelineBindPoint
     /// If used for push descriptors, this is the only allowed layout
+    [<DefaultValue(false)>]
     val mutable pipelineLayout: VkPipelineLayout
+    [<DefaultValue(false)>]
     val mutable set: uint32
 
 type VkDescriptorUpdateTemplateCreateInfoKHR = VkDescriptorUpdateTemplateCreateInfo
 
 /// Chromaticity coordinate
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkXYColorEXT =
+    [<DefaultValue(false)>]
     val mutable x: float32
+    [<DefaultValue(false)>]
     val mutable y: float32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkHdrMetadataEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
     /// Display primary's Red
+    [<DefaultValue(false)>]
     val mutable displayPrimaryRed: VkXYColorEXT
     /// Display primary's Green
+    [<DefaultValue(false)>]
     val mutable displayPrimaryGreen: VkXYColorEXT
     /// Display primary's Blue
+    [<DefaultValue(false)>]
     val mutable displayPrimaryBlue: VkXYColorEXT
     /// Display primary's Blue
+    [<DefaultValue(false)>]
     val mutable whitePoint: VkXYColorEXT
     /// Display maximum luminance
+    [<DefaultValue(false)>]
     val mutable maxLuminance: float32
     /// Display minimum luminance
+    [<DefaultValue(false)>]
     val mutable minLuminance: float32
     /// Content maximum luminance
+    [<DefaultValue(false)>]
     val mutable maxContentLightLevel: float32
+    [<DefaultValue(false)>]
     val mutable maxFrameAverageLightLevel: float32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkDisplayNativeHdrSurfaceCapabilitiesAMD =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable localDimmingSupport: VkBool32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkSwapchainDisplayNativeHdrCreateInfoAMD =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable localDimmingEnable: VkBool32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkRefreshCycleDurationGOOGLE =
     /// Number of nanoseconds from the start of one refresh cycle to the next
+    [<DefaultValue(false)>]
     val mutable refreshDuration: uint64
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPastPresentationTimingGOOGLE =
     /// Application-provided identifier, previously given to vkQueuePresentKHR
+    [<DefaultValue(false)>]
     val mutable presentID: uint32
     /// Earliest time an image should have been presented, previously given to vkQueuePresentKHR
+    [<DefaultValue(false)>]
     val mutable desiredPresentTime: uint64
     /// Time the image was actually displayed
+    [<DefaultValue(false)>]
     val mutable actualPresentTime: uint64
     /// Earliest time the image could have been displayed
+    [<DefaultValue(false)>]
     val mutable earliestPresentTime: uint64
     /// How early vkQueuePresentKHR was processed vs. how soon it needed to be and make earliestPresentTime
+    [<DefaultValue(false)>]
     val mutable presentMargin: uint64
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPresentTimesInfoGOOGLE =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
     /// Copy of VkPresentInfoKHR::swapchainCount
+    [<DefaultValue(false)>]
     val mutable swapchainCount: uint32
     /// The earliest times to present images
-    val pTimes: nativeptr<VkPresentTimeGOOGLE>
+    [<DefaultValue(false)>]
+    val mutable pTimes: nativeptr<VkPresentTimeGOOGLE>
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPresentTimeGOOGLE =
     /// Application-provided identifier
+    [<DefaultValue(false)>]
     val mutable presentID: uint32
     /// Earliest time an image should be presented
+    [<DefaultValue(false)>]
     val mutable desiredPresentTime: uint64
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkIOSSurfaceCreateInfoMVK =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable flags: VkIOSSurfaceCreateFlagsMVK
-    val pView: nativeint
+    [<DefaultValue(false)>]
+    val mutable pView: nativeint
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkMacOSSurfaceCreateInfoMVK =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable flags: VkMacOSSurfaceCreateFlagsMVK
-    val pView: nativeint
+    [<DefaultValue(false)>]
+    val mutable pView: nativeint
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkMetalSurfaceCreateInfoEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable flags: VkMetalSurfaceCreateFlagsEXT
-    val pLayer: nativeptr<CAMetalLayer>
+    [<DefaultValue(false)>]
+    val mutable pLayer: nativeptr<CAMetalLayer>
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkViewportWScalingNV =
+    [<DefaultValue(false)>]
     val mutable xcoeff: float32
+    [<DefaultValue(false)>]
     val mutable ycoeff: float32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPipelineViewportWScalingStateCreateInfoNV =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable viewportWScalingEnable: VkBool32
+    [<DefaultValue(false)>]
     val mutable viewportCount: uint32
-    val pViewportWScalings: nativeptr<VkViewportWScalingNV>
+    [<DefaultValue(false)>]
+    val mutable pViewportWScalings: nativeptr<VkViewportWScalingNV>
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkViewportSwizzleNV =
+    [<DefaultValue(false)>]
     val mutable x: VkViewportCoordinateSwizzleNV
+    [<DefaultValue(false)>]
     val mutable y: VkViewportCoordinateSwizzleNV
+    [<DefaultValue(false)>]
     val mutable z: VkViewportCoordinateSwizzleNV
+    [<DefaultValue(false)>]
     val mutable w: VkViewportCoordinateSwizzleNV
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPipelineViewportSwizzleStateCreateInfoNV =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable flags: VkPipelineViewportSwizzleStateCreateFlagsNV
+    [<DefaultValue(false)>]
     val mutable viewportCount: uint32
-    val pViewportSwizzles: nativeptr<VkViewportSwizzleNV>
+    [<DefaultValue(false)>]
+    val mutable pViewportSwizzles: nativeptr<VkViewportSwizzleNV>
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceDiscardRectanglePropertiesEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
     /// max number of active discard rectangles
+    [<DefaultValue(false)>]
     val mutable maxDiscardRectangles: uint32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPipelineDiscardRectangleStateCreateInfoEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
-    val mutable flags: VkPipelineDiscardRectangleStateCreateFlagsEXT
-    val mutable discardRectangleMode: VkDiscardRectangleModeEXT
-    val mutable discardRectangleCount: uint32
-    val pDiscardRectangles: nativeptr<VkRect2D>
-
-[<Struct>]
-type VkPhysicalDeviceMultiviewPerViewAttributesPropertiesNVX =
-    val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable flags: VkPipelineDiscardRectangleStateCreateFlagsEXT
+    [<DefaultValue(false)>]
+    val mutable discardRectangleMode: VkDiscardRectangleModeEXT
+    [<DefaultValue(false)>]
+    val mutable discardRectangleCount: uint32
+    [<DefaultValue(false)>]
+    val mutable pDiscardRectangles: nativeptr<VkRect2D>
+
+[<Struct;NoEquality;NoComparison>]
+type VkPhysicalDeviceMultiviewPerViewAttributesPropertiesNVX =
+    [<DefaultValue(false)>]
+    val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable perViewPositionAllComponents: VkBool32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkInputAttachmentAspectReference =
+    [<DefaultValue(false)>]
     val mutable subpass: uint32
+    [<DefaultValue(false)>]
     val mutable inputAttachmentIndex: uint32
+    [<DefaultValue(false)>]
     val mutable aspectMask: VkImageAspectFlags
 
 type VkInputAttachmentAspectReferenceKHR = VkInputAttachmentAspectReference
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkRenderPassInputAttachmentAspectCreateInfo =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable aspectReferenceCount: uint32
-    val pAspectReferences: nativeptr<VkInputAttachmentAspectReference>
+    [<DefaultValue(false)>]
+    val mutable pAspectReferences: nativeptr<VkInputAttachmentAspectReference>
 
 type VkRenderPassInputAttachmentAspectCreateInfoKHR = VkRenderPassInputAttachmentAspectCreateInfo
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceSurfaceInfo2KHR =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable surface: VkSurfaceKHR
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkSurfaceCapabilities2KHR =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable surfaceCapabilities: VkSurfaceCapabilitiesKHR
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkSurfaceFormat2KHR =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable surfaceFormat: VkSurfaceFormatKHR
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkDisplayProperties2KHR =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable displayProperties: VkDisplayPropertiesKHR
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkDisplayPlaneProperties2KHR =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable displayPlaneProperties: VkDisplayPlanePropertiesKHR
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkDisplayModeProperties2KHR =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable displayModeProperties: VkDisplayModePropertiesKHR
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkDisplayPlaneInfo2KHR =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable mode: VkDisplayModeKHR
+    [<DefaultValue(false)>]
     val mutable planeIndex: uint32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkDisplayPlaneCapabilities2KHR =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable capabilities: VkDisplayPlaneCapabilitiesKHR
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkSharedPresentSurfaceCapabilitiesKHR =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
     /// Supported image usage flags if swapchain created using a shared present mode
+    [<DefaultValue(false)>]
     val mutable sharedPresentSupportedUsageFlags: VkImageUsageFlags
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDevice16BitStorageFeatures =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
     /// 16-bit integer/floating-point variables supported in BufferBlock
+    [<DefaultValue(false)>]
     val mutable storageBuffer16BitAccess: VkBool32
     /// 16-bit integer/floating-point variables supported in BufferBlock and Block
+    [<DefaultValue(false)>]
     val mutable uniformAndStorageBuffer16BitAccess: VkBool32
     /// 16-bit integer/floating-point variables supported in PushConstant
+    [<DefaultValue(false)>]
     val mutable storagePushConstant16: VkBool32
     /// 16-bit integer/floating-point variables supported in shader inputs and outputs
+    [<DefaultValue(false)>]
     val mutable storageInputOutput16: VkBool32
 
 type VkPhysicalDevice16BitStorageFeaturesKHR = VkPhysicalDevice16BitStorageFeatures
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceSubgroupProperties =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
     /// The size of a subgroup for this queue.
+    [<DefaultValue(false)>]
     val mutable subgroupSize: uint32
     /// Bitfield of what shader stages support subgroup operations
+    [<DefaultValue(false)>]
     val mutable supportedStages: VkShaderStageFlags
     /// Bitfield of what subgroup operations are supported.
+    [<DefaultValue(false)>]
     val mutable supportedOperations: VkSubgroupFeatureFlags
     /// Flag to specify whether quad operations are available in all stages.
+    [<DefaultValue(false)>]
     val mutable quadOperationsInAllStages: VkBool32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkBufferMemoryRequirementsInfo2 =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable buffer: VkBuffer
 
 type VkBufferMemoryRequirementsInfo2KHR = VkBufferMemoryRequirementsInfo2
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkImageMemoryRequirementsInfo2 =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable image: VkImage
 
 type VkImageMemoryRequirementsInfo2KHR = VkImageMemoryRequirementsInfo2
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkImageSparseMemoryRequirementsInfo2 =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable image: VkImage
 
 type VkImageSparseMemoryRequirementsInfo2KHR = VkImageSparseMemoryRequirementsInfo2
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkMemoryRequirements2 =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable memoryRequirements: VkMemoryRequirements
 
 type VkMemoryRequirements2KHR = VkMemoryRequirements2
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkSparseImageMemoryRequirements2 =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable memoryRequirements: VkSparseImageMemoryRequirements
 
 type VkSparseImageMemoryRequirements2KHR = VkSparseImageMemoryRequirements2
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDevicePointClippingProperties =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable pointClippingBehavior: VkPointClippingBehavior
 
 type VkPhysicalDevicePointClippingPropertiesKHR = VkPhysicalDevicePointClippingProperties
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkMemoryDedicatedRequirements =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable prefersDedicatedAllocation: VkBool32
+    [<DefaultValue(false)>]
     val mutable requiresDedicatedAllocation: VkBool32
 
 type VkMemoryDedicatedRequirementsKHR = VkMemoryDedicatedRequirements
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkMemoryDedicatedAllocateInfo =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
     /// Image that this allocation will be bound to
+    [<DefaultValue(false)>]
     val mutable image: VkImage
     /// Buffer that this allocation will be bound to
+    [<DefaultValue(false)>]
     val mutable buffer: VkBuffer
 
 type VkMemoryDedicatedAllocateInfoKHR = VkMemoryDedicatedAllocateInfo
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkImageViewUsageCreateInfo =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable usage: VkImageUsageFlags
 
 type VkImageViewUsageCreateInfoKHR = VkImageViewUsageCreateInfo
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPipelineTessellationDomainOriginStateCreateInfo =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable domainOrigin: VkTessellationDomainOrigin
 
 type VkPipelineTessellationDomainOriginStateCreateInfoKHR = VkPipelineTessellationDomainOriginStateCreateInfo
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkSamplerYcbcrConversionInfo =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable conversion: VkSamplerYcbcrConversion
 
 type VkSamplerYcbcrConversionInfoKHR = VkSamplerYcbcrConversionInfo
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkSamplerYcbcrConversionCreateInfo =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable format: VkFormat
+    [<DefaultValue(false)>]
     val mutable ycbcrModel: VkSamplerYcbcrModelConversion
+    [<DefaultValue(false)>]
     val mutable ycbcrRange: VkSamplerYcbcrRange
+    [<DefaultValue(false)>]
     val mutable components: VkComponentMapping
+    [<DefaultValue(false)>]
     val mutable xChromaOffset: VkChromaLocation
+    [<DefaultValue(false)>]
     val mutable yChromaOffset: VkChromaLocation
+    [<DefaultValue(false)>]
     val mutable chromaFilter: VkFilter
-    val forceExplicitReconstruction: VkBool32
+    [<DefaultValue(false)>]
+    val mutable forceExplicitReconstruction: VkBool32
 
 type VkSamplerYcbcrConversionCreateInfoKHR = VkSamplerYcbcrConversionCreateInfo
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkBindImagePlaneMemoryInfo =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable planeAspect: VkImageAspectFlagBits
 
 type VkBindImagePlaneMemoryInfoKHR = VkBindImagePlaneMemoryInfo
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkImagePlaneMemoryRequirementsInfo =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable planeAspect: VkImageAspectFlagBits
 
 type VkImagePlaneMemoryRequirementsInfoKHR = VkImagePlaneMemoryRequirementsInfo
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceSamplerYcbcrConversionFeatures =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
     /// Sampler color conversion supported
+    [<DefaultValue(false)>]
     val mutable samplerYcbcrConversion: VkBool32
 
 type VkPhysicalDeviceSamplerYcbcrConversionFeaturesKHR = VkPhysicalDeviceSamplerYcbcrConversionFeatures
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkSamplerYcbcrConversionImageFormatProperties =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable combinedImageSamplerDescriptorCount: uint32
 
 type VkSamplerYcbcrConversionImageFormatPropertiesKHR = VkSamplerYcbcrConversionImageFormatProperties
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkTextureLODGatherFormatPropertiesAMD =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable supportsTextureGatherLODBiasAMD: VkBool32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkConditionalRenderingBeginInfoEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable buffer: VkBuffer
+    [<DefaultValue(false)>]
     val mutable offset: VkDeviceSize
+    [<DefaultValue(false)>]
     val mutable flags: VkConditionalRenderingFlagsEXT
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkProtectedSubmitInfo =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
     /// Submit protected command buffers
+    [<DefaultValue(false)>]
     val mutable protectedSubmit: VkBool32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceProtectedMemoryFeatures =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable protectedMemory: VkBool32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceProtectedMemoryProperties =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable protectedNoFault: VkBool32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkDeviceQueueInfo2 =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable flags: VkDeviceQueueCreateFlags
+    [<DefaultValue(false)>]
     val mutable queueFamilyIndex: uint32
+    [<DefaultValue(false)>]
     val mutable queueIndex: uint32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPipelineCoverageToColorStateCreateInfoNV =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable flags: VkPipelineCoverageToColorStateCreateFlagsNV
+    [<DefaultValue(false)>]
     val mutable coverageToColorEnable: VkBool32
+    [<DefaultValue(false)>]
     val mutable coverageToColorLocation: uint32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceSamplerFilterMinmaxPropertiesEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable filterMinmaxSingleComponentFormats: VkBool32
+    [<DefaultValue(false)>]
     val mutable filterMinmaxImageComponentMapping: VkBool32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkSampleLocationEXT =
+    [<DefaultValue(false)>]
     val mutable x: float32
+    [<DefaultValue(false)>]
     val mutable y: float32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkSampleLocationsInfoEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
-    val mutable sampleLocationsPerPixel: VkSampleCountFlagBits
-    val mutable sampleLocationGridSize: VkExtent2D
-    val mutable sampleLocationsCount: uint32
-    val pSampleLocations: nativeptr<VkSampleLocationEXT>
-
-[<Struct>]
-type VkAttachmentSampleLocationsEXT =
-    val mutable attachmentIndex: uint32
-    val mutable sampleLocationsInfo: VkSampleLocationsInfoEXT
-
-[<Struct>]
-type VkSubpassSampleLocationsEXT =
-    val mutable subpassIndex: uint32
-    val mutable sampleLocationsInfo: VkSampleLocationsInfoEXT
-
-[<Struct>]
-type VkRenderPassSampleLocationsBeginInfoEXT =
-    val mutable sType: VkStructureType
-    val pNext: nativeint
-    val mutable attachmentInitialSampleLocationsCount: uint32
-    val pAttachmentInitialSampleLocations: nativeptr<VkAttachmentSampleLocationsEXT>
-    val mutable postSubpassSampleLocationsCount: uint32
-    val pPostSubpassSampleLocations: nativeptr<VkSubpassSampleLocationsEXT>
-
-[<Struct>]
-type VkPipelineSampleLocationsStateCreateInfoEXT =
-    val mutable sType: VkStructureType
-    val pNext: nativeint
-    val mutable sampleLocationsEnable: VkBool32
-    val mutable sampleLocationsInfo: VkSampleLocationsInfoEXT
-
-[<Struct>]
-type VkPhysicalDeviceSampleLocationsPropertiesEXT =
-    val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable sampleLocationsPerPixel: VkSampleCountFlagBits
+    [<DefaultValue(false)>]
+    val mutable sampleLocationGridSize: VkExtent2D
+    [<DefaultValue(false)>]
+    val mutable sampleLocationsCount: uint32
+    [<DefaultValue(false)>]
+    val mutable pSampleLocations: nativeptr<VkSampleLocationEXT>
+
+[<Struct;NoEquality;NoComparison>]
+type VkAttachmentSampleLocationsEXT =
+    [<DefaultValue(false)>]
+    val mutable attachmentIndex: uint32
+    [<DefaultValue(false)>]
+    val mutable sampleLocationsInfo: VkSampleLocationsInfoEXT
+
+[<Struct;NoEquality;NoComparison>]
+type VkSubpassSampleLocationsEXT =
+    [<DefaultValue(false)>]
+    val mutable subpassIndex: uint32
+    [<DefaultValue(false)>]
+    val mutable sampleLocationsInfo: VkSampleLocationsInfoEXT
+
+[<Struct;NoEquality;NoComparison>]
+type VkRenderPassSampleLocationsBeginInfoEXT =
+    [<DefaultValue(false)>]
+    val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable attachmentInitialSampleLocationsCount: uint32
+    [<DefaultValue(false)>]
+    val mutable pAttachmentInitialSampleLocations: nativeptr<VkAttachmentSampleLocationsEXT>
+    [<DefaultValue(false)>]
+    val mutable postSubpassSampleLocationsCount: uint32
+    [<DefaultValue(false)>]
+    val mutable pPostSubpassSampleLocations: nativeptr<VkSubpassSampleLocationsEXT>
+
+[<Struct;NoEquality;NoComparison>]
+type VkPipelineSampleLocationsStateCreateInfoEXT =
+    [<DefaultValue(false)>]
+    val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable sampleLocationsEnable: VkBool32
+    [<DefaultValue(false)>]
+    val mutable sampleLocationsInfo: VkSampleLocationsInfoEXT
+
+[<Struct;NoEquality;NoComparison>]
+type VkPhysicalDeviceSampleLocationsPropertiesEXT =
+    [<DefaultValue(false)>]
+    val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable sampleLocationSampleCounts: VkSampleCountFlags
+    [<DefaultValue(false)>]
     val mutable maxSampleLocationGridSize: VkExtent2D
+    [<DefaultValue(false)>]
     val mutable sampleLocationCoordinateRange: float32
+    [<DefaultValue(false)>]
     val mutable sampleLocationSubPixelBits: uint32
+    [<DefaultValue(false)>]
     val mutable variableSampleLocations: VkBool32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkMultisamplePropertiesEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable maxSampleLocationGridSize: VkExtent2D
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkSamplerReductionModeCreateInfoEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable reductionMode: VkSamplerReductionModeEXT
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceBlendOperationAdvancedFeaturesEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable advancedBlendCoherentOperations: VkBool32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceBlendOperationAdvancedPropertiesEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable advancedBlendMaxColorAttachments: uint32
+    [<DefaultValue(false)>]
     val mutable advancedBlendIndependentBlend: VkBool32
+    [<DefaultValue(false)>]
     val mutable advancedBlendNonPremultipliedSrcColor: VkBool32
+    [<DefaultValue(false)>]
     val mutable advancedBlendNonPremultipliedDstColor: VkBool32
+    [<DefaultValue(false)>]
     val mutable advancedBlendCorrelatedOverlap: VkBool32
+    [<DefaultValue(false)>]
     val mutable advancedBlendAllOperations: VkBool32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPipelineColorBlendAdvancedStateCreateInfoEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable srcPremultiplied: VkBool32
+    [<DefaultValue(false)>]
     val mutable dstPremultiplied: VkBool32
+    [<DefaultValue(false)>]
     val mutable blendOverlap: VkBlendOverlapEXT
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceInlineUniformBlockFeaturesEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable inlineUniformBlock: VkBool32
+    [<DefaultValue(false)>]
     val mutable descriptorBindingInlineUniformBlockUpdateAfterBind: VkBool32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceInlineUniformBlockPropertiesEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable maxInlineUniformBlockSize: uint32
+    [<DefaultValue(false)>]
     val mutable maxPerStageDescriptorInlineUniformBlocks: uint32
+    [<DefaultValue(false)>]
     val mutable maxPerStageDescriptorUpdateAfterBindInlineUniformBlocks: uint32
+    [<DefaultValue(false)>]
     val mutable maxDescriptorSetInlineUniformBlocks: uint32
+    [<DefaultValue(false)>]
     val mutable maxDescriptorSetUpdateAfterBindInlineUniformBlocks: uint32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkWriteDescriptorSetInlineUniformBlockEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable dataSize: uint32
-    val pData: nativeint
+    [<DefaultValue(false)>]
+    val mutable pData: nativeint
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkDescriptorPoolInlineUniformBlockCreateInfoEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable maxInlineUniformBlockBindings: uint32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPipelineCoverageModulationStateCreateInfoNV =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable flags: VkPipelineCoverageModulationStateCreateFlagsNV
+    [<DefaultValue(false)>]
     val mutable coverageModulationMode: VkCoverageModulationModeNV
+    [<DefaultValue(false)>]
     val mutable coverageModulationTableEnable: VkBool32
+    [<DefaultValue(false)>]
     val mutable coverageModulationTableCount: uint32
-    val pCoverageModulationTable: nativeptr<float32>
+    [<DefaultValue(false)>]
+    val mutable pCoverageModulationTable: nativeptr<float32>
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkImageFormatListCreateInfoKHR =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable viewFormatCount: uint32
-    val pViewFormats: nativeptr<VkFormat>
+    [<DefaultValue(false)>]
+    val mutable pViewFormats: nativeptr<VkFormat>
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkValidationCacheCreateInfoEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable flags: VkValidationCacheCreateFlagsEXT
+    [<DefaultValue(false)>]
     val mutable initialDataSize: unativeint
-    val pInitialData: nativeint
+    [<DefaultValue(false)>]
+    val mutable pInitialData: nativeint
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkShaderModuleValidationCacheCreateInfoEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable validationCache: VkValidationCacheEXT
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceMaintenance3Properties =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable maxPerSetDescriptors: uint32
+    [<DefaultValue(false)>]
     val mutable maxMemoryAllocationSize: VkDeviceSize
 
 type VkPhysicalDeviceMaintenance3PropertiesKHR = VkPhysicalDeviceMaintenance3Properties
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkDescriptorSetLayoutSupport =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable supported: VkBool32
 
 type VkDescriptorSetLayoutSupportKHR = VkDescriptorSetLayoutSupport
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceShaderDrawParametersFeatures =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable shaderDrawParameters: VkBool32
 
 type VkPhysicalDeviceShaderDrawParameterFeatures = VkPhysicalDeviceShaderDrawParametersFeatures
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceShaderFloat16Int8FeaturesKHR =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable shaderFloat16: VkBool32
+    [<DefaultValue(false)>]
     val mutable shaderInt8: VkBool32
 
 type VkPhysicalDeviceFloat16Int8FeaturesKHR = VkPhysicalDeviceShaderFloat16Int8FeaturesKHR
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceFloatControlsPropertiesKHR =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable denormBehaviorIndependence: VkShaderFloatControlsIndependenceKHR
+    [<DefaultValue(false)>]
     val mutable roundingModeIndependence: VkShaderFloatControlsIndependenceKHR
+    [<DefaultValue(false)>]
     val mutable shaderSignedZeroInfNanPreserveFloat16: VkBool32
+    [<DefaultValue(false)>]
     val mutable shaderSignedZeroInfNanPreserveFloat32: VkBool32
+    [<DefaultValue(false)>]
     val mutable shaderSignedZeroInfNanPreserveFloat64: VkBool32
+    [<DefaultValue(false)>]
     val mutable shaderDenormPreserveFloat16: VkBool32
+    [<DefaultValue(false)>]
     val mutable shaderDenormPreserveFloat32: VkBool32
+    [<DefaultValue(false)>]
     val mutable shaderDenormPreserveFloat64: VkBool32
+    [<DefaultValue(false)>]
     val mutable shaderDenormFlushToZeroFloat16: VkBool32
+    [<DefaultValue(false)>]
     val mutable shaderDenormFlushToZeroFloat32: VkBool32
+    [<DefaultValue(false)>]
     val mutable shaderDenormFlushToZeroFloat64: VkBool32
+    [<DefaultValue(false)>]
     val mutable shaderRoundingModeRTEFloat16: VkBool32
+    [<DefaultValue(false)>]
     val mutable shaderRoundingModeRTEFloat32: VkBool32
+    [<DefaultValue(false)>]
     val mutable shaderRoundingModeRTEFloat64: VkBool32
+    [<DefaultValue(false)>]
     val mutable shaderRoundingModeRTZFloat16: VkBool32
+    [<DefaultValue(false)>]
     val mutable shaderRoundingModeRTZFloat32: VkBool32
+    [<DefaultValue(false)>]
     val mutable shaderRoundingModeRTZFloat64: VkBool32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceHostQueryResetFeaturesEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable hostQueryReset: VkBool32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkNativeBufferUsage2ANDROID =
+    [<DefaultValue(false)>]
     val mutable consumer: uint64
+    [<DefaultValue(false)>]
     val mutable producer: uint64
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkNativeBufferANDROID =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
-    val handle: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable handle: nativeint
+    [<DefaultValue(false)>]
     val mutable stride: int
+    [<DefaultValue(false)>]
     val mutable format: int
+    [<DefaultValue(false)>]
     val mutable usage: int
+    [<DefaultValue(false)>]
     val mutable usage2: VkNativeBufferUsage2ANDROID
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkSwapchainImageCreateInfoANDROID =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable usage: VkSwapchainImageUsageFlagsANDROID
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDevicePresentationPropertiesANDROID =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable sharedImage: VkBool32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkShaderResourceUsageAMD =
+    [<DefaultValue(false)>]
     val mutable numUsedVgprs: uint32
+    [<DefaultValue(false)>]
     val mutable numUsedSgprs: uint32
+    [<DefaultValue(false)>]
     val mutable ldsSizePerLocalWorkGroup: uint32
+    [<DefaultValue(false)>]
     val mutable ldsUsageSizeInBytes: unativeint
+    [<DefaultValue(false)>]
     val mutable scratchMemUsageInBytes: unativeint
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkShaderStatisticsInfoAMD =
+    [<DefaultValue(false)>]
     val mutable shaderStageMask: VkShaderStageFlags
+    [<DefaultValue(false)>]
     val mutable resourceUsage: VkShaderResourceUsageAMD
+    [<DefaultValue(false)>]
     val mutable numPhysicalVgprs: uint32
+    [<DefaultValue(false)>]
     val mutable numPhysicalSgprs: uint32
+    [<DefaultValue(false)>]
     val mutable numAvailableVgprs: uint32
+    [<DefaultValue(false)>]
     val mutable numAvailableSgprs: uint32
+    [<DefaultValue(false)>]
     val mutable computeWorkGroupSize: uint32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkDeviceQueueGlobalPriorityCreateInfoEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable globalPriority: VkQueueGlobalPriorityEXT
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkDebugUtilsObjectNameInfoEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable objectType: VkObjectType
+    [<DefaultValue(false)>]
     val mutable objectHandle: uint64
-    val pObjectName: nativeptr<char>
+    [<DefaultValue(false)>]
+    val mutable pObjectName: nativeptr<char>
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkDebugUtilsObjectTagInfoEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable objectType: VkObjectType
+    [<DefaultValue(false)>]
     val mutable objectHandle: uint64
+    [<DefaultValue(false)>]
     val mutable tagName: uint64
+    [<DefaultValue(false)>]
     val mutable tagSize: unativeint
-    val pTag: nativeint
+    [<DefaultValue(false)>]
+    val mutable pTag: nativeint
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkDebugUtilsLabelEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
-    val pLabelName: nativeptr<char>
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pLabelName: nativeptr<char>
+    [<DefaultValue(false)>]
     val mutable color: float32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkDebugUtilsMessengerCreateInfoEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable flags: VkDebugUtilsMessengerCreateFlagsEXT
+    [<DefaultValue(false)>]
     val mutable messageSeverity: VkDebugUtilsMessageSeverityFlagsEXT
+    [<DefaultValue(false)>]
     val mutable messageType: VkDebugUtilsMessageTypeFlagsEXT
+    [<DefaultValue(false)>]
     val mutable pfnUserCallback: PFN_vkDebugUtilsMessengerCallbackEXT
+    [<DefaultValue(false)>]
     val mutable pUserData: nativeint
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkDebugUtilsMessengerCallbackDataEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable flags: VkDebugUtilsMessengerCallbackDataFlagsEXT
-    val pMessageIdName: nativeptr<char>
+    [<DefaultValue(false)>]
+    val mutable pMessageIdName: nativeptr<char>
+    [<DefaultValue(false)>]
     val mutable messageIdNumber: int
-    val pMessage: nativeptr<char>
+    [<DefaultValue(false)>]
+    val mutable pMessage: nativeptr<char>
+    [<DefaultValue(false)>]
     val mutable queueLabelCount: uint32
-    val pQueueLabels: nativeptr<VkDebugUtilsLabelEXT>
+    [<DefaultValue(false)>]
+    val mutable pQueueLabels: nativeptr<VkDebugUtilsLabelEXT>
+    [<DefaultValue(false)>]
     val mutable cmdBufLabelCount: uint32
-    val pCmdBufLabels: nativeptr<VkDebugUtilsLabelEXT>
+    [<DefaultValue(false)>]
+    val mutable pCmdBufLabels: nativeptr<VkDebugUtilsLabelEXT>
+    [<DefaultValue(false)>]
     val mutable objectCount: uint32
-    val pObjects: nativeptr<VkDebugUtilsObjectNameInfoEXT>
+    [<DefaultValue(false)>]
+    val mutable pObjects: nativeptr<VkDebugUtilsObjectNameInfoEXT>
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkImportMemoryHostPointerInfoEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable handleType: VkExternalMemoryHandleTypeFlagBits
+    [<DefaultValue(false)>]
     val mutable pHostPointer: nativeint
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkMemoryHostPointerPropertiesEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable memoryTypeBits: uint32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceExternalMemoryHostPropertiesEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable minImportedHostPointerAlignment: VkDeviceSize
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceConservativeRasterizationPropertiesEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
     /// Pointer to next structure
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
     /// The size in pixels the primitive is enlarged at each edge during conservative rasterization
+    [<DefaultValue(false)>]
     val mutable primitiveOverestimationSize: float32
     /// The maximum additional overestimation the client can specify in the pipeline state
+    [<DefaultValue(false)>]
     val mutable maxExtraPrimitiveOverestimationSize: float32
     /// The granularity of extra overestimation sizes the implementations supports between 0 and maxExtraOverestimationSize
+    [<DefaultValue(false)>]
     val mutable extraPrimitiveOverestimationSizeGranularity: float32
     /// true if the implementation supports conservative rasterization underestimation mode
+    [<DefaultValue(false)>]
     val mutable primitiveUnderestimation: VkBool32
     /// true if conservative rasterization also applies to points and lines
+    [<DefaultValue(false)>]
     val mutable conservativePointAndLineRasterization: VkBool32
     /// true if degenerate triangles (those with zero area after snap) are rasterized
+    [<DefaultValue(false)>]
     val mutable degenerateTrianglesRasterized: VkBool32
     /// true if degenerate lines (those with zero length after snap) are rasterized
+    [<DefaultValue(false)>]
     val mutable degenerateLinesRasterized: VkBool32
     /// true if the implementation supports the FullyCoveredEXT SPIR-V builtin fragment shader input variable
+    [<DefaultValue(false)>]
     val mutable fullyCoveredFragmentShaderInputVariable: VkBool32
     /// true if the implementation supports both conservative rasterization and post depth coverage sample coverage mask
+    [<DefaultValue(false)>]
     val mutable conservativeRasterizationPostDepthCoverage: VkBool32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkCalibratedTimestampInfoEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable timeDomain: VkTimeDomainEXT
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceShaderCorePropertiesAMD =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
     /// Pointer to next structure
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
     /// number of shader engines
+    [<DefaultValue(false)>]
     val mutable shaderEngineCount: uint32
     /// number of shader arrays
+    [<DefaultValue(false)>]
     val mutable shaderArraysPerEngineCount: uint32
     /// number of physical CUs per shader array
+    [<DefaultValue(false)>]
     val mutable computeUnitsPerShaderArray: uint32
     /// number of SIMDs per compute unit
+    [<DefaultValue(false)>]
     val mutable simdPerComputeUnit: uint32
     /// number of wavefront slots in each SIMD
+    [<DefaultValue(false)>]
     val mutable wavefrontsPerSimd: uint32
     /// maximum number of threads per wavefront
+    [<DefaultValue(false)>]
     val mutable wavefrontSize: uint32
     /// number of physical SGPRs per SIMD
+    [<DefaultValue(false)>]
     val mutable sgprsPerSimd: uint32
     /// minimum number of SGPRs that can be allocated by a wave
+    [<DefaultValue(false)>]
     val mutable minSgprAllocation: uint32
     /// number of available SGPRs
+    [<DefaultValue(false)>]
     val mutable maxSgprAllocation: uint32
     /// SGPRs are allocated in groups of this size
+    [<DefaultValue(false)>]
     val mutable sgprAllocationGranularity: uint32
     /// number of physical VGPRs per SIMD
+    [<DefaultValue(false)>]
     val mutable vgprsPerSimd: uint32
     /// minimum number of VGPRs that can be allocated by a wave
+    [<DefaultValue(false)>]
     val mutable minVgprAllocation: uint32
     /// number of available VGPRs
+    [<DefaultValue(false)>]
     val mutable maxVgprAllocation: uint32
     /// VGPRs are allocated in groups of this size
+    [<DefaultValue(false)>]
     val mutable vgprAllocationGranularity: uint32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceShaderCoreProperties2AMD =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
     /// Pointer to next structure
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
     /// features supported by the shader core
+    [<DefaultValue(false)>]
     val mutable shaderCoreFeatures: VkShaderCorePropertiesFlagsAMD
     /// number of active compute units across all shader engines/arrays
+    [<DefaultValue(false)>]
     val mutable activeComputeUnitCount: uint32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPipelineRasterizationConservativeStateCreateInfoEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable flags: VkPipelineRasterizationConservativeStateCreateFlagsEXT
+    [<DefaultValue(false)>]
     val mutable conservativeRasterizationMode: VkConservativeRasterizationModeEXT
+    [<DefaultValue(false)>]
     val mutable extraPrimitiveOverestimationSize: float32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceDescriptorIndexingFeaturesEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable shaderInputAttachmentArrayDynamicIndexing: VkBool32
+    [<DefaultValue(false)>]
     val mutable shaderUniformTexelBufferArrayDynamicIndexing: VkBool32
+    [<DefaultValue(false)>]
     val mutable shaderStorageTexelBufferArrayDynamicIndexing: VkBool32
+    [<DefaultValue(false)>]
     val mutable shaderUniformBufferArrayNonUniformIndexing: VkBool32
+    [<DefaultValue(false)>]
     val mutable shaderSampledImageArrayNonUniformIndexing: VkBool32
+    [<DefaultValue(false)>]
     val mutable shaderStorageBufferArrayNonUniformIndexing: VkBool32
+    [<DefaultValue(false)>]
     val mutable shaderStorageImageArrayNonUniformIndexing: VkBool32
+    [<DefaultValue(false)>]
     val mutable shaderInputAttachmentArrayNonUniformIndexing: VkBool32
+    [<DefaultValue(false)>]
     val mutable shaderUniformTexelBufferArrayNonUniformIndexing: VkBool32
+    [<DefaultValue(false)>]
     val mutable shaderStorageTexelBufferArrayNonUniformIndexing: VkBool32
+    [<DefaultValue(false)>]
     val mutable descriptorBindingUniformBufferUpdateAfterBind: VkBool32
+    [<DefaultValue(false)>]
     val mutable descriptorBindingSampledImageUpdateAfterBind: VkBool32
+    [<DefaultValue(false)>]
     val mutable descriptorBindingStorageImageUpdateAfterBind: VkBool32
+    [<DefaultValue(false)>]
     val mutable descriptorBindingStorageBufferUpdateAfterBind: VkBool32
+    [<DefaultValue(false)>]
     val mutable descriptorBindingUniformTexelBufferUpdateAfterBind: VkBool32
+    [<DefaultValue(false)>]
     val mutable descriptorBindingStorageTexelBufferUpdateAfterBind: VkBool32
+    [<DefaultValue(false)>]
     val mutable descriptorBindingUpdateUnusedWhilePending: VkBool32
+    [<DefaultValue(false)>]
     val mutable descriptorBindingPartiallyBound: VkBool32
+    [<DefaultValue(false)>]
     val mutable descriptorBindingVariableDescriptorCount: VkBool32
+    [<DefaultValue(false)>]
     val mutable runtimeDescriptorArray: VkBool32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceDescriptorIndexingPropertiesEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable maxUpdateAfterBindDescriptorsInAllPools: uint32
+    [<DefaultValue(false)>]
     val mutable shaderUniformBufferArrayNonUniformIndexingNative: VkBool32
+    [<DefaultValue(false)>]
     val mutable shaderSampledImageArrayNonUniformIndexingNative: VkBool32
+    [<DefaultValue(false)>]
     val mutable shaderStorageBufferArrayNonUniformIndexingNative: VkBool32
+    [<DefaultValue(false)>]
     val mutable shaderStorageImageArrayNonUniformIndexingNative: VkBool32
+    [<DefaultValue(false)>]
     val mutable shaderInputAttachmentArrayNonUniformIndexingNative: VkBool32
+    [<DefaultValue(false)>]
     val mutable robustBufferAccessUpdateAfterBind: VkBool32
+    [<DefaultValue(false)>]
     val mutable quadDivergentImplicitLod: VkBool32
+    [<DefaultValue(false)>]
     val mutable maxPerStageDescriptorUpdateAfterBindSamplers: uint32
+    [<DefaultValue(false)>]
     val mutable maxPerStageDescriptorUpdateAfterBindUniformBuffers: uint32
+    [<DefaultValue(false)>]
     val mutable maxPerStageDescriptorUpdateAfterBindStorageBuffers: uint32
+    [<DefaultValue(false)>]
     val mutable maxPerStageDescriptorUpdateAfterBindSampledImages: uint32
+    [<DefaultValue(false)>]
     val mutable maxPerStageDescriptorUpdateAfterBindStorageImages: uint32
+    [<DefaultValue(false)>]
     val mutable maxPerStageDescriptorUpdateAfterBindInputAttachments: uint32
+    [<DefaultValue(false)>]
     val mutable maxPerStageUpdateAfterBindResources: uint32
+    [<DefaultValue(false)>]
     val mutable maxDescriptorSetUpdateAfterBindSamplers: uint32
+    [<DefaultValue(false)>]
     val mutable maxDescriptorSetUpdateAfterBindUniformBuffers: uint32
+    [<DefaultValue(false)>]
     val mutable maxDescriptorSetUpdateAfterBindUniformBuffersDynamic: uint32
+    [<DefaultValue(false)>]
     val mutable maxDescriptorSetUpdateAfterBindStorageBuffers: uint32
+    [<DefaultValue(false)>]
     val mutable maxDescriptorSetUpdateAfterBindStorageBuffersDynamic: uint32
+    [<DefaultValue(false)>]
     val mutable maxDescriptorSetUpdateAfterBindSampledImages: uint32
+    [<DefaultValue(false)>]
     val mutable maxDescriptorSetUpdateAfterBindStorageImages: uint32
+    [<DefaultValue(false)>]
     val mutable maxDescriptorSetUpdateAfterBindInputAttachments: uint32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkDescriptorSetLayoutBindingFlagsCreateInfoEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
-    val mutable bindingCount: uint32
-    val pBindingFlags: nativeptr<VkDescriptorBindingFlagsEXT>
-
-[<Struct>]
-type VkDescriptorSetVariableDescriptorCountAllocateInfoEXT =
-    val mutable sType: VkStructureType
-    val pNext: nativeint
-    val mutable descriptorSetCount: uint32
-    val pDescriptorCounts: nativeptr<uint32>
-
-[<Struct>]
-type VkDescriptorSetVariableDescriptorCountLayoutSupportEXT =
-    val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable bindingCount: uint32
+    [<DefaultValue(false)>]
+    val mutable pBindingFlags: nativeptr<VkDescriptorBindingFlagsEXT>
+
+[<Struct;NoEquality;NoComparison>]
+type VkDescriptorSetVariableDescriptorCountAllocateInfoEXT =
+    [<DefaultValue(false)>]
+    val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable descriptorSetCount: uint32
+    [<DefaultValue(false)>]
+    val mutable pDescriptorCounts: nativeptr<uint32>
+
+[<Struct;NoEquality;NoComparison>]
+type VkDescriptorSetVariableDescriptorCountLayoutSupportEXT =
+    [<DefaultValue(false)>]
+    val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable maxVariableDescriptorCount: uint32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkAttachmentDescription2KHR =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable flags: VkAttachmentDescriptionFlags
+    [<DefaultValue(false)>]
     val mutable format: VkFormat
+    [<DefaultValue(false)>]
     val mutable samples: VkSampleCountFlagBits
     /// Load operation for color or depth data
+    [<DefaultValue(false)>]
     val mutable loadOp: VkAttachmentLoadOp
     /// Store operation for color or depth data
+    [<DefaultValue(false)>]
     val mutable storeOp: VkAttachmentStoreOp
     /// Load operation for stencil data
+    [<DefaultValue(false)>]
     val mutable stencilLoadOp: VkAttachmentLoadOp
     /// Store operation for stencil data
+    [<DefaultValue(false)>]
     val mutable stencilStoreOp: VkAttachmentStoreOp
+    [<DefaultValue(false)>]
     val mutable initialLayout: VkImageLayout
+    [<DefaultValue(false)>]
     val mutable finalLayout: VkImageLayout
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkAttachmentReference2KHR =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable attachment: uint32
+    [<DefaultValue(false)>]
     val mutable layout: VkImageLayout
+    [<DefaultValue(false)>]
     val mutable aspectMask: VkImageAspectFlags
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkSubpassDescription2KHR =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable flags: VkSubpassDescriptionFlags
+    [<DefaultValue(false)>]
     val mutable pipelineBindPoint: VkPipelineBindPoint
+    [<DefaultValue(false)>]
     val mutable viewMask: uint32
+    [<DefaultValue(false)>]
     val mutable inputAttachmentCount: uint32
-    val pInputAttachments: nativeptr<VkAttachmentReference2KHR>
+    [<DefaultValue(false)>]
+    val mutable pInputAttachments: nativeptr<VkAttachmentReference2KHR>
+    [<DefaultValue(false)>]
     val mutable colorAttachmentCount: uint32
-    val pColorAttachments: nativeptr<VkAttachmentReference2KHR>
-    val pResolveAttachments: nativeptr<VkAttachmentReference2KHR>
-    val pDepthStencilAttachment: nativeptr<VkAttachmentReference2KHR>
+    [<DefaultValue(false)>]
+    val mutable pColorAttachments: nativeptr<VkAttachmentReference2KHR>
+    [<DefaultValue(false)>]
+    val mutable pResolveAttachments: nativeptr<VkAttachmentReference2KHR>
+    [<DefaultValue(false)>]
+    val mutable pDepthStencilAttachment: nativeptr<VkAttachmentReference2KHR>
+    [<DefaultValue(false)>]
     val mutable preserveAttachmentCount: uint32
-    val pPreserveAttachments: nativeptr<uint32>
+    [<DefaultValue(false)>]
+    val mutable pPreserveAttachments: nativeptr<uint32>
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkSubpassDependency2KHR =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable srcSubpass: uint32
+    [<DefaultValue(false)>]
     val mutable dstSubpass: uint32
+    [<DefaultValue(false)>]
     val mutable srcStageMask: VkPipelineStageFlags
+    [<DefaultValue(false)>]
     val mutable dstStageMask: VkPipelineStageFlags
+    [<DefaultValue(false)>]
     val mutable srcAccessMask: VkAccessFlags
+    [<DefaultValue(false)>]
     val mutable dstAccessMask: VkAccessFlags
+    [<DefaultValue(false)>]
     val mutable dependencyFlags: VkDependencyFlags
+    [<DefaultValue(false)>]
     val mutable viewOffset: int
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkRenderPassCreateInfo2KHR =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable flags: VkRenderPassCreateFlags
+    [<DefaultValue(false)>]
     val mutable attachmentCount: uint32
-    val pAttachments: nativeptr<VkAttachmentDescription2KHR>
+    [<DefaultValue(false)>]
+    val mutable pAttachments: nativeptr<VkAttachmentDescription2KHR>
+    [<DefaultValue(false)>]
     val mutable subpassCount: uint32
-    val pSubpasses: nativeptr<VkSubpassDescription2KHR>
+    [<DefaultValue(false)>]
+    val mutable pSubpasses: nativeptr<VkSubpassDescription2KHR>
+    [<DefaultValue(false)>]
     val mutable dependencyCount: uint32
-    val pDependencies: nativeptr<VkSubpassDependency2KHR>
+    [<DefaultValue(false)>]
+    val mutable pDependencies: nativeptr<VkSubpassDependency2KHR>
+    [<DefaultValue(false)>]
     val mutable correlatedViewMaskCount: uint32
-    val pCorrelatedViewMasks: nativeptr<uint32>
+    [<DefaultValue(false)>]
+    val mutable pCorrelatedViewMasks: nativeptr<uint32>
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkSubpassBeginInfoKHR =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable contents: VkSubpassContents
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkSubpassEndInfoKHR =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkVertexInputBindingDivisorDescriptionEXT =
+    [<DefaultValue(false)>]
     val mutable binding: uint32
+    [<DefaultValue(false)>]
     val mutable divisor: uint32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPipelineVertexInputDivisorStateCreateInfoEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable vertexBindingDivisorCount: uint32
-    val pVertexBindingDivisors: nativeptr<VkVertexInputBindingDivisorDescriptionEXT>
+    [<DefaultValue(false)>]
+    val mutable pVertexBindingDivisors: nativeptr<VkVertexInputBindingDivisorDescriptionEXT>
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
     /// max value of vertex attribute divisor
+    [<DefaultValue(false)>]
     val mutable maxVertexAttribDivisor: uint32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDevicePCIBusInfoPropertiesEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable pciDomain: uint32
+    [<DefaultValue(false)>]
     val mutable pciBus: uint32
+    [<DefaultValue(false)>]
     val mutable pciDevice: uint32
+    [<DefaultValue(false)>]
     val mutable pciFunction: uint32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkImportAndroidHardwareBufferInfoANDROID =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable buffer: nativeptr<AHardwareBuffer>
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkAndroidHardwareBufferUsageANDROID =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable androidHardwareBufferUsage: uint64
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkAndroidHardwareBufferPropertiesANDROID =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable allocationSize: VkDeviceSize
+    [<DefaultValue(false)>]
     val mutable memoryTypeBits: uint32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkMemoryGetAndroidHardwareBufferInfoANDROID =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable memory: VkDeviceMemory
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkAndroidHardwareBufferFormatPropertiesANDROID =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable format: VkFormat
+    [<DefaultValue(false)>]
     val mutable externalFormat: uint64
+    [<DefaultValue(false)>]
     val mutable formatFeatures: VkFormatFeatureFlags
+    [<DefaultValue(false)>]
     val mutable samplerYcbcrConversionComponents: VkComponentMapping
+    [<DefaultValue(false)>]
     val mutable suggestedYcbcrModel: VkSamplerYcbcrModelConversion
+    [<DefaultValue(false)>]
     val mutable suggestedYcbcrRange: VkSamplerYcbcrRange
+    [<DefaultValue(false)>]
     val mutable suggestedXChromaOffset: VkChromaLocation
+    [<DefaultValue(false)>]
     val mutable suggestedYChromaOffset: VkChromaLocation
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkCommandBufferInheritanceConditionalRenderingInfoEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
     /// Whether this secondary command buffer may be executed during an active conditional rendering
+    [<DefaultValue(false)>]
     val mutable conditionalRenderingEnable: VkBool32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkExternalFormatANDROID =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable externalFormat: uint64
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDevice8BitStorageFeaturesKHR =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
     /// 8-bit integer variables supported in StorageBuffer
+    [<DefaultValue(false)>]
     val mutable storageBuffer8BitAccess: VkBool32
     /// 8-bit integer variables supported in StorageBuffer and Uniform
+    [<DefaultValue(false)>]
     val mutable uniformAndStorageBuffer8BitAccess: VkBool32
     /// 8-bit integer variables supported in PushConstant
+    [<DefaultValue(false)>]
     val mutable storagePushConstant8: VkBool32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceConditionalRenderingFeaturesEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable conditionalRendering: VkBool32
+    [<DefaultValue(false)>]
     val mutable inheritedConditionalRendering: VkBool32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceVulkanMemoryModelFeaturesKHR =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable vulkanMemoryModel: VkBool32
+    [<DefaultValue(false)>]
     val mutable vulkanMemoryModelDeviceScope: VkBool32
+    [<DefaultValue(false)>]
     val mutable vulkanMemoryModelAvailabilityVisibilityChains: VkBool32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceShaderAtomicInt64FeaturesKHR =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable shaderBufferInt64Atomics: VkBool32
+    [<DefaultValue(false)>]
     val mutable shaderSharedInt64Atomics: VkBool32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable vertexAttributeInstanceRateDivisor: VkBool32
+    [<DefaultValue(false)>]
     val mutable vertexAttributeInstanceRateZeroDivisor: VkBool32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkQueueFamilyCheckpointPropertiesNV =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable checkpointExecutionStageMask: VkPipelineStageFlags
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkCheckpointDataNV =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable stage: VkPipelineStageFlagBits
+    [<DefaultValue(false)>]
     val mutable pCheckpointMarker: nativeint
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceDepthStencilResolvePropertiesKHR =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
     /// supported depth resolve modes
+    [<DefaultValue(false)>]
     val mutable supportedDepthResolveModes: VkResolveModeFlagsKHR
     /// supported stencil resolve modes
+    [<DefaultValue(false)>]
     val mutable supportedStencilResolveModes: VkResolveModeFlagsKHR
     /// depth and stencil resolve modes can be set independently if one of them is none
+    [<DefaultValue(false)>]
     val mutable independentResolveNone: VkBool32
     /// depth and stencil resolve modes can be set independently
+    [<DefaultValue(false)>]
     val mutable independentResolve: VkBool32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkSubpassDescriptionDepthStencilResolveKHR =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
     /// depth resolve mode
+    [<DefaultValue(false)>]
     val mutable depthResolveMode: VkResolveModeFlagBitsKHR
     /// stencil resolve mode
+    [<DefaultValue(false)>]
     val mutable stencilResolveMode: VkResolveModeFlagBitsKHR
     /// depth/stencil resolve attachment
-    val pDepthStencilResolveAttachment: nativeptr<VkAttachmentReference2KHR>
+    [<DefaultValue(false)>]
+    val mutable pDepthStencilResolveAttachment: nativeptr<VkAttachmentReference2KHR>
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkImageViewASTCDecodeModeEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable decodeMode: VkFormat
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceASTCDecodeFeaturesEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable decodeModeSharedExponent: VkBool32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceTransformFeedbackFeaturesEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable transformFeedback: VkBool32
+    [<DefaultValue(false)>]
     val mutable geometryStreams: VkBool32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceTransformFeedbackPropertiesEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable maxTransformFeedbackStreams: uint32
+    [<DefaultValue(false)>]
     val mutable maxTransformFeedbackBuffers: uint32
+    [<DefaultValue(false)>]
     val mutable maxTransformFeedbackBufferSize: VkDeviceSize
+    [<DefaultValue(false)>]
     val mutable maxTransformFeedbackStreamDataSize: uint32
+    [<DefaultValue(false)>]
     val mutable maxTransformFeedbackBufferDataSize: uint32
+    [<DefaultValue(false)>]
     val mutable maxTransformFeedbackBufferDataStride: uint32
+    [<DefaultValue(false)>]
     val mutable transformFeedbackQueries: VkBool32
+    [<DefaultValue(false)>]
     val mutable transformFeedbackStreamsLinesTriangles: VkBool32
+    [<DefaultValue(false)>]
     val mutable transformFeedbackRasterizationStreamSelect: VkBool32
+    [<DefaultValue(false)>]
     val mutable transformFeedbackDraw: VkBool32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPipelineRasterizationStateStreamCreateInfoEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable flags: VkPipelineRasterizationStateStreamCreateFlagsEXT
+    [<DefaultValue(false)>]
     val mutable rasterizationStream: uint32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceRepresentativeFragmentTestFeaturesNV =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable representativeFragmentTest: VkBool32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPipelineRepresentativeFragmentTestStateCreateInfoNV =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable representativeFragmentTestEnable: VkBool32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceExclusiveScissorFeaturesNV =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable exclusiveScissor: VkBool32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPipelineViewportExclusiveScissorStateCreateInfoNV =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
-    val mutable exclusiveScissorCount: uint32
-    val pExclusiveScissors: nativeptr<VkRect2D>
-
-[<Struct>]
-type VkPhysicalDeviceCornerSampledImageFeaturesNV =
-    val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable exclusiveScissorCount: uint32
+    [<DefaultValue(false)>]
+    val mutable pExclusiveScissors: nativeptr<VkRect2D>
+
+[<Struct;NoEquality;NoComparison>]
+type VkPhysicalDeviceCornerSampledImageFeaturesNV =
+    [<DefaultValue(false)>]
+    val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable cornerSampledImage: VkBool32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceComputeShaderDerivativesFeaturesNV =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable computeDerivativeGroupQuads: VkBool32
+    [<DefaultValue(false)>]
     val mutable computeDerivativeGroupLinear: VkBool32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceFragmentShaderBarycentricFeaturesNV =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable fragmentShaderBarycentric: VkBool32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceShaderImageFootprintFeaturesNV =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable imageFootprint: VkBool32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceDedicatedAllocationImageAliasingFeaturesNV =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable dedicatedAllocationImageAliasing: VkBool32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkShadingRatePaletteNV =
+    [<DefaultValue(false)>]
     val mutable shadingRatePaletteEntryCount: uint32
-    val pShadingRatePaletteEntries: nativeptr<VkShadingRatePaletteEntryNV>
+    [<DefaultValue(false)>]
+    val mutable pShadingRatePaletteEntries: nativeptr<VkShadingRatePaletteEntryNV>
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPipelineViewportShadingRateImageStateCreateInfoNV =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
-    val mutable shadingRateImageEnable: VkBool32
-    val mutable viewportCount: uint32
-    val pShadingRatePalettes: nativeptr<VkShadingRatePaletteNV>
-
-[<Struct>]
-type VkPhysicalDeviceShadingRateImageFeaturesNV =
-    val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable shadingRateImageEnable: VkBool32
+    [<DefaultValue(false)>]
+    val mutable viewportCount: uint32
+    [<DefaultValue(false)>]
+    val mutable pShadingRatePalettes: nativeptr<VkShadingRatePaletteNV>
+
+[<Struct;NoEquality;NoComparison>]
+type VkPhysicalDeviceShadingRateImageFeaturesNV =
+    [<DefaultValue(false)>]
+    val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable shadingRateImage: VkBool32
+    [<DefaultValue(false)>]
     val mutable shadingRateCoarseSampleOrder: VkBool32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceShadingRateImagePropertiesNV =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable shadingRateTexelSize: VkExtent2D
+    [<DefaultValue(false)>]
     val mutable shadingRatePaletteSize: uint32
+    [<DefaultValue(false)>]
     val mutable shadingRateMaxCoarseSamples: uint32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkCoarseSampleLocationNV =
+    [<DefaultValue(false)>]
     val mutable pixelX: uint32
+    [<DefaultValue(false)>]
     val mutable pixelY: uint32
+    [<DefaultValue(false)>]
     val mutable sample: uint32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkCoarseSampleOrderCustomNV =
+    [<DefaultValue(false)>]
     val mutable shadingRate: VkShadingRatePaletteEntryNV
+    [<DefaultValue(false)>]
     val mutable sampleCount: uint32
+    [<DefaultValue(false)>]
     val mutable sampleLocationCount: uint32
-    val pSampleLocations: nativeptr<VkCoarseSampleLocationNV>
+    [<DefaultValue(false)>]
+    val mutable pSampleLocations: nativeptr<VkCoarseSampleLocationNV>
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPipelineViewportCoarseSampleOrderStateCreateInfoNV =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
-    val mutable sampleOrderType: VkCoarseSampleOrderTypeNV
-    val mutable customSampleOrderCount: uint32
-    val pCustomSampleOrders: nativeptr<VkCoarseSampleOrderCustomNV>
-
-[<Struct>]
-type VkPhysicalDeviceMeshShaderFeaturesNV =
-    val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable sampleOrderType: VkCoarseSampleOrderTypeNV
+    [<DefaultValue(false)>]
+    val mutable customSampleOrderCount: uint32
+    [<DefaultValue(false)>]
+    val mutable pCustomSampleOrders: nativeptr<VkCoarseSampleOrderCustomNV>
+
+[<Struct;NoEquality;NoComparison>]
+type VkPhysicalDeviceMeshShaderFeaturesNV =
+    [<DefaultValue(false)>]
+    val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable taskShader: VkBool32
+    [<DefaultValue(false)>]
     val mutable meshShader: VkBool32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceMeshShaderPropertiesNV =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable maxDrawMeshTasksCount: uint32
+    [<DefaultValue(false)>]
     val mutable maxTaskWorkGroupInvocations: uint32
+    [<DefaultValue(false)>]
     val mutable maxTaskWorkGroupSize: uint32
+    [<DefaultValue(false)>]
     val mutable maxTaskTotalMemorySize: uint32
+    [<DefaultValue(false)>]
     val mutable maxTaskOutputCount: uint32
+    [<DefaultValue(false)>]
     val mutable maxMeshWorkGroupInvocations: uint32
+    [<DefaultValue(false)>]
     val mutable maxMeshWorkGroupSize: uint32
+    [<DefaultValue(false)>]
     val mutable maxMeshTotalMemorySize: uint32
+    [<DefaultValue(false)>]
     val mutable maxMeshOutputVertices: uint32
+    [<DefaultValue(false)>]
     val mutable maxMeshOutputPrimitives: uint32
+    [<DefaultValue(false)>]
     val mutable maxMeshMultiviewViewCount: uint32
+    [<DefaultValue(false)>]
     val mutable meshOutputPerVertexGranularity: uint32
+    [<DefaultValue(false)>]
     val mutable meshOutputPerPrimitiveGranularity: uint32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkDrawMeshTasksIndirectCommandNV =
+    [<DefaultValue(false)>]
     val mutable taskCount: uint32
+    [<DefaultValue(false)>]
     val mutable firstTask: uint32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkRayTracingShaderGroupCreateInfoNV =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable typ: VkRayTracingShaderGroupTypeNV
+    [<DefaultValue(false)>]
     val mutable generalShader: uint32
+    [<DefaultValue(false)>]
     val mutable closestHitShader: uint32
+    [<DefaultValue(false)>]
     val mutable anyHitShader: uint32
+    [<DefaultValue(false)>]
     val mutable intersectionShader: uint32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkRayTracingPipelineCreateInfoNV =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
     /// Pipeline creation flags
+    [<DefaultValue(false)>]
     val mutable flags: VkPipelineCreateFlags
+    [<DefaultValue(false)>]
     val mutable stageCount: uint32
     /// One entry for each active shader stage
-    val pStages: nativeptr<VkPipelineShaderStageCreateInfo>
+    [<DefaultValue(false)>]
+    val mutable pStages: nativeptr<VkPipelineShaderStageCreateInfo>
+    [<DefaultValue(false)>]
     val mutable groupCount: uint32
-    val pGroups: nativeptr<VkRayTracingShaderGroupCreateInfoNV>
+    [<DefaultValue(false)>]
+    val mutable pGroups: nativeptr<VkRayTracingShaderGroupCreateInfoNV>
+    [<DefaultValue(false)>]
     val mutable maxRecursionDepth: uint32
     /// Interface layout of the pipeline
+    [<DefaultValue(false)>]
     val mutable layout: VkPipelineLayout
     /// If VK_PIPELINE_CREATE_DERIVATIVE_BIT is set and this value is nonzero, it specifies the handle of the base pipeline this is a derivative of
+    [<DefaultValue(false)>]
     val mutable basePipelineHandle: VkPipeline
     /// If VK_PIPELINE_CREATE_DERIVATIVE_BIT is set and this value is not -1, it specifies an index into pCreateInfos of the base pipeline this is a derivative of
+    [<DefaultValue(false)>]
     val mutable basePipelineIndex: int
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkGeometryTrianglesNV =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable vertexData: VkBuffer
+    [<DefaultValue(false)>]
     val mutable vertexOffset: VkDeviceSize
+    [<DefaultValue(false)>]
     val mutable vertexCount: uint32
+    [<DefaultValue(false)>]
     val mutable vertexStride: VkDeviceSize
+    [<DefaultValue(false)>]
     val mutable vertexFormat: VkFormat
+    [<DefaultValue(false)>]
     val mutable indexData: VkBuffer
+    [<DefaultValue(false)>]
     val mutable indexOffset: VkDeviceSize
+    [<DefaultValue(false)>]
     val mutable indexCount: uint32
+    [<DefaultValue(false)>]
     val mutable indexType: VkIndexType
     /// Optional reference to array of floats representing a 3x4 row major affine transformation matrix.
+    [<DefaultValue(false)>]
     val mutable transformData: VkBuffer
+    [<DefaultValue(false)>]
     val mutable transformOffset: VkDeviceSize
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkGeometryAABBNV =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable aabbData: VkBuffer
+    [<DefaultValue(false)>]
     val mutable numAABBs: uint32
     /// Stride in bytes between AABBs
+    [<DefaultValue(false)>]
     val mutable stride: uint32
     /// Offset in bytes of the first AABB in aabbData
+    [<DefaultValue(false)>]
     val mutable offset: VkDeviceSize
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkGeometryDataNV =
+    [<DefaultValue(false)>]
     val mutable triangles: VkGeometryTrianglesNV
+    [<DefaultValue(false)>]
     val mutable aabbs: VkGeometryAABBNV
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkGeometryNV =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable geometryType: VkGeometryTypeNV
+    [<DefaultValue(false)>]
     val mutable geometry: VkGeometryDataNV
+    [<DefaultValue(false)>]
     val mutable flags: VkGeometryFlagsNV
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkAccelerationStructureInfoNV =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable typ: VkAccelerationStructureTypeNV
+    [<DefaultValue(false)>]
     val mutable flags: VkBuildAccelerationStructureFlagsNV
+    [<DefaultValue(false)>]
     val mutable instanceCount: uint32
+    [<DefaultValue(false)>]
     val mutable geometryCount: uint32
-    val pGeometries: nativeptr<VkGeometryNV>
+    [<DefaultValue(false)>]
+    val mutable pGeometries: nativeptr<VkGeometryNV>
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkAccelerationStructureCreateInfoNV =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable compactedSize: VkDeviceSize
+    [<DefaultValue(false)>]
     val mutable info: VkAccelerationStructureInfoNV
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkBindAccelerationStructureMemoryInfoNV =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
-    val mutable accelerationStructure: VkAccelerationStructureNV
-    val mutable memory: VkDeviceMemory
-    val mutable memoryOffset: VkDeviceSize
-    val mutable deviceIndexCount: uint32
-    val pDeviceIndices: nativeptr<uint32>
-
-[<Struct>]
-type VkWriteDescriptorSetAccelerationStructureNV =
-    val mutable sType: VkStructureType
-    val pNext: nativeint
-    val mutable accelerationStructureCount: uint32
-    val pAccelerationStructures: nativeptr<VkAccelerationStructureNV>
-
-[<Struct>]
-type VkAccelerationStructureMemoryRequirementsInfoNV =
-    val mutable sType: VkStructureType
-    val pNext: nativeint
-    val mutable typ: VkAccelerationStructureMemoryRequirementsTypeNV
-    val mutable accelerationStructure: VkAccelerationStructureNV
-
-[<Struct>]
-type VkPhysicalDeviceRayTracingPropertiesNV =
-    val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable accelerationStructure: VkAccelerationStructureNV
+    [<DefaultValue(false)>]
+    val mutable memory: VkDeviceMemory
+    [<DefaultValue(false)>]
+    val mutable memoryOffset: VkDeviceSize
+    [<DefaultValue(false)>]
+    val mutable deviceIndexCount: uint32
+    [<DefaultValue(false)>]
+    val mutable pDeviceIndices: nativeptr<uint32>
+
+[<Struct;NoEquality;NoComparison>]
+type VkWriteDescriptorSetAccelerationStructureNV =
+    [<DefaultValue(false)>]
+    val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable accelerationStructureCount: uint32
+    [<DefaultValue(false)>]
+    val mutable pAccelerationStructures: nativeptr<VkAccelerationStructureNV>
+
+[<Struct;NoEquality;NoComparison>]
+type VkAccelerationStructureMemoryRequirementsInfoNV =
+    [<DefaultValue(false)>]
+    val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable typ: VkAccelerationStructureMemoryRequirementsTypeNV
+    [<DefaultValue(false)>]
+    val mutable accelerationStructure: VkAccelerationStructureNV
+
+[<Struct;NoEquality;NoComparison>]
+type VkPhysicalDeviceRayTracingPropertiesNV =
+    [<DefaultValue(false)>]
+    val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable shaderGroupHandleSize: uint32
+    [<DefaultValue(false)>]
     val mutable maxRecursionDepth: uint32
+    [<DefaultValue(false)>]
     val mutable maxShaderGroupStride: uint32
+    [<DefaultValue(false)>]
     val mutable shaderGroupBaseAlignment: uint32
+    [<DefaultValue(false)>]
     val mutable maxGeometryCount: uint64
+    [<DefaultValue(false)>]
     val mutable maxInstanceCount: uint64
+    [<DefaultValue(false)>]
     val mutable maxTriangleCount: uint64
+    [<DefaultValue(false)>]
     val mutable maxDescriptorSetAccelerationStructures: uint32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkDrmFormatModifierPropertiesListEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable drmFormatModifierCount: uint32
+    [<DefaultValue(false)>]
     val mutable pDrmFormatModifierProperties: nativeptr<VkDrmFormatModifierPropertiesEXT>
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkDrmFormatModifierPropertiesEXT =
+    [<DefaultValue(false)>]
     val mutable drmFormatModifier: uint64
+    [<DefaultValue(false)>]
     val mutable drmFormatModifierPlaneCount: uint32
+    [<DefaultValue(false)>]
     val mutable drmFormatModifierTilingFeatures: VkFormatFeatureFlags
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceImageDrmFormatModifierInfoEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
-    val mutable drmFormatModifier: uint64
-    val mutable sharingMode: VkSharingMode
-    val mutable queueFamilyIndexCount: uint32
-    val pQueueFamilyIndices: nativeptr<uint32>
-
-[<Struct>]
-type VkImageDrmFormatModifierListCreateInfoEXT =
-    val mutable sType: VkStructureType
-    val pNext: nativeint
-    val mutable drmFormatModifierCount: uint32
-    val pDrmFormatModifiers: nativeptr<uint64>
-
-[<Struct>]
-type VkImageDrmFormatModifierExplicitCreateInfoEXT =
-    val mutable sType: VkStructureType
-    val pNext: nativeint
-    val mutable drmFormatModifier: uint64
-    val mutable drmFormatModifierPlaneCount: uint32
-    val pPlaneLayouts: nativeptr<VkSubresourceLayout>
-
-[<Struct>]
-type VkImageDrmFormatModifierPropertiesEXT =
-    val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable drmFormatModifier: uint64
+    [<DefaultValue(false)>]
+    val mutable sharingMode: VkSharingMode
+    [<DefaultValue(false)>]
+    val mutable queueFamilyIndexCount: uint32
+    [<DefaultValue(false)>]
+    val mutable pQueueFamilyIndices: nativeptr<uint32>
+
+[<Struct;NoEquality;NoComparison>]
+type VkImageDrmFormatModifierListCreateInfoEXT =
+    [<DefaultValue(false)>]
+    val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable drmFormatModifierCount: uint32
+    [<DefaultValue(false)>]
+    val mutable pDrmFormatModifiers: nativeptr<uint64>
+
+[<Struct;NoEquality;NoComparison>]
+type VkImageDrmFormatModifierExplicitCreateInfoEXT =
+    [<DefaultValue(false)>]
+    val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable drmFormatModifier: uint64
+    [<DefaultValue(false)>]
+    val mutable drmFormatModifierPlaneCount: uint32
+    [<DefaultValue(false)>]
+    val mutable pPlaneLayouts: nativeptr<VkSubresourceLayout>
+
+[<Struct;NoEquality;NoComparison>]
+type VkImageDrmFormatModifierPropertiesEXT =
+    [<DefaultValue(false)>]
+    val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable drmFormatModifier: uint64
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkImageStencilUsageCreateInfoEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable stencilUsage: VkImageUsageFlags
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkDeviceMemoryOverallocationCreateInfoAMD =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable overallocationBehavior: VkMemoryOverallocationBehaviorAMD
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceFragmentDensityMapFeaturesEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable fragmentDensityMap: VkBool32
+    [<DefaultValue(false)>]
     val mutable fragmentDensityMapDynamic: VkBool32
+    [<DefaultValue(false)>]
     val mutable fragmentDensityMapNonSubsampledImages: VkBool32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceFragmentDensityMapPropertiesEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable minFragmentDensityTexelSize: VkExtent2D
+    [<DefaultValue(false)>]
     val mutable maxFragmentDensityTexelSize: VkExtent2D
+    [<DefaultValue(false)>]
     val mutable fragmentDensityInvocations: VkBool32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkRenderPassFragmentDensityMapCreateInfoEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable fragmentDensityMapAttachment: VkAttachmentReference
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceScalarBlockLayoutFeaturesEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable scalarBlockLayout: VkBool32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkSurfaceProtectedCapabilitiesKHR =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
     /// Represents if surface can be protected
+    [<DefaultValue(false)>]
     val mutable supportsProtected: VkBool32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceUniformBufferStandardLayoutFeaturesKHR =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable uniformBufferStandardLayout: VkBool32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceDepthClipEnableFeaturesEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
     /// Pointer to next structure
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable depthClipEnable: VkBool32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPipelineRasterizationDepthClipStateCreateInfoEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable flags: VkPipelineRasterizationDepthClipStateCreateFlagsEXT
+    [<DefaultValue(false)>]
     val mutable depthClipEnable: VkBool32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceMemoryBudgetPropertiesEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable heapBudget: VkDeviceSize
+    [<DefaultValue(false)>]
     val mutable heapUsage: VkDeviceSize
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceMemoryPriorityFeaturesEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable memoryPriority: VkBool32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkMemoryPriorityAllocateInfoEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable priority: float32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceBufferDeviceAddressFeaturesEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable bufferDeviceAddress: VkBool32
+    [<DefaultValue(false)>]
     val mutable bufferDeviceAddressCaptureReplay: VkBool32
+    [<DefaultValue(false)>]
     val mutable bufferDeviceAddressMultiDevice: VkBool32
 
 type VkPhysicalDeviceBufferAddressFeaturesEXT = VkPhysicalDeviceBufferDeviceAddressFeaturesEXT
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkBufferDeviceAddressInfoEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable buffer: VkBuffer
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkBufferDeviceAddressCreateInfoEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable deviceAddress: VkDeviceAddress
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceImageViewImageFormatInfoEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable imageViewType: VkImageViewType
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkFilterCubicImageViewImageFormatPropertiesEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable filterCubic: VkBool32
+    [<DefaultValue(false)>]
     val mutable filterCubicMinmax: VkBool32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceImagelessFramebufferFeaturesKHR =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable imagelessFramebuffer: VkBool32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkFramebufferAttachmentsCreateInfoKHR =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable attachmentImageInfoCount: uint32
-    val pAttachmentImageInfos: nativeptr<VkFramebufferAttachmentImageInfoKHR>
+    [<DefaultValue(false)>]
+    val mutable pAttachmentImageInfos: nativeptr<VkFramebufferAttachmentImageInfoKHR>
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkFramebufferAttachmentImageInfoKHR =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
     /// Image creation flags
+    [<DefaultValue(false)>]
     val mutable flags: VkImageCreateFlags
     /// Image usage flags
+    [<DefaultValue(false)>]
     val mutable usage: VkImageUsageFlags
+    [<DefaultValue(false)>]
     val mutable width: uint32
+    [<DefaultValue(false)>]
     val mutable height: uint32
+    [<DefaultValue(false)>]
     val mutable layerCount: uint32
+    [<DefaultValue(false)>]
     val mutable viewFormatCount: uint32
-    val pViewFormats: nativeptr<VkFormat>
+    [<DefaultValue(false)>]
+    val mutable pViewFormats: nativeptr<VkFormat>
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkRenderPassAttachmentBeginInfoKHR =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable attachmentCount: uint32
-    val pAttachments: nativeptr<VkImageView>
+    [<DefaultValue(false)>]
+    val mutable pAttachments: nativeptr<VkImageView>
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceTextureCompressionASTCHDRFeaturesEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable textureCompressionASTC_HDR: VkBool32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceCooperativeMatrixFeaturesNV =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable cooperativeMatrix: VkBool32
+    [<DefaultValue(false)>]
     val mutable cooperativeMatrixRobustBufferAccess: VkBool32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceCooperativeMatrixPropertiesNV =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable cooperativeMatrixSupportedStages: VkShaderStageFlags
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkCooperativeMatrixPropertiesNV =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable MSize: uint32
+    [<DefaultValue(false)>]
     val mutable NSize: uint32
+    [<DefaultValue(false)>]
     val mutable KSize: uint32
+    [<DefaultValue(false)>]
     val mutable AType: VkComponentTypeNV
+    [<DefaultValue(false)>]
     val mutable BType: VkComponentTypeNV
+    [<DefaultValue(false)>]
     val mutable CType: VkComponentTypeNV
+    [<DefaultValue(false)>]
     val mutable DType: VkComponentTypeNV
+    [<DefaultValue(false)>]
     val mutable scope: VkScopeNV
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceYcbcrImageArraysFeaturesEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable ycbcrImageArrays: VkBool32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkImageViewHandleInfoNVX =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable imageView: VkImageView
+    [<DefaultValue(false)>]
     val mutable descriptorType: VkDescriptorType
+    [<DefaultValue(false)>]
     val mutable sampler: VkSampler
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPresentFrameTokenGGP =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable frameToken: GgpFrameToken
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPipelineCreationFeedbackEXT =
+    [<DefaultValue(false)>]
     val mutable flags: VkPipelineCreationFeedbackFlagsEXT
+    [<DefaultValue(false)>]
     val mutable duration: uint64
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPipelineCreationFeedbackCreateInfoEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
     /// Output pipeline creation feedback.
+    [<DefaultValue(false)>]
     val mutable pPipelineCreationFeedback: nativeptr<VkPipelineCreationFeedbackEXT>
+    [<DefaultValue(false)>]
     val mutable pipelineStageCreationFeedbackCount: uint32
     /// One entry for each shader stage specified in the parent Vk*PipelineCreateInfo struct
+    [<DefaultValue(false)>]
     val mutable pPipelineStageCreationFeedbacks: nativeptr<VkPipelineCreationFeedbackEXT>
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkSurfaceFullScreenExclusiveInfoEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable fullScreenExclusive: VkFullScreenExclusiveEXT
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkSurfaceFullScreenExclusiveWin32InfoEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable hmonitor: HMONITOR
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkSurfaceCapabilitiesFullScreenExclusiveEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable fullScreenExclusiveSupported: VkBool32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkHeadlessSurfaceCreateInfoEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable flags: VkHeadlessSurfaceCreateFlagsEXT
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceCoverageReductionModeFeaturesNV =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable coverageReductionMode: VkBool32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPipelineCoverageReductionStateCreateInfoNV =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable flags: VkPipelineCoverageReductionStateCreateFlagsNV
+    [<DefaultValue(false)>]
     val mutable coverageReductionMode: VkCoverageReductionModeNV
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkFramebufferMixedSamplesCombinationNV =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable coverageReductionMode: VkCoverageReductionModeNV
+    [<DefaultValue(false)>]
     val mutable rasterizationSamples: VkSampleCountFlagBits
+    [<DefaultValue(false)>]
     val mutable depthStencilSamples: VkSampleCountFlags
+    [<DefaultValue(false)>]
     val mutable colorSamples: VkSampleCountFlags
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceShaderIntegerFunctions2FeaturesINTEL =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable shaderIntegerFunctions2: VkBool32
 
-[<Struct;StructLayout(LayoutKind.Explicit)>]
+[<Struct;StructLayout(LayoutKind.Explicit);NoEquality;NoComparison>]
 type VkPerformanceValueDataINTEL =
-    [<FieldOffset(0)>] val mutable value32: uint32
-    [<FieldOffset(0)>] val mutable value64: uint64
-    [<FieldOffset(0)>] val mutable valueFloat: float32
-    [<FieldOffset(0)>] val mutable valueBool: VkBool32
-    [<FieldOffset(0)>] val valueString: char
+    [<FieldOffset(0);DefaultValue(false)>]
+    val mutable value32: uint32
+    [<FieldOffset(0);DefaultValue(false)>]
+    val mutable value64: uint64
+    [<FieldOffset(0);DefaultValue(false)>]
+    val mutable valueFloat: float32
+    [<FieldOffset(0);DefaultValue(false)>]
+    val mutable valueBool: VkBool32
+    [<FieldOffset(0);DefaultValue(false)>]
+    val mutable valueString: char
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPerformanceValueINTEL =
+    [<DefaultValue(false)>]
     val mutable typ: VkPerformanceValueTypeINTEL
+    [<DefaultValue(false)>]
     val mutable data: VkPerformanceValueDataINTEL
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkInitializePerformanceApiInfoINTEL =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable pUserData: nativeint
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkQueryPoolCreateInfoINTEL =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable performanceCountersSampling: VkQueryPoolSamplingModeINTEL
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPerformanceMarkerInfoINTEL =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable marker: uint64
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPerformanceStreamMarkerInfoINTEL =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable marker: uint32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPerformanceOverrideInfoINTEL =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable typ: VkPerformanceOverrideTypeINTEL
+    [<DefaultValue(false)>]
     val mutable enable: VkBool32
+    [<DefaultValue(false)>]
     val mutable parameter: uint64
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPerformanceConfigurationAcquireInfoINTEL =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable typ: VkPerformanceConfigurationTypeINTEL
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceIndexTypeUint8FeaturesEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable indexTypeUint8: VkBool32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceShaderSMBuiltinsPropertiesNV =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable shaderSMCount: uint32
+    [<DefaultValue(false)>]
     val mutable shaderWarpsPerSM: uint32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceShaderSMBuiltinsFeaturesNV =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable shaderSMBuiltins: VkBool32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceFragmentShaderInterlockFeaturesEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
     /// Pointer to next structure
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable fragmentShaderSampleInterlock: VkBool32
+    [<DefaultValue(false)>]
     val mutable fragmentShaderPixelInterlock: VkBool32
+    [<DefaultValue(false)>]
     val mutable fragmentShaderShadingRateInterlock: VkBool32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDevicePipelineExecutablePropertiesFeaturesKHR =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable pipelineExecutableInfo: VkBool32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPipelineInfoKHR =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable pipeline: VkPipeline
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPipelineExecutablePropertiesKHR =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable stages: VkShaderStageFlags
+    [<DefaultValue(false)>]
     val mutable name: char
+    [<DefaultValue(false)>]
     val mutable description: char
+    [<DefaultValue(false)>]
     val mutable subgroupSize: uint32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPipelineExecutableInfoKHR =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable pipeline: VkPipeline
+    [<DefaultValue(false)>]
     val mutable executableIndex: uint32
 
-[<Struct;StructLayout(LayoutKind.Explicit)>]
+[<Struct;StructLayout(LayoutKind.Explicit);NoEquality;NoComparison>]
 type VkPipelineExecutableStatisticValueKHR =
-    [<FieldOffset(0)>] val mutable b32: VkBool32
-    [<FieldOffset(0)>] val mutable i64: int64
-    [<FieldOffset(0)>] val mutable u64: uint64
-    [<FieldOffset(0)>] val mutable f64: float
+    [<FieldOffset(0);DefaultValue(false)>]
+    val mutable b32: VkBool32
+    [<FieldOffset(0);DefaultValue(false)>]
+    val mutable i64: int64
+    [<FieldOffset(0);DefaultValue(false)>]
+    val mutable u64: uint64
+    [<FieldOffset(0);DefaultValue(false)>]
+    val mutable f64: float
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPipelineExecutableStatisticKHR =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable name: char
+    [<DefaultValue(false)>]
     val mutable description: char
+    [<DefaultValue(false)>]
     val mutable format: VkPipelineExecutableStatisticFormatKHR
+    [<DefaultValue(false)>]
     val mutable value: VkPipelineExecutableStatisticValueKHR
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPipelineExecutableInternalRepresentationKHR =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable name: char
+    [<DefaultValue(false)>]
     val mutable description: char
+    [<DefaultValue(false)>]
     val mutable isText: VkBool32
+    [<DefaultValue(false)>]
     val mutable dataSize: unativeint
+    [<DefaultValue(false)>]
     val mutable pData: nativeint
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceShaderDemoteToHelperInvocationFeaturesEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable shaderDemoteToHelperInvocation: VkBool32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceTexelBufferAlignmentFeaturesEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable texelBufferAlignment: VkBool32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceTexelBufferAlignmentPropertiesEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable storageTexelBufferOffsetAlignmentBytes: VkDeviceSize
+    [<DefaultValue(false)>]
     val mutable storageTexelBufferOffsetSingleTexelAlignment: VkBool32
+    [<DefaultValue(false)>]
     val mutable uniformTexelBufferOffsetAlignmentBytes: VkDeviceSize
+    [<DefaultValue(false)>]
     val mutable uniformTexelBufferOffsetSingleTexelAlignment: VkBool32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceSubgroupSizeControlFeaturesEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable subgroupSizeControl: VkBool32
+    [<DefaultValue(false)>]
     val mutable computeFullSubgroups: VkBool32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceSubgroupSizeControlPropertiesEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
     /// The minimum subgroup size supported by this device
+    [<DefaultValue(false)>]
     val mutable minSubgroupSize: uint32
     /// The maximum subgroup size supported by this device
+    [<DefaultValue(false)>]
     val mutable maxSubgroupSize: uint32
     /// The maximum number of subgroups supported in a workgroup
+    [<DefaultValue(false)>]
     val mutable maxComputeWorkgroupSubgroups: uint32
     /// The shader stages that support specifying a subgroup size
+    [<DefaultValue(false)>]
     val mutable requiredSubgroupSizeStages: VkShaderStageFlags
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPipelineShaderStageRequiredSubgroupSizeCreateInfoEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable requiredSubgroupSize: uint32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceLineRasterizationFeaturesEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable rectangularLines: VkBool32
+    [<DefaultValue(false)>]
     val mutable bresenhamLines: VkBool32
+    [<DefaultValue(false)>]
     val mutable smoothLines: VkBool32
+    [<DefaultValue(false)>]
     val mutable stippledRectangularLines: VkBool32
+    [<DefaultValue(false)>]
     val mutable stippledBresenhamLines: VkBool32
+    [<DefaultValue(false)>]
     val mutable stippledSmoothLines: VkBool32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceLineRasterizationPropertiesEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable lineSubPixelPrecisionBits: uint32
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPipelineRasterizationLineStateCreateInfoEXT =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable lineRasterizationMode: VkLineRasterizationModeEXT
+    [<DefaultValue(false)>]
     val mutable stippledLineEnable: VkBool32
+    [<DefaultValue(false)>]
     val mutable lineStippleFactor: uint32
+    [<DefaultValue(false)>]
     val mutable lineStipplePattern: uint16
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPipelineCompilerControlCreateInfoAMD =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
-    val pNext: nativeint
+    [<DefaultValue(false)>]
+    val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable compilerControlFlags: VkPipelineCompilerControlFlagsAMD
 
-[<Struct>]
+[<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceCoherentMemoryFeaturesAMD =
+    [<DefaultValue(false)>]
     val mutable sType: VkStructureType
+    [<DefaultValue(false)>]
     val mutable pNext: nativeint
+    [<DefaultValue(false)>]
     val mutable deviceCoherentMemory: VkBool32
 
 let VK_MAX_PHYSICAL_DEVICE_NAME_SIZE = 256
@@ -7241,64 +9903,64 @@ let VK_MAX_DRIVER_INFO_SIZE_KHR = 256
 let VK_SHADER_UNUSED_NV = ~~~0u
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkCreateInstance(VkInstanceCreateInfo& pCreateInfo, VkAllocationCallbacks& pAllocator, VkInstance& pInstance)
+extern VkResult vkCreateInstance(VkInstanceCreateInfo* pCreateInfo, VkAllocationCallbacks* pAllocator, VkInstance* pInstance)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkDestroyInstance(VkInstance instance, VkAllocationCallbacks& pAllocator)
+extern void vkDestroyInstance(VkInstance instance, VkAllocationCallbacks* pAllocator)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkEnumeratePhysicalDevices(VkInstance instance, uint32& pPhysicalDeviceCount, VkPhysicalDevice& pPhysicalDevices)
+extern VkResult vkEnumeratePhysicalDevices(VkInstance instance, uint32* pPhysicalDeviceCount, VkPhysicalDevice* pPhysicalDevices)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern PFN_vkVoidFunction vkGetDeviceProcAddr(VkDevice device, char& pName)
+extern PFN_vkVoidFunction vkGetDeviceProcAddr(VkDevice device, char* pName)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern PFN_vkVoidFunction vkGetInstanceProcAddr(VkInstance instance, char& pName)
+extern PFN_vkVoidFunction vkGetInstanceProcAddr(VkInstance instance, char* pName)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkGetPhysicalDeviceProperties(VkPhysicalDevice physicalDevice, VkPhysicalDeviceProperties& pProperties)
+extern void vkGetPhysicalDeviceProperties(VkPhysicalDevice physicalDevice, VkPhysicalDeviceProperties* pProperties)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkGetPhysicalDeviceQueueFamilyProperties(VkPhysicalDevice physicalDevice, uint32& pQueueFamilyPropertyCount, VkQueueFamilyProperties& pQueueFamilyProperties)
+extern void vkGetPhysicalDeviceQueueFamilyProperties(VkPhysicalDevice physicalDevice, uint32* pQueueFamilyPropertyCount, VkQueueFamilyProperties* pQueueFamilyProperties)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkGetPhysicalDeviceMemoryProperties(VkPhysicalDevice physicalDevice, VkPhysicalDeviceMemoryProperties& pMemoryProperties)
+extern void vkGetPhysicalDeviceMemoryProperties(VkPhysicalDevice physicalDevice, VkPhysicalDeviceMemoryProperties* pMemoryProperties)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkGetPhysicalDeviceFeatures(VkPhysicalDevice physicalDevice, VkPhysicalDeviceFeatures& pFeatures)
+extern void vkGetPhysicalDeviceFeatures(VkPhysicalDevice physicalDevice, VkPhysicalDeviceFeatures* pFeatures)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkGetPhysicalDeviceFormatProperties(VkPhysicalDevice physicalDevice, VkFormat format, VkFormatProperties& pFormatProperties)
+extern void vkGetPhysicalDeviceFormatProperties(VkPhysicalDevice physicalDevice, VkFormat format, VkFormatProperties* pFormatProperties)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkGetPhysicalDeviceImageFormatProperties(VkPhysicalDevice physicalDevice, VkFormat format, VkImageType typ, VkImageTiling tiling, VkImageUsageFlags usage, VkImageCreateFlags flags, VkImageFormatProperties& pImageFormatProperties)
+extern VkResult vkGetPhysicalDeviceImageFormatProperties(VkPhysicalDevice physicalDevice, VkFormat format, VkImageType typ, VkImageTiling tiling, VkImageUsageFlags usage, VkImageCreateFlags flags, VkImageFormatProperties* pImageFormatProperties)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkCreateDevice(VkPhysicalDevice physicalDevice, VkDeviceCreateInfo& pCreateInfo, VkAllocationCallbacks& pAllocator, VkDevice& pDevice)
+extern VkResult vkCreateDevice(VkPhysicalDevice physicalDevice, VkDeviceCreateInfo* pCreateInfo, VkAllocationCallbacks* pAllocator, VkDevice* pDevice)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkDestroyDevice(VkDevice device, VkAllocationCallbacks& pAllocator)
+extern void vkDestroyDevice(VkDevice device, VkAllocationCallbacks* pAllocator)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkEnumerateInstanceVersion(uint32& pApiVersion)
+extern VkResult vkEnumerateInstanceVersion(uint32* pApiVersion)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkEnumerateInstanceLayerProperties(uint32& pPropertyCount, VkLayerProperties& pProperties)
+extern VkResult vkEnumerateInstanceLayerProperties(uint32* pPropertyCount, VkLayerProperties* pProperties)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkEnumerateInstanceExtensionProperties(char& pLayerName, uint32& pPropertyCount, VkExtensionProperties& pProperties)
+extern VkResult vkEnumerateInstanceExtensionProperties(char* pLayerName, uint32* pPropertyCount, VkExtensionProperties* pProperties)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkEnumerateDeviceLayerProperties(VkPhysicalDevice physicalDevice, uint32& pPropertyCount, VkLayerProperties& pProperties)
+extern VkResult vkEnumerateDeviceLayerProperties(VkPhysicalDevice physicalDevice, uint32* pPropertyCount, VkLayerProperties* pProperties)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkEnumerateDeviceExtensionProperties(VkPhysicalDevice physicalDevice, char& pLayerName, uint32& pPropertyCount, VkExtensionProperties& pProperties)
+extern VkResult vkEnumerateDeviceExtensionProperties(VkPhysicalDevice physicalDevice, char* pLayerName, uint32* pPropertyCount, VkExtensionProperties* pProperties)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkGetDeviceQueue(VkDevice device, uint32 queueFamilyIndex, uint32 queueIndex, VkQueue& pQueue)
+extern void vkGetDeviceQueue(VkDevice device, uint32 queueFamilyIndex, uint32 queueIndex, VkQueue* pQueue)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkQueueSubmit(VkQueue queue, uint32 submitCount, VkSubmitInfo& pSubmits, VkFence fence)
+extern VkResult vkQueueSubmit(VkQueue queue, uint32 submitCount, VkSubmitInfo* pSubmits, VkFence fence)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
 extern VkResult vkQueueWaitIdle(VkQueue queue)
@@ -7307,10 +9969,10 @@ extern VkResult vkQueueWaitIdle(VkQueue queue)
 extern VkResult vkDeviceWaitIdle(VkDevice device)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkAllocateMemory(VkDevice device, VkMemoryAllocateInfo& pAllocateInfo, VkAllocationCallbacks& pAllocator, VkDeviceMemory& pMemory)
+extern VkResult vkAllocateMemory(VkDevice device, VkMemoryAllocateInfo* pAllocateInfo, VkAllocationCallbacks* pAllocator, VkDeviceMemory* pMemory)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkFreeMemory(VkDevice device, VkDeviceMemory memory, VkAllocationCallbacks& pAllocator)
+extern void vkFreeMemory(VkDevice device, VkDeviceMemory memory, VkAllocationCallbacks* pAllocator)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
 extern VkResult vkMapMemory(VkDevice device, VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize size, VkMemoryMapFlags flags, void* ppData)
@@ -7319,61 +9981,61 @@ extern VkResult vkMapMemory(VkDevice device, VkDeviceMemory memory, VkDeviceSize
 extern void vkUnmapMemory(VkDevice device, VkDeviceMemory memory)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkFlushMappedMemoryRanges(VkDevice device, uint32 memoryRangeCount, VkMappedMemoryRange& pMemoryRanges)
+extern VkResult vkFlushMappedMemoryRanges(VkDevice device, uint32 memoryRangeCount, VkMappedMemoryRange* pMemoryRanges)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkInvalidateMappedMemoryRanges(VkDevice device, uint32 memoryRangeCount, VkMappedMemoryRange& pMemoryRanges)
+extern VkResult vkInvalidateMappedMemoryRanges(VkDevice device, uint32 memoryRangeCount, VkMappedMemoryRange* pMemoryRanges)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkGetDeviceMemoryCommitment(VkDevice device, VkDeviceMemory memory, VkDeviceSize& pCommittedMemoryInBytes)
+extern void vkGetDeviceMemoryCommitment(VkDevice device, VkDeviceMemory memory, VkDeviceSize* pCommittedMemoryInBytes)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkGetBufferMemoryRequirements(VkDevice device, VkBuffer buffer, VkMemoryRequirements& pMemoryRequirements)
+extern void vkGetBufferMemoryRequirements(VkDevice device, VkBuffer buffer, VkMemoryRequirements* pMemoryRequirements)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
 extern VkResult vkBindBufferMemory(VkDevice device, VkBuffer buffer, VkDeviceMemory memory, VkDeviceSize memoryOffset)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkGetImageMemoryRequirements(VkDevice device, VkImage image, VkMemoryRequirements& pMemoryRequirements)
+extern void vkGetImageMemoryRequirements(VkDevice device, VkImage image, VkMemoryRequirements* pMemoryRequirements)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
 extern VkResult vkBindImageMemory(VkDevice device, VkImage image, VkDeviceMemory memory, VkDeviceSize memoryOffset)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkGetImageSparseMemoryRequirements(VkDevice device, VkImage image, uint32& pSparseMemoryRequirementCount, VkSparseImageMemoryRequirements& pSparseMemoryRequirements)
+extern void vkGetImageSparseMemoryRequirements(VkDevice device, VkImage image, uint32* pSparseMemoryRequirementCount, VkSparseImageMemoryRequirements* pSparseMemoryRequirements)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkGetPhysicalDeviceSparseImageFormatProperties(VkPhysicalDevice physicalDevice, VkFormat format, VkImageType typ, VkSampleCountFlagBits samples, VkImageUsageFlags usage, VkImageTiling tiling, uint32& pPropertyCount, VkSparseImageFormatProperties& pProperties)
+extern void vkGetPhysicalDeviceSparseImageFormatProperties(VkPhysicalDevice physicalDevice, VkFormat format, VkImageType typ, VkSampleCountFlagBits samples, VkImageUsageFlags usage, VkImageTiling tiling, uint32* pPropertyCount, VkSparseImageFormatProperties* pProperties)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkQueueBindSparse(VkQueue queue, uint32 bindInfoCount, VkBindSparseInfo& pBindInfo, VkFence fence)
+extern VkResult vkQueueBindSparse(VkQueue queue, uint32 bindInfoCount, VkBindSparseInfo* pBindInfo, VkFence fence)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkCreateFence(VkDevice device, VkFenceCreateInfo& pCreateInfo, VkAllocationCallbacks& pAllocator, VkFence& pFence)
+extern VkResult vkCreateFence(VkDevice device, VkFenceCreateInfo* pCreateInfo, VkAllocationCallbacks* pAllocator, VkFence* pFence)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkDestroyFence(VkDevice device, VkFence fence, VkAllocationCallbacks& pAllocator)
+extern void vkDestroyFence(VkDevice device, VkFence fence, VkAllocationCallbacks* pAllocator)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkResetFences(VkDevice device, uint32 fenceCount, VkFence& pFences)
+extern VkResult vkResetFences(VkDevice device, uint32 fenceCount, VkFence* pFences)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
 extern VkResult vkGetFenceStatus(VkDevice device, VkFence fence)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkWaitForFences(VkDevice device, uint32 fenceCount, VkFence& pFences, VkBool32 waitAll, uint64 timeout)
+extern VkResult vkWaitForFences(VkDevice device, uint32 fenceCount, VkFence* pFences, VkBool32 waitAll, uint64 timeout)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkCreateSemaphore(VkDevice device, VkSemaphoreCreateInfo& pCreateInfo, VkAllocationCallbacks& pAllocator, VkSemaphore& pSemaphore)
+extern VkResult vkCreateSemaphore(VkDevice device, VkSemaphoreCreateInfo* pCreateInfo, VkAllocationCallbacks* pAllocator, VkSemaphore* pSemaphore)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkDestroySemaphore(VkDevice device, VkSemaphore semaphore, VkAllocationCallbacks& pAllocator)
+extern void vkDestroySemaphore(VkDevice device, VkSemaphore semaphore, VkAllocationCallbacks* pAllocator)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkCreateEvent(VkDevice device, VkEventCreateInfo& pCreateInfo, VkAllocationCallbacks& pAllocator, VkEvent& pEvent)
+extern VkResult vkCreateEvent(VkDevice device, VkEventCreateInfo* pCreateInfo, VkAllocationCallbacks* pAllocator, VkEvent* pEvent)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkDestroyEvent(VkDevice device, VkEvent event, VkAllocationCallbacks& pAllocator)
+extern void vkDestroyEvent(VkDevice device, VkEvent event, VkAllocationCallbacks* pAllocator)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
 extern VkResult vkGetEventStatus(VkDevice device, VkEvent event)
@@ -7385,10 +10047,10 @@ extern VkResult vkSetEvent(VkDevice device, VkEvent event)
 extern VkResult vkResetEvent(VkDevice device, VkEvent event)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkCreateQueryPool(VkDevice device, VkQueryPoolCreateInfo& pCreateInfo, VkAllocationCallbacks& pAllocator, VkQueryPool& pQueryPool)
+extern VkResult vkCreateQueryPool(VkDevice device, VkQueryPoolCreateInfo* pCreateInfo, VkAllocationCallbacks* pAllocator, VkQueryPool* pQueryPool)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkDestroyQueryPool(VkDevice device, VkQueryPool queryPool, VkAllocationCallbacks& pAllocator)
+extern void vkDestroyQueryPool(VkDevice device, VkQueryPool queryPool, VkAllocationCallbacks* pAllocator)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
 extern VkResult vkGetQueryPoolResults(VkDevice device, VkQueryPool queryPool, uint32 firstQuery, uint32 queryCount, unativeint dataSize, void* pData, VkDeviceSize stride, VkQueryResultFlags flags)
@@ -7397,127 +10059,127 @@ extern VkResult vkGetQueryPoolResults(VkDevice device, VkQueryPool queryPool, ui
 extern void vkResetQueryPoolEXT(VkDevice device, VkQueryPool queryPool, uint32 firstQuery, uint32 queryCount)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkCreateBuffer(VkDevice device, VkBufferCreateInfo& pCreateInfo, VkAllocationCallbacks& pAllocator, VkBuffer& pBuffer)
+extern VkResult vkCreateBuffer(VkDevice device, VkBufferCreateInfo* pCreateInfo, VkAllocationCallbacks* pAllocator, VkBuffer* pBuffer)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkDestroyBuffer(VkDevice device, VkBuffer buffer, VkAllocationCallbacks& pAllocator)
+extern void vkDestroyBuffer(VkDevice device, VkBuffer buffer, VkAllocationCallbacks* pAllocator)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkCreateBufferView(VkDevice device, VkBufferViewCreateInfo& pCreateInfo, VkAllocationCallbacks& pAllocator, VkBufferView& pView)
+extern VkResult vkCreateBufferView(VkDevice device, VkBufferViewCreateInfo* pCreateInfo, VkAllocationCallbacks* pAllocator, VkBufferView* pView)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkDestroyBufferView(VkDevice device, VkBufferView bufferView, VkAllocationCallbacks& pAllocator)
+extern void vkDestroyBufferView(VkDevice device, VkBufferView bufferView, VkAllocationCallbacks* pAllocator)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkCreateImage(VkDevice device, VkImageCreateInfo& pCreateInfo, VkAllocationCallbacks& pAllocator, VkImage& pImage)
+extern VkResult vkCreateImage(VkDevice device, VkImageCreateInfo* pCreateInfo, VkAllocationCallbacks* pAllocator, VkImage* pImage)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkDestroyImage(VkDevice device, VkImage image, VkAllocationCallbacks& pAllocator)
+extern void vkDestroyImage(VkDevice device, VkImage image, VkAllocationCallbacks* pAllocator)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkGetImageSubresourceLayout(VkDevice device, VkImage image, VkImageSubresource& pSubresource, VkSubresourceLayout& pLayout)
+extern void vkGetImageSubresourceLayout(VkDevice device, VkImage image, VkImageSubresource* pSubresource, VkSubresourceLayout* pLayout)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkCreateImageView(VkDevice device, VkImageViewCreateInfo& pCreateInfo, VkAllocationCallbacks& pAllocator, VkImageView& pView)
+extern VkResult vkCreateImageView(VkDevice device, VkImageViewCreateInfo* pCreateInfo, VkAllocationCallbacks* pAllocator, VkImageView* pView)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkDestroyImageView(VkDevice device, VkImageView imageView, VkAllocationCallbacks& pAllocator)
+extern void vkDestroyImageView(VkDevice device, VkImageView imageView, VkAllocationCallbacks* pAllocator)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkCreateShaderModule(VkDevice device, VkShaderModuleCreateInfo& pCreateInfo, VkAllocationCallbacks& pAllocator, VkShaderModule& pShaderModule)
+extern VkResult vkCreateShaderModule(VkDevice device, VkShaderModuleCreateInfo* pCreateInfo, VkAllocationCallbacks* pAllocator, VkShaderModule* pShaderModule)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkDestroyShaderModule(VkDevice device, VkShaderModule shaderModule, VkAllocationCallbacks& pAllocator)
+extern void vkDestroyShaderModule(VkDevice device, VkShaderModule shaderModule, VkAllocationCallbacks* pAllocator)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkCreatePipelineCache(VkDevice device, VkPipelineCacheCreateInfo& pCreateInfo, VkAllocationCallbacks& pAllocator, VkPipelineCache& pPipelineCache)
+extern VkResult vkCreatePipelineCache(VkDevice device, VkPipelineCacheCreateInfo* pCreateInfo, VkAllocationCallbacks* pAllocator, VkPipelineCache* pPipelineCache)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkDestroyPipelineCache(VkDevice device, VkPipelineCache pipelineCache, VkAllocationCallbacks& pAllocator)
+extern void vkDestroyPipelineCache(VkDevice device, VkPipelineCache pipelineCache, VkAllocationCallbacks* pAllocator)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkGetPipelineCacheData(VkDevice device, VkPipelineCache pipelineCache, unativeint& pDataSize, void* pData)
+extern VkResult vkGetPipelineCacheData(VkDevice device, VkPipelineCache pipelineCache, unativeint* pDataSize, void* pData)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkMergePipelineCaches(VkDevice device, VkPipelineCache dstCache, uint32 srcCacheCount, VkPipelineCache& pSrcCaches)
+extern VkResult vkMergePipelineCaches(VkDevice device, VkPipelineCache dstCache, uint32 srcCacheCount, VkPipelineCache* pSrcCaches)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkCreateGraphicsPipelines(VkDevice device, VkPipelineCache pipelineCache, uint32 createInfoCount, VkGraphicsPipelineCreateInfo& pCreateInfos, VkAllocationCallbacks& pAllocator, VkPipeline& pPipelines)
+extern VkResult vkCreateGraphicsPipelines(VkDevice device, VkPipelineCache pipelineCache, uint32 createInfoCount, VkGraphicsPipelineCreateInfo* pCreateInfos, VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkCreateComputePipelines(VkDevice device, VkPipelineCache pipelineCache, uint32 createInfoCount, VkComputePipelineCreateInfo& pCreateInfos, VkAllocationCallbacks& pAllocator, VkPipeline& pPipelines)
+extern VkResult vkCreateComputePipelines(VkDevice device, VkPipelineCache pipelineCache, uint32 createInfoCount, VkComputePipelineCreateInfo* pCreateInfos, VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkDestroyPipeline(VkDevice device, VkPipeline pipeline, VkAllocationCallbacks& pAllocator)
+extern void vkDestroyPipeline(VkDevice device, VkPipeline pipeline, VkAllocationCallbacks* pAllocator)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkCreatePipelineLayout(VkDevice device, VkPipelineLayoutCreateInfo& pCreateInfo, VkAllocationCallbacks& pAllocator, VkPipelineLayout& pPipelineLayout)
+extern VkResult vkCreatePipelineLayout(VkDevice device, VkPipelineLayoutCreateInfo* pCreateInfo, VkAllocationCallbacks* pAllocator, VkPipelineLayout* pPipelineLayout)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkDestroyPipelineLayout(VkDevice device, VkPipelineLayout pipelineLayout, VkAllocationCallbacks& pAllocator)
+extern void vkDestroyPipelineLayout(VkDevice device, VkPipelineLayout pipelineLayout, VkAllocationCallbacks* pAllocator)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkCreateSampler(VkDevice device, VkSamplerCreateInfo& pCreateInfo, VkAllocationCallbacks& pAllocator, VkSampler& pSampler)
+extern VkResult vkCreateSampler(VkDevice device, VkSamplerCreateInfo* pCreateInfo, VkAllocationCallbacks* pAllocator, VkSampler* pSampler)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkDestroySampler(VkDevice device, VkSampler sampler, VkAllocationCallbacks& pAllocator)
+extern void vkDestroySampler(VkDevice device, VkSampler sampler, VkAllocationCallbacks* pAllocator)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkCreateDescriptorSetLayout(VkDevice device, VkDescriptorSetLayoutCreateInfo& pCreateInfo, VkAllocationCallbacks& pAllocator, VkDescriptorSetLayout& pSetLayout)
+extern VkResult vkCreateDescriptorSetLayout(VkDevice device, VkDescriptorSetLayoutCreateInfo* pCreateInfo, VkAllocationCallbacks* pAllocator, VkDescriptorSetLayout* pSetLayout)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkDestroyDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout descriptorSetLayout, VkAllocationCallbacks& pAllocator)
+extern void vkDestroyDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout descriptorSetLayout, VkAllocationCallbacks* pAllocator)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkCreateDescriptorPool(VkDevice device, VkDescriptorPoolCreateInfo& pCreateInfo, VkAllocationCallbacks& pAllocator, VkDescriptorPool& pDescriptorPool)
+extern VkResult vkCreateDescriptorPool(VkDevice device, VkDescriptorPoolCreateInfo* pCreateInfo, VkAllocationCallbacks* pAllocator, VkDescriptorPool* pDescriptorPool)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkDestroyDescriptorPool(VkDevice device, VkDescriptorPool descriptorPool, VkAllocationCallbacks& pAllocator)
+extern void vkDestroyDescriptorPool(VkDevice device, VkDescriptorPool descriptorPool, VkAllocationCallbacks* pAllocator)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
 extern VkResult vkResetDescriptorPool(VkDevice device, VkDescriptorPool descriptorPool, VkDescriptorPoolResetFlags flags)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkAllocateDescriptorSets(VkDevice device, VkDescriptorSetAllocateInfo& pAllocateInfo, VkDescriptorSet& pDescriptorSets)
+extern VkResult vkAllocateDescriptorSets(VkDevice device, VkDescriptorSetAllocateInfo* pAllocateInfo, VkDescriptorSet* pDescriptorSets)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkFreeDescriptorSets(VkDevice device, VkDescriptorPool descriptorPool, uint32 descriptorSetCount, VkDescriptorSet& pDescriptorSets)
+extern VkResult vkFreeDescriptorSets(VkDevice device, VkDescriptorPool descriptorPool, uint32 descriptorSetCount, VkDescriptorSet* pDescriptorSets)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkUpdateDescriptorSets(VkDevice device, uint32 descriptorWriteCount, VkWriteDescriptorSet& pDescriptorWrites, uint32 descriptorCopyCount, VkCopyDescriptorSet& pDescriptorCopies)
+extern void vkUpdateDescriptorSets(VkDevice device, uint32 descriptorWriteCount, VkWriteDescriptorSet* pDescriptorWrites, uint32 descriptorCopyCount, VkCopyDescriptorSet* pDescriptorCopies)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkCreateFramebuffer(VkDevice device, VkFramebufferCreateInfo& pCreateInfo, VkAllocationCallbacks& pAllocator, VkFramebuffer& pFramebuffer)
+extern VkResult vkCreateFramebuffer(VkDevice device, VkFramebufferCreateInfo* pCreateInfo, VkAllocationCallbacks* pAllocator, VkFramebuffer* pFramebuffer)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkDestroyFramebuffer(VkDevice device, VkFramebuffer framebuffer, VkAllocationCallbacks& pAllocator)
+extern void vkDestroyFramebuffer(VkDevice device, VkFramebuffer framebuffer, VkAllocationCallbacks* pAllocator)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkCreateRenderPass(VkDevice device, VkRenderPassCreateInfo& pCreateInfo, VkAllocationCallbacks& pAllocator, VkRenderPass& pRenderPass)
+extern VkResult vkCreateRenderPass(VkDevice device, VkRenderPassCreateInfo* pCreateInfo, VkAllocationCallbacks* pAllocator, VkRenderPass* pRenderPass)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkDestroyRenderPass(VkDevice device, VkRenderPass renderPass, VkAllocationCallbacks& pAllocator)
+extern void vkDestroyRenderPass(VkDevice device, VkRenderPass renderPass, VkAllocationCallbacks* pAllocator)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkGetRenderAreaGranularity(VkDevice device, VkRenderPass renderPass, VkExtent2D& pGranularity)
+extern void vkGetRenderAreaGranularity(VkDevice device, VkRenderPass renderPass, VkExtent2D* pGranularity)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkCreateCommandPool(VkDevice device, VkCommandPoolCreateInfo& pCreateInfo, VkAllocationCallbacks& pAllocator, VkCommandPool& pCommandPool)
+extern VkResult vkCreateCommandPool(VkDevice device, VkCommandPoolCreateInfo* pCreateInfo, VkAllocationCallbacks* pAllocator, VkCommandPool* pCommandPool)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkDestroyCommandPool(VkDevice device, VkCommandPool commandPool, VkAllocationCallbacks& pAllocator)
+extern void vkDestroyCommandPool(VkDevice device, VkCommandPool commandPool, VkAllocationCallbacks* pAllocator)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
 extern VkResult vkResetCommandPool(VkDevice device, VkCommandPool commandPool, VkCommandPoolResetFlags flags)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkAllocateCommandBuffers(VkDevice device, VkCommandBufferAllocateInfo& pAllocateInfo, VkCommandBuffer& pCommandBuffers)
+extern VkResult vkAllocateCommandBuffers(VkDevice device, VkCommandBufferAllocateInfo* pAllocateInfo, VkCommandBuffer* pCommandBuffers)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkFreeCommandBuffers(VkDevice device, VkCommandPool commandPool, uint32 commandBufferCount, VkCommandBuffer& pCommandBuffers)
+extern void vkFreeCommandBuffers(VkDevice device, VkCommandPool commandPool, uint32 commandBufferCount, VkCommandBuffer* pCommandBuffers)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkBeginCommandBuffer(VkCommandBuffer commandBuffer, VkCommandBufferBeginInfo& pBeginInfo)
+extern VkResult vkBeginCommandBuffer(VkCommandBuffer commandBuffer, VkCommandBufferBeginInfo* pBeginInfo)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
 extern VkResult vkEndCommandBuffer(VkCommandBuffer commandBuffer)
@@ -7529,10 +10191,10 @@ extern VkResult vkResetCommandBuffer(VkCommandBuffer commandBuffer, VkCommandBuf
 extern void vkCmdBindPipeline(VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipeline pipeline)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkCmdSetViewport(VkCommandBuffer commandBuffer, uint32 firstViewport, uint32 viewportCount, VkViewport& pViewports)
+extern void vkCmdSetViewport(VkCommandBuffer commandBuffer, uint32 firstViewport, uint32 viewportCount, VkViewport* pViewports)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkCmdSetScissor(VkCommandBuffer commandBuffer, uint32 firstScissor, uint32 scissorCount, VkRect2D& pScissors)
+extern void vkCmdSetScissor(VkCommandBuffer commandBuffer, uint32 firstScissor, uint32 scissorCount, VkRect2D* pScissors)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
 extern void vkCmdSetLineWidth(VkCommandBuffer commandBuffer, float32 lineWidth)
@@ -7556,13 +10218,13 @@ extern void vkCmdSetStencilWriteMask(VkCommandBuffer commandBuffer, VkStencilFac
 extern void vkCmdSetStencilReference(VkCommandBuffer commandBuffer, VkStencilFaceFlags faceMask, uint32 reference)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkCmdBindDescriptorSets(VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipelineLayout layout, uint32 firstSet, uint32 descriptorSetCount, VkDescriptorSet& pDescriptorSets, uint32 dynamicOffsetCount, uint32& pDynamicOffsets)
+extern void vkCmdBindDescriptorSets(VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipelineLayout layout, uint32 firstSet, uint32 descriptorSetCount, VkDescriptorSet* pDescriptorSets, uint32 dynamicOffsetCount, uint32* pDynamicOffsets)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
 extern void vkCmdBindIndexBuffer(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkIndexType indexType)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkCmdBindVertexBuffers(VkCommandBuffer commandBuffer, uint32 firstBinding, uint32 bindingCount, VkBuffer& pBuffers, VkDeviceSize& pOffsets)
+extern void vkCmdBindVertexBuffers(VkCommandBuffer commandBuffer, uint32 firstBinding, uint32 bindingCount, VkBuffer* pBuffers, VkDeviceSize* pOffsets)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
 extern void vkCmdDraw(VkCommandBuffer commandBuffer, uint32 vertexCount, uint32 instanceCount, uint32 firstVertex, uint32 firstInstance)
@@ -7583,19 +10245,19 @@ extern void vkCmdDispatch(VkCommandBuffer commandBuffer, uint32 groupCountX, uin
 extern void vkCmdDispatchIndirect(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkCmdCopyBuffer(VkCommandBuffer commandBuffer, VkBuffer srcBuffer, VkBuffer dstBuffer, uint32 regionCount, VkBufferCopy& pRegions)
+extern void vkCmdCopyBuffer(VkCommandBuffer commandBuffer, VkBuffer srcBuffer, VkBuffer dstBuffer, uint32 regionCount, VkBufferCopy* pRegions)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkCmdCopyImage(VkCommandBuffer commandBuffer, VkImage srcImage, VkImageLayout srcImageLayout, VkImage dstImage, VkImageLayout dstImageLayout, uint32 regionCount, VkImageCopy& pRegions)
+extern void vkCmdCopyImage(VkCommandBuffer commandBuffer, VkImage srcImage, VkImageLayout srcImageLayout, VkImage dstImage, VkImageLayout dstImageLayout, uint32 regionCount, VkImageCopy* pRegions)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkCmdBlitImage(VkCommandBuffer commandBuffer, VkImage srcImage, VkImageLayout srcImageLayout, VkImage dstImage, VkImageLayout dstImageLayout, uint32 regionCount, VkImageBlit& pRegions, VkFilter filter)
+extern void vkCmdBlitImage(VkCommandBuffer commandBuffer, VkImage srcImage, VkImageLayout srcImageLayout, VkImage dstImage, VkImageLayout dstImageLayout, uint32 regionCount, VkImageBlit* pRegions, VkFilter filter)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkCmdCopyBufferToImage(VkCommandBuffer commandBuffer, VkBuffer srcBuffer, VkImage dstImage, VkImageLayout dstImageLayout, uint32 regionCount, VkBufferImageCopy& pRegions)
+extern void vkCmdCopyBufferToImage(VkCommandBuffer commandBuffer, VkBuffer srcBuffer, VkImage dstImage, VkImageLayout dstImageLayout, uint32 regionCount, VkBufferImageCopy* pRegions)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkCmdCopyImageToBuffer(VkCommandBuffer commandBuffer, VkImage srcImage, VkImageLayout srcImageLayout, VkBuffer dstBuffer, uint32 regionCount, VkBufferImageCopy& pRegions)
+extern void vkCmdCopyImageToBuffer(VkCommandBuffer commandBuffer, VkImage srcImage, VkImageLayout srcImageLayout, VkBuffer dstBuffer, uint32 regionCount, VkBufferImageCopy* pRegions)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
 extern void vkCmdUpdateBuffer(VkCommandBuffer commandBuffer, VkBuffer dstBuffer, VkDeviceSize dstOffset, VkDeviceSize dataSize, void* pData)
@@ -7605,16 +10267,16 @@ extern void vkCmdUpdateBuffer(VkCommandBuffer commandBuffer, VkBuffer dstBuffer,
 extern void vkCmdFillBuffer(VkCommandBuffer commandBuffer, VkBuffer dstBuffer, VkDeviceSize dstOffset, VkDeviceSize size, uint32 data)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkCmdClearColorImage(VkCommandBuffer commandBuffer, VkImage image, VkImageLayout imageLayout, VkClearColorValue& pColor, uint32 rangeCount, VkImageSubresourceRange& pRanges)
+extern void vkCmdClearColorImage(VkCommandBuffer commandBuffer, VkImage image, VkImageLayout imageLayout, VkClearColorValue* pColor, uint32 rangeCount, VkImageSubresourceRange* pRanges)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkCmdClearDepthStencilImage(VkCommandBuffer commandBuffer, VkImage image, VkImageLayout imageLayout, VkClearDepthStencilValue& pDepthStencil, uint32 rangeCount, VkImageSubresourceRange& pRanges)
+extern void vkCmdClearDepthStencilImage(VkCommandBuffer commandBuffer, VkImage image, VkImageLayout imageLayout, VkClearDepthStencilValue* pDepthStencil, uint32 rangeCount, VkImageSubresourceRange* pRanges)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkCmdClearAttachments(VkCommandBuffer commandBuffer, uint32 attachmentCount, VkClearAttachment& pAttachments, uint32 rectCount, VkClearRect& pRects)
+extern void vkCmdClearAttachments(VkCommandBuffer commandBuffer, uint32 attachmentCount, VkClearAttachment* pAttachments, uint32 rectCount, VkClearRect* pRects)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkCmdResolveImage(VkCommandBuffer commandBuffer, VkImage srcImage, VkImageLayout srcImageLayout, VkImage dstImage, VkImageLayout dstImageLayout, uint32 regionCount, VkImageResolve& pRegions)
+extern void vkCmdResolveImage(VkCommandBuffer commandBuffer, VkImage srcImage, VkImageLayout srcImageLayout, VkImage dstImage, VkImageLayout dstImageLayout, uint32 regionCount, VkImageResolve* pRegions)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
 extern void vkCmdSetEvent(VkCommandBuffer commandBuffer, VkEvent event, VkPipelineStageFlags stageMask)
@@ -7623,10 +10285,10 @@ extern void vkCmdSetEvent(VkCommandBuffer commandBuffer, VkEvent event, VkPipeli
 extern void vkCmdResetEvent(VkCommandBuffer commandBuffer, VkEvent event, VkPipelineStageFlags stageMask)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkCmdWaitEvents(VkCommandBuffer commandBuffer, uint32 eventCount, VkEvent& pEvents, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, uint32 memoryBarrierCount, VkMemoryBarrier& pMemoryBarriers, uint32 bufferMemoryBarrierCount, VkBufferMemoryBarrier& pBufferMemoryBarriers, uint32 imageMemoryBarrierCount, VkImageMemoryBarrier& pImageMemoryBarriers)
+extern void vkCmdWaitEvents(VkCommandBuffer commandBuffer, uint32 eventCount, VkEvent* pEvents, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, uint32 memoryBarrierCount, VkMemoryBarrier* pMemoryBarriers, uint32 bufferMemoryBarrierCount, VkBufferMemoryBarrier* pBufferMemoryBarriers, uint32 imageMemoryBarrierCount, VkImageMemoryBarrier* pImageMemoryBarriers)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkCmdPipelineBarrier(VkCommandBuffer commandBuffer, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkDependencyFlags dependencyFlags, uint32 memoryBarrierCount, VkMemoryBarrier& pMemoryBarriers, uint32 bufferMemoryBarrierCount, VkBufferMemoryBarrier& pBufferMemoryBarriers, uint32 imageMemoryBarrierCount, VkImageMemoryBarrier& pImageMemoryBarriers)
+extern void vkCmdPipelineBarrier(VkCommandBuffer commandBuffer, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkDependencyFlags dependencyFlags, uint32 memoryBarrierCount, VkMemoryBarrier* pMemoryBarriers, uint32 bufferMemoryBarrierCount, VkBufferMemoryBarrier* pBufferMemoryBarriers, uint32 imageMemoryBarrierCount, VkImageMemoryBarrier* pImageMemoryBarriers)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
 extern void vkCmdBeginQuery(VkCommandBuffer commandBuffer, VkQueryPool queryPool, uint32 query, VkQueryControlFlags flags)
@@ -7635,7 +10297,7 @@ extern void vkCmdBeginQuery(VkCommandBuffer commandBuffer, VkQueryPool queryPool
 extern void vkCmdEndQuery(VkCommandBuffer commandBuffer, VkQueryPool queryPool, uint32 query)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkCmdBeginConditionalRenderingEXT(VkCommandBuffer commandBuffer, VkConditionalRenderingBeginInfoEXT& pConditionalRenderingBegin)
+extern void vkCmdBeginConditionalRenderingEXT(VkCommandBuffer commandBuffer, VkConditionalRenderingBeginInfoEXT* pConditionalRenderingBegin)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
 extern void vkCmdEndConditionalRenderingEXT(VkCommandBuffer commandBuffer)
@@ -7653,7 +10315,7 @@ extern void vkCmdCopyQueryPoolResults(VkCommandBuffer commandBuffer, VkQueryPool
 extern void vkCmdPushConstants(VkCommandBuffer commandBuffer, VkPipelineLayout layout, VkShaderStageFlags stageFlags, uint32 offset, uint32 size, void* pValues)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkCmdBeginRenderPass(VkCommandBuffer commandBuffer, VkRenderPassBeginInfo& pRenderPassBegin, VkSubpassContents contents)
+extern void vkCmdBeginRenderPass(VkCommandBuffer commandBuffer, VkRenderPassBeginInfo* pRenderPassBegin, VkSubpassContents contents)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
 extern void vkCmdNextSubpass(VkCommandBuffer commandBuffer, VkSubpassContents contents)
@@ -7662,286 +10324,286 @@ extern void vkCmdNextSubpass(VkCommandBuffer commandBuffer, VkSubpassContents co
 extern void vkCmdEndRenderPass(VkCommandBuffer commandBuffer)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkCmdExecuteCommands(VkCommandBuffer commandBuffer, uint32 commandBufferCount, VkCommandBuffer& pCommandBuffers)
+extern void vkCmdExecuteCommands(VkCommandBuffer commandBuffer, uint32 commandBufferCount, VkCommandBuffer* pCommandBuffers)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkCreateAndroidSurfaceKHR(VkInstance instance, VkAndroidSurfaceCreateInfoKHR& pCreateInfo, VkAllocationCallbacks& pAllocator, VkSurfaceKHR& pSurface)
+extern VkResult vkCreateAndroidSurfaceKHR(VkInstance instance, VkAndroidSurfaceCreateInfoKHR* pCreateInfo, VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkGetPhysicalDeviceDisplayPropertiesKHR(VkPhysicalDevice physicalDevice, uint32& pPropertyCount, VkDisplayPropertiesKHR& pProperties)
+extern VkResult vkGetPhysicalDeviceDisplayPropertiesKHR(VkPhysicalDevice physicalDevice, uint32* pPropertyCount, VkDisplayPropertiesKHR* pProperties)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkGetPhysicalDeviceDisplayPlanePropertiesKHR(VkPhysicalDevice physicalDevice, uint32& pPropertyCount, VkDisplayPlanePropertiesKHR& pProperties)
+extern VkResult vkGetPhysicalDeviceDisplayPlanePropertiesKHR(VkPhysicalDevice physicalDevice, uint32* pPropertyCount, VkDisplayPlanePropertiesKHR* pProperties)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkGetDisplayPlaneSupportedDisplaysKHR(VkPhysicalDevice physicalDevice, uint32 planeIndex, uint32& pDisplayCount, VkDisplayKHR& pDisplays)
+extern VkResult vkGetDisplayPlaneSupportedDisplaysKHR(VkPhysicalDevice physicalDevice, uint32 planeIndex, uint32* pDisplayCount, VkDisplayKHR* pDisplays)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkGetDisplayModePropertiesKHR(VkPhysicalDevice physicalDevice, VkDisplayKHR display, uint32& pPropertyCount, VkDisplayModePropertiesKHR& pProperties)
+extern VkResult vkGetDisplayModePropertiesKHR(VkPhysicalDevice physicalDevice, VkDisplayKHR display, uint32* pPropertyCount, VkDisplayModePropertiesKHR* pProperties)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkCreateDisplayModeKHR(VkPhysicalDevice physicalDevice, VkDisplayKHR display, VkDisplayModeCreateInfoKHR& pCreateInfo, VkAllocationCallbacks& pAllocator, VkDisplayModeKHR& pMode)
+extern VkResult vkCreateDisplayModeKHR(VkPhysicalDevice physicalDevice, VkDisplayKHR display, VkDisplayModeCreateInfoKHR* pCreateInfo, VkAllocationCallbacks* pAllocator, VkDisplayModeKHR* pMode)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkGetDisplayPlaneCapabilitiesKHR(VkPhysicalDevice physicalDevice, VkDisplayModeKHR mode, uint32 planeIndex, VkDisplayPlaneCapabilitiesKHR& pCapabilities)
+extern VkResult vkGetDisplayPlaneCapabilitiesKHR(VkPhysicalDevice physicalDevice, VkDisplayModeKHR mode, uint32 planeIndex, VkDisplayPlaneCapabilitiesKHR* pCapabilities)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkCreateDisplayPlaneSurfaceKHR(VkInstance instance, VkDisplaySurfaceCreateInfoKHR& pCreateInfo, VkAllocationCallbacks& pAllocator, VkSurfaceKHR& pSurface)
+extern VkResult vkCreateDisplayPlaneSurfaceKHR(VkInstance instance, VkDisplaySurfaceCreateInfoKHR* pCreateInfo, VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkCreateSharedSwapchainsKHR(VkDevice device, uint32 swapchainCount, VkSwapchainCreateInfoKHR& pCreateInfos, VkAllocationCallbacks& pAllocator, VkSwapchainKHR& pSwapchains)
+extern VkResult vkCreateSharedSwapchainsKHR(VkDevice device, uint32 swapchainCount, VkSwapchainCreateInfoKHR* pCreateInfos, VkAllocationCallbacks* pAllocator, VkSwapchainKHR* pSwapchains)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkDestroySurfaceKHR(VkInstance instance, VkSurfaceKHR surface, VkAllocationCallbacks& pAllocator)
+extern void vkDestroySurfaceKHR(VkInstance instance, VkSurfaceKHR surface, VkAllocationCallbacks* pAllocator)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkGetPhysicalDeviceSurfaceSupportKHR(VkPhysicalDevice physicalDevice, uint32 queueFamilyIndex, VkSurfaceKHR surface, VkBool32& pSupported)
+extern VkResult vkGetPhysicalDeviceSurfaceSupportKHR(VkPhysicalDevice physicalDevice, uint32 queueFamilyIndex, VkSurfaceKHR surface, VkBool32* pSupported)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkGetPhysicalDeviceSurfaceCapabilitiesKHR(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, VkSurfaceCapabilitiesKHR& pSurfaceCapabilities)
+extern VkResult vkGetPhysicalDeviceSurfaceCapabilitiesKHR(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, VkSurfaceCapabilitiesKHR* pSurfaceCapabilities)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkGetPhysicalDeviceSurfaceFormatsKHR(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, uint32& pSurfaceFormatCount, VkSurfaceFormatKHR& pSurfaceFormats)
+extern VkResult vkGetPhysicalDeviceSurfaceFormatsKHR(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, uint32* pSurfaceFormatCount, VkSurfaceFormatKHR* pSurfaceFormats)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkGetPhysicalDeviceSurfacePresentModesKHR(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, uint32& pPresentModeCount, VkPresentModeKHR& pPresentModes)
+extern VkResult vkGetPhysicalDeviceSurfacePresentModesKHR(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, uint32* pPresentModeCount, VkPresentModeKHR* pPresentModes)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkCreateSwapchainKHR(VkDevice device, VkSwapchainCreateInfoKHR& pCreateInfo, VkAllocationCallbacks& pAllocator, VkSwapchainKHR& pSwapchain)
+extern VkResult vkCreateSwapchainKHR(VkDevice device, VkSwapchainCreateInfoKHR* pCreateInfo, VkAllocationCallbacks* pAllocator, VkSwapchainKHR* pSwapchain)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkDestroySwapchainKHR(VkDevice device, VkSwapchainKHR swapchain, VkAllocationCallbacks& pAllocator)
+extern void vkDestroySwapchainKHR(VkDevice device, VkSwapchainKHR swapchain, VkAllocationCallbacks* pAllocator)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkGetSwapchainImagesKHR(VkDevice device, VkSwapchainKHR swapchain, uint32& pSwapchainImageCount, VkImage& pSwapchainImages)
+extern VkResult vkGetSwapchainImagesKHR(VkDevice device, VkSwapchainKHR swapchain, uint32* pSwapchainImageCount, VkImage* pSwapchainImages)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkAcquireNextImageKHR(VkDevice device, VkSwapchainKHR swapchain, uint64 timeout, VkSemaphore semaphore, VkFence fence, uint32& pImageIndex)
+extern VkResult vkAcquireNextImageKHR(VkDevice device, VkSwapchainKHR swapchain, uint64 timeout, VkSemaphore semaphore, VkFence fence, uint32* pImageIndex)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkQueuePresentKHR(VkQueue queue, VkPresentInfoKHR& pPresentInfo)
+extern VkResult vkQueuePresentKHR(VkQueue queue, VkPresentInfoKHR* pPresentInfo)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkCreateViSurfaceNN(VkInstance instance, VkViSurfaceCreateInfoNN& pCreateInfo, VkAllocationCallbacks& pAllocator, VkSurfaceKHR& pSurface)
+extern VkResult vkCreateViSurfaceNN(VkInstance instance, VkViSurfaceCreateInfoNN* pCreateInfo, VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkCreateWaylandSurfaceKHR(VkInstance instance, VkWaylandSurfaceCreateInfoKHR& pCreateInfo, VkAllocationCallbacks& pAllocator, VkSurfaceKHR& pSurface)
+extern VkResult vkCreateWaylandSurfaceKHR(VkInstance instance, VkWaylandSurfaceCreateInfoKHR* pCreateInfo, VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkBool32 vkGetPhysicalDeviceWaylandPresentationSupportKHR(VkPhysicalDevice physicalDevice, uint32 queueFamilyIndex, wl_display& display)
+extern VkBool32 vkGetPhysicalDeviceWaylandPresentationSupportKHR(VkPhysicalDevice physicalDevice, uint32 queueFamilyIndex, wl_display* display)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkCreateWin32SurfaceKHR(VkInstance instance, VkWin32SurfaceCreateInfoKHR& pCreateInfo, VkAllocationCallbacks& pAllocator, VkSurfaceKHR& pSurface)
+extern VkResult vkCreateWin32SurfaceKHR(VkInstance instance, VkWin32SurfaceCreateInfoKHR* pCreateInfo, VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
 extern VkBool32 vkGetPhysicalDeviceWin32PresentationSupportKHR(VkPhysicalDevice physicalDevice, uint32 queueFamilyIndex)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkCreateXlibSurfaceKHR(VkInstance instance, VkXlibSurfaceCreateInfoKHR& pCreateInfo, VkAllocationCallbacks& pAllocator, VkSurfaceKHR& pSurface)
+extern VkResult vkCreateXlibSurfaceKHR(VkInstance instance, VkXlibSurfaceCreateInfoKHR* pCreateInfo, VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkBool32 vkGetPhysicalDeviceXlibPresentationSupportKHR(VkPhysicalDevice physicalDevice, uint32 queueFamilyIndex, Display& dpy, VisualID visualID)
+extern VkBool32 vkGetPhysicalDeviceXlibPresentationSupportKHR(VkPhysicalDevice physicalDevice, uint32 queueFamilyIndex, Display* dpy, VisualID visualID)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkCreateXcbSurfaceKHR(VkInstance instance, VkXcbSurfaceCreateInfoKHR& pCreateInfo, VkAllocationCallbacks& pAllocator, VkSurfaceKHR& pSurface)
+extern VkResult vkCreateXcbSurfaceKHR(VkInstance instance, VkXcbSurfaceCreateInfoKHR* pCreateInfo, VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkBool32 vkGetPhysicalDeviceXcbPresentationSupportKHR(VkPhysicalDevice physicalDevice, uint32 queueFamilyIndex, xcb_connection_t& connection, xcb_visualid_t visual_id)
+extern VkBool32 vkGetPhysicalDeviceXcbPresentationSupportKHR(VkPhysicalDevice physicalDevice, uint32 queueFamilyIndex, xcb_connection_t* connection, xcb_visualid_t visual_id)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkCreateImagePipeSurfaceFUCHSIA(VkInstance instance, VkImagePipeSurfaceCreateInfoFUCHSIA& pCreateInfo, VkAllocationCallbacks& pAllocator, VkSurfaceKHR& pSurface)
+extern VkResult vkCreateImagePipeSurfaceFUCHSIA(VkInstance instance, VkImagePipeSurfaceCreateInfoFUCHSIA* pCreateInfo, VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkCreateStreamDescriptorSurfaceGGP(VkInstance instance, VkStreamDescriptorSurfaceCreateInfoGGP& pCreateInfo, VkAllocationCallbacks& pAllocator, VkSurfaceKHR& pSurface)
+extern VkResult vkCreateStreamDescriptorSurfaceGGP(VkInstance instance, VkStreamDescriptorSurfaceCreateInfoGGP* pCreateInfo, VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkCreateDebugReportCallbackEXT(VkInstance instance, VkDebugReportCallbackCreateInfoEXT& pCreateInfo, VkAllocationCallbacks& pAllocator, VkDebugReportCallbackEXT& pCallback)
+extern VkResult vkCreateDebugReportCallbackEXT(VkInstance instance, VkDebugReportCallbackCreateInfoEXT* pCreateInfo, VkAllocationCallbacks* pAllocator, VkDebugReportCallbackEXT* pCallback)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkDestroyDebugReportCallbackEXT(VkInstance instance, VkDebugReportCallbackEXT callback, VkAllocationCallbacks& pAllocator)
+extern void vkDestroyDebugReportCallbackEXT(VkInstance instance, VkDebugReportCallbackEXT callback, VkAllocationCallbacks* pAllocator)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkDebugReportMessageEXT(VkInstance instance, VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objectType, uint64 object, unativeint location, int messageCode, char& pLayerPrefix, char& pMessage)
+extern void vkDebugReportMessageEXT(VkInstance instance, VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objectType, uint64 object, unativeint location, int messageCode, char* pLayerPrefix, char* pMessage)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkDebugMarkerSetObjectNameEXT(VkDevice device, VkDebugMarkerObjectNameInfoEXT& pNameInfo)
+extern VkResult vkDebugMarkerSetObjectNameEXT(VkDevice device, VkDebugMarkerObjectNameInfoEXT* pNameInfo)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkDebugMarkerSetObjectTagEXT(VkDevice device, VkDebugMarkerObjectTagInfoEXT& pTagInfo)
+extern VkResult vkDebugMarkerSetObjectTagEXT(VkDevice device, VkDebugMarkerObjectTagInfoEXT* pTagInfo)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkCmdDebugMarkerBeginEXT(VkCommandBuffer commandBuffer, VkDebugMarkerMarkerInfoEXT& pMarkerInfo)
+extern void vkCmdDebugMarkerBeginEXT(VkCommandBuffer commandBuffer, VkDebugMarkerMarkerInfoEXT* pMarkerInfo)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
 extern void vkCmdDebugMarkerEndEXT(VkCommandBuffer commandBuffer)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkCmdDebugMarkerInsertEXT(VkCommandBuffer commandBuffer, VkDebugMarkerMarkerInfoEXT& pMarkerInfo)
+extern void vkCmdDebugMarkerInsertEXT(VkCommandBuffer commandBuffer, VkDebugMarkerMarkerInfoEXT* pMarkerInfo)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkGetPhysicalDeviceExternalImageFormatPropertiesNV(VkPhysicalDevice physicalDevice, VkFormat format, VkImageType typ, VkImageTiling tiling, VkImageUsageFlags usage, VkImageCreateFlags flags, VkExternalMemoryHandleTypeFlagsNV externalHandleType, VkExternalImageFormatPropertiesNV& pExternalImageFormatProperties)
+extern VkResult vkGetPhysicalDeviceExternalImageFormatPropertiesNV(VkPhysicalDevice physicalDevice, VkFormat format, VkImageType typ, VkImageTiling tiling, VkImageUsageFlags usage, VkImageCreateFlags flags, VkExternalMemoryHandleTypeFlagsNV externalHandleType, VkExternalImageFormatPropertiesNV* pExternalImageFormatProperties)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkGetMemoryWin32HandleNV(VkDevice device, VkDeviceMemory memory, VkExternalMemoryHandleTypeFlagsNV handleType, HANDLE& pHandle)
+extern VkResult vkGetMemoryWin32HandleNV(VkDevice device, VkDeviceMemory memory, VkExternalMemoryHandleTypeFlagsNV handleType, HANDLE* pHandle)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkCmdProcessCommandsNVX(VkCommandBuffer commandBuffer, VkCmdProcessCommandsInfoNVX& pProcessCommandsInfo)
+extern void vkCmdProcessCommandsNVX(VkCommandBuffer commandBuffer, VkCmdProcessCommandsInfoNVX* pProcessCommandsInfo)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkCmdReserveSpaceForCommandsNVX(VkCommandBuffer commandBuffer, VkCmdReserveSpaceForCommandsInfoNVX& pReserveSpaceInfo)
+extern void vkCmdReserveSpaceForCommandsNVX(VkCommandBuffer commandBuffer, VkCmdReserveSpaceForCommandsInfoNVX* pReserveSpaceInfo)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkCreateIndirectCommandsLayoutNVX(VkDevice device, VkIndirectCommandsLayoutCreateInfoNVX& pCreateInfo, VkAllocationCallbacks& pAllocator, VkIndirectCommandsLayoutNVX& pIndirectCommandsLayout)
+extern VkResult vkCreateIndirectCommandsLayoutNVX(VkDevice device, VkIndirectCommandsLayoutCreateInfoNVX* pCreateInfo, VkAllocationCallbacks* pAllocator, VkIndirectCommandsLayoutNVX* pIndirectCommandsLayout)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkDestroyIndirectCommandsLayoutNVX(VkDevice device, VkIndirectCommandsLayoutNVX indirectCommandsLayout, VkAllocationCallbacks& pAllocator)
+extern void vkDestroyIndirectCommandsLayoutNVX(VkDevice device, VkIndirectCommandsLayoutNVX indirectCommandsLayout, VkAllocationCallbacks* pAllocator)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkCreateObjectTableNVX(VkDevice device, VkObjectTableCreateInfoNVX& pCreateInfo, VkAllocationCallbacks& pAllocator, VkObjectTableNVX& pObjectTable)
+extern VkResult vkCreateObjectTableNVX(VkDevice device, VkObjectTableCreateInfoNVX* pCreateInfo, VkAllocationCallbacks* pAllocator, VkObjectTableNVX* pObjectTable)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkDestroyObjectTableNVX(VkDevice device, VkObjectTableNVX objectTable, VkAllocationCallbacks& pAllocator)
+extern void vkDestroyObjectTableNVX(VkDevice device, VkObjectTableNVX objectTable, VkAllocationCallbacks* pAllocator)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkRegisterObjectsNVX(VkDevice device, VkObjectTableNVX objectTable, uint32 objectCount, VkObjectTableEntryNVX& ppObjectTableEntries, uint32& pObjectIndices)
+extern VkResult vkRegisterObjectsNVX(VkDevice device, VkObjectTableNVX objectTable, uint32 objectCount, VkObjectTableEntryNVX* ppObjectTableEntries, uint32* pObjectIndices)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkUnregisterObjectsNVX(VkDevice device, VkObjectTableNVX objectTable, uint32 objectCount, VkObjectEntryTypeNVX& pObjectEntryTypes, uint32& pObjectIndices)
+extern VkResult vkUnregisterObjectsNVX(VkDevice device, VkObjectTableNVX objectTable, uint32 objectCount, VkObjectEntryTypeNVX* pObjectEntryTypes, uint32* pObjectIndices)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkGetPhysicalDeviceGeneratedCommandsPropertiesNVX(VkPhysicalDevice physicalDevice, VkDeviceGeneratedCommandsFeaturesNVX& pFeatures, VkDeviceGeneratedCommandsLimitsNVX& pLimits)
+extern void vkGetPhysicalDeviceGeneratedCommandsPropertiesNVX(VkPhysicalDevice physicalDevice, VkDeviceGeneratedCommandsFeaturesNVX* pFeatures, VkDeviceGeneratedCommandsLimitsNVX* pLimits)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkGetPhysicalDeviceFeatures2(VkPhysicalDevice physicalDevice, VkPhysicalDeviceFeatures2& pFeatures)
+extern void vkGetPhysicalDeviceFeatures2(VkPhysicalDevice physicalDevice, VkPhysicalDeviceFeatures2* pFeatures)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkGetPhysicalDeviceProperties2(VkPhysicalDevice physicalDevice, VkPhysicalDeviceProperties2& pProperties)
+extern void vkGetPhysicalDeviceProperties2(VkPhysicalDevice physicalDevice, VkPhysicalDeviceProperties2* pProperties)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkGetPhysicalDeviceFormatProperties2(VkPhysicalDevice physicalDevice, VkFormat format, VkFormatProperties2& pFormatProperties)
+extern void vkGetPhysicalDeviceFormatProperties2(VkPhysicalDevice physicalDevice, VkFormat format, VkFormatProperties2* pFormatProperties)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkGetPhysicalDeviceImageFormatProperties2(VkPhysicalDevice physicalDevice, VkPhysicalDeviceImageFormatInfo2& pImageFormatInfo, VkImageFormatProperties2& pImageFormatProperties)
+extern VkResult vkGetPhysicalDeviceImageFormatProperties2(VkPhysicalDevice physicalDevice, VkPhysicalDeviceImageFormatInfo2* pImageFormatInfo, VkImageFormatProperties2* pImageFormatProperties)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkGetPhysicalDeviceQueueFamilyProperties2(VkPhysicalDevice physicalDevice, uint32& pQueueFamilyPropertyCount, VkQueueFamilyProperties2& pQueueFamilyProperties)
+extern void vkGetPhysicalDeviceQueueFamilyProperties2(VkPhysicalDevice physicalDevice, uint32* pQueueFamilyPropertyCount, VkQueueFamilyProperties2* pQueueFamilyProperties)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkGetPhysicalDeviceMemoryProperties2(VkPhysicalDevice physicalDevice, VkPhysicalDeviceMemoryProperties2& pMemoryProperties)
+extern void vkGetPhysicalDeviceMemoryProperties2(VkPhysicalDevice physicalDevice, VkPhysicalDeviceMemoryProperties2* pMemoryProperties)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkGetPhysicalDeviceSparseImageFormatProperties2(VkPhysicalDevice physicalDevice, VkPhysicalDeviceSparseImageFormatInfo2& pFormatInfo, uint32& pPropertyCount, VkSparseImageFormatProperties2& pProperties)
+extern void vkGetPhysicalDeviceSparseImageFormatProperties2(VkPhysicalDevice physicalDevice, VkPhysicalDeviceSparseImageFormatInfo2* pFormatInfo, uint32* pPropertyCount, VkSparseImageFormatProperties2* pProperties)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkCmdPushDescriptorSetKHR(VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipelineLayout layout, uint32 set, uint32 descriptorWriteCount, VkWriteDescriptorSet& pDescriptorWrites)
+extern void vkCmdPushDescriptorSetKHR(VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipelineLayout layout, uint32 set, uint32 descriptorWriteCount, VkWriteDescriptorSet* pDescriptorWrites)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
 extern void vkTrimCommandPool(VkDevice device, VkCommandPool commandPool, VkCommandPoolTrimFlags flags)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkGetPhysicalDeviceExternalBufferProperties(VkPhysicalDevice physicalDevice, VkPhysicalDeviceExternalBufferInfo& pExternalBufferInfo, VkExternalBufferProperties& pExternalBufferProperties)
+extern void vkGetPhysicalDeviceExternalBufferProperties(VkPhysicalDevice physicalDevice, VkPhysicalDeviceExternalBufferInfo* pExternalBufferInfo, VkExternalBufferProperties* pExternalBufferProperties)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkGetMemoryWin32HandleKHR(VkDevice device, VkMemoryGetWin32HandleInfoKHR& pGetWin32HandleInfo, HANDLE& pHandle)
+extern VkResult vkGetMemoryWin32HandleKHR(VkDevice device, VkMemoryGetWin32HandleInfoKHR* pGetWin32HandleInfo, HANDLE* pHandle)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkGetMemoryWin32HandlePropertiesKHR(VkDevice device, VkExternalMemoryHandleTypeFlagBits handleType, HANDLE handle, VkMemoryWin32HandlePropertiesKHR& pMemoryWin32HandleProperties)
+extern VkResult vkGetMemoryWin32HandlePropertiesKHR(VkDevice device, VkExternalMemoryHandleTypeFlagBits handleType, HANDLE handle, VkMemoryWin32HandlePropertiesKHR* pMemoryWin32HandleProperties)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkGetMemoryFdKHR(VkDevice device, VkMemoryGetFdInfoKHR& pGetFdInfo, int& pFd)
+extern VkResult vkGetMemoryFdKHR(VkDevice device, VkMemoryGetFdInfoKHR* pGetFdInfo, int* pFd)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkGetMemoryFdPropertiesKHR(VkDevice device, VkExternalMemoryHandleTypeFlagBits handleType, int fd, VkMemoryFdPropertiesKHR& pMemoryFdProperties)
+extern VkResult vkGetMemoryFdPropertiesKHR(VkDevice device, VkExternalMemoryHandleTypeFlagBits handleType, int fd, VkMemoryFdPropertiesKHR* pMemoryFdProperties)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkGetPhysicalDeviceExternalSemaphoreProperties(VkPhysicalDevice physicalDevice, VkPhysicalDeviceExternalSemaphoreInfo& pExternalSemaphoreInfo, VkExternalSemaphoreProperties& pExternalSemaphoreProperties)
+extern void vkGetPhysicalDeviceExternalSemaphoreProperties(VkPhysicalDevice physicalDevice, VkPhysicalDeviceExternalSemaphoreInfo* pExternalSemaphoreInfo, VkExternalSemaphoreProperties* pExternalSemaphoreProperties)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkGetSemaphoreWin32HandleKHR(VkDevice device, VkSemaphoreGetWin32HandleInfoKHR& pGetWin32HandleInfo, HANDLE& pHandle)
+extern VkResult vkGetSemaphoreWin32HandleKHR(VkDevice device, VkSemaphoreGetWin32HandleInfoKHR* pGetWin32HandleInfo, HANDLE* pHandle)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkImportSemaphoreWin32HandleKHR(VkDevice device, VkImportSemaphoreWin32HandleInfoKHR& pImportSemaphoreWin32HandleInfo)
+extern VkResult vkImportSemaphoreWin32HandleKHR(VkDevice device, VkImportSemaphoreWin32HandleInfoKHR* pImportSemaphoreWin32HandleInfo)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkGetSemaphoreFdKHR(VkDevice device, VkSemaphoreGetFdInfoKHR& pGetFdInfo, int& pFd)
+extern VkResult vkGetSemaphoreFdKHR(VkDevice device, VkSemaphoreGetFdInfoKHR* pGetFdInfo, int* pFd)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkImportSemaphoreFdKHR(VkDevice device, VkImportSemaphoreFdInfoKHR& pImportSemaphoreFdInfo)
+extern VkResult vkImportSemaphoreFdKHR(VkDevice device, VkImportSemaphoreFdInfoKHR* pImportSemaphoreFdInfo)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkGetPhysicalDeviceExternalFenceProperties(VkPhysicalDevice physicalDevice, VkPhysicalDeviceExternalFenceInfo& pExternalFenceInfo, VkExternalFenceProperties& pExternalFenceProperties)
+extern void vkGetPhysicalDeviceExternalFenceProperties(VkPhysicalDevice physicalDevice, VkPhysicalDeviceExternalFenceInfo* pExternalFenceInfo, VkExternalFenceProperties* pExternalFenceProperties)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkGetFenceWin32HandleKHR(VkDevice device, VkFenceGetWin32HandleInfoKHR& pGetWin32HandleInfo, HANDLE& pHandle)
+extern VkResult vkGetFenceWin32HandleKHR(VkDevice device, VkFenceGetWin32HandleInfoKHR* pGetWin32HandleInfo, HANDLE* pHandle)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkImportFenceWin32HandleKHR(VkDevice device, VkImportFenceWin32HandleInfoKHR& pImportFenceWin32HandleInfo)
+extern VkResult vkImportFenceWin32HandleKHR(VkDevice device, VkImportFenceWin32HandleInfoKHR* pImportFenceWin32HandleInfo)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkGetFenceFdKHR(VkDevice device, VkFenceGetFdInfoKHR& pGetFdInfo, int& pFd)
+extern VkResult vkGetFenceFdKHR(VkDevice device, VkFenceGetFdInfoKHR* pGetFdInfo, int* pFd)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkImportFenceFdKHR(VkDevice device, VkImportFenceFdInfoKHR& pImportFenceFdInfo)
+extern VkResult vkImportFenceFdKHR(VkDevice device, VkImportFenceFdInfoKHR* pImportFenceFdInfo)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
 extern VkResult vkReleaseDisplayEXT(VkPhysicalDevice physicalDevice, VkDisplayKHR display)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkAcquireXlibDisplayEXT(VkPhysicalDevice physicalDevice, Display& dpy, VkDisplayKHR display)
+extern VkResult vkAcquireXlibDisplayEXT(VkPhysicalDevice physicalDevice, Display* dpy, VkDisplayKHR display)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkGetRandROutputDisplayEXT(VkPhysicalDevice physicalDevice, Display& dpy, RROutput rrOutput, VkDisplayKHR& pDisplay)
+extern VkResult vkGetRandROutputDisplayEXT(VkPhysicalDevice physicalDevice, Display* dpy, RROutput rrOutput, VkDisplayKHR* pDisplay)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkDisplayPowerControlEXT(VkDevice device, VkDisplayKHR display, VkDisplayPowerInfoEXT& pDisplayPowerInfo)
+extern VkResult vkDisplayPowerControlEXT(VkDevice device, VkDisplayKHR display, VkDisplayPowerInfoEXT* pDisplayPowerInfo)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkRegisterDeviceEventEXT(VkDevice device, VkDeviceEventInfoEXT& pDeviceEventInfo, VkAllocationCallbacks& pAllocator, VkFence& pFence)
+extern VkResult vkRegisterDeviceEventEXT(VkDevice device, VkDeviceEventInfoEXT* pDeviceEventInfo, VkAllocationCallbacks* pAllocator, VkFence* pFence)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkRegisterDisplayEventEXT(VkDevice device, VkDisplayKHR display, VkDisplayEventInfoEXT& pDisplayEventInfo, VkAllocationCallbacks& pAllocator, VkFence& pFence)
+extern VkResult vkRegisterDisplayEventEXT(VkDevice device, VkDisplayKHR display, VkDisplayEventInfoEXT* pDisplayEventInfo, VkAllocationCallbacks* pAllocator, VkFence* pFence)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkGetSwapchainCounterEXT(VkDevice device, VkSwapchainKHR swapchain, VkSurfaceCounterFlagBitsEXT counter, uint64& pCounterValue)
+extern VkResult vkGetSwapchainCounterEXT(VkDevice device, VkSwapchainKHR swapchain, VkSurfaceCounterFlagBitsEXT counter, uint64* pCounterValue)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkGetPhysicalDeviceSurfaceCapabilities2EXT(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, VkSurfaceCapabilities2EXT& pSurfaceCapabilities)
+extern VkResult vkGetPhysicalDeviceSurfaceCapabilities2EXT(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, VkSurfaceCapabilities2EXT* pSurfaceCapabilities)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkEnumeratePhysicalDeviceGroups(VkInstance instance, uint32& pPhysicalDeviceGroupCount, VkPhysicalDeviceGroupProperties& pPhysicalDeviceGroupProperties)
+extern VkResult vkEnumeratePhysicalDeviceGroups(VkInstance instance, uint32* pPhysicalDeviceGroupCount, VkPhysicalDeviceGroupProperties* pPhysicalDeviceGroupProperties)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkGetDeviceGroupPeerMemoryFeatures(VkDevice device, uint32 heapIndex, uint32 localDeviceIndex, uint32 remoteDeviceIndex, VkPeerMemoryFeatureFlags& pPeerMemoryFeatures)
+extern void vkGetDeviceGroupPeerMemoryFeatures(VkDevice device, uint32 heapIndex, uint32 localDeviceIndex, uint32 remoteDeviceIndex, VkPeerMemoryFeatureFlags* pPeerMemoryFeatures)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkBindBufferMemory2(VkDevice device, uint32 bindInfoCount, VkBindBufferMemoryInfo& pBindInfos)
+extern VkResult vkBindBufferMemory2(VkDevice device, uint32 bindInfoCount, VkBindBufferMemoryInfo* pBindInfos)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkBindImageMemory2(VkDevice device, uint32 bindInfoCount, VkBindImageMemoryInfo& pBindInfos)
+extern VkResult vkBindImageMemory2(VkDevice device, uint32 bindInfoCount, VkBindImageMemoryInfo* pBindInfos)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
 extern void vkCmdSetDeviceMask(VkCommandBuffer commandBuffer, uint32 deviceMask)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkGetDeviceGroupPresentCapabilitiesKHR(VkDevice device, VkDeviceGroupPresentCapabilitiesKHR& pDeviceGroupPresentCapabilities)
+extern VkResult vkGetDeviceGroupPresentCapabilitiesKHR(VkDevice device, VkDeviceGroupPresentCapabilitiesKHR* pDeviceGroupPresentCapabilities)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkGetDeviceGroupSurfacePresentModesKHR(VkDevice device, VkSurfaceKHR surface, VkDeviceGroupPresentModeFlagsKHR& pModes)
+extern VkResult vkGetDeviceGroupSurfacePresentModesKHR(VkDevice device, VkSurfaceKHR surface, VkDeviceGroupPresentModeFlagsKHR* pModes)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkAcquireNextImage2KHR(VkDevice device, VkAcquireNextImageInfoKHR& pAcquireInfo, uint32& pImageIndex)
+extern VkResult vkAcquireNextImage2KHR(VkDevice device, VkAcquireNextImageInfoKHR* pAcquireInfo, uint32* pImageIndex)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
 extern void vkCmdDispatchBase(VkCommandBuffer commandBuffer, uint32 baseGroupX, uint32 baseGroupY, uint32 baseGroupZ, uint32 groupCountX, uint32 groupCountY, uint32 groupCountZ)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkGetPhysicalDevicePresentRectanglesKHR(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, uint32& pRectCount, VkRect2D& pRects)
+extern VkResult vkGetPhysicalDevicePresentRectanglesKHR(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, uint32* pRectCount, VkRect2D* pRects)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkCreateDescriptorUpdateTemplate(VkDevice device, VkDescriptorUpdateTemplateCreateInfo& pCreateInfo, VkAllocationCallbacks& pAllocator, VkDescriptorUpdateTemplate& pDescriptorUpdateTemplate)
+extern VkResult vkCreateDescriptorUpdateTemplate(VkDevice device, VkDescriptorUpdateTemplateCreateInfo* pCreateInfo, VkAllocationCallbacks* pAllocator, VkDescriptorUpdateTemplate* pDescriptorUpdateTemplate)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkDestroyDescriptorUpdateTemplate(VkDevice device, VkDescriptorUpdateTemplate descriptorUpdateTemplate, VkAllocationCallbacks& pAllocator)
+extern void vkDestroyDescriptorUpdateTemplate(VkDevice device, VkDescriptorUpdateTemplate descriptorUpdateTemplate, VkAllocationCallbacks* pAllocator)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
 extern void vkUpdateDescriptorSetWithTemplate(VkDevice device, VkDescriptorSet descriptorSet, VkDescriptorUpdateTemplate descriptorUpdateTemplate, void* pData)
@@ -7950,169 +10612,169 @@ extern void vkUpdateDescriptorSetWithTemplate(VkDevice device, VkDescriptorSet d
 extern void vkCmdPushDescriptorSetWithTemplateKHR(VkCommandBuffer commandBuffer, VkDescriptorUpdateTemplate descriptorUpdateTemplate, VkPipelineLayout layout, uint32 set, void* pData)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkSetHdrMetadataEXT(VkDevice device, uint32 swapchainCount, VkSwapchainKHR& pSwapchains, VkHdrMetadataEXT& pMetadata)
+extern void vkSetHdrMetadataEXT(VkDevice device, uint32 swapchainCount, VkSwapchainKHR* pSwapchains, VkHdrMetadataEXT* pMetadata)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
 extern VkResult vkGetSwapchainStatusKHR(VkDevice device, VkSwapchainKHR swapchain)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkGetRefreshCycleDurationGOOGLE(VkDevice device, VkSwapchainKHR swapchain, VkRefreshCycleDurationGOOGLE& pDisplayTimingProperties)
+extern VkResult vkGetRefreshCycleDurationGOOGLE(VkDevice device, VkSwapchainKHR swapchain, VkRefreshCycleDurationGOOGLE* pDisplayTimingProperties)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkGetPastPresentationTimingGOOGLE(VkDevice device, VkSwapchainKHR swapchain, uint32& pPresentationTimingCount, VkPastPresentationTimingGOOGLE& pPresentationTimings)
+extern VkResult vkGetPastPresentationTimingGOOGLE(VkDevice device, VkSwapchainKHR swapchain, uint32* pPresentationTimingCount, VkPastPresentationTimingGOOGLE* pPresentationTimings)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkCreateIOSSurfaceMVK(VkInstance instance, VkIOSSurfaceCreateInfoMVK& pCreateInfo, VkAllocationCallbacks& pAllocator, VkSurfaceKHR& pSurface)
+extern VkResult vkCreateIOSSurfaceMVK(VkInstance instance, VkIOSSurfaceCreateInfoMVK* pCreateInfo, VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkCreateMacOSSurfaceMVK(VkInstance instance, VkMacOSSurfaceCreateInfoMVK& pCreateInfo, VkAllocationCallbacks& pAllocator, VkSurfaceKHR& pSurface)
+extern VkResult vkCreateMacOSSurfaceMVK(VkInstance instance, VkMacOSSurfaceCreateInfoMVK* pCreateInfo, VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkCreateMetalSurfaceEXT(VkInstance instance, VkMetalSurfaceCreateInfoEXT& pCreateInfo, VkAllocationCallbacks& pAllocator, VkSurfaceKHR& pSurface)
+extern VkResult vkCreateMetalSurfaceEXT(VkInstance instance, VkMetalSurfaceCreateInfoEXT* pCreateInfo, VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkCmdSetViewportWScalingNV(VkCommandBuffer commandBuffer, uint32 firstViewport, uint32 viewportCount, VkViewportWScalingNV& pViewportWScalings)
+extern void vkCmdSetViewportWScalingNV(VkCommandBuffer commandBuffer, uint32 firstViewport, uint32 viewportCount, VkViewportWScalingNV* pViewportWScalings)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkCmdSetDiscardRectangleEXT(VkCommandBuffer commandBuffer, uint32 firstDiscardRectangle, uint32 discardRectangleCount, VkRect2D& pDiscardRectangles)
+extern void vkCmdSetDiscardRectangleEXT(VkCommandBuffer commandBuffer, uint32 firstDiscardRectangle, uint32 discardRectangleCount, VkRect2D* pDiscardRectangles)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkCmdSetSampleLocationsEXT(VkCommandBuffer commandBuffer, VkSampleLocationsInfoEXT& pSampleLocationsInfo)
+extern void vkCmdSetSampleLocationsEXT(VkCommandBuffer commandBuffer, VkSampleLocationsInfoEXT* pSampleLocationsInfo)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkGetPhysicalDeviceMultisamplePropertiesEXT(VkPhysicalDevice physicalDevice, VkSampleCountFlagBits samples, VkMultisamplePropertiesEXT& pMultisampleProperties)
+extern void vkGetPhysicalDeviceMultisamplePropertiesEXT(VkPhysicalDevice physicalDevice, VkSampleCountFlagBits samples, VkMultisamplePropertiesEXT* pMultisampleProperties)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkGetPhysicalDeviceSurfaceCapabilities2KHR(VkPhysicalDevice physicalDevice, VkPhysicalDeviceSurfaceInfo2KHR& pSurfaceInfo, VkSurfaceCapabilities2KHR& pSurfaceCapabilities)
+extern VkResult vkGetPhysicalDeviceSurfaceCapabilities2KHR(VkPhysicalDevice physicalDevice, VkPhysicalDeviceSurfaceInfo2KHR* pSurfaceInfo, VkSurfaceCapabilities2KHR* pSurfaceCapabilities)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkGetPhysicalDeviceSurfaceFormats2KHR(VkPhysicalDevice physicalDevice, VkPhysicalDeviceSurfaceInfo2KHR& pSurfaceInfo, uint32& pSurfaceFormatCount, VkSurfaceFormat2KHR& pSurfaceFormats)
+extern VkResult vkGetPhysicalDeviceSurfaceFormats2KHR(VkPhysicalDevice physicalDevice, VkPhysicalDeviceSurfaceInfo2KHR* pSurfaceInfo, uint32* pSurfaceFormatCount, VkSurfaceFormat2KHR* pSurfaceFormats)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkGetPhysicalDeviceDisplayProperties2KHR(VkPhysicalDevice physicalDevice, uint32& pPropertyCount, VkDisplayProperties2KHR& pProperties)
+extern VkResult vkGetPhysicalDeviceDisplayProperties2KHR(VkPhysicalDevice physicalDevice, uint32* pPropertyCount, VkDisplayProperties2KHR* pProperties)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkGetPhysicalDeviceDisplayPlaneProperties2KHR(VkPhysicalDevice physicalDevice, uint32& pPropertyCount, VkDisplayPlaneProperties2KHR& pProperties)
+extern VkResult vkGetPhysicalDeviceDisplayPlaneProperties2KHR(VkPhysicalDevice physicalDevice, uint32* pPropertyCount, VkDisplayPlaneProperties2KHR* pProperties)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkGetDisplayModeProperties2KHR(VkPhysicalDevice physicalDevice, VkDisplayKHR display, uint32& pPropertyCount, VkDisplayModeProperties2KHR& pProperties)
+extern VkResult vkGetDisplayModeProperties2KHR(VkPhysicalDevice physicalDevice, VkDisplayKHR display, uint32* pPropertyCount, VkDisplayModeProperties2KHR* pProperties)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkGetDisplayPlaneCapabilities2KHR(VkPhysicalDevice physicalDevice, VkDisplayPlaneInfo2KHR& pDisplayPlaneInfo, VkDisplayPlaneCapabilities2KHR& pCapabilities)
+extern VkResult vkGetDisplayPlaneCapabilities2KHR(VkPhysicalDevice physicalDevice, VkDisplayPlaneInfo2KHR* pDisplayPlaneInfo, VkDisplayPlaneCapabilities2KHR* pCapabilities)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkGetBufferMemoryRequirements2(VkDevice device, VkBufferMemoryRequirementsInfo2& pInfo, VkMemoryRequirements2& pMemoryRequirements)
+extern void vkGetBufferMemoryRequirements2(VkDevice device, VkBufferMemoryRequirementsInfo2* pInfo, VkMemoryRequirements2* pMemoryRequirements)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkGetImageMemoryRequirements2(VkDevice device, VkImageMemoryRequirementsInfo2& pInfo, VkMemoryRequirements2& pMemoryRequirements)
+extern void vkGetImageMemoryRequirements2(VkDevice device, VkImageMemoryRequirementsInfo2* pInfo, VkMemoryRequirements2* pMemoryRequirements)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkGetImageSparseMemoryRequirements2(VkDevice device, VkImageSparseMemoryRequirementsInfo2& pInfo, uint32& pSparseMemoryRequirementCount, VkSparseImageMemoryRequirements2& pSparseMemoryRequirements)
+extern void vkGetImageSparseMemoryRequirements2(VkDevice device, VkImageSparseMemoryRequirementsInfo2* pInfo, uint32* pSparseMemoryRequirementCount, VkSparseImageMemoryRequirements2* pSparseMemoryRequirements)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkCreateSamplerYcbcrConversion(VkDevice device, VkSamplerYcbcrConversionCreateInfo& pCreateInfo, VkAllocationCallbacks& pAllocator, VkSamplerYcbcrConversion& pYcbcrConversion)
+extern VkResult vkCreateSamplerYcbcrConversion(VkDevice device, VkSamplerYcbcrConversionCreateInfo* pCreateInfo, VkAllocationCallbacks* pAllocator, VkSamplerYcbcrConversion* pYcbcrConversion)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkDestroySamplerYcbcrConversion(VkDevice device, VkSamplerYcbcrConversion ycbcrConversion, VkAllocationCallbacks& pAllocator)
+extern void vkDestroySamplerYcbcrConversion(VkDevice device, VkSamplerYcbcrConversion ycbcrConversion, VkAllocationCallbacks* pAllocator)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkGetDeviceQueue2(VkDevice device, VkDeviceQueueInfo2& pQueueInfo, VkQueue& pQueue)
+extern void vkGetDeviceQueue2(VkDevice device, VkDeviceQueueInfo2* pQueueInfo, VkQueue* pQueue)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkCreateValidationCacheEXT(VkDevice device, VkValidationCacheCreateInfoEXT& pCreateInfo, VkAllocationCallbacks& pAllocator, VkValidationCacheEXT& pValidationCache)
+extern VkResult vkCreateValidationCacheEXT(VkDevice device, VkValidationCacheCreateInfoEXT* pCreateInfo, VkAllocationCallbacks* pAllocator, VkValidationCacheEXT* pValidationCache)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkDestroyValidationCacheEXT(VkDevice device, VkValidationCacheEXT validationCache, VkAllocationCallbacks& pAllocator)
+extern void vkDestroyValidationCacheEXT(VkDevice device, VkValidationCacheEXT validationCache, VkAllocationCallbacks* pAllocator)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkGetValidationCacheDataEXT(VkDevice device, VkValidationCacheEXT validationCache, unativeint& pDataSize, void* pData)
+extern VkResult vkGetValidationCacheDataEXT(VkDevice device, VkValidationCacheEXT validationCache, unativeint* pDataSize, void* pData)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkMergeValidationCachesEXT(VkDevice device, VkValidationCacheEXT dstCache, uint32 srcCacheCount, VkValidationCacheEXT& pSrcCaches)
+extern VkResult vkMergeValidationCachesEXT(VkDevice device, VkValidationCacheEXT dstCache, uint32 srcCacheCount, VkValidationCacheEXT* pSrcCaches)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkGetDescriptorSetLayoutSupport(VkDevice device, VkDescriptorSetLayoutCreateInfo& pCreateInfo, VkDescriptorSetLayoutSupport& pSupport)
+extern void vkGetDescriptorSetLayoutSupport(VkDevice device, VkDescriptorSetLayoutCreateInfo* pCreateInfo, VkDescriptorSetLayoutSupport* pSupport)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkGetSwapchainGrallocUsageANDROID(VkDevice device, VkFormat format, VkImageUsageFlags imageUsage, int& grallocUsage)
+extern VkResult vkGetSwapchainGrallocUsageANDROID(VkDevice device, VkFormat format, VkImageUsageFlags imageUsage, int* grallocUsage)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkGetSwapchainGrallocUsage2ANDROID(VkDevice device, VkFormat format, VkImageUsageFlags imageUsage, VkSwapchainImageUsageFlagsANDROID swapchainImageUsage, uint64& grallocConsumerUsage, uint64& grallocProducerUsage)
+extern VkResult vkGetSwapchainGrallocUsage2ANDROID(VkDevice device, VkFormat format, VkImageUsageFlags imageUsage, VkSwapchainImageUsageFlagsANDROID swapchainImageUsage, uint64* grallocConsumerUsage, uint64* grallocProducerUsage)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
 extern VkResult vkAcquireImageANDROID(VkDevice device, VkImage image, int nativeFenceFd, VkSemaphore semaphore, VkFence fence)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkQueueSignalReleaseImageANDROID(VkQueue queue, uint32 waitSemaphoreCount, VkSemaphore& pWaitSemaphores, VkImage image, int& pNativeFenceFd)
+extern VkResult vkQueueSignalReleaseImageANDROID(VkQueue queue, uint32 waitSemaphoreCount, VkSemaphore* pWaitSemaphores, VkImage image, int* pNativeFenceFd)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkGetShaderInfoAMD(VkDevice device, VkPipeline pipeline, VkShaderStageFlagBits shaderStage, VkShaderInfoTypeAMD infoType, unativeint& pInfoSize, void* pInfo)
+extern VkResult vkGetShaderInfoAMD(VkDevice device, VkPipeline pipeline, VkShaderStageFlagBits shaderStage, VkShaderInfoTypeAMD infoType, unativeint* pInfoSize, void* pInfo)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
 extern void vkSetLocalDimmingAMD(VkDevice device, VkSwapchainKHR swapChain, VkBool32 localDimmingEnable)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkGetPhysicalDeviceCalibrateableTimeDomainsEXT(VkPhysicalDevice physicalDevice, uint32& pTimeDomainCount, VkTimeDomainEXT& pTimeDomains)
+extern VkResult vkGetPhysicalDeviceCalibrateableTimeDomainsEXT(VkPhysicalDevice physicalDevice, uint32* pTimeDomainCount, VkTimeDomainEXT* pTimeDomains)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkGetCalibratedTimestampsEXT(VkDevice device, uint32 timestampCount, VkCalibratedTimestampInfoEXT& pTimestampInfos, uint64& pTimestamps, uint64& pMaxDeviation)
+extern VkResult vkGetCalibratedTimestampsEXT(VkDevice device, uint32 timestampCount, VkCalibratedTimestampInfoEXT* pTimestampInfos, uint64* pTimestamps, uint64* pMaxDeviation)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkSetDebugUtilsObjectNameEXT(VkDevice device, VkDebugUtilsObjectNameInfoEXT& pNameInfo)
+extern VkResult vkSetDebugUtilsObjectNameEXT(VkDevice device, VkDebugUtilsObjectNameInfoEXT* pNameInfo)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkSetDebugUtilsObjectTagEXT(VkDevice device, VkDebugUtilsObjectTagInfoEXT& pTagInfo)
+extern VkResult vkSetDebugUtilsObjectTagEXT(VkDevice device, VkDebugUtilsObjectTagInfoEXT* pTagInfo)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkQueueBeginDebugUtilsLabelEXT(VkQueue queue, VkDebugUtilsLabelEXT& pLabelInfo)
+extern void vkQueueBeginDebugUtilsLabelEXT(VkQueue queue, VkDebugUtilsLabelEXT* pLabelInfo)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
 extern void vkQueueEndDebugUtilsLabelEXT(VkQueue queue)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkQueueInsertDebugUtilsLabelEXT(VkQueue queue, VkDebugUtilsLabelEXT& pLabelInfo)
+extern void vkQueueInsertDebugUtilsLabelEXT(VkQueue queue, VkDebugUtilsLabelEXT* pLabelInfo)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkCmdBeginDebugUtilsLabelEXT(VkCommandBuffer commandBuffer, VkDebugUtilsLabelEXT& pLabelInfo)
+extern void vkCmdBeginDebugUtilsLabelEXT(VkCommandBuffer commandBuffer, VkDebugUtilsLabelEXT* pLabelInfo)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
 extern void vkCmdEndDebugUtilsLabelEXT(VkCommandBuffer commandBuffer)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkCmdInsertDebugUtilsLabelEXT(VkCommandBuffer commandBuffer, VkDebugUtilsLabelEXT& pLabelInfo)
+extern void vkCmdInsertDebugUtilsLabelEXT(VkCommandBuffer commandBuffer, VkDebugUtilsLabelEXT* pLabelInfo)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkCreateDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerCreateInfoEXT& pCreateInfo, VkAllocationCallbacks& pAllocator, VkDebugUtilsMessengerEXT& pMessenger)
+extern VkResult vkCreateDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pMessenger)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkDestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT messenger, VkAllocationCallbacks& pAllocator)
+extern void vkDestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT messenger, VkAllocationCallbacks* pAllocator)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkSubmitDebugUtilsMessageEXT(VkInstance instance, VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageTypes, VkDebugUtilsMessengerCallbackDataEXT& pCallbackData)
+extern void vkSubmitDebugUtilsMessageEXT(VkInstance instance, VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageTypes, VkDebugUtilsMessengerCallbackDataEXT* pCallbackData)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkGetMemoryHostPointerPropertiesEXT(VkDevice device, VkExternalMemoryHandleTypeFlagBits handleType, void* pHostPointer, VkMemoryHostPointerPropertiesEXT& pMemoryHostPointerProperties)
+extern VkResult vkGetMemoryHostPointerPropertiesEXT(VkDevice device, VkExternalMemoryHandleTypeFlagBits handleType, void* pHostPointer, VkMemoryHostPointerPropertiesEXT* pMemoryHostPointerProperties)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
 extern void vkCmdWriteBufferMarkerAMD(VkCommandBuffer commandBuffer, VkPipelineStageFlagBits pipelineStage, VkBuffer dstBuffer, VkDeviceSize dstOffset, uint32 marker)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkCreateRenderPass2KHR(VkDevice device, VkRenderPassCreateInfo2KHR& pCreateInfo, VkAllocationCallbacks& pAllocator, VkRenderPass& pRenderPass)
+extern VkResult vkCreateRenderPass2KHR(VkDevice device, VkRenderPassCreateInfo2KHR* pCreateInfo, VkAllocationCallbacks* pAllocator, VkRenderPass* pRenderPass)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkCmdBeginRenderPass2KHR(VkCommandBuffer commandBuffer, VkRenderPassBeginInfo& pRenderPassBegin, VkSubpassBeginInfoKHR& pSubpassBeginInfo)
+extern void vkCmdBeginRenderPass2KHR(VkCommandBuffer commandBuffer, VkRenderPassBeginInfo* pRenderPassBegin, VkSubpassBeginInfoKHR* pSubpassBeginInfo)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkCmdNextSubpass2KHR(VkCommandBuffer commandBuffer, VkSubpassBeginInfoKHR& pSubpassBeginInfo, VkSubpassEndInfoKHR& pSubpassEndInfo)
+extern void vkCmdNextSubpass2KHR(VkCommandBuffer commandBuffer, VkSubpassBeginInfoKHR* pSubpassBeginInfo, VkSubpassEndInfoKHR* pSubpassEndInfo)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkCmdEndRenderPass2KHR(VkCommandBuffer commandBuffer, VkSubpassEndInfoKHR& pSubpassEndInfo)
+extern void vkCmdEndRenderPass2KHR(VkCommandBuffer commandBuffer, VkSubpassEndInfoKHR* pSubpassEndInfo)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkGetAndroidHardwareBufferPropertiesANDROID(VkDevice device, AHardwareBuffer& buffer, VkAndroidHardwareBufferPropertiesANDROID& pProperties)
+extern VkResult vkGetAndroidHardwareBufferPropertiesANDROID(VkDevice device, AHardwareBuffer* buffer, VkAndroidHardwareBufferPropertiesANDROID* pProperties)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkGetMemoryAndroidHardwareBufferANDROID(VkDevice device, VkMemoryGetAndroidHardwareBufferInfoANDROID& pInfo, AHardwareBuffer& pBuffer)
+extern VkResult vkGetMemoryAndroidHardwareBufferANDROID(VkDevice device, VkMemoryGetAndroidHardwareBufferInfoANDROID* pInfo, AHardwareBuffer* pBuffer)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
 extern void vkCmdDrawIndirectCountKHR(VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, uint32 maxDrawCount, uint32 stride)
@@ -8124,16 +10786,16 @@ extern void vkCmdDrawIndexedIndirectCountKHR(VkCommandBuffer commandBuffer, VkBu
 extern void vkCmdSetCheckpointNV(VkCommandBuffer commandBuffer, void* pCheckpointMarker)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkGetQueueCheckpointDataNV(VkQueue queue, uint32& pCheckpointDataCount, VkCheckpointDataNV& pCheckpointData)
+extern void vkGetQueueCheckpointDataNV(VkQueue queue, uint32* pCheckpointDataCount, VkCheckpointDataNV* pCheckpointData)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkCmdBindTransformFeedbackBuffersEXT(VkCommandBuffer commandBuffer, uint32 firstBinding, uint32 bindingCount, VkBuffer& pBuffers, VkDeviceSize& pOffsets, VkDeviceSize& pSizes)
+extern void vkCmdBindTransformFeedbackBuffersEXT(VkCommandBuffer commandBuffer, uint32 firstBinding, uint32 bindingCount, VkBuffer* pBuffers, VkDeviceSize* pOffsets, VkDeviceSize* pSizes)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkCmdBeginTransformFeedbackEXT(VkCommandBuffer commandBuffer, uint32 firstCounterBuffer, uint32 counterBufferCount, VkBuffer& pCounterBuffers, VkDeviceSize& pCounterBufferOffsets)
+extern void vkCmdBeginTransformFeedbackEXT(VkCommandBuffer commandBuffer, uint32 firstCounterBuffer, uint32 counterBufferCount, VkBuffer* pCounterBuffers, VkDeviceSize* pCounterBufferOffsets)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkCmdEndTransformFeedbackEXT(VkCommandBuffer commandBuffer, uint32 firstCounterBuffer, uint32 counterBufferCount, VkBuffer& pCounterBuffers, VkDeviceSize& pCounterBufferOffsets)
+extern void vkCmdEndTransformFeedbackEXT(VkCommandBuffer commandBuffer, uint32 firstCounterBuffer, uint32 counterBufferCount, VkBuffer* pCounterBuffers, VkDeviceSize* pCounterBufferOffsets)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
 extern void vkCmdBeginQueryIndexedEXT(VkCommandBuffer commandBuffer, VkQueryPool queryPool, uint32 query, VkQueryControlFlags flags, uint32 index)
@@ -8145,16 +10807,16 @@ extern void vkCmdEndQueryIndexedEXT(VkCommandBuffer commandBuffer, VkQueryPool q
 extern void vkCmdDrawIndirectByteCountEXT(VkCommandBuffer commandBuffer, uint32 instanceCount, uint32 firstInstance, VkBuffer counterBuffer, VkDeviceSize counterBufferOffset, uint32 counterOffset, uint32 vertexStride)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkCmdSetExclusiveScissorNV(VkCommandBuffer commandBuffer, uint32 firstExclusiveScissor, uint32 exclusiveScissorCount, VkRect2D& pExclusiveScissors)
+extern void vkCmdSetExclusiveScissorNV(VkCommandBuffer commandBuffer, uint32 firstExclusiveScissor, uint32 exclusiveScissorCount, VkRect2D* pExclusiveScissors)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
 extern void vkCmdBindShadingRateImageNV(VkCommandBuffer commandBuffer, VkImageView imageView, VkImageLayout imageLayout)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkCmdSetViewportShadingRatePaletteNV(VkCommandBuffer commandBuffer, uint32 firstViewport, uint32 viewportCount, VkShadingRatePaletteNV& pShadingRatePalettes)
+extern void vkCmdSetViewportShadingRatePaletteNV(VkCommandBuffer commandBuffer, uint32 firstViewport, uint32 viewportCount, VkShadingRatePaletteNV* pShadingRatePalettes)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkCmdSetCoarseSampleOrderNV(VkCommandBuffer commandBuffer, VkCoarseSampleOrderTypeNV sampleOrderType, uint32 customSampleOrderCount, VkCoarseSampleOrderCustomNV& pCustomSampleOrders)
+extern void vkCmdSetCoarseSampleOrderNV(VkCommandBuffer commandBuffer, VkCoarseSampleOrderTypeNV sampleOrderType, uint32 customSampleOrderCount, VkCoarseSampleOrderCustomNV* pCustomSampleOrders)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
 extern void vkCmdDrawMeshTasksNV(VkCommandBuffer commandBuffer, uint32 taskCount, uint32 firstTask)
@@ -8169,25 +10831,25 @@ extern void vkCmdDrawMeshTasksIndirectCountNV(VkCommandBuffer commandBuffer, VkB
 extern VkResult vkCompileDeferredNV(VkDevice device, VkPipeline pipeline, uint32 shader)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkCreateAccelerationStructureNV(VkDevice device, VkAccelerationStructureCreateInfoNV& pCreateInfo, VkAllocationCallbacks& pAllocator, VkAccelerationStructureNV& pAccelerationStructure)
+extern VkResult vkCreateAccelerationStructureNV(VkDevice device, VkAccelerationStructureCreateInfoNV* pCreateInfo, VkAllocationCallbacks* pAllocator, VkAccelerationStructureNV* pAccelerationStructure)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkDestroyAccelerationStructureNV(VkDevice device, VkAccelerationStructureNV accelerationStructure, VkAllocationCallbacks& pAllocator)
+extern void vkDestroyAccelerationStructureNV(VkDevice device, VkAccelerationStructureNV accelerationStructure, VkAllocationCallbacks* pAllocator)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkGetAccelerationStructureMemoryRequirementsNV(VkDevice device, VkAccelerationStructureMemoryRequirementsInfoNV& pInfo, VkMemoryRequirements2KHR& pMemoryRequirements)
+extern void vkGetAccelerationStructureMemoryRequirementsNV(VkDevice device, VkAccelerationStructureMemoryRequirementsInfoNV* pInfo, VkMemoryRequirements2KHR* pMemoryRequirements)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkBindAccelerationStructureMemoryNV(VkDevice device, uint32 bindInfoCount, VkBindAccelerationStructureMemoryInfoNV& pBindInfos)
+extern VkResult vkBindAccelerationStructureMemoryNV(VkDevice device, uint32 bindInfoCount, VkBindAccelerationStructureMemoryInfoNV* pBindInfos)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
 extern void vkCmdCopyAccelerationStructureNV(VkCommandBuffer commandBuffer, VkAccelerationStructureNV dst, VkAccelerationStructureNV src, VkCopyAccelerationStructureModeNV mode)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkCmdWriteAccelerationStructuresPropertiesNV(VkCommandBuffer commandBuffer, uint32 accelerationStructureCount, VkAccelerationStructureNV& pAccelerationStructures, VkQueryType queryType, VkQueryPool queryPool, uint32 firstQuery)
+extern void vkCmdWriteAccelerationStructuresPropertiesNV(VkCommandBuffer commandBuffer, uint32 accelerationStructureCount, VkAccelerationStructureNV* pAccelerationStructures, VkQueryType queryType, VkQueryPool queryPool, uint32 firstQuery)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern void vkCmdBuildAccelerationStructureNV(VkCommandBuffer commandBuffer, VkAccelerationStructureInfoNV& pInfo, VkBuffer instanceData, VkDeviceSize instanceOffset, VkBool32 update, VkAccelerationStructureNV dst, VkAccelerationStructureNV src, VkBuffer scratch, VkDeviceSize scratchOffset)
+extern void vkCmdBuildAccelerationStructureNV(VkCommandBuffer commandBuffer, VkAccelerationStructureInfoNV* pInfo, VkBuffer instanceData, VkDeviceSize instanceOffset, VkBool32 update, VkAccelerationStructureNV dst, VkAccelerationStructureNV src, VkBuffer scratch, VkDeviceSize scratchOffset)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
 extern void vkCmdTraceRaysNV(VkCommandBuffer commandBuffer, VkBuffer raygenShaderBindingTableBuffer, VkDeviceSize raygenShaderBindingOffset, VkBuffer missShaderBindingTableBuffer, VkDeviceSize missShaderBindingOffset, VkDeviceSize missShaderBindingStride, VkBuffer hitShaderBindingTableBuffer, VkDeviceSize hitShaderBindingOffset, VkDeviceSize hitShaderBindingStride, VkBuffer callableShaderBindingTableBuffer, VkDeviceSize callableShaderBindingOffset, VkDeviceSize callableShaderBindingStride, uint32 width, uint32 height, uint32 depth)
@@ -8199,25 +10861,25 @@ extern VkResult vkGetRayTracingShaderGroupHandlesNV(VkDevice device, VkPipeline 
 extern VkResult vkGetAccelerationStructureHandleNV(VkDevice device, VkAccelerationStructureNV accelerationStructure, unativeint dataSize, void* pData)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkCreateRayTracingPipelinesNV(VkDevice device, VkPipelineCache pipelineCache, uint32 createInfoCount, VkRayTracingPipelineCreateInfoNV& pCreateInfos, VkAllocationCallbacks& pAllocator, VkPipeline& pPipelines)
+extern VkResult vkCreateRayTracingPipelinesNV(VkDevice device, VkPipelineCache pipelineCache, uint32 createInfoCount, VkRayTracingPipelineCreateInfoNV* pCreateInfos, VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkGetImageDrmFormatModifierPropertiesEXT(VkDevice device, VkImage image, VkImageDrmFormatModifierPropertiesEXT& pProperties)
+extern VkResult vkGetImageDrmFormatModifierPropertiesEXT(VkDevice device, VkImage image, VkImageDrmFormatModifierPropertiesEXT* pProperties)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkDeviceAddress vkGetBufferDeviceAddressEXT(VkDevice device, VkBufferDeviceAddressInfoEXT& pInfo)
+extern VkDeviceAddress vkGetBufferDeviceAddressEXT(VkDevice device, VkBufferDeviceAddressInfoEXT* pInfo)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkGetPhysicalDeviceCooperativeMatrixPropertiesNV(VkPhysicalDevice physicalDevice, uint32& pPropertyCount, VkCooperativeMatrixPropertiesNV& pProperties)
+extern VkResult vkGetPhysicalDeviceCooperativeMatrixPropertiesNV(VkPhysicalDevice physicalDevice, uint32* pPropertyCount, VkCooperativeMatrixPropertiesNV* pProperties)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern uint32 vkGetImageViewHandleNVX(VkDevice device, VkImageViewHandleInfoNVX& pInfo)
+extern uint32 vkGetImageViewHandleNVX(VkDevice device, VkImageViewHandleInfoNVX* pInfo)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkGetPhysicalDeviceSurfacePresentModes2EXT(VkPhysicalDevice physicalDevice, VkPhysicalDeviceSurfaceInfo2KHR& pSurfaceInfo, uint32& pPresentModeCount, VkPresentModeKHR& pPresentModes)
+extern VkResult vkGetPhysicalDeviceSurfacePresentModes2EXT(VkPhysicalDevice physicalDevice, VkPhysicalDeviceSurfaceInfo2KHR* pSurfaceInfo, uint32* pPresentModeCount, VkPresentModeKHR* pPresentModes)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkGetDeviceGroupSurfacePresentModes2EXT(VkDevice device, VkPhysicalDeviceSurfaceInfo2KHR& pSurfaceInfo, VkDeviceGroupPresentModeFlagsKHR& pModes)
+extern VkResult vkGetDeviceGroupSurfacePresentModes2EXT(VkDevice device, VkPhysicalDeviceSurfaceInfo2KHR* pSurfaceInfo, VkDeviceGroupPresentModeFlagsKHR* pModes)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
 extern VkResult vkAcquireFullScreenExclusiveModeEXT(VkDevice device, VkSwapchainKHR swapchain)
@@ -8226,28 +10888,28 @@ extern VkResult vkAcquireFullScreenExclusiveModeEXT(VkDevice device, VkSwapchain
 extern VkResult vkReleaseFullScreenExclusiveModeEXT(VkDevice device, VkSwapchainKHR swapchain)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkCreateHeadlessSurfaceEXT(VkInstance instance, VkHeadlessSurfaceCreateInfoEXT& pCreateInfo, VkAllocationCallbacks& pAllocator, VkSurfaceKHR& pSurface)
+extern VkResult vkCreateHeadlessSurfaceEXT(VkInstance instance, VkHeadlessSurfaceCreateInfoEXT* pCreateInfo, VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkGetPhysicalDeviceSupportedFramebufferMixedSamplesCombinationsNV(VkPhysicalDevice physicalDevice, uint32& pCombinationCount, VkFramebufferMixedSamplesCombinationNV& pCombinations)
+extern VkResult vkGetPhysicalDeviceSupportedFramebufferMixedSamplesCombinationsNV(VkPhysicalDevice physicalDevice, uint32* pCombinationCount, VkFramebufferMixedSamplesCombinationNV* pCombinations)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkInitializePerformanceApiINTEL(VkDevice device, VkInitializePerformanceApiInfoINTEL& pInitializeInfo)
+extern VkResult vkInitializePerformanceApiINTEL(VkDevice device, VkInitializePerformanceApiInfoINTEL* pInitializeInfo)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
 extern void vkUninitializePerformanceApiINTEL(VkDevice device)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkCmdSetPerformanceMarkerINTEL(VkCommandBuffer commandBuffer, VkPerformanceMarkerInfoINTEL& pMarkerInfo)
+extern VkResult vkCmdSetPerformanceMarkerINTEL(VkCommandBuffer commandBuffer, VkPerformanceMarkerInfoINTEL* pMarkerInfo)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkCmdSetPerformanceStreamMarkerINTEL(VkCommandBuffer commandBuffer, VkPerformanceStreamMarkerInfoINTEL& pMarkerInfo)
+extern VkResult vkCmdSetPerformanceStreamMarkerINTEL(VkCommandBuffer commandBuffer, VkPerformanceStreamMarkerInfoINTEL* pMarkerInfo)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkCmdSetPerformanceOverrideINTEL(VkCommandBuffer commandBuffer, VkPerformanceOverrideInfoINTEL& pOverrideInfo)
+extern VkResult vkCmdSetPerformanceOverrideINTEL(VkCommandBuffer commandBuffer, VkPerformanceOverrideInfoINTEL* pOverrideInfo)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkAcquirePerformanceConfigurationINTEL(VkDevice device, VkPerformanceConfigurationAcquireInfoINTEL& pAcquireInfo, VkPerformanceConfigurationINTEL& pConfiguration)
+extern VkResult vkAcquirePerformanceConfigurationINTEL(VkDevice device, VkPerformanceConfigurationAcquireInfoINTEL* pAcquireInfo, VkPerformanceConfigurationINTEL* pConfiguration)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
 extern VkResult vkReleasePerformanceConfigurationINTEL(VkDevice device, VkPerformanceConfigurationINTEL configuration)
@@ -8256,19 +10918,30 @@ extern VkResult vkReleasePerformanceConfigurationINTEL(VkDevice device, VkPerfor
 extern VkResult vkQueueSetPerformanceConfigurationINTEL(VkQueue queue, VkPerformanceConfigurationINTEL configuration)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkGetPerformanceParameterINTEL(VkDevice device, VkPerformanceParameterTypeINTEL parameter, VkPerformanceValueINTEL& pValue)
+extern VkResult vkGetPerformanceParameterINTEL(VkDevice device, VkPerformanceParameterTypeINTEL parameter, VkPerformanceValueINTEL* pValue)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkGetPipelineExecutablePropertiesKHR(VkDevice device, VkPipelineInfoKHR& pPipelineInfo, uint32& pExecutableCount, VkPipelineExecutablePropertiesKHR& pProperties)
+extern VkResult vkGetPipelineExecutablePropertiesKHR(VkDevice device, VkPipelineInfoKHR* pPipelineInfo, uint32* pExecutableCount, VkPipelineExecutablePropertiesKHR* pProperties)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkGetPipelineExecutableStatisticsKHR(VkDevice device, VkPipelineExecutableInfoKHR& pExecutableInfo, uint32& pStatisticCount, VkPipelineExecutableStatisticKHR& pStatistics)
+extern VkResult vkGetPipelineExecutableStatisticsKHR(VkDevice device, VkPipelineExecutableInfoKHR* pExecutableInfo, uint32* pStatisticCount, VkPipelineExecutableStatisticKHR* pStatistics)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
-extern VkResult vkGetPipelineExecutableInternalRepresentationsKHR(VkDevice device, VkPipelineExecutableInfoKHR& pExecutableInfo, uint32& pInternalRepresentationCount, VkPipelineExecutableInternalRepresentationKHR& pInternalRepresentations)
+extern VkResult vkGetPipelineExecutableInternalRepresentationsKHR(VkDevice device, VkPipelineExecutableInfoKHR* pExecutableInfo, uint32* pInternalRepresentationCount, VkPipelineExecutableInternalRepresentationKHR* pInternalRepresentations)
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi)>]
 extern void vkCmdSetLineStippleEXT(VkCommandBuffer commandBuffer, uint32 lineStippleFactor, uint16 lineStipplePattern)
 
-let VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTER_FEATURES = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTERS_FEATURES
-let VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETER_FEATURES = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETERS_FEATURES
+let inline vkMarshalString str = Marshal.StringToHGlobalAnsi str |> NativePtr.ofNativeInt<char>
+let inline vkMarshal(o: 'T when 'T : unmanaged) : nativeptr<'T> =
+    let p = Marshal.AllocHGlobal(sizeof<'T>)
+    Marshal.StructureToPtr(o, p, false)
+    p |> NativePtr.ofNativeInt<'T>
+let inline vkMarshalArray(xs: 'T [] when 'T : unmanaged) : nativeptr<'T> =
+    let size = sizeof<'T> * xs.Length
+    let p = Marshal.AllocHGlobal size |> NativePtr.ofNativeInt
+    use p2 = fixed xs
+    Buffer.MemoryCopy(p2 |> NativePtr.toVoidPtr, p |> NativePtr.toVoidPtr, uint64 size, uint64 size)
+    p
+let inline vkNull<'T when 'T : unmanaged> = nativeint 0 |> NativePtr.ofNativeInt<'T>
+let inline vkFree o = Marshal.FreeHGlobal o
