@@ -10960,27 +10960,24 @@ extern VkResult vkGetPipelineExecutableInternalRepresentationsKHR(VkDevice devic
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi);SuppressUnmanagedCodeSecurity>]
 extern void vkCmdSetLineStippleEXT(VkCommandBuffer commandBuffer, uint32 lineStippleFactor, uint16 lineStipplePattern)
 
-let inline vkMarshal(o: 'T when 'T : unmanaged and 'U : unmanaged) : nativeptr<'U> =
-    let p = Marshal.AllocHGlobal(sizeof<'T>)
-    Marshal.StructureToPtr(o, p, false)
-    p |> NativePtr.ofNativeInt<'U>
-let inline vkMarshalArray(xs: 'T [] when 'T : unmanaged and 'U : unmanaged) : nativeptr<'U> =
+let inline vkMarshal(o: 'T when 'T : unmanaged and 'U : unmanaged) (p: nativeptr<'T>) : nativeptr<'U> =
+    Marshal.StructureToPtr(o, p |> NativePtr.toNativeInt, false)
+    p |> NativePtr.toNativeInt |> NativePtr.ofNativeInt<'U>
+let inline vkMarshalArray(xs: 'T [] when 'T : unmanaged and 'U : unmanaged) (p: nativeptr<'T>) : nativeptr<'U> =
     let size = sizeof<'T> * xs.Length
-    let p = Marshal.AllocHGlobal size |> NativePtr.ofNativeInt
     use p2 = fixed xs
     Buffer.MemoryCopy(p2 |> NativePtr.toVoidPtr, p |> NativePtr.toVoidPtr, uint64 size, uint64 size)
-    p
-let inline vkMarshalString(str: string) : nativeptr<byte> = 
+    p |> NativePtr.toNativeInt |> NativePtr.ofNativeInt<'U>
+let inline vkMarshalString(str: string) (p: nativeptr<byte>) : nativeptr<byte> = 
     let bytes = UTF8Encoding.UTF8.GetBytes str
-    vkMarshalArray bytes
+    vkMarshalArray bytes p
 let inline vkAlloc<'T when 'T : unmanaged>(count: uint32) = Marshal.AllocHGlobal(sizeof<'T> * int count) |> NativePtr.ofNativeInt<'T>
-let inline vkMap<'T, 'U when 'T : unmanaged and 'U : unmanaged> (count: uint32) (p: nativeptr<'T>) (f: 'T -> 'U) =
+let inline vkMap<'T, 'U when 'T : unmanaged and 'U : unmanaged>(src: nativeptr<'T>) (count: uint32) (dest: nativeptr<'U>) (f: 'T -> 'U) =
     let count = int count
     let size = sizeof<'T> * count
-    let p2 = Marshal.AllocHGlobal size |> NativePtr.ofNativeInt
     for i = 0 to count - 1 do
-        NativePtr.set p2 i (f (NativePtr.get p i))
-    p2
+        NativePtr.set dest i (f (NativePtr.get src i))
+    dest
 let inline vkCast<'T, 'U when 'T : unmanaged and 'U : unmanaged> (ptr: nativeptr<'T>) = ptr |> NativePtr.toNativeInt |> NativePtr.ofNativeInt<'U>
 let inline vkNull<'T when 'T : unmanaged> = nativeint 0 |> NativePtr.ofNativeInt<'T>
 let inline vkFree(o: nativeptr<_>) = Marshal.FreeHGlobal(o |> NativePtr.toNativeInt)
