@@ -510,8 +510,9 @@ let getVkBindingsForExtensions env =
         )
         |> List.concat
 
+    let vkBindings = vkBindings @ vkBindings2
     let env =
-        (env, vkBindings @ vkBindings2)
+        (env, vkBindings)
         ||> List.fold (fun env vkBinding ->
             match vkBinding with
             | VkExtension(VkBinding(name, value, comment, _), extends) -> 
@@ -568,18 +569,19 @@ let genFixedArrayType env typeName =
             Array.init count (fun i -> "    val mutable private _" + destTypeName + string i + ": " + destTypeName + "\n") 
             |> Array.reduce (+)
         let gen =
-            "[<Struct;StructLayout(LayoutKind.Sequential, Size = " + string size + ");UnsafeValueType;DebuggerDisplay(\"{AsString}\")>]\n" +
+            "[<Struct;StructLayout(LayoutKind.Sequential, Size = " + string size + ");UnsafeValueType;DebuggerDisplay(\"{DebugString}\")>]\n" +
             "type " + typeName + " =\n" +
             fields + "\n" +
             "    member x.Item with get i = NativePtr.get x.UnsafePtr i and set i value = NativePtr.set x.UnsafePtr i value\n" +
             "    member x.Length = " + string count + "\n" +
-            "    member x.AsString =\n" +
+            "    member private x.DebugString =\n" +
             "        let bytes = Array.zeroCreate<byte> " + string size + "\n" +
             "        use p = fixed bytes\n" +
             "        Marshal.Copy(&&x |> NativePtr.toNativeInt, bytes, 0, " + string size + ")\n" +
             "        let str = UTF8Encoding.UTF8.GetString bytes\n" +
             "        let index = str.IndexOf(char 0)\n" +
             "        if index >= 0 then str.Substring(0, index) else str\n" +
+            "    override x.ToString() = x.DebugString\n" +
             "    member x.UnsafePtr = &&x |> NativePtr.toNativeInt |> NativePtr.ofNativeInt<" + destTypeName + ">\n\n"
 
         let delay = VkDelayFixedArray(typeName, destTypeName, count, gen)
@@ -833,77 +835,23 @@ let genSource () =
     otherTypes + "\n\n" +
     genVkBindings vkBindings + "\n\n" +
     genVkFunctions env vkFunctions + "\n\n" +
-    genVkBindings vkBindingsForExtensions +
+    genVkBindings vkBindingsForExtensions + "\n\n" +
 
-    "let inline vkMarshal(o: 'T when 'T : unmanaged and 'U : unmanaged) (p: nativeptr<'T>) : nativeptr<'U> =
-    Marshal.StructureToPtr(o, p |> NativePtr.toNativeInt, false)
-    p |> NativePtr.toNativeInt |> NativePtr.ofNativeInt<'U>" + "\n" +
+    "let inline vkMarshal(o: 'T when 'T : unmanaged and 'U : unmanaged) (p: nativeptr<'U>) =
+    Marshal.StructureToPtr(o, p |> NativePtr.toNativeInt, false)" + "\n" +
 
-    "let inline vkMarshalArray(xs: 'T [] when 'T : unmanaged and 'U : unmanaged) (p: nativeptr<'T>) : nativeptr<'U> =
-    let size = sizeof<'T> * xs.Length
-    use p2 = fixed xs
-    Buffer.MemoryCopy(p2 |> NativePtr.toVoidPtr, p |> NativePtr.toVoidPtr, uint64 size, uint64 size)
-    p |> NativePtr.toNativeInt |> NativePtr.ofNativeInt<'U>" + "\n" +
+    "let inline vkMarshalArray(xs: 'T [] when 'T : unmanaged and 'U : unmanaged) (dest: nativeptr<'U>) (destCount: int) =
+    let srcSize = sizeof<'T> * xs.Length
+    let destSize = sizeof<'U> * destCount
+    use src = fixed xs
+    Buffer.MemoryCopy(src |> NativePtr.toVoidPtr, dest |> NativePtr.toVoidPtr, uint64 destSize, uint64 srcSize)" + "\n" +
 
-    "let inline vkMarshalString(str: string) (p: nativeptr<byte>) : nativeptr<byte> = 
+    "let inline vkMarshalString<'T when 'T : unmanaged>(str: string) (dest: nativeptr<'T>) destCount = 
     let bytes = UTF8Encoding.UTF8.GetBytes str
-    vkMarshalArray bytes p" + "\n" +
+    vkMarshalArray bytes dest destCount" + "\n" +
 
-    "let inline vkAlloc<'T when 'T : unmanaged>(count: uint32) = Marshal.AllocHGlobal(sizeof<'T> * int count) |> NativePtr.ofNativeInt<'T>\n" +
-
-    "let inline vkMap<'T, 'U when 'T : unmanaged and 'U : unmanaged>(src: nativeptr<'T>) (count: uint32) (dest: nativeptr<'U>) (f: 'T -> 'U) =
-    let count = int count
-    for i = 0 to count - 1 do
-        NativePtr.set dest i (f (NativePtr.get src i))
-    dest" + "\n" +
-
-    "let inline vkMapPointer<'T, 'U when 'T : unmanaged and 'U : unmanaged>(src: nativeptr<'T>) (count: uint32) (dest: nativeptr<'U>) (f: nativeptr<'T> -> 'U) =
-    let count = int count
-    let mutable src = src
-    for i = 0 to count - 1 do
-        NativePtr.set dest i (f src)
-        src <- NativePtr.add src 1
-    dest" + "\n" +
-
-    "let inline vkExists<'T when 'T : unmanaged>(src: nativeptr<'T>) (count: uint32) (f: 'T -> bool) =
-    let count = int count
-    let mutable exists = false
-    let mutable i = 0
-    while not exists && i < count do
-        exists <- f (NativePtr.get src i)
-    exists" + "\n" +
-
-    "let inline vkTryFind<'T when 'T : unmanaged>(src: nativeptr<'T>) (count: uint32) (f: 'T -> bool) =
-    let count = int count
-    let mutable value = None
-    let mutable i = 0
-    while value.IsNone && i < count do
-        let x = NativePtr.get src i
-        if f x then
-            value <- Some x
-        i <- i + 1
-    value" + "\n" +
-
-    "let inline vkTryPick<'T, 'U when 'T : unmanaged and 'U : unmanaged>(src: nativeptr<'T>) (count: uint32) (f: 'T -> 'U option) =
-    let count = int count
-    let mutable value = None
-    let mutable i = 0
-    while value.IsNone && i < count do
-        let x = NativePtr.get src i
-        value <- f x
-        i <- i + 1
-    value" + "\n" +
-
-    "let inline vkMapOfSeq<'T, 'U when 'T : unmanaged and 'U : unmanaged>(dest: nativeptr<'U>) (f: 'T -> 'U) (xs: 'T seq) =
-    let mutable i = 0
-    for x in xs do
-        NativePtr.set dest i (f x)
-        i <- i + 1
-    dest" + "\n" +
-
-    "let inline vkCast<'T, 'U when 'T : unmanaged and 'U : unmanaged> (ptr: nativeptr<'T>) = ptr |> NativePtr.toNativeInt |> NativePtr.ofNativeInt<'U>\n" +
-    "let inline vkNull<'T when 'T : unmanaged> = nativeint 0 |> NativePtr.ofNativeInt<'T>" + "\n" +
-    "let inline vkFree(o: nativeptr<_>) = Marshal.FreeHGlobal(o |> NativePtr.toNativeInt)" + "\n\n" +
+    "let inline vkNullPtr<'T when 'T : unmanaged> = nativeint 0 |> NativePtr.ofNativeInt<'T>" + "\n" +
+    "let inline vkCast<'T, 'U when 'T : unmanaged and 'U : unmanaged>(p: nativeptr<'T>) : nativeptr<'U> = p |> NativePtr.toNativeInt |> NativePtr.ofNativeInt" + "\n\n" +
     (if env.delayGen.IsEmpty then "" else env.delayGen |> Seq.map (fun pair -> pair.Value.Gen) |> Seq.reduce (+))
 
 open System.IO

@@ -23,7 +23,7 @@ type NativeResizeArray<'T when 'T : unmanaged>(capacity) =
 
     member __.Buffer = ptr
 
-    member __.IncreaseCapacity() =
+    member private __.IncreaseCapacity() =
         let mutable newLength = uint32 length * 2u
         if newLength >= uint32 Int32.MaxValue then
             failwith "Length is bigger than the maximum number of elements in the array"
@@ -65,11 +65,15 @@ type NativeResizeArray<'T when 'T : unmanaged>(capacity) =
 
     member inline this.Item
         with get index =
-            //&Unsafe.Add<'T>(&Unsafe.AsRef<'T>(NativePtr.toVoidPtr this.Buffer), int index)
             NativePtr.toByRef (NativePtr.add this.Buffer index)
 
     member inline this.ToSpan() =
         Span<'T>((this.Buffer |> NativePtr.toNativeInt).ToPointer(), this.Count * sizeof<'T>)
+
+    member this.ToPointer<'U when 'U : unmanaged> index =
+        NativePtr.add buffer.Buffer index
+        |> NativePtr.toNativeInt
+        |> NativePtr.ofNativeInt<'U>
 
     interface IDisposable with
 

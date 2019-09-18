@@ -48,8 +48,12 @@ type NativeArray<'T when 'T : unmanaged> =
 
     member this.Item
         with get index = 
-            //&Unsafe.Add<'T>(&Unsafe.AsRef<'T>(NativePtr.toVoidPtr this.Buffer), int index)
             NativePtr.toByRef (NativePtr.add this.Buffer index)
+
+    member this.ToPointer<'U when 'U : unmanaged> index =
+        NativePtr.add this.Buffer index
+        |> NativePtr.toNativeInt
+        |> NativePtr.ofNativeInt<'U>
 
     member inline this.ToSpan() =
         Span<'T>((this.Buffer |> NativePtr.toNativeInt).ToPointer(), this.Length * sizeof<'T>)
