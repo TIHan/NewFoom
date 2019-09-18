@@ -23,12 +23,7 @@ let createApplicationInfo (appName: string) (engineName: string) =
     appInfo.apiVersion <- VK_API_VERSION_1_0
     appInfo
 
-[<Flags>]
-type VulkanInstanceFlags =
-    | Empty                     = 0x0
-    | EnableValidationLayers    = 0x1
-
-let createInstance appName engineName flags =
+let createInstance appName engineName (validationLayers: string list) =
     let appInfo = createApplicationInfo appName engineName
     
     let mutable extensionCount = 0u
@@ -37,21 +32,31 @@ let createInstance appName engineName flags =
         let extensions = NativePtr.stackalloc(int extensionCount)
         vkEnumerateInstanceExtensionProperties(vkNull, &&extensionCount, extensions) |> checkResult
 
-        let mutable extensionNames = NativePtr.stackalloc(int extensionCount)
-        vkMap extensions extensionCount extensionNames (fun x -> x.extensionName.UnsafePtr)
+        let extensionNames = NativePtr.stackalloc(int extensionCount)
+        vkMapPointer extensions extensionCount extensionNames (fun x -> x)
+        |> vkCast
 
-    let validationLayers = ["VK_LAYER_KHRONOS_validation"]
     let mutable layerCount = 0u
     let layerNames =
-        if flags &&& VulkanInstanceFlags.EnableValidationLayers = VulkanInstanceFlags.EnableValidationLayers then
-            vkEnumerateInstanceLayerProperties(&&layerCount, vkNull) |> checkResult
-            let layers = NativePtr.stackalloc(int layerCount)
-            vkEnumerateInstanceLayerProperties(&&layerCount, layers) |> checkResult
+        vkEnumerateInstanceLayerProperties(&&layerCount, vkNull) |> checkResult
+        let layers = NativePtr.stackalloc(int layerCount)
+        vkEnumerateInstanceLayerProperties(&&layerCount, layers) |> checkResult
 
-            let mutable layerNames = NativePtr.stackalloc(int layerCount)
-            vkMap layers layerCount layerNames (fun x -> x.layerName.UnsafePtr)
-        else
-            vkNull
+        let foundLayers = 
+            validationLayers 
+            |> List.choose (fun x -> 
+                vkTryPick layers layerCount (fun y -> 
+                    if x = y.layerName.AsString then Some y.layerName 
+                    else None))
+
+        layerCount <- uint32 foundLayers.Length
+        let layers =
+            let layers = NativePtr.stackalloc foundLayers.Length
+            foundLayers
+            |> vkMapOfSeq layers (fun x -> x)
+        let layerNames = NativePtr.stackalloc foundLayers.Length
+        vkMapPointer layers layerCount layerNames (fun x -> x)
+        |> vkCast
         
     let mutable createInfo = VkInstanceCreateInfo()
     createInfo.sType <- VkStructureType.VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO
@@ -76,7 +81,7 @@ type Win32ClientGame() =
     let mutable dx12 = None
 
     member __.Init(width, height, hwnd) =
-        createInstance "App" "Engine" (VulkanInstanceFlags.EnableValidationLayers)
+        createInstance "App" "Engine" ["VK_LAYER_LUNARG_standard_validation"]
         ()
 
     override __.PreUpdate(_, _, inputs) =

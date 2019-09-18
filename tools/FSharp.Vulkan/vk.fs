@@ -10974,9 +10974,47 @@ let inline vkMarshalString(str: string) (p: nativeptr<byte>) : nativeptr<byte> =
 let inline vkAlloc<'T when 'T : unmanaged>(count: uint32) = Marshal.AllocHGlobal(sizeof<'T> * int count) |> NativePtr.ofNativeInt<'T>
 let inline vkMap<'T, 'U when 'T : unmanaged and 'U : unmanaged>(src: nativeptr<'T>) (count: uint32) (dest: nativeptr<'U>) (f: 'T -> 'U) =
     let count = int count
-    let size = sizeof<'T> * count
     for i = 0 to count - 1 do
         NativePtr.set dest i (f (NativePtr.get src i))
+    dest
+let inline vkMapPointer<'T, 'U when 'T : unmanaged and 'U : unmanaged>(src: nativeptr<'T>) (count: uint32) (dest: nativeptr<'U>) (f: nativeptr<'T> -> 'U) =
+    let count = int count
+    let mutable src = src
+    for i = 0 to count - 1 do
+        NativePtr.set dest i (f src)
+        src <- NativePtr.add src 1
+    dest
+let inline vkExists<'T when 'T : unmanaged>(src: nativeptr<'T>) (count: uint32) (f: 'T -> bool) =
+    let count = int count
+    let mutable exists = false
+    let mutable i = 0
+    while not exists && i < count do
+        exists <- f (NativePtr.get src i)
+    exists
+let inline vkTryFind<'T when 'T : unmanaged>(src: nativeptr<'T>) (count: uint32) (f: 'T -> bool) =
+    let count = int count
+    let mutable value = None
+    let mutable i = 0
+    while value.IsNone && i < count do
+        let x = NativePtr.get src i
+        if f x then
+            value <- Some x
+        i <- i + 1
+    value
+let inline vkTryPick<'T, 'U when 'T : unmanaged and 'U : unmanaged>(src: nativeptr<'T>) (count: uint32) (f: 'T -> 'U option) =
+    let count = int count
+    let mutable value = None
+    let mutable i = 0
+    while value.IsNone && i < count do
+        let x = NativePtr.get src i
+        value <- f x
+        i <- i + 1
+    value
+let inline vkMapOfSeq<'T, 'U when 'T : unmanaged and 'U : unmanaged>(dest: nativeptr<'U>) (f: 'T -> 'U) (xs: 'T seq) =
+    let mutable i = 0
+    for x in xs do
+        NativePtr.set dest i (f x)
+        i <- i + 1
     dest
 let inline vkCast<'T, 'U when 'T : unmanaged and 'U : unmanaged> (ptr: nativeptr<'T>) = ptr |> NativePtr.toNativeInt |> NativePtr.ofNativeInt<'U>
 let inline vkNull<'T when 'T : unmanaged> = nativeint 0 |> NativePtr.ofNativeInt<'T>
@@ -10984,7 +11022,22 @@ let inline vkFree(o: nativeptr<_>) = Marshal.FreeHGlobal(o |> NativePtr.toNative
 
 [<Struct;StructLayout(LayoutKind.Sequential, Size = 128);UnsafeValueType;DebuggerDisplay("{AsString}")>]
 type VkFixedArray_VkDeviceSize_16 =
-    val mutable private _VkDeviceSize: VkDeviceSize
+    val mutable private _VkDeviceSize0: VkDeviceSize
+    val mutable private _VkDeviceSize1: VkDeviceSize
+    val mutable private _VkDeviceSize2: VkDeviceSize
+    val mutable private _VkDeviceSize3: VkDeviceSize
+    val mutable private _VkDeviceSize4: VkDeviceSize
+    val mutable private _VkDeviceSize5: VkDeviceSize
+    val mutable private _VkDeviceSize6: VkDeviceSize
+    val mutable private _VkDeviceSize7: VkDeviceSize
+    val mutable private _VkDeviceSize8: VkDeviceSize
+    val mutable private _VkDeviceSize9: VkDeviceSize
+    val mutable private _VkDeviceSize10: VkDeviceSize
+    val mutable private _VkDeviceSize11: VkDeviceSize
+    val mutable private _VkDeviceSize12: VkDeviceSize
+    val mutable private _VkDeviceSize13: VkDeviceSize
+    val mutable private _VkDeviceSize14: VkDeviceSize
+    val mutable private _VkDeviceSize15: VkDeviceSize
 
     member x.Item with get i = NativePtr.get x.UnsafePtr i and set i value = NativePtr.set x.UnsafePtr i value
     member x.Length = 16
@@ -10992,12 +11045,29 @@ type VkFixedArray_VkDeviceSize_16 =
         let bytes = Array.zeroCreate<byte> 128
         use p = fixed bytes
         Marshal.Copy(&&x |> NativePtr.toNativeInt, bytes, 0, 128)
-        UTF8Encoding.UTF8.GetString bytes
+        let str = UTF8Encoding.UTF8.GetString bytes
+        let index = str.IndexOf(char 0)
+        if index >= 0 then str.Substring(0, index) else str
     member x.UnsafePtr = &&x |> NativePtr.toNativeInt |> NativePtr.ofNativeInt<VkDeviceSize>
 
 [<Struct;StructLayout(LayoutKind.Sequential, Size = 192);UnsafeValueType;DebuggerDisplay("{AsString}")>]
 type VkFixedArray_VkMemoryHeap_16 =
-    val mutable private _VkMemoryHeap: VkMemoryHeap
+    val mutable private _VkMemoryHeap0: VkMemoryHeap
+    val mutable private _VkMemoryHeap1: VkMemoryHeap
+    val mutable private _VkMemoryHeap2: VkMemoryHeap
+    val mutable private _VkMemoryHeap3: VkMemoryHeap
+    val mutable private _VkMemoryHeap4: VkMemoryHeap
+    val mutable private _VkMemoryHeap5: VkMemoryHeap
+    val mutable private _VkMemoryHeap6: VkMemoryHeap
+    val mutable private _VkMemoryHeap7: VkMemoryHeap
+    val mutable private _VkMemoryHeap8: VkMemoryHeap
+    val mutable private _VkMemoryHeap9: VkMemoryHeap
+    val mutable private _VkMemoryHeap10: VkMemoryHeap
+    val mutable private _VkMemoryHeap11: VkMemoryHeap
+    val mutable private _VkMemoryHeap12: VkMemoryHeap
+    val mutable private _VkMemoryHeap13: VkMemoryHeap
+    val mutable private _VkMemoryHeap14: VkMemoryHeap
+    val mutable private _VkMemoryHeap15: VkMemoryHeap
 
     member x.Item with get i = NativePtr.get x.UnsafePtr i and set i value = NativePtr.set x.UnsafePtr i value
     member x.Length = 16
@@ -11005,12 +11075,45 @@ type VkFixedArray_VkMemoryHeap_16 =
         let bytes = Array.zeroCreate<byte> 192
         use p = fixed bytes
         Marshal.Copy(&&x |> NativePtr.toNativeInt, bytes, 0, 192)
-        UTF8Encoding.UTF8.GetString bytes
+        let str = UTF8Encoding.UTF8.GetString bytes
+        let index = str.IndexOf(char 0)
+        if index >= 0 then str.Substring(0, index) else str
     member x.UnsafePtr = &&x |> NativePtr.toNativeInt |> NativePtr.ofNativeInt<VkMemoryHeap>
 
 [<Struct;StructLayout(LayoutKind.Sequential, Size = 256);UnsafeValueType;DebuggerDisplay("{AsString}")>]
 type VkFixedArray_VkMemoryType_32 =
-    val mutable private _VkMemoryType: VkMemoryType
+    val mutable private _VkMemoryType0: VkMemoryType
+    val mutable private _VkMemoryType1: VkMemoryType
+    val mutable private _VkMemoryType2: VkMemoryType
+    val mutable private _VkMemoryType3: VkMemoryType
+    val mutable private _VkMemoryType4: VkMemoryType
+    val mutable private _VkMemoryType5: VkMemoryType
+    val mutable private _VkMemoryType6: VkMemoryType
+    val mutable private _VkMemoryType7: VkMemoryType
+    val mutable private _VkMemoryType8: VkMemoryType
+    val mutable private _VkMemoryType9: VkMemoryType
+    val mutable private _VkMemoryType10: VkMemoryType
+    val mutable private _VkMemoryType11: VkMemoryType
+    val mutable private _VkMemoryType12: VkMemoryType
+    val mutable private _VkMemoryType13: VkMemoryType
+    val mutable private _VkMemoryType14: VkMemoryType
+    val mutable private _VkMemoryType15: VkMemoryType
+    val mutable private _VkMemoryType16: VkMemoryType
+    val mutable private _VkMemoryType17: VkMemoryType
+    val mutable private _VkMemoryType18: VkMemoryType
+    val mutable private _VkMemoryType19: VkMemoryType
+    val mutable private _VkMemoryType20: VkMemoryType
+    val mutable private _VkMemoryType21: VkMemoryType
+    val mutable private _VkMemoryType22: VkMemoryType
+    val mutable private _VkMemoryType23: VkMemoryType
+    val mutable private _VkMemoryType24: VkMemoryType
+    val mutable private _VkMemoryType25: VkMemoryType
+    val mutable private _VkMemoryType26: VkMemoryType
+    val mutable private _VkMemoryType27: VkMemoryType
+    val mutable private _VkMemoryType28: VkMemoryType
+    val mutable private _VkMemoryType29: VkMemoryType
+    val mutable private _VkMemoryType30: VkMemoryType
+    val mutable private _VkMemoryType31: VkMemoryType
 
     member x.Item with get i = NativePtr.get x.UnsafePtr i and set i value = NativePtr.set x.UnsafePtr i value
     member x.Length = 32
@@ -11018,12 +11121,45 @@ type VkFixedArray_VkMemoryType_32 =
         let bytes = Array.zeroCreate<byte> 256
         use p = fixed bytes
         Marshal.Copy(&&x |> NativePtr.toNativeInt, bytes, 0, 256)
-        UTF8Encoding.UTF8.GetString bytes
+        let str = UTF8Encoding.UTF8.GetString bytes
+        let index = str.IndexOf(char 0)
+        if index >= 0 then str.Substring(0, index) else str
     member x.UnsafePtr = &&x |> NativePtr.toNativeInt |> NativePtr.ofNativeInt<VkMemoryType>
 
 [<Struct;StructLayout(LayoutKind.Sequential, Size = 256);UnsafeValueType;DebuggerDisplay("{AsString}")>]
 type VkFixedArray_VkPhysicalDevice_32 =
-    val mutable private _VkPhysicalDevice: VkPhysicalDevice
+    val mutable private _VkPhysicalDevice0: VkPhysicalDevice
+    val mutable private _VkPhysicalDevice1: VkPhysicalDevice
+    val mutable private _VkPhysicalDevice2: VkPhysicalDevice
+    val mutable private _VkPhysicalDevice3: VkPhysicalDevice
+    val mutable private _VkPhysicalDevice4: VkPhysicalDevice
+    val mutable private _VkPhysicalDevice5: VkPhysicalDevice
+    val mutable private _VkPhysicalDevice6: VkPhysicalDevice
+    val mutable private _VkPhysicalDevice7: VkPhysicalDevice
+    val mutable private _VkPhysicalDevice8: VkPhysicalDevice
+    val mutable private _VkPhysicalDevice9: VkPhysicalDevice
+    val mutable private _VkPhysicalDevice10: VkPhysicalDevice
+    val mutable private _VkPhysicalDevice11: VkPhysicalDevice
+    val mutable private _VkPhysicalDevice12: VkPhysicalDevice
+    val mutable private _VkPhysicalDevice13: VkPhysicalDevice
+    val mutable private _VkPhysicalDevice14: VkPhysicalDevice
+    val mutable private _VkPhysicalDevice15: VkPhysicalDevice
+    val mutable private _VkPhysicalDevice16: VkPhysicalDevice
+    val mutable private _VkPhysicalDevice17: VkPhysicalDevice
+    val mutable private _VkPhysicalDevice18: VkPhysicalDevice
+    val mutable private _VkPhysicalDevice19: VkPhysicalDevice
+    val mutable private _VkPhysicalDevice20: VkPhysicalDevice
+    val mutable private _VkPhysicalDevice21: VkPhysicalDevice
+    val mutable private _VkPhysicalDevice22: VkPhysicalDevice
+    val mutable private _VkPhysicalDevice23: VkPhysicalDevice
+    val mutable private _VkPhysicalDevice24: VkPhysicalDevice
+    val mutable private _VkPhysicalDevice25: VkPhysicalDevice
+    val mutable private _VkPhysicalDevice26: VkPhysicalDevice
+    val mutable private _VkPhysicalDevice27: VkPhysicalDevice
+    val mutable private _VkPhysicalDevice28: VkPhysicalDevice
+    val mutable private _VkPhysicalDevice29: VkPhysicalDevice
+    val mutable private _VkPhysicalDevice30: VkPhysicalDevice
+    val mutable private _VkPhysicalDevice31: VkPhysicalDevice
 
     member x.Item with get i = NativePtr.get x.UnsafePtr i and set i value = NativePtr.set x.UnsafePtr i value
     member x.Length = 32
@@ -11031,12 +11167,29 @@ type VkFixedArray_VkPhysicalDevice_32 =
         let bytes = Array.zeroCreate<byte> 256
         use p = fixed bytes
         Marshal.Copy(&&x |> NativePtr.toNativeInt, bytes, 0, 256)
-        UTF8Encoding.UTF8.GetString bytes
+        let str = UTF8Encoding.UTF8.GetString bytes
+        let index = str.IndexOf(char 0)
+        if index >= 0 then str.Substring(0, index) else str
     member x.UnsafePtr = &&x |> NativePtr.toNativeInt |> NativePtr.ofNativeInt<VkPhysicalDevice>
 
 [<Struct;StructLayout(LayoutKind.Sequential, Size = 16);UnsafeValueType;DebuggerDisplay("{AsString}")>]
 type VkFixedArray_byte_16 =
-    val mutable private _byte: byte
+    val mutable private _byte0: byte
+    val mutable private _byte1: byte
+    val mutable private _byte2: byte
+    val mutable private _byte3: byte
+    val mutable private _byte4: byte
+    val mutable private _byte5: byte
+    val mutable private _byte6: byte
+    val mutable private _byte7: byte
+    val mutable private _byte8: byte
+    val mutable private _byte9: byte
+    val mutable private _byte10: byte
+    val mutable private _byte11: byte
+    val mutable private _byte12: byte
+    val mutable private _byte13: byte
+    val mutable private _byte14: byte
+    val mutable private _byte15: byte
 
     member x.Item with get i = NativePtr.get x.UnsafePtr i and set i value = NativePtr.set x.UnsafePtr i value
     member x.Length = 16
@@ -11044,12 +11197,269 @@ type VkFixedArray_byte_16 =
         let bytes = Array.zeroCreate<byte> 16
         use p = fixed bytes
         Marshal.Copy(&&x |> NativePtr.toNativeInt, bytes, 0, 16)
-        UTF8Encoding.UTF8.GetString bytes
+        let str = UTF8Encoding.UTF8.GetString bytes
+        let index = str.IndexOf(char 0)
+        if index >= 0 then str.Substring(0, index) else str
     member x.UnsafePtr = &&x |> NativePtr.toNativeInt |> NativePtr.ofNativeInt<byte>
 
 [<Struct;StructLayout(LayoutKind.Sequential, Size = 256);UnsafeValueType;DebuggerDisplay("{AsString}")>]
 type VkFixedArray_byte_256 =
-    val mutable private _byte: byte
+    val mutable private _byte0: byte
+    val mutable private _byte1: byte
+    val mutable private _byte2: byte
+    val mutable private _byte3: byte
+    val mutable private _byte4: byte
+    val mutable private _byte5: byte
+    val mutable private _byte6: byte
+    val mutable private _byte7: byte
+    val mutable private _byte8: byte
+    val mutable private _byte9: byte
+    val mutable private _byte10: byte
+    val mutable private _byte11: byte
+    val mutable private _byte12: byte
+    val mutable private _byte13: byte
+    val mutable private _byte14: byte
+    val mutable private _byte15: byte
+    val mutable private _byte16: byte
+    val mutable private _byte17: byte
+    val mutable private _byte18: byte
+    val mutable private _byte19: byte
+    val mutable private _byte20: byte
+    val mutable private _byte21: byte
+    val mutable private _byte22: byte
+    val mutable private _byte23: byte
+    val mutable private _byte24: byte
+    val mutable private _byte25: byte
+    val mutable private _byte26: byte
+    val mutable private _byte27: byte
+    val mutable private _byte28: byte
+    val mutable private _byte29: byte
+    val mutable private _byte30: byte
+    val mutable private _byte31: byte
+    val mutable private _byte32: byte
+    val mutable private _byte33: byte
+    val mutable private _byte34: byte
+    val mutable private _byte35: byte
+    val mutable private _byte36: byte
+    val mutable private _byte37: byte
+    val mutable private _byte38: byte
+    val mutable private _byte39: byte
+    val mutable private _byte40: byte
+    val mutable private _byte41: byte
+    val mutable private _byte42: byte
+    val mutable private _byte43: byte
+    val mutable private _byte44: byte
+    val mutable private _byte45: byte
+    val mutable private _byte46: byte
+    val mutable private _byte47: byte
+    val mutable private _byte48: byte
+    val mutable private _byte49: byte
+    val mutable private _byte50: byte
+    val mutable private _byte51: byte
+    val mutable private _byte52: byte
+    val mutable private _byte53: byte
+    val mutable private _byte54: byte
+    val mutable private _byte55: byte
+    val mutable private _byte56: byte
+    val mutable private _byte57: byte
+    val mutable private _byte58: byte
+    val mutable private _byte59: byte
+    val mutable private _byte60: byte
+    val mutable private _byte61: byte
+    val mutable private _byte62: byte
+    val mutable private _byte63: byte
+    val mutable private _byte64: byte
+    val mutable private _byte65: byte
+    val mutable private _byte66: byte
+    val mutable private _byte67: byte
+    val mutable private _byte68: byte
+    val mutable private _byte69: byte
+    val mutable private _byte70: byte
+    val mutable private _byte71: byte
+    val mutable private _byte72: byte
+    val mutable private _byte73: byte
+    val mutable private _byte74: byte
+    val mutable private _byte75: byte
+    val mutable private _byte76: byte
+    val mutable private _byte77: byte
+    val mutable private _byte78: byte
+    val mutable private _byte79: byte
+    val mutable private _byte80: byte
+    val mutable private _byte81: byte
+    val mutable private _byte82: byte
+    val mutable private _byte83: byte
+    val mutable private _byte84: byte
+    val mutable private _byte85: byte
+    val mutable private _byte86: byte
+    val mutable private _byte87: byte
+    val mutable private _byte88: byte
+    val mutable private _byte89: byte
+    val mutable private _byte90: byte
+    val mutable private _byte91: byte
+    val mutable private _byte92: byte
+    val mutable private _byte93: byte
+    val mutable private _byte94: byte
+    val mutable private _byte95: byte
+    val mutable private _byte96: byte
+    val mutable private _byte97: byte
+    val mutable private _byte98: byte
+    val mutable private _byte99: byte
+    val mutable private _byte100: byte
+    val mutable private _byte101: byte
+    val mutable private _byte102: byte
+    val mutable private _byte103: byte
+    val mutable private _byte104: byte
+    val mutable private _byte105: byte
+    val mutable private _byte106: byte
+    val mutable private _byte107: byte
+    val mutable private _byte108: byte
+    val mutable private _byte109: byte
+    val mutable private _byte110: byte
+    val mutable private _byte111: byte
+    val mutable private _byte112: byte
+    val mutable private _byte113: byte
+    val mutable private _byte114: byte
+    val mutable private _byte115: byte
+    val mutable private _byte116: byte
+    val mutable private _byte117: byte
+    val mutable private _byte118: byte
+    val mutable private _byte119: byte
+    val mutable private _byte120: byte
+    val mutable private _byte121: byte
+    val mutable private _byte122: byte
+    val mutable private _byte123: byte
+    val mutable private _byte124: byte
+    val mutable private _byte125: byte
+    val mutable private _byte126: byte
+    val mutable private _byte127: byte
+    val mutable private _byte128: byte
+    val mutable private _byte129: byte
+    val mutable private _byte130: byte
+    val mutable private _byte131: byte
+    val mutable private _byte132: byte
+    val mutable private _byte133: byte
+    val mutable private _byte134: byte
+    val mutable private _byte135: byte
+    val mutable private _byte136: byte
+    val mutable private _byte137: byte
+    val mutable private _byte138: byte
+    val mutable private _byte139: byte
+    val mutable private _byte140: byte
+    val mutable private _byte141: byte
+    val mutable private _byte142: byte
+    val mutable private _byte143: byte
+    val mutable private _byte144: byte
+    val mutable private _byte145: byte
+    val mutable private _byte146: byte
+    val mutable private _byte147: byte
+    val mutable private _byte148: byte
+    val mutable private _byte149: byte
+    val mutable private _byte150: byte
+    val mutable private _byte151: byte
+    val mutable private _byte152: byte
+    val mutable private _byte153: byte
+    val mutable private _byte154: byte
+    val mutable private _byte155: byte
+    val mutable private _byte156: byte
+    val mutable private _byte157: byte
+    val mutable private _byte158: byte
+    val mutable private _byte159: byte
+    val mutable private _byte160: byte
+    val mutable private _byte161: byte
+    val mutable private _byte162: byte
+    val mutable private _byte163: byte
+    val mutable private _byte164: byte
+    val mutable private _byte165: byte
+    val mutable private _byte166: byte
+    val mutable private _byte167: byte
+    val mutable private _byte168: byte
+    val mutable private _byte169: byte
+    val mutable private _byte170: byte
+    val mutable private _byte171: byte
+    val mutable private _byte172: byte
+    val mutable private _byte173: byte
+    val mutable private _byte174: byte
+    val mutable private _byte175: byte
+    val mutable private _byte176: byte
+    val mutable private _byte177: byte
+    val mutable private _byte178: byte
+    val mutable private _byte179: byte
+    val mutable private _byte180: byte
+    val mutable private _byte181: byte
+    val mutable private _byte182: byte
+    val mutable private _byte183: byte
+    val mutable private _byte184: byte
+    val mutable private _byte185: byte
+    val mutable private _byte186: byte
+    val mutable private _byte187: byte
+    val mutable private _byte188: byte
+    val mutable private _byte189: byte
+    val mutable private _byte190: byte
+    val mutable private _byte191: byte
+    val mutable private _byte192: byte
+    val mutable private _byte193: byte
+    val mutable private _byte194: byte
+    val mutable private _byte195: byte
+    val mutable private _byte196: byte
+    val mutable private _byte197: byte
+    val mutable private _byte198: byte
+    val mutable private _byte199: byte
+    val mutable private _byte200: byte
+    val mutable private _byte201: byte
+    val mutable private _byte202: byte
+    val mutable private _byte203: byte
+    val mutable private _byte204: byte
+    val mutable private _byte205: byte
+    val mutable private _byte206: byte
+    val mutable private _byte207: byte
+    val mutable private _byte208: byte
+    val mutable private _byte209: byte
+    val mutable private _byte210: byte
+    val mutable private _byte211: byte
+    val mutable private _byte212: byte
+    val mutable private _byte213: byte
+    val mutable private _byte214: byte
+    val mutable private _byte215: byte
+    val mutable private _byte216: byte
+    val mutable private _byte217: byte
+    val mutable private _byte218: byte
+    val mutable private _byte219: byte
+    val mutable private _byte220: byte
+    val mutable private _byte221: byte
+    val mutable private _byte222: byte
+    val mutable private _byte223: byte
+    val mutable private _byte224: byte
+    val mutable private _byte225: byte
+    val mutable private _byte226: byte
+    val mutable private _byte227: byte
+    val mutable private _byte228: byte
+    val mutable private _byte229: byte
+    val mutable private _byte230: byte
+    val mutable private _byte231: byte
+    val mutable private _byte232: byte
+    val mutable private _byte233: byte
+    val mutable private _byte234: byte
+    val mutable private _byte235: byte
+    val mutable private _byte236: byte
+    val mutable private _byte237: byte
+    val mutable private _byte238: byte
+    val mutable private _byte239: byte
+    val mutable private _byte240: byte
+    val mutable private _byte241: byte
+    val mutable private _byte242: byte
+    val mutable private _byte243: byte
+    val mutable private _byte244: byte
+    val mutable private _byte245: byte
+    val mutable private _byte246: byte
+    val mutable private _byte247: byte
+    val mutable private _byte248: byte
+    val mutable private _byte249: byte
+    val mutable private _byte250: byte
+    val mutable private _byte251: byte
+    val mutable private _byte252: byte
+    val mutable private _byte253: byte
+    val mutable private _byte254: byte
+    val mutable private _byte255: byte
 
     member x.Item with get i = NativePtr.get x.UnsafePtr i and set i value = NativePtr.set x.UnsafePtr i value
     member x.Length = 256
@@ -11057,12 +11467,21 @@ type VkFixedArray_byte_256 =
         let bytes = Array.zeroCreate<byte> 256
         use p = fixed bytes
         Marshal.Copy(&&x |> NativePtr.toNativeInt, bytes, 0, 256)
-        UTF8Encoding.UTF8.GetString bytes
+        let str = UTF8Encoding.UTF8.GetString bytes
+        let index = str.IndexOf(char 0)
+        if index >= 0 then str.Substring(0, index) else str
     member x.UnsafePtr = &&x |> NativePtr.toNativeInt |> NativePtr.ofNativeInt<byte>
 
 [<Struct;StructLayout(LayoutKind.Sequential, Size = 8);UnsafeValueType;DebuggerDisplay("{AsString}")>]
 type VkFixedArray_byte_8 =
-    val mutable private _byte: byte
+    val mutable private _byte0: byte
+    val mutable private _byte1: byte
+    val mutable private _byte2: byte
+    val mutable private _byte3: byte
+    val mutable private _byte4: byte
+    val mutable private _byte5: byte
+    val mutable private _byte6: byte
+    val mutable private _byte7: byte
 
     member x.Item with get i = NativePtr.get x.UnsafePtr i and set i value = NativePtr.set x.UnsafePtr i value
     member x.Length = 8
@@ -11070,12 +11489,45 @@ type VkFixedArray_byte_8 =
         let bytes = Array.zeroCreate<byte> 8
         use p = fixed bytes
         Marshal.Copy(&&x |> NativePtr.toNativeInt, bytes, 0, 8)
-        UTF8Encoding.UTF8.GetString bytes
+        let str = UTF8Encoding.UTF8.GetString bytes
+        let index = str.IndexOf(char 0)
+        if index >= 0 then str.Substring(0, index) else str
     member x.UnsafePtr = &&x |> NativePtr.toNativeInt |> NativePtr.ofNativeInt<byte>
 
 [<Struct;StructLayout(LayoutKind.Sequential, Size = 128);UnsafeValueType;DebuggerDisplay("{AsString}")>]
 type VkFixedArray_uint32_32 =
-    val mutable private _uint32: uint32
+    val mutable private _uint320: uint32
+    val mutable private _uint321: uint32
+    val mutable private _uint322: uint32
+    val mutable private _uint323: uint32
+    val mutable private _uint324: uint32
+    val mutable private _uint325: uint32
+    val mutable private _uint326: uint32
+    val mutable private _uint327: uint32
+    val mutable private _uint328: uint32
+    val mutable private _uint329: uint32
+    val mutable private _uint3210: uint32
+    val mutable private _uint3211: uint32
+    val mutable private _uint3212: uint32
+    val mutable private _uint3213: uint32
+    val mutable private _uint3214: uint32
+    val mutable private _uint3215: uint32
+    val mutable private _uint3216: uint32
+    val mutable private _uint3217: uint32
+    val mutable private _uint3218: uint32
+    val mutable private _uint3219: uint32
+    val mutable private _uint3220: uint32
+    val mutable private _uint3221: uint32
+    val mutable private _uint3222: uint32
+    val mutable private _uint3223: uint32
+    val mutable private _uint3224: uint32
+    val mutable private _uint3225: uint32
+    val mutable private _uint3226: uint32
+    val mutable private _uint3227: uint32
+    val mutable private _uint3228: uint32
+    val mutable private _uint3229: uint32
+    val mutable private _uint3230: uint32
+    val mutable private _uint3231: uint32
 
     member x.Item with get i = NativePtr.get x.UnsafePtr i and set i value = NativePtr.set x.UnsafePtr i value
     member x.Length = 32
@@ -11083,6 +11535,8 @@ type VkFixedArray_uint32_32 =
         let bytes = Array.zeroCreate<byte> 128
         use p = fixed bytes
         Marshal.Copy(&&x |> NativePtr.toNativeInt, bytes, 0, 128)
-        UTF8Encoding.UTF8.GetString bytes
+        let str = UTF8Encoding.UTF8.GetString bytes
+        let index = str.IndexOf(char 0)
+        if index >= 0 then str.Substring(0, index) else str
     member x.UnsafePtr = &&x |> NativePtr.toNativeInt |> NativePtr.ofNativeInt<uint32>
 
