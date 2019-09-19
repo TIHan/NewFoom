@@ -77,9 +77,11 @@ type env =
         delayGen: Map<string, VkDelayedItem>
     }
 
-let isVkFuncPointer env typeName =
+let rec isVkFuncPointer env typeName =
     match env.types.TryFind typeName with
     | Some(VkType(_, _, VkFuncPointer _)) -> true
+    | Some(VkType(_, _, VkAliasOrDefine target)) ->
+        isVkFuncPointer env target
     | _ -> false
 
 let rec getFixedSize env = function
@@ -167,8 +169,8 @@ let tryGetVkEnum env (vkXmlEnums: Vk.Enums) =
         let cases = getExtendedVkEnumCases env cases vkXmlEnums.Name
 
         if not cases.IsEmpty then
-            VkType(vkXmlEnums.Name, vkXmlEnums.Comment, VkEnum cases)
-            |> Some
+            let vkTy = VkType(vkXmlEnums.Name, vkXmlEnums.Comment, VkEnum cases)
+            Some(vkTy, { env with types = Map.add vkXmlEnums.Name vkTy env.types })
         else
             None
     | Some "bitmask" ->
@@ -180,8 +182,8 @@ let tryGetVkEnum env (vkXmlEnums: Vk.Enums) =
         let cases = getExtendedVkEnumCases env cases vkXmlEnums.Name
 
         if not cases.IsEmpty then
-            VkType(vkXmlEnums.Name, vkXmlEnums.Comment, VkFlags cases)
-            |> Some
+            let vkTy = VkType(vkXmlEnums.Name, vkXmlEnums.Comment, VkEnum cases)
+            Some(vkTy, { env with types = Map.add vkXmlEnums.Name vkTy env.types })
         else
             None
     | _ ->
@@ -281,10 +283,13 @@ let tryGetVkType env (vkXmlType: Vk.Type) =
             Some vkTy, { env with types = Map.add name vkTy env.types }
         else
             let target = 
-                let target = vkXmlType.Types.[0]
-                match env.primTypes.TryFind target with
-                | Some target -> target
-                | _ -> target
+                if catName = "bitmask" && vkXmlType.Requires.IsSome then
+                    vkXmlType.Requires.Value
+                else
+                    let target = vkXmlType.Types.[0]
+                    match env.primTypes.TryFind target with
+                    | Some target -> target
+                    | _ -> target
 
             let vkTy = VkType(name, vkXmlType.Comment, VkAliasOrDefine target)
             Some vkTy, { env with types = Map.add name vkTy env.types }
@@ -319,7 +324,6 @@ let tryGetVkType env (vkXmlType: Vk.Type) =
                         let element = node :> obj :?> XElement
                         if element.Name.LocalName = "type" then
                             let typeName = element.Value
-                            node <- node.NextNode
                             if element <> null then
                                 yield getTypeName env typeName node
                             else
@@ -377,11 +381,13 @@ let tryMkVkBinding name aliasOpt commentOpt (xel: XElement) =
     | Some value, None -> 
         let value =
             // special cases
-            match value with
-            | "(~0U)" -> "~~~0u"
-            | "(~0ULL)" -> "~~~0UL"
-            | "(~0U-1)" -> "~~~0u-1u"
-            | "(~0U-2)" -> "~~~0u-2u"
+            match name, value with
+            | _, "(~0U)" -> "~~~0u"
+            | _, "(~0ULL)" -> "~~~0UL"
+            | _, "(~0U-1)" -> "~~~0u-1u"
+            | _, "(~0U-2)" -> "~~~0u-2u"
+            | "VK_TRUE", _ -> "1u"
+            | "VK_FALSE", _ -> "0u"
             | _ -> value
         VkBinding(name, value, commentOpt, None) |> Some
     | None, Some alias -> VkBinding(name, alias, commentOpt, None) |> Some
@@ -617,11 +623,15 @@ let tryGenVkType env vkType =
             | VkFlags _ -> ["[<Flags>]\n"]
             | VkStruct _ -> ["[<Struct;NoEquality;NoComparison>]\n"]
             | VkUnion _ -> ["[<Struct;StructLayout(LayoutKind.Explicit);NoEquality;NoComparison>]\n"]
-            //| VkFuncPointer _ -> ["[<UnmanagedFunctionPointer(CallingConvention.Winapi)>]\n"]
+            | VkFuncPointer _ -> ["[<UnmanagedFunctionPointer(CallingConvention.Winapi)>]\n"]
             | _ -> [""]
             |> List.reduce(fun x y -> x + y)
 
         let decl =
+            let name =
+                match kind with
+                | VkFuncPointer _ -> "_" + name
+                | _ -> name
             match comment with
             | Some comment -> 
                 sprintf "/// %s\n%stype %s =" comment attribs name
@@ -658,11 +668,21 @@ let tryGenVkType env vkType =
                 |> List.reduce (fun x y -> x + "\n" + y)
                 |> (+) "\n", env
 
-            | VkFuncPointer (_parTypes, _returnType) ->
-                " " + "nativeint", env
-                //" delegate of " +
-                //(parTypes |> List.reduce (fun x y -> x + " * " + y)) +
-                //" -> " + returnType
+            | VkFuncPointer (parTypes, returnType) ->
+                let genDelegate =
+                    " delegate of " +
+                    (parTypes |> List.reduce (fun x y -> x + " * " + y)) +
+                    " -> " + returnType
+
+                let genType =
+                    "[<Struct>]\ntype " + name + " = private " + name + " of nativeint with\n" +
+                    "    static member Create(f) =\n" + 
+                    "        let d = _" + name + "(f)\n" +
+                    "        let gcHandle = GCHandle.Alloc d\n" +
+                    "        let dPtr = Marshal.GetFunctionPointerForDelegate(d)\n" +
+                    "        gcHandle, " + name + " dPtr"
+
+                genDelegate + "\n" + genType, env
 
             | VkUnion cases ->
                 cases
@@ -752,7 +772,7 @@ let filterParamAndReturnType env typeName =
     | _ when typeName.StartsWith("nativeptr<nativeptr<") ->
         let typeName = typeName.Replace("nativeptr<nativeptr<", String.Empty).Replace(">>", String.Empty)
         if isVkFuncPointer env typeName then
-            typeName
+            typeName + "*"
         else
             typeName + "**"
     | _ -> typeName
@@ -797,10 +817,13 @@ let genSource () =
 
     let vkBindingsForExtensions, env = getVkBindingsForExtensions env
 
-    let vkEnumTypes =
-        vk.Enums
-        |> Seq.choose (tryGetVkEnum env)
-        |> List.ofSeq
+    let vkEnumTypes, env =
+        (([], env), vk.Enums)
+        ||> Seq.fold (fun (vkTys, env) vkXmlType ->
+            match tryGetVkEnum env vkXmlType with
+            | Some(vkTy, env) -> (vkTy :: vkTys, env)
+            | _ -> (vkTys, env)
+        )
 
     let vkTypes, env =
         (([], env), vk.Types.Types)
