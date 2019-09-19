@@ -11552,7 +11552,7 @@ let inline vkString (str: string) = UTF8Encoding.UTF8.GetBytes str
 let inline vkNullPtr<'T when 'T : unmanaged> = nativeint 0 |> NativePtr.ofNativeInt<'T>
 let inline vkCastPtr<'T, 'U when 'T : unmanaged and 'U : unmanaged>(p: nativeptr<'T>) : nativeptr<'U> = p |> NativePtr.toNativeInt |> NativePtr.ofNativeInt
 let inline vkDelegateOfFunctionPointer<'T when 'T :> Delegate>(func: PFN_vkVoidFunction) =
-    Marshal.GetDelegateForFunctionPointer(&&func |> NativePtr.toNativeInt, typeof<'T>) :?> 'T
+    Marshal.GetDelegateForFunctionPointer<'T>(&&func |> NativePtr.toNativeInt)
 let vkFixedStringArray (strs: string[]) =
     if strs.Length = 0 then new PtrPtrHandle<byte>([||], vkNullPtr)
     else

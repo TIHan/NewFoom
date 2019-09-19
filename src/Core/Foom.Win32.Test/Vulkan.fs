@@ -79,7 +79,7 @@ let private mkDebugMessenger instance debugCallback =
     createInfo.messageType <- VkDebugUtilsMessageTypeFlagsEXT.VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |||
                               VkDebugUtilsMessageTypeFlagsEXT.VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |||
                               VkDebugUtilsMessageTypeFlagsEXT.VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT
-    createInfo.pfnUserCallback <- debugCallback
+  //  createInfo.pfnUserCallback <- debugCallback
     createInfo.pUserData <- IntPtr.Zero // optional
 
     use pName = fixed vkString "vkCreateDebugUtilsMessengerEXT"
