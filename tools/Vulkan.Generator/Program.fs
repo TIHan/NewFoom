@@ -615,6 +615,19 @@ let genVkUnionCase env vkUnionCase =
     | VkUnionCase(name, typeName, _) ->
         sprintf "    [<FieldOffset(0);DefaultValue(false)>]\n    val mutable %s: %s" name typeName
 
+let genDelegateBody parTypes returnType =
+    " delegate of " +
+    (parTypes |> List.reduce (fun x y -> x + " * " + y)) +
+    " -> " + returnType
+
+let genCallbackBody name =
+    "[<Struct>]\ntype " + name + " = private D of nativeint with\n" +
+    "    static member Create(f) =\n" + 
+    "        let d = _" + name + "(f)\n" +
+    "        let gcHandle = GCHandle.Alloc d\n" +
+    "        let dPtr = Marshal.GetFunctionPointerForDelegate(d)\n" +
+    "        gcHandle, D dPtr"
+
 let tryGenVkType env vkType =
     match vkType with
     | VkType(name, comment, kind) ->
@@ -669,20 +682,7 @@ let tryGenVkType env vkType =
                 |> (+) "\n", env
 
             | VkFuncPointer (parTypes, returnType) ->
-                let genDelegate =
-                    " delegate of " +
-                    (parTypes |> List.reduce (fun x y -> x + " * " + y)) +
-                    " -> " + returnType
-
-                let genType =
-                    "[<Struct>]\ntype " + name + " = private " + name + " of nativeint with\n" +
-                    "    static member Create(f) =\n" + 
-                    "        let d = _" + name + "(f)\n" +
-                    "        let gcHandle = GCHandle.Alloc d\n" +
-                    "        let dPtr = Marshal.GetFunctionPointerForDelegate(d)\n" +
-                    "        gcHandle, " + name + " dPtr"
-
-                genDelegate + "\n" + genType, env
+                genDelegateBody parTypes returnType + "\n" + genCallbackBody name, env
 
             | VkUnion cases ->
                 cases
@@ -777,6 +777,11 @@ let filterParamAndReturnType env typeName =
             typeName + "**"
     | _ -> typeName
 
+let filterParamAndReturnTypeForDelegate env typeName =
+    match typeName with
+    | "void" -> "unit"
+    | _ -> typeName
+
 let genVkParams env vkParams =
     if List.isEmpty vkParams then
         String.Empty
@@ -788,10 +793,18 @@ let genVkParams env vkParams =
 let genVkFunction env vkFunction =
     match vkFunction with
     | VkFunction(name, vkParams, returnType, comment) ->
-        filterComment comment + 
-        """[<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi);SuppressUnmanagedCodeSecurity>]""" + "\n" +
-        sprintf "extern %s %s" (filterParamAndReturnType env returnType) name +
-        "(" + genVkParams env vkParams + ")"
+        // kinda of hacky, we should actually check extensions to verify, but good for now.
+        if name.EndsWith("EXT") then
+            let parTypes =
+                vkParams
+                |> List.map (fun (VkParam(_, typeName)) -> (filterParamAndReturnTypeForDelegate env typeName))
+            "[<UnmanagedFunctionPointer(CallingConvention.Winapi)>]\n" +
+            "type " + name + " = " + genDelegateBody parTypes (filterParamAndReturnTypeForDelegate env returnType)
+        else
+            filterComment comment + 
+            """[<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi);SuppressUnmanagedCodeSecurity>]""" + "\n" +
+            sprintf "extern %s %s" (filterParamAndReturnType env returnType) name +
+            "(" + genVkParams env vkParams + ")"
 
 let genVkFunctions env vkFunctions =
     vkFunctions
@@ -883,6 +896,8 @@ type PtrPtrHandle<'T when 'T : unmanaged> internal (handles: GCHandle[], ptrPtr:
     "let inline vkString (str: string) = UTF8Encoding.UTF8.GetBytes str\n" +
     "let inline vkNullPtr<'T when 'T : unmanaged> = nativeint 0 |> NativePtr.ofNativeInt<'T>" + "\n" +
     "let inline vkCastPtr<'T, 'U when 'T : unmanaged and 'U : unmanaged>(p: nativeptr<'T>) : nativeptr<'U> = p |> NativePtr.toNativeInt |> NativePtr.ofNativeInt" + "\n" +
+    "let inline vkDelegateOfFunctionPointer<'T when 'T :> Delegate>(func: PFN_vkVoidFunction) =\n" +
+    "    Marshal.GetDelegateForFunctionPointer(&&func |> NativePtr.toNativeInt, typeof<'T>) :?> 'T\n" +
     "let vkFixedStringArray (strs: string[]) =\n" +
 
     "    if strs.Length = 0 then new PtrPtrHandle<byte>([||], vkNullPtr)\n" +

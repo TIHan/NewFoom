@@ -9438,82 +9438,82 @@ type VkBaseOutStructure =
 [<UnmanagedFunctionPointer(CallingConvention.Winapi)>]
 type _PFN_vkDebugUtilsMessengerCallbackEXT = delegate of VkDebugUtilsMessageSeverityFlagBitsEXT * VkDebugUtilsMessageTypeFlagsEXT * nativeptr<VkDebugUtilsMessengerCallbackDataEXT> * nativeint -> VkBool32
 [<Struct>]
-type PFN_vkDebugUtilsMessengerCallbackEXT = private PFN_vkDebugUtilsMessengerCallbackEXT of nativeint with
+type PFN_vkDebugUtilsMessengerCallbackEXT = private D of nativeint with
     static member Create(f) =
         let d = _PFN_vkDebugUtilsMessengerCallbackEXT(f)
         let gcHandle = GCHandle.Alloc d
         let dPtr = Marshal.GetFunctionPointerForDelegate(d)
-        gcHandle, PFN_vkDebugUtilsMessengerCallbackEXT dPtr
+        gcHandle, D dPtr
 
 [<UnmanagedFunctionPointer(CallingConvention.Winapi)>]
 type _PFN_vkDebugReportCallbackEXT = delegate of VkDebugReportFlagsEXT * VkDebugReportObjectTypeEXT * uint64 * unativeint * int * nativeptr<byte> * nativeptr<byte> * nativeint -> VkBool32
 [<Struct>]
-type PFN_vkDebugReportCallbackEXT = private PFN_vkDebugReportCallbackEXT of nativeint with
+type PFN_vkDebugReportCallbackEXT = private D of nativeint with
     static member Create(f) =
         let d = _PFN_vkDebugReportCallbackEXT(f)
         let gcHandle = GCHandle.Alloc d
         let dPtr = Marshal.GetFunctionPointerForDelegate(d)
-        gcHandle, PFN_vkDebugReportCallbackEXT dPtr
+        gcHandle, D dPtr
 
 [<UnmanagedFunctionPointer(CallingConvention.Winapi)>]
 type _PFN_vkVoidFunction = delegate of unit -> unit
 [<Struct>]
-type PFN_vkVoidFunction = private PFN_vkVoidFunction of nativeint with
+type PFN_vkVoidFunction = private D of nativeint with
     static member Create(f) =
         let d = _PFN_vkVoidFunction(f)
         let gcHandle = GCHandle.Alloc d
         let dPtr = Marshal.GetFunctionPointerForDelegate(d)
-        gcHandle, PFN_vkVoidFunction dPtr
+        gcHandle, D dPtr
 
 [<UnmanagedFunctionPointer(CallingConvention.Winapi)>]
 type _PFN_vkFreeFunction = delegate of nativeint * nativeint -> unit
 [<Struct>]
-type PFN_vkFreeFunction = private PFN_vkFreeFunction of nativeint with
+type PFN_vkFreeFunction = private D of nativeint with
     static member Create(f) =
         let d = _PFN_vkFreeFunction(f)
         let gcHandle = GCHandle.Alloc d
         let dPtr = Marshal.GetFunctionPointerForDelegate(d)
-        gcHandle, PFN_vkFreeFunction dPtr
+        gcHandle, D dPtr
 
 [<UnmanagedFunctionPointer(CallingConvention.Winapi)>]
 type _PFN_vkAllocationFunction = delegate of nativeint * unativeint * unativeint * VkSystemAllocationScope -> nativeint
 [<Struct>]
-type PFN_vkAllocationFunction = private PFN_vkAllocationFunction of nativeint with
+type PFN_vkAllocationFunction = private D of nativeint with
     static member Create(f) =
         let d = _PFN_vkAllocationFunction(f)
         let gcHandle = GCHandle.Alloc d
         let dPtr = Marshal.GetFunctionPointerForDelegate(d)
-        gcHandle, PFN_vkAllocationFunction dPtr
+        gcHandle, D dPtr
 
 [<UnmanagedFunctionPointer(CallingConvention.Winapi)>]
 type _PFN_vkReallocationFunction = delegate of nativeint * nativeint * unativeint * unativeint * VkSystemAllocationScope -> nativeint
 [<Struct>]
-type PFN_vkReallocationFunction = private PFN_vkReallocationFunction of nativeint with
+type PFN_vkReallocationFunction = private D of nativeint with
     static member Create(f) =
         let d = _PFN_vkReallocationFunction(f)
         let gcHandle = GCHandle.Alloc d
         let dPtr = Marshal.GetFunctionPointerForDelegate(d)
-        gcHandle, PFN_vkReallocationFunction dPtr
+        gcHandle, D dPtr
 
 [<UnmanagedFunctionPointer(CallingConvention.Winapi)>]
 type _PFN_vkInternalFreeNotification = delegate of nativeint * unativeint * VkInternalAllocationType * VkSystemAllocationScope -> unit
 [<Struct>]
-type PFN_vkInternalFreeNotification = private PFN_vkInternalFreeNotification of nativeint with
+type PFN_vkInternalFreeNotification = private D of nativeint with
     static member Create(f) =
         let d = _PFN_vkInternalFreeNotification(f)
         let gcHandle = GCHandle.Alloc d
         let dPtr = Marshal.GetFunctionPointerForDelegate(d)
-        gcHandle, PFN_vkInternalFreeNotification dPtr
+        gcHandle, D dPtr
 
 [<UnmanagedFunctionPointer(CallingConvention.Winapi)>]
 type _PFN_vkInternalAllocationNotification = delegate of nativeint * unativeint * VkInternalAllocationType * VkSystemAllocationScope -> unit
 [<Struct>]
-type PFN_vkInternalAllocationNotification = private PFN_vkInternalAllocationNotification of nativeint with
+type PFN_vkInternalAllocationNotification = private D of nativeint with
     static member Create(f) =
         let d = _PFN_vkInternalAllocationNotification(f)
         let gcHandle = GCHandle.Alloc d
         let dPtr = Marshal.GetFunctionPointerForDelegate(d)
-        gcHandle, PFN_vkInternalAllocationNotification dPtr
+        gcHandle, D dPtr
 
 type VkDebugUtilsMessengerEXT = nativeint
 
@@ -10077,8 +10077,8 @@ extern void vkDestroyQueryPool(VkDevice device, VkQueryPool queryPool, VkAllocat
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi);SuppressUnmanagedCodeSecurity>]
 extern VkResult vkGetQueryPoolResults(VkDevice device, VkQueryPool queryPool, uint32 firstQuery, uint32 queryCount, unativeint dataSize, void* pData, VkDeviceSize stride, VkQueryResultFlags flags)
 
-[<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi);SuppressUnmanagedCodeSecurity>]
-extern void vkResetQueryPoolEXT(VkDevice device, VkQueryPool queryPool, uint32 firstQuery, uint32 queryCount)
+[<UnmanagedFunctionPointer(CallingConvention.Winapi)>]
+type vkResetQueryPoolEXT =  delegate of VkDevice * VkQueryPool * uint32 * uint32 -> unit
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi);SuppressUnmanagedCodeSecurity>]
 extern VkResult vkCreateBuffer(VkDevice device, VkBufferCreateInfo* pCreateInfo, VkAllocationCallbacks* pAllocator, VkBuffer* pBuffer)
@@ -10318,11 +10318,11 @@ extern void vkCmdBeginQuery(VkCommandBuffer commandBuffer, VkQueryPool queryPool
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi);SuppressUnmanagedCodeSecurity>]
 extern void vkCmdEndQuery(VkCommandBuffer commandBuffer, VkQueryPool queryPool, uint32 query)
 
-[<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi);SuppressUnmanagedCodeSecurity>]
-extern void vkCmdBeginConditionalRenderingEXT(VkCommandBuffer commandBuffer, VkConditionalRenderingBeginInfoEXT* pConditionalRenderingBegin)
+[<UnmanagedFunctionPointer(CallingConvention.Winapi)>]
+type vkCmdBeginConditionalRenderingEXT =  delegate of VkCommandBuffer * nativeptr<VkConditionalRenderingBeginInfoEXT> -> unit
 
-[<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi);SuppressUnmanagedCodeSecurity>]
-extern void vkCmdEndConditionalRenderingEXT(VkCommandBuffer commandBuffer)
+[<UnmanagedFunctionPointer(CallingConvention.Winapi)>]
+type vkCmdEndConditionalRenderingEXT =  delegate of VkCommandBuffer -> unit
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi);SuppressUnmanagedCodeSecurity>]
 extern void vkCmdResetQueryPool(VkCommandBuffer commandBuffer, VkQueryPool queryPool, uint32 firstQuery, uint32 queryCount)
@@ -10438,29 +10438,29 @@ extern VkResult vkCreateImagePipeSurfaceFUCHSIA(VkInstance instance, VkImagePipe
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi);SuppressUnmanagedCodeSecurity>]
 extern VkResult vkCreateStreamDescriptorSurfaceGGP(VkInstance instance, VkStreamDescriptorSurfaceCreateInfoGGP* pCreateInfo, VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface)
 
-[<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi);SuppressUnmanagedCodeSecurity>]
-extern VkResult vkCreateDebugReportCallbackEXT(VkInstance instance, VkDebugReportCallbackCreateInfoEXT* pCreateInfo, VkAllocationCallbacks* pAllocator, VkDebugReportCallbackEXT* pCallback)
+[<UnmanagedFunctionPointer(CallingConvention.Winapi)>]
+type vkCreateDebugReportCallbackEXT =  delegate of VkInstance * nativeptr<VkDebugReportCallbackCreateInfoEXT> * nativeptr<VkAllocationCallbacks> * nativeptr<VkDebugReportCallbackEXT> -> VkResult
 
-[<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi);SuppressUnmanagedCodeSecurity>]
-extern void vkDestroyDebugReportCallbackEXT(VkInstance instance, VkDebugReportCallbackEXT callback, VkAllocationCallbacks* pAllocator)
+[<UnmanagedFunctionPointer(CallingConvention.Winapi)>]
+type vkDestroyDebugReportCallbackEXT =  delegate of VkInstance * VkDebugReportCallbackEXT * nativeptr<VkAllocationCallbacks> -> unit
 
-[<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi);SuppressUnmanagedCodeSecurity>]
-extern void vkDebugReportMessageEXT(VkInstance instance, VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objectType, uint64 object, unativeint location, int messageCode, byte* pLayerPrefix, byte* pMessage)
+[<UnmanagedFunctionPointer(CallingConvention.Winapi)>]
+type vkDebugReportMessageEXT =  delegate of VkInstance * VkDebugReportFlagsEXT * VkDebugReportObjectTypeEXT * uint64 * unativeint * int * nativeptr<byte> * nativeptr<byte> -> unit
 
-[<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi);SuppressUnmanagedCodeSecurity>]
-extern VkResult vkDebugMarkerSetObjectNameEXT(VkDevice device, VkDebugMarkerObjectNameInfoEXT* pNameInfo)
+[<UnmanagedFunctionPointer(CallingConvention.Winapi)>]
+type vkDebugMarkerSetObjectNameEXT =  delegate of VkDevice * nativeptr<VkDebugMarkerObjectNameInfoEXT> -> VkResult
 
-[<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi);SuppressUnmanagedCodeSecurity>]
-extern VkResult vkDebugMarkerSetObjectTagEXT(VkDevice device, VkDebugMarkerObjectTagInfoEXT* pTagInfo)
+[<UnmanagedFunctionPointer(CallingConvention.Winapi)>]
+type vkDebugMarkerSetObjectTagEXT =  delegate of VkDevice * nativeptr<VkDebugMarkerObjectTagInfoEXT> -> VkResult
 
-[<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi);SuppressUnmanagedCodeSecurity>]
-extern void vkCmdDebugMarkerBeginEXT(VkCommandBuffer commandBuffer, VkDebugMarkerMarkerInfoEXT* pMarkerInfo)
+[<UnmanagedFunctionPointer(CallingConvention.Winapi)>]
+type vkCmdDebugMarkerBeginEXT =  delegate of VkCommandBuffer * nativeptr<VkDebugMarkerMarkerInfoEXT> -> unit
 
-[<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi);SuppressUnmanagedCodeSecurity>]
-extern void vkCmdDebugMarkerEndEXT(VkCommandBuffer commandBuffer)
+[<UnmanagedFunctionPointer(CallingConvention.Winapi)>]
+type vkCmdDebugMarkerEndEXT =  delegate of VkCommandBuffer -> unit
 
-[<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi);SuppressUnmanagedCodeSecurity>]
-extern void vkCmdDebugMarkerInsertEXT(VkCommandBuffer commandBuffer, VkDebugMarkerMarkerInfoEXT* pMarkerInfo)
+[<UnmanagedFunctionPointer(CallingConvention.Winapi)>]
+type vkCmdDebugMarkerInsertEXT =  delegate of VkCommandBuffer * nativeptr<VkDebugMarkerMarkerInfoEXT> -> unit
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi);SuppressUnmanagedCodeSecurity>]
 extern VkResult vkGetPhysicalDeviceExternalImageFormatPropertiesNV(VkPhysicalDevice physicalDevice, VkFormat format, VkImageType typ, VkImageTiling tiling, VkImageUsageFlags usage, VkImageCreateFlags flags, VkExternalMemoryHandleTypeFlagsNV externalHandleType, VkExternalImageFormatPropertiesNV* pExternalImageFormatProperties)
@@ -10567,29 +10567,29 @@ extern VkResult vkGetFenceFdKHR(VkDevice device, VkFenceGetFdInfoKHR* pGetFdInfo
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi);SuppressUnmanagedCodeSecurity>]
 extern VkResult vkImportFenceFdKHR(VkDevice device, VkImportFenceFdInfoKHR* pImportFenceFdInfo)
 
-[<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi);SuppressUnmanagedCodeSecurity>]
-extern VkResult vkReleaseDisplayEXT(VkPhysicalDevice physicalDevice, VkDisplayKHR display)
+[<UnmanagedFunctionPointer(CallingConvention.Winapi)>]
+type vkReleaseDisplayEXT =  delegate of VkPhysicalDevice * VkDisplayKHR -> VkResult
 
-[<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi);SuppressUnmanagedCodeSecurity>]
-extern VkResult vkAcquireXlibDisplayEXT(VkPhysicalDevice physicalDevice, Display* dpy, VkDisplayKHR display)
+[<UnmanagedFunctionPointer(CallingConvention.Winapi)>]
+type vkAcquireXlibDisplayEXT =  delegate of VkPhysicalDevice * nativeptr<Display> * VkDisplayKHR -> VkResult
 
-[<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi);SuppressUnmanagedCodeSecurity>]
-extern VkResult vkGetRandROutputDisplayEXT(VkPhysicalDevice physicalDevice, Display* dpy, RROutput rrOutput, VkDisplayKHR* pDisplay)
+[<UnmanagedFunctionPointer(CallingConvention.Winapi)>]
+type vkGetRandROutputDisplayEXT =  delegate of VkPhysicalDevice * nativeptr<Display> * RROutput * nativeptr<VkDisplayKHR> -> VkResult
 
-[<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi);SuppressUnmanagedCodeSecurity>]
-extern VkResult vkDisplayPowerControlEXT(VkDevice device, VkDisplayKHR display, VkDisplayPowerInfoEXT* pDisplayPowerInfo)
+[<UnmanagedFunctionPointer(CallingConvention.Winapi)>]
+type vkDisplayPowerControlEXT =  delegate of VkDevice * VkDisplayKHR * nativeptr<VkDisplayPowerInfoEXT> -> VkResult
 
-[<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi);SuppressUnmanagedCodeSecurity>]
-extern VkResult vkRegisterDeviceEventEXT(VkDevice device, VkDeviceEventInfoEXT* pDeviceEventInfo, VkAllocationCallbacks* pAllocator, VkFence* pFence)
+[<UnmanagedFunctionPointer(CallingConvention.Winapi)>]
+type vkRegisterDeviceEventEXT =  delegate of VkDevice * nativeptr<VkDeviceEventInfoEXT> * nativeptr<VkAllocationCallbacks> * nativeptr<VkFence> -> VkResult
 
-[<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi);SuppressUnmanagedCodeSecurity>]
-extern VkResult vkRegisterDisplayEventEXT(VkDevice device, VkDisplayKHR display, VkDisplayEventInfoEXT* pDisplayEventInfo, VkAllocationCallbacks* pAllocator, VkFence* pFence)
+[<UnmanagedFunctionPointer(CallingConvention.Winapi)>]
+type vkRegisterDisplayEventEXT =  delegate of VkDevice * VkDisplayKHR * nativeptr<VkDisplayEventInfoEXT> * nativeptr<VkAllocationCallbacks> * nativeptr<VkFence> -> VkResult
 
-[<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi);SuppressUnmanagedCodeSecurity>]
-extern VkResult vkGetSwapchainCounterEXT(VkDevice device, VkSwapchainKHR swapchain, VkSurfaceCounterFlagBitsEXT counter, uint64* pCounterValue)
+[<UnmanagedFunctionPointer(CallingConvention.Winapi)>]
+type vkGetSwapchainCounterEXT =  delegate of VkDevice * VkSwapchainKHR * VkSurfaceCounterFlagBitsEXT * nativeptr<uint64> -> VkResult
 
-[<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi);SuppressUnmanagedCodeSecurity>]
-extern VkResult vkGetPhysicalDeviceSurfaceCapabilities2EXT(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, VkSurfaceCapabilities2EXT* pSurfaceCapabilities)
+[<UnmanagedFunctionPointer(CallingConvention.Winapi)>]
+type vkGetPhysicalDeviceSurfaceCapabilities2EXT =  delegate of VkPhysicalDevice * VkSurfaceKHR * nativeptr<VkSurfaceCapabilities2EXT> -> VkResult
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi);SuppressUnmanagedCodeSecurity>]
 extern VkResult vkEnumeratePhysicalDeviceGroups(VkInstance instance, uint32* pPhysicalDeviceGroupCount, VkPhysicalDeviceGroupProperties* pPhysicalDeviceGroupProperties)
@@ -10633,8 +10633,8 @@ extern void vkUpdateDescriptorSetWithTemplate(VkDevice device, VkDescriptorSet d
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi);SuppressUnmanagedCodeSecurity>]
 extern void vkCmdPushDescriptorSetWithTemplateKHR(VkCommandBuffer commandBuffer, VkDescriptorUpdateTemplate descriptorUpdateTemplate, VkPipelineLayout layout, uint32 set, void* pData)
 
-[<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi);SuppressUnmanagedCodeSecurity>]
-extern void vkSetHdrMetadataEXT(VkDevice device, uint32 swapchainCount, VkSwapchainKHR* pSwapchains, VkHdrMetadataEXT* pMetadata)
+[<UnmanagedFunctionPointer(CallingConvention.Winapi)>]
+type vkSetHdrMetadataEXT =  delegate of VkDevice * uint32 * nativeptr<VkSwapchainKHR> * nativeptr<VkHdrMetadataEXT> -> unit
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi);SuppressUnmanagedCodeSecurity>]
 extern VkResult vkGetSwapchainStatusKHR(VkDevice device, VkSwapchainKHR swapchain)
@@ -10651,20 +10651,20 @@ extern VkResult vkCreateIOSSurfaceMVK(VkInstance instance, VkIOSSurfaceCreateInf
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi);SuppressUnmanagedCodeSecurity>]
 extern VkResult vkCreateMacOSSurfaceMVK(VkInstance instance, VkMacOSSurfaceCreateInfoMVK* pCreateInfo, VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface)
 
-[<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi);SuppressUnmanagedCodeSecurity>]
-extern VkResult vkCreateMetalSurfaceEXT(VkInstance instance, VkMetalSurfaceCreateInfoEXT* pCreateInfo, VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface)
+[<UnmanagedFunctionPointer(CallingConvention.Winapi)>]
+type vkCreateMetalSurfaceEXT =  delegate of VkInstance * nativeptr<VkMetalSurfaceCreateInfoEXT> * nativeptr<VkAllocationCallbacks> * nativeptr<VkSurfaceKHR> -> VkResult
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi);SuppressUnmanagedCodeSecurity>]
 extern void vkCmdSetViewportWScalingNV(VkCommandBuffer commandBuffer, uint32 firstViewport, uint32 viewportCount, VkViewportWScalingNV* pViewportWScalings)
 
-[<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi);SuppressUnmanagedCodeSecurity>]
-extern void vkCmdSetDiscardRectangleEXT(VkCommandBuffer commandBuffer, uint32 firstDiscardRectangle, uint32 discardRectangleCount, VkRect2D* pDiscardRectangles)
+[<UnmanagedFunctionPointer(CallingConvention.Winapi)>]
+type vkCmdSetDiscardRectangleEXT =  delegate of VkCommandBuffer * uint32 * uint32 * nativeptr<VkRect2D> -> unit
 
-[<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi);SuppressUnmanagedCodeSecurity>]
-extern void vkCmdSetSampleLocationsEXT(VkCommandBuffer commandBuffer, VkSampleLocationsInfoEXT* pSampleLocationsInfo)
+[<UnmanagedFunctionPointer(CallingConvention.Winapi)>]
+type vkCmdSetSampleLocationsEXT =  delegate of VkCommandBuffer * nativeptr<VkSampleLocationsInfoEXT> -> unit
 
-[<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi);SuppressUnmanagedCodeSecurity>]
-extern void vkGetPhysicalDeviceMultisamplePropertiesEXT(VkPhysicalDevice physicalDevice, VkSampleCountFlagBits samples, VkMultisamplePropertiesEXT* pMultisampleProperties)
+[<UnmanagedFunctionPointer(CallingConvention.Winapi)>]
+type vkGetPhysicalDeviceMultisamplePropertiesEXT =  delegate of VkPhysicalDevice * VkSampleCountFlagBits * nativeptr<VkMultisamplePropertiesEXT> -> unit
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi);SuppressUnmanagedCodeSecurity>]
 extern VkResult vkGetPhysicalDeviceSurfaceCapabilities2KHR(VkPhysicalDevice physicalDevice, VkPhysicalDeviceSurfaceInfo2KHR* pSurfaceInfo, VkSurfaceCapabilities2KHR* pSurfaceCapabilities)
@@ -10702,17 +10702,17 @@ extern void vkDestroySamplerYcbcrConversion(VkDevice device, VkSamplerYcbcrConve
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi);SuppressUnmanagedCodeSecurity>]
 extern void vkGetDeviceQueue2(VkDevice device, VkDeviceQueueInfo2* pQueueInfo, VkQueue* pQueue)
 
-[<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi);SuppressUnmanagedCodeSecurity>]
-extern VkResult vkCreateValidationCacheEXT(VkDevice device, VkValidationCacheCreateInfoEXT* pCreateInfo, VkAllocationCallbacks* pAllocator, VkValidationCacheEXT* pValidationCache)
+[<UnmanagedFunctionPointer(CallingConvention.Winapi)>]
+type vkCreateValidationCacheEXT =  delegate of VkDevice * nativeptr<VkValidationCacheCreateInfoEXT> * nativeptr<VkAllocationCallbacks> * nativeptr<VkValidationCacheEXT> -> VkResult
 
-[<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi);SuppressUnmanagedCodeSecurity>]
-extern void vkDestroyValidationCacheEXT(VkDevice device, VkValidationCacheEXT validationCache, VkAllocationCallbacks* pAllocator)
+[<UnmanagedFunctionPointer(CallingConvention.Winapi)>]
+type vkDestroyValidationCacheEXT =  delegate of VkDevice * VkValidationCacheEXT * nativeptr<VkAllocationCallbacks> -> unit
 
-[<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi);SuppressUnmanagedCodeSecurity>]
-extern VkResult vkGetValidationCacheDataEXT(VkDevice device, VkValidationCacheEXT validationCache, unativeint* pDataSize, void* pData)
+[<UnmanagedFunctionPointer(CallingConvention.Winapi)>]
+type vkGetValidationCacheDataEXT =  delegate of VkDevice * VkValidationCacheEXT * nativeptr<unativeint> * nativeint -> VkResult
 
-[<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi);SuppressUnmanagedCodeSecurity>]
-extern VkResult vkMergeValidationCachesEXT(VkDevice device, VkValidationCacheEXT dstCache, uint32 srcCacheCount, VkValidationCacheEXT* pSrcCaches)
+[<UnmanagedFunctionPointer(CallingConvention.Winapi)>]
+type vkMergeValidationCachesEXT =  delegate of VkDevice * VkValidationCacheEXT * uint32 * nativeptr<VkValidationCacheEXT> -> VkResult
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi);SuppressUnmanagedCodeSecurity>]
 extern void vkGetDescriptorSetLayoutSupport(VkDevice device, VkDescriptorSetLayoutCreateInfo* pCreateInfo, VkDescriptorSetLayoutSupport* pSupport)
@@ -10735,47 +10735,47 @@ extern VkResult vkGetShaderInfoAMD(VkDevice device, VkPipeline pipeline, VkShade
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi);SuppressUnmanagedCodeSecurity>]
 extern void vkSetLocalDimmingAMD(VkDevice device, VkSwapchainKHR swapChain, VkBool32 localDimmingEnable)
 
-[<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi);SuppressUnmanagedCodeSecurity>]
-extern VkResult vkGetPhysicalDeviceCalibrateableTimeDomainsEXT(VkPhysicalDevice physicalDevice, uint32* pTimeDomainCount, VkTimeDomainEXT* pTimeDomains)
+[<UnmanagedFunctionPointer(CallingConvention.Winapi)>]
+type vkGetPhysicalDeviceCalibrateableTimeDomainsEXT =  delegate of VkPhysicalDevice * nativeptr<uint32> * nativeptr<VkTimeDomainEXT> -> VkResult
 
-[<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi);SuppressUnmanagedCodeSecurity>]
-extern VkResult vkGetCalibratedTimestampsEXT(VkDevice device, uint32 timestampCount, VkCalibratedTimestampInfoEXT* pTimestampInfos, uint64* pTimestamps, uint64* pMaxDeviation)
+[<UnmanagedFunctionPointer(CallingConvention.Winapi)>]
+type vkGetCalibratedTimestampsEXT =  delegate of VkDevice * uint32 * nativeptr<VkCalibratedTimestampInfoEXT> * nativeptr<uint64> * nativeptr<uint64> -> VkResult
 
-[<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi);SuppressUnmanagedCodeSecurity>]
-extern VkResult vkSetDebugUtilsObjectNameEXT(VkDevice device, VkDebugUtilsObjectNameInfoEXT* pNameInfo)
+[<UnmanagedFunctionPointer(CallingConvention.Winapi)>]
+type vkSetDebugUtilsObjectNameEXT =  delegate of VkDevice * nativeptr<VkDebugUtilsObjectNameInfoEXT> -> VkResult
 
-[<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi);SuppressUnmanagedCodeSecurity>]
-extern VkResult vkSetDebugUtilsObjectTagEXT(VkDevice device, VkDebugUtilsObjectTagInfoEXT* pTagInfo)
+[<UnmanagedFunctionPointer(CallingConvention.Winapi)>]
+type vkSetDebugUtilsObjectTagEXT =  delegate of VkDevice * nativeptr<VkDebugUtilsObjectTagInfoEXT> -> VkResult
 
-[<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi);SuppressUnmanagedCodeSecurity>]
-extern void vkQueueBeginDebugUtilsLabelEXT(VkQueue queue, VkDebugUtilsLabelEXT* pLabelInfo)
+[<UnmanagedFunctionPointer(CallingConvention.Winapi)>]
+type vkQueueBeginDebugUtilsLabelEXT =  delegate of VkQueue * nativeptr<VkDebugUtilsLabelEXT> -> unit
 
-[<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi);SuppressUnmanagedCodeSecurity>]
-extern void vkQueueEndDebugUtilsLabelEXT(VkQueue queue)
+[<UnmanagedFunctionPointer(CallingConvention.Winapi)>]
+type vkQueueEndDebugUtilsLabelEXT =  delegate of VkQueue -> unit
 
-[<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi);SuppressUnmanagedCodeSecurity>]
-extern void vkQueueInsertDebugUtilsLabelEXT(VkQueue queue, VkDebugUtilsLabelEXT* pLabelInfo)
+[<UnmanagedFunctionPointer(CallingConvention.Winapi)>]
+type vkQueueInsertDebugUtilsLabelEXT =  delegate of VkQueue * nativeptr<VkDebugUtilsLabelEXT> -> unit
 
-[<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi);SuppressUnmanagedCodeSecurity>]
-extern void vkCmdBeginDebugUtilsLabelEXT(VkCommandBuffer commandBuffer, VkDebugUtilsLabelEXT* pLabelInfo)
+[<UnmanagedFunctionPointer(CallingConvention.Winapi)>]
+type vkCmdBeginDebugUtilsLabelEXT =  delegate of VkCommandBuffer * nativeptr<VkDebugUtilsLabelEXT> -> unit
 
-[<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi);SuppressUnmanagedCodeSecurity>]
-extern void vkCmdEndDebugUtilsLabelEXT(VkCommandBuffer commandBuffer)
+[<UnmanagedFunctionPointer(CallingConvention.Winapi)>]
+type vkCmdEndDebugUtilsLabelEXT =  delegate of VkCommandBuffer -> unit
 
-[<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi);SuppressUnmanagedCodeSecurity>]
-extern void vkCmdInsertDebugUtilsLabelEXT(VkCommandBuffer commandBuffer, VkDebugUtilsLabelEXT* pLabelInfo)
+[<UnmanagedFunctionPointer(CallingConvention.Winapi)>]
+type vkCmdInsertDebugUtilsLabelEXT =  delegate of VkCommandBuffer * nativeptr<VkDebugUtilsLabelEXT> -> unit
 
-[<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi);SuppressUnmanagedCodeSecurity>]
-extern VkResult vkCreateDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pMessenger)
+[<UnmanagedFunctionPointer(CallingConvention.Winapi)>]
+type vkCreateDebugUtilsMessengerEXT =  delegate of VkInstance * nativeptr<VkDebugUtilsMessengerCreateInfoEXT> * nativeptr<VkAllocationCallbacks> * nativeptr<VkDebugUtilsMessengerEXT> -> VkResult
 
-[<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi);SuppressUnmanagedCodeSecurity>]
-extern void vkDestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT messenger, VkAllocationCallbacks* pAllocator)
+[<UnmanagedFunctionPointer(CallingConvention.Winapi)>]
+type vkDestroyDebugUtilsMessengerEXT =  delegate of VkInstance * VkDebugUtilsMessengerEXT * nativeptr<VkAllocationCallbacks> -> unit
 
-[<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi);SuppressUnmanagedCodeSecurity>]
-extern void vkSubmitDebugUtilsMessageEXT(VkInstance instance, VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageTypes, VkDebugUtilsMessengerCallbackDataEXT* pCallbackData)
+[<UnmanagedFunctionPointer(CallingConvention.Winapi)>]
+type vkSubmitDebugUtilsMessageEXT =  delegate of VkInstance * VkDebugUtilsMessageSeverityFlagBitsEXT * VkDebugUtilsMessageTypeFlagsEXT * nativeptr<VkDebugUtilsMessengerCallbackDataEXT> -> unit
 
-[<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi);SuppressUnmanagedCodeSecurity>]
-extern VkResult vkGetMemoryHostPointerPropertiesEXT(VkDevice device, VkExternalMemoryHandleTypeFlagBits handleType, void* pHostPointer, VkMemoryHostPointerPropertiesEXT* pMemoryHostPointerProperties)
+[<UnmanagedFunctionPointer(CallingConvention.Winapi)>]
+type vkGetMemoryHostPointerPropertiesEXT =  delegate of VkDevice * VkExternalMemoryHandleTypeFlagBits * nativeint * nativeptr<VkMemoryHostPointerPropertiesEXT> -> VkResult
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi);SuppressUnmanagedCodeSecurity>]
 extern void vkCmdWriteBufferMarkerAMD(VkCommandBuffer commandBuffer, VkPipelineStageFlagBits pipelineStage, VkBuffer dstBuffer, VkDeviceSize dstOffset, uint32 marker)
@@ -10810,23 +10810,23 @@ extern void vkCmdSetCheckpointNV(VkCommandBuffer commandBuffer, void* pCheckpoin
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi);SuppressUnmanagedCodeSecurity>]
 extern void vkGetQueueCheckpointDataNV(VkQueue queue, uint32* pCheckpointDataCount, VkCheckpointDataNV* pCheckpointData)
 
-[<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi);SuppressUnmanagedCodeSecurity>]
-extern void vkCmdBindTransformFeedbackBuffersEXT(VkCommandBuffer commandBuffer, uint32 firstBinding, uint32 bindingCount, VkBuffer* pBuffers, VkDeviceSize* pOffsets, VkDeviceSize* pSizes)
+[<UnmanagedFunctionPointer(CallingConvention.Winapi)>]
+type vkCmdBindTransformFeedbackBuffersEXT =  delegate of VkCommandBuffer * uint32 * uint32 * nativeptr<VkBuffer> * nativeptr<VkDeviceSize> * nativeptr<VkDeviceSize> -> unit
 
-[<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi);SuppressUnmanagedCodeSecurity>]
-extern void vkCmdBeginTransformFeedbackEXT(VkCommandBuffer commandBuffer, uint32 firstCounterBuffer, uint32 counterBufferCount, VkBuffer* pCounterBuffers, VkDeviceSize* pCounterBufferOffsets)
+[<UnmanagedFunctionPointer(CallingConvention.Winapi)>]
+type vkCmdBeginTransformFeedbackEXT =  delegate of VkCommandBuffer * uint32 * uint32 * nativeptr<VkBuffer> * nativeptr<VkDeviceSize> -> unit
 
-[<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi);SuppressUnmanagedCodeSecurity>]
-extern void vkCmdEndTransformFeedbackEXT(VkCommandBuffer commandBuffer, uint32 firstCounterBuffer, uint32 counterBufferCount, VkBuffer* pCounterBuffers, VkDeviceSize* pCounterBufferOffsets)
+[<UnmanagedFunctionPointer(CallingConvention.Winapi)>]
+type vkCmdEndTransformFeedbackEXT =  delegate of VkCommandBuffer * uint32 * uint32 * nativeptr<VkBuffer> * nativeptr<VkDeviceSize> -> unit
 
-[<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi);SuppressUnmanagedCodeSecurity>]
-extern void vkCmdBeginQueryIndexedEXT(VkCommandBuffer commandBuffer, VkQueryPool queryPool, uint32 query, VkQueryControlFlags flags, uint32 index)
+[<UnmanagedFunctionPointer(CallingConvention.Winapi)>]
+type vkCmdBeginQueryIndexedEXT =  delegate of VkCommandBuffer * VkQueryPool * uint32 * VkQueryControlFlags * uint32 -> unit
 
-[<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi);SuppressUnmanagedCodeSecurity>]
-extern void vkCmdEndQueryIndexedEXT(VkCommandBuffer commandBuffer, VkQueryPool queryPool, uint32 query, uint32 index)
+[<UnmanagedFunctionPointer(CallingConvention.Winapi)>]
+type vkCmdEndQueryIndexedEXT =  delegate of VkCommandBuffer * VkQueryPool * uint32 * uint32 -> unit
 
-[<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi);SuppressUnmanagedCodeSecurity>]
-extern void vkCmdDrawIndirectByteCountEXT(VkCommandBuffer commandBuffer, uint32 instanceCount, uint32 firstInstance, VkBuffer counterBuffer, VkDeviceSize counterBufferOffset, uint32 counterOffset, uint32 vertexStride)
+[<UnmanagedFunctionPointer(CallingConvention.Winapi)>]
+type vkCmdDrawIndirectByteCountEXT =  delegate of VkCommandBuffer * uint32 * uint32 * VkBuffer * VkDeviceSize * uint32 * uint32 -> unit
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi);SuppressUnmanagedCodeSecurity>]
 extern void vkCmdSetExclusiveScissorNV(VkCommandBuffer commandBuffer, uint32 firstExclusiveScissor, uint32 exclusiveScissorCount, VkRect2D* pExclusiveScissors)
@@ -10885,11 +10885,11 @@ extern VkResult vkGetAccelerationStructureHandleNV(VkDevice device, VkAccelerati
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi);SuppressUnmanagedCodeSecurity>]
 extern VkResult vkCreateRayTracingPipelinesNV(VkDevice device, VkPipelineCache pipelineCache, uint32 createInfoCount, VkRayTracingPipelineCreateInfoNV* pCreateInfos, VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines)
 
-[<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi);SuppressUnmanagedCodeSecurity>]
-extern VkResult vkGetImageDrmFormatModifierPropertiesEXT(VkDevice device, VkImage image, VkImageDrmFormatModifierPropertiesEXT* pProperties)
+[<UnmanagedFunctionPointer(CallingConvention.Winapi)>]
+type vkGetImageDrmFormatModifierPropertiesEXT =  delegate of VkDevice * VkImage * nativeptr<VkImageDrmFormatModifierPropertiesEXT> -> VkResult
 
-[<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi);SuppressUnmanagedCodeSecurity>]
-extern VkDeviceAddress vkGetBufferDeviceAddressEXT(VkDevice device, VkBufferDeviceAddressInfoEXT* pInfo)
+[<UnmanagedFunctionPointer(CallingConvention.Winapi)>]
+type vkGetBufferDeviceAddressEXT =  delegate of VkDevice * nativeptr<VkBufferDeviceAddressInfoEXT> -> VkDeviceAddress
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi);SuppressUnmanagedCodeSecurity>]
 extern VkResult vkGetPhysicalDeviceCooperativeMatrixPropertiesNV(VkPhysicalDevice physicalDevice, uint32* pPropertyCount, VkCooperativeMatrixPropertiesNV* pProperties)
@@ -10897,20 +10897,20 @@ extern VkResult vkGetPhysicalDeviceCooperativeMatrixPropertiesNV(VkPhysicalDevic
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi);SuppressUnmanagedCodeSecurity>]
 extern uint32 vkGetImageViewHandleNVX(VkDevice device, VkImageViewHandleInfoNVX* pInfo)
 
-[<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi);SuppressUnmanagedCodeSecurity>]
-extern VkResult vkGetPhysicalDeviceSurfacePresentModes2EXT(VkPhysicalDevice physicalDevice, VkPhysicalDeviceSurfaceInfo2KHR* pSurfaceInfo, uint32* pPresentModeCount, VkPresentModeKHR* pPresentModes)
+[<UnmanagedFunctionPointer(CallingConvention.Winapi)>]
+type vkGetPhysicalDeviceSurfacePresentModes2EXT =  delegate of VkPhysicalDevice * nativeptr<VkPhysicalDeviceSurfaceInfo2KHR> * nativeptr<uint32> * nativeptr<VkPresentModeKHR> -> VkResult
 
-[<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi);SuppressUnmanagedCodeSecurity>]
-extern VkResult vkGetDeviceGroupSurfacePresentModes2EXT(VkDevice device, VkPhysicalDeviceSurfaceInfo2KHR* pSurfaceInfo, VkDeviceGroupPresentModeFlagsKHR* pModes)
+[<UnmanagedFunctionPointer(CallingConvention.Winapi)>]
+type vkGetDeviceGroupSurfacePresentModes2EXT =  delegate of VkDevice * nativeptr<VkPhysicalDeviceSurfaceInfo2KHR> * nativeptr<VkDeviceGroupPresentModeFlagsKHR> -> VkResult
 
-[<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi);SuppressUnmanagedCodeSecurity>]
-extern VkResult vkAcquireFullScreenExclusiveModeEXT(VkDevice device, VkSwapchainKHR swapchain)
+[<UnmanagedFunctionPointer(CallingConvention.Winapi)>]
+type vkAcquireFullScreenExclusiveModeEXT =  delegate of VkDevice * VkSwapchainKHR -> VkResult
 
-[<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi);SuppressUnmanagedCodeSecurity>]
-extern VkResult vkReleaseFullScreenExclusiveModeEXT(VkDevice device, VkSwapchainKHR swapchain)
+[<UnmanagedFunctionPointer(CallingConvention.Winapi)>]
+type vkReleaseFullScreenExclusiveModeEXT =  delegate of VkDevice * VkSwapchainKHR -> VkResult
 
-[<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi);SuppressUnmanagedCodeSecurity>]
-extern VkResult vkCreateHeadlessSurfaceEXT(VkInstance instance, VkHeadlessSurfaceCreateInfoEXT* pCreateInfo, VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface)
+[<UnmanagedFunctionPointer(CallingConvention.Winapi)>]
+type vkCreateHeadlessSurfaceEXT =  delegate of VkInstance * nativeptr<VkHeadlessSurfaceCreateInfoEXT> * nativeptr<VkAllocationCallbacks> * nativeptr<VkSurfaceKHR> -> VkResult
 
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi);SuppressUnmanagedCodeSecurity>]
 extern VkResult vkGetPhysicalDeviceSupportedFramebufferMixedSamplesCombinationsNV(VkPhysicalDevice physicalDevice, uint32* pCombinationCount, VkFramebufferMixedSamplesCombinationNV* pCombinations)
@@ -10951,8 +10951,8 @@ extern VkResult vkGetPipelineExecutableStatisticsKHR(VkDevice device, VkPipeline
 [<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi);SuppressUnmanagedCodeSecurity>]
 extern VkResult vkGetPipelineExecutableInternalRepresentationsKHR(VkDevice device, VkPipelineExecutableInfoKHR* pExecutableInfo, uint32* pInternalRepresentationCount, VkPipelineExecutableInternalRepresentationKHR* pInternalRepresentations)
 
-[<DllImport("vulkan-1.dll", CallingConvention = CallingConvention.Winapi);SuppressUnmanagedCodeSecurity>]
-extern void vkCmdSetLineStippleEXT(VkCommandBuffer commandBuffer, uint32 lineStippleFactor, uint16 lineStipplePattern)
+[<UnmanagedFunctionPointer(CallingConvention.Winapi)>]
+type vkCmdSetLineStippleEXT =  delegate of VkCommandBuffer * uint32 * uint16 -> unit
 
 let VK_KHR_SURFACE_SPEC_VERSION = 25
 let VK_KHR_SURFACE_EXTENSION_NAME = "VK_KHR_surface"
@@ -11551,6 +11551,8 @@ type PtrPtrHandle<'T when 'T : unmanaged> internal (handles: GCHandle[], ptrPtr:
 let inline vkString (str: string) = UTF8Encoding.UTF8.GetBytes str
 let inline vkNullPtr<'T when 'T : unmanaged> = nativeint 0 |> NativePtr.ofNativeInt<'T>
 let inline vkCastPtr<'T, 'U when 'T : unmanaged and 'U : unmanaged>(p: nativeptr<'T>) : nativeptr<'U> = p |> NativePtr.toNativeInt |> NativePtr.ofNativeInt
+let inline vkDelegateOfFunctionPointer<'T when 'T :> Delegate>(func: PFN_vkVoidFunction) =
+    Marshal.GetDelegateForFunctionPointer(&&func |> NativePtr.toNativeInt, typeof<'T>) :?> 'T
 let vkFixedStringArray (strs: string[]) =
     if strs.Length = 0 then new PtrPtrHandle<byte>([||], vkNullPtr)
     else

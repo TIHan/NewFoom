@@ -83,9 +83,9 @@ let private mkDebugMessenger instance debugCallback =
     createInfo.pUserData <- IntPtr.Zero // optional
 
     use pName = fixed vkString "vkCreateDebugUtilsMessengerEXT"
-    vkGetInstanceProcAddr(instance, pName) |> ignore
+    let createDebugUtilsMessenger: vkCreateDebugUtilsMessengerEXT = vkGetInstanceProcAddr(instance, pName) |> vkDelegateOfFunctionPointer
     let debugMessenger = VkDebugUtilsMessengerEXT ()
-    vkCreateDebugUtilsMessengerEXT(instance, &&createInfo, vkNullPtr, &&debugMessenger) |> checkResult
+    createDebugUtilsMessenger.Invoke(instance, &&createInfo, vkNullPtr, &&debugMessenger) |> checkResult
     debugMessenger
 
 [<Sealed>]
@@ -107,8 +107,8 @@ type VulkanInstance (instance: VkInstance, debugMessenger: VkDebugUtilsMessenger
             else
                 GC.SuppressFinalize x
 
-                if debugMessenger <> IntPtr.Zero then
-                    vkDestroyDebugUtilsMessengerEXT(instance, debugMessenger, vkNullPtr)
+//                if debugMessenger <> IntPtr.Zero then
+               //     vkDestroyDebugUtilsMessengerEXT(instance, debugMessenger, vkNullPtr)
 
                 vkDestroyInstance(instance, vkNullPtr)
 
