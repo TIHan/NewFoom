@@ -15,91 +15,58 @@ let inline private checkResult result =
     if result <> VkResult.VK_SUCCESS then
         failwithf "%A" result
 
-let private mkApplicationInfo appName engineName =
+let private mkApplicationInfo appNamePtr engineNamePtr =
     let mutable appInfo = VkApplicationInfo()
     appInfo.sType <- VkStructureType.VK_STRUCTURE_TYPE_APPLICATION_INFO
-    appInfo.pApplicationName <- appName
+    appInfo.pApplicationName <- appNamePtr
     appInfo.applicationVersion <- VK_MAKE_VERSION(1u, 0u, 0u)
-    appInfo.pEngineName <- engineName
+    appInfo.pEngineName <- engineNamePtr
     appInfo.engineVersion <- VK_MAKE_VERSION(1u, 0u, 0u)
     appInfo.apiVersion <- VK_API_VERSION_1_0
     appInfo
 
-let private mkCreateInfo appInfo (extensionNames: NativeArray<nativeptr<byte>>) (layerNames: NativeArray<nativeptr<byte>>) =
+let private mkCreateInfo appInfo extensionCount extensionNamesPtr layerCount layerNamesPtr =
     let mutable createInfo = VkInstanceCreateInfo()
     createInfo.sType <- VkStructureType.VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO
     createInfo.pApplicationInfo <- appInfo
-    createInfo.enabledExtensionCount <- uint32 extensionNames.Length
-    createInfo.ppEnabledExtensionNames <- extensionNames.Buffer
-    createInfo.enabledLayerCount <- uint32 layerNames.Length
-    createInfo.ppEnabledLayerNames <- vkCast layerNames.Buffer
+    createInfo.enabledExtensionCount <- extensionCount
+    createInfo.ppEnabledExtensionNames <- extensionNamesPtr
+    createInfo.enabledLayerCount <- layerCount
+    createInfo.ppEnabledLayerNames <- layerNamesPtr
     createInfo
 
-let createInstance (appName: string) (engineName: string) (customExtensions: string list) (validationLayers: string list) =
-    let customExtensions = customExtensions |> Array.ofList
-    let validationLayers = validationLayers |> Array.ofList
-
-    // Extensions
-    
+let getInstanceExtensions() =
     let extensionCount = 0u
 
     vkEnumerateInstanceExtensionProperties(vkNullPtr, &&extensionCount, vkNullPtr) |> checkResult
 
-    use extensions = new NativeArray<VkExtensionProperties>(int extensionCount)
+    let extensions = Array.zeroCreate (int extensionCount)
+    use extensionsPtr = fixed extensions
+    vkEnumerateInstanceExtensionProperties(vkNullPtr, &&extensionCount, extensionsPtr) |> checkResult
+    extensions
 
-    vkEnumerateInstanceExtensionProperties(vkNullPtr, &&extensionCount, extensions.Buffer) |> checkResult
-
-    let extensionCount = extensionCount + uint32 customExtensions.Length
-
-    use customExtensionNames = new NativeArray<VkFixedArray_byte_256>(customExtensions.Length)
-    for i = 0 to customExtensions.Length - 1 do
-        vkMarshalString customExtensions.[i] (customExtensionNames.ToPointer<byte> i) |> ignore
-
-    use extensionNames = new NativeArray<nativeptr<byte>>(int extensionCount)
-    for i = 0 to extensions.Length - 1 do
-        extensionNames.[i] <- extensions.ToPointer i
-    for i = 0 to customExtensions.Length - 1 do
-        extensionNames.[i + extensions.Length] <- customExtensionNames.ToPointer i
-
-    // Layers
-
+let getInstanceLayers(validationLayers: string[]) =
     let layerCount = 0u
 
     vkEnumerateInstanceLayerProperties(&&layerCount, vkNullPtr) |> checkResult
 
-    use layers = new NativeArray<VkLayerProperties>(int layerCount)
+    let layers = Array.zeroCreate (int layerCount)
+    use layersPtr = fixed layers
+    vkEnumerateInstanceLayerProperties(&&layerCount, layersPtr) |> checkResult
+    layers
+    |> Array.filter (fun x -> validationLayers |> Array.exists (fun y -> x.layerName.ToString() = y))
 
-    vkEnumerateInstanceLayerProperties(&&layerCount, layers.Buffer) |> checkResult
-
-    let layers2 = 
-        validationLayers
-        |> Array.filter (fun x -> 
-            let mutable exists = false
-            let mutable i = 0
-            while not exists && i < layers.Length do
-                if layers.[i].layerName.ToString() = x then
-                    exists <- true
-                i <- i + 1
-            exists
-        )
-
-    use layerNames = new NativeArray<VkFixedArray_byte_256>(layers2.Length)
-    for i = 0 to layerNames.Length - 1 do
-        vkMarshalString layers2.[i] (layerNames.ToPointer<byte> i) |> ignore
-    use layerNames2 = new NativeArray<nativeptr<byte>>(layers2.Length)
-    for i = 0 to layerNames2.Length - 1 do
-        layerNames2.[i] <- layerNames.ToPointer i
-
-    // Create instance
-
-    let appName2 = NativePtr.stackalloc<byte> appName.Length
-    vkMarshalString appName appName2 appName.Length
-
-    let engineName2 = NativePtr.stackalloc<byte> engineName.Length
-    vkMarshalString engineName engineName2 engineName.Length
-
-    let appInfo = mkApplicationInfo appName2 engineName2
-    let createInfo = mkCreateInfo &&appInfo extensionNames layerNames2
+let createInstance (appName: string) (engineName: string) (customExtensions: string[]) (validationLayers: string[]) =
+    use appNamePtr = fixed vkString appName
+    use engineNamePtr = fixed vkString engineName
+   
+    let appInfo = mkApplicationInfo appNamePtr engineNamePtr
+    let extensions = getInstanceExtensions() |> Array.map (fun x -> x.extensionName.ToString()) |> Array.append customExtensions
+    let layers = getInstanceLayers validationLayers |> Array.map (fun x -> x.ToString())
+    
+    use extensionsHandle = vkFixedStringArray extensions
+    use layersHandle = vkFixedStringArray layers
+    let createInfo = mkCreateInfo &&appInfo (uint32 extensions.Length) extensionsHandle.PtrPtr (uint32 layers.Length) layersHandle.PtrPtr
 
     let mutable instance = VkInstance()
     vkCreateInstance(&&createInfo, vkNullPtr, &&instance) |> checkResult

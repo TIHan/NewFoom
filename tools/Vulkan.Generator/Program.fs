@@ -822,6 +822,7 @@ let genSource () =
     "// File is generated. Do not modify.\n" +
     "module rec FSharp.Vulkan.Interop\n\n" +
     "open System\n" +
+    "open System.Threading\n" +
     "open System.Runtime.CompilerServices\n" +
     "open System.Runtime.InteropServices\n" +
     "open System.Security\n" +
@@ -837,21 +838,42 @@ let genSource () =
     genVkFunctions env vkFunctions + "\n\n" +
     genVkBindings vkBindingsForExtensions + "\n\n" +
 
-    "let inline vkMarshal(o: 'T when 'T : unmanaged and 'U : unmanaged) (p: nativeptr<'U>) =
-    Marshal.StructureToPtr(o, p |> NativePtr.toNativeInt, false)" + "\n" +
+    """
+type PtrPtrHandle<'T when 'T : unmanaged> internal (handles: GCHandle[], ptrPtr: nativeptr<nativeptr<'T>>) =
+    let mutable isDisposed = 0
 
-    "let inline vkMarshalArray(xs: 'T [] when 'T : unmanaged and 'U : unmanaged) (dest: nativeptr<'U>) (destCount: int) =
-    let srcSize = sizeof<'T> * xs.Length
-    let destSize = sizeof<'U> * destCount
-    use src = fixed xs
-    Buffer.MemoryCopy(src |> NativePtr.toVoidPtr, dest |> NativePtr.toVoidPtr, uint64 destSize, uint64 srcSize)" + "\n" +
+    member __.PtrPtr = ptrPtr
 
-    "let inline vkMarshalString<'T when 'T : unmanaged>(str: string) (dest: nativeptr<'T>) destCount = 
-    let bytes = UTF8Encoding.UTF8.GetBytes str
-    vkMarshalArray bytes dest destCount" + "\n" +
+    override x.Finalize() =
+        (x :> IDisposable).Dispose ()
 
+    interface IDisposable with
+        member x.Dispose () =
+            if Interlocked.CompareExchange(&isDisposed, 1, 0) = 1 then
+                failwith "PtrPtrHandle already disposed"
+            else
+                GC.SuppressFinalize x
+                handles
+                |> Array.iter (fun x -> x.Free())
+    """ + "\n" +
+
+    "let inline vkString (str: string) = UTF8Encoding.UTF8.GetBytes str\n" +
     "let inline vkNullPtr<'T when 'T : unmanaged> = nativeint 0 |> NativePtr.ofNativeInt<'T>" + "\n" +
-    "let inline vkCast<'T, 'U when 'T : unmanaged and 'U : unmanaged>(p: nativeptr<'T>) : nativeptr<'U> = p |> NativePtr.toNativeInt |> NativePtr.ofNativeInt" + "\n\n" +
+    "let inline vkCastPtr<'T, 'U when 'T : unmanaged and 'U : unmanaged>(p: nativeptr<'T>) : nativeptr<'U> = p |> NativePtr.toNativeInt |> NativePtr.ofNativeInt" + "\n" +
+    "let vkFixedStringArray (strs: string[]) =\n" +
+
+    "    if strs.Length = 0 then new PtrPtrHandle<byte>([||], vkNullPtr)\n" +
+    "    else\n" +
+    "    let arrPtrPtr = Array.zeroCreate<nativeptr<byte>> strs.Length\n" +
+    "    let handles = Array.zeroCreate (strs.Length + 1)\n" +
+    "    let ptrPtr = GCHandle.Alloc (arrPtrPtr, GCHandleType.Pinned)\n" +
+    "    handles.[0] <- ptrPtr\n" +
+    "    for i = 1 to handles.Length - 1 do\n" +
+    "        let gcHandle = GCHandle.Alloc (vkString strs.[i - 1], GCHandleType.Pinned)\n" +
+    "        handles.[i] <- gcHandle\n" +
+    "        arrPtrPtr.[i - 1] <- gcHandle.AddrOfPinnedObject() |> NativePtr.ofNativeInt\n" +
+    "    new PtrPtrHandle<byte> (handles, ptrPtr.AddrOfPinnedObject() |> NativePtr.ofNativeInt)\n" +
+    "\n" +
     (if env.delayGen.IsEmpty then "" else env.delayGen |> Seq.map (fun pair -> pair.Value.Gen) |> Seq.reduce (+))
 
 open System.IO

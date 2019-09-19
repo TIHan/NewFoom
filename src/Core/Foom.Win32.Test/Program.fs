@@ -14,7 +14,7 @@ type Win32ClientGame() =
     let mutable dx12 = None
 
     member __.Init(width, height, hwnd) =
-        createInstance "App" "Engine" [] []
+        createInstance "App" "Engine" [||] [||]
         ()
 
     override __.PreUpdate(_, _, inputs) =

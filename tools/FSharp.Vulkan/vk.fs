@@ -2,6 +2,7 @@
 module rec FSharp.Vulkan.Interop
 
 open System
+open System.Threading
 open System.Runtime.CompilerServices
 open System.Runtime.InteropServices
 open System.Security
@@ -11536,18 +11537,39 @@ let VK_NVX_EXTENSION_288_EXTENSION_NAME = "VK_NVX_extension_288"
 let VK_EXT_EXTENSION_289_SPEC_VERSION = 0
 let VK_EXT_EXTENSION_289_EXTENSION_NAME = "VK_EXT_extension_289"
 
-let inline vkMarshal(o: 'T when 'T : unmanaged and 'U : unmanaged) (p: nativeptr<'U>) =
-    Marshal.StructureToPtr(o, p |> NativePtr.toNativeInt, false)
-let inline vkMarshalArray(xs: 'T [] when 'T : unmanaged and 'U : unmanaged) (dest: nativeptr<'U>) (destCount: int) =
-    let srcSize = sizeof<'T> * xs.Length
-    let destSize = sizeof<'U> * destCount
-    use src = fixed xs
-    Buffer.MemoryCopy(src |> NativePtr.toVoidPtr, dest |> NativePtr.toVoidPtr, uint64 destSize, uint64 srcSize)
-let inline vkMarshalString<'T when 'T : unmanaged>(str: string) (dest: nativeptr<'T>) destCount = 
-    let bytes = UTF8Encoding.UTF8.GetBytes str
-    vkMarshalArray bytes dest destCount
+
+type PtrPtrHandle<'T when 'T : unmanaged> internal (handles: GCHandle[], ptrPtr: nativeptr<nativeptr<'T>>) =
+    let mutable isDisposed = 0
+
+    member __.PtrPtr = ptrPtr
+
+    override x.Finalize() =
+        (x :> IDisposable).Dispose ()
+
+    interface IDisposable with
+        member x.Dispose () =
+            if Interlocked.CompareExchange(&isDisposed, 1, 0) = 1 then
+                failwith "PtrPtrHandle already disposed"
+            else
+                GC.SuppressFinalize x
+                handles
+                |> Array.iter (fun x -> x.Free())
+    
+let inline vkString (str: string) = UTF8Encoding.UTF8.GetBytes str
 let inline vkNullPtr<'T when 'T : unmanaged> = nativeint 0 |> NativePtr.ofNativeInt<'T>
-let inline vkCast<'T, 'U when 'T : unmanaged and 'U : unmanaged>(p: nativeptr<'T>) : nativeptr<'U> = p |> NativePtr.toNativeInt |> NativePtr.ofNativeInt
+let inline vkCastPtr<'T, 'U when 'T : unmanaged and 'U : unmanaged>(p: nativeptr<'T>) : nativeptr<'U> = p |> NativePtr.toNativeInt |> NativePtr.ofNativeInt
+let vkFixedStringArray (strs: string[]) =
+    if strs.Length = 0 then new PtrPtrHandle<byte>([||], vkNullPtr)
+    else
+    let arrPtrPtr = Array.zeroCreate<nativeptr<byte>> strs.Length
+    let handles = Array.zeroCreate (strs.Length + 1)
+    let ptrPtr = GCHandle.Alloc (arrPtrPtr, GCHandleType.Pinned)
+    handles.[0] <- ptrPtr
+    for i = 1 to handles.Length - 1 do
+        let gcHandle = GCHandle.Alloc (vkString strs.[i - 1], GCHandleType.Pinned)
+        handles.[i] <- gcHandle
+        arrPtrPtr.[i - 1] <- gcHandle.AddrOfPinnedObject() |> NativePtr.ofNativeInt
+    new PtrPtrHandle<byte> (handles, ptrPtr.AddrOfPinnedObject() |> NativePtr.ofNativeInt)
 
 [<Struct;StructLayout(LayoutKind.Sequential, Size = 128);UnsafeValueType;DebuggerDisplay("{DebugString}")>]
 type VkFixedArray_VkDeviceSize_16 =
