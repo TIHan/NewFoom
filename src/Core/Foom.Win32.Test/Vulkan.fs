@@ -54,6 +54,35 @@ let private getInstanceLayers(validationLayers: string[]) =
     layers
     |> Array.filter (fun x -> validationLayers |> Array.exists (fun y -> x.layerName.ToString() = y))
 
+let private getSuitablePhysicalDevice instance =
+    let deviceCount = 0u
+
+    vkEnumeratePhysicalDevices(instance, &&deviceCount, vkNullPtr) |> checkResult
+
+    if deviceCount = 0u then
+        failwith "Unable to find GPUs with Vulkan support."
+
+    let devices = Array.zeroCreate (int deviceCount)
+    let pDevices = fixed devices
+    vkEnumeratePhysicalDevices(instance, &&deviceCount, pDevices) |> checkResult
+
+    let deviceOpt =
+        devices
+        |> Array.tryFind (fun device ->
+            let deviceProperties = VkPhysicalDeviceProperties()
+            vkGetPhysicalDeviceProperties(device, &&deviceProperties)
+
+            let deviceFeatures = VkPhysicalDeviceFeatures()
+            vkGetPhysicalDeviceFeatures(device, &&deviceFeatures)
+
+            deviceProperties.deviceType = VkPhysicalDeviceType.VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU &&
+            deviceFeatures.geometryShader = VK_TRUE
+        )
+
+    match deviceOpt with
+    | Some device -> device
+    | _ -> failwith "Unable to find suitable GPU."
+
 let private getInstanceExtension<'T when 'T :> Delegate> instance =
     use pName = fixed vkBytesOfString typeof<'T>.Name
     vkGetInstanceProcAddr(instance, pName) 
@@ -132,5 +161,6 @@ let init appName engineName validationLayers =
             VK_FALSE
         )
     let debugMessenger = mkDebugMessenger instance debugCallback
+    let device = getSuitablePhysicalDevice instance
 
     new VulkanInstance(instance, debugMessenger, [|debugCallbackHandle|])

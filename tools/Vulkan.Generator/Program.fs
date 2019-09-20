@@ -230,7 +230,16 @@ let getTypeName env typeName (node: XNode) =
 let getVkMemberCount (vkXmlMember: Vk.Member) =
     match vkXmlMember.Enum with
     | Some x -> constants.Value.[x]
-    | _ -> 1
+    | _ ->
+        match vkXmlMember.XElement.Value.IndexOf '[', vkXmlMember.XElement.Value.IndexOf ']' with
+        | -1, _
+        | _, -1 -> 1
+        | i1, i2 ->
+            match 
+                vkXmlMember.XElement.Value.Substring(i1 + 1, i2 - i1 - 1)
+                |> Int32.TryParse with
+            | true, count -> count
+            | _ -> 1
 
 let getVkMember env (vkXmlMember: Vk.Member) =
     let typeName =

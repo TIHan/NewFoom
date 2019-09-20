@@ -3369,7 +3369,8 @@ type VkPhysicalDeviceMeshShaderPropertiesNV =
     [<DefaultValue(false)>]
     val mutable maxTaskWorkGroupInvocations: uint32
     [<DefaultValue(false)>]
-    val mutable maxTaskWorkGroupSize: uint32
+    [<FixedBuffer(typeof<uint32>, 3)>]
+    val mutable maxTaskWorkGroupSize: VkFixedArray_uint32_3
     [<DefaultValue(false)>]
     val mutable maxTaskTotalMemorySize: uint32
     [<DefaultValue(false)>]
@@ -3377,7 +3378,8 @@ type VkPhysicalDeviceMeshShaderPropertiesNV =
     [<DefaultValue(false)>]
     val mutable maxMeshWorkGroupInvocations: uint32
     [<DefaultValue(false)>]
-    val mutable maxMeshWorkGroupSize: uint32
+    [<FixedBuffer(typeof<uint32>, 3)>]
+    val mutable maxMeshWorkGroupSize: VkFixedArray_uint32_3
     [<DefaultValue(false)>]
     val mutable maxMeshTotalMemorySize: uint32
     [<DefaultValue(false)>]
@@ -4340,7 +4342,8 @@ type VkDebugUtilsLabelEXT =
     [<DefaultValue(false)>]
     val mutable pLabelName: nativeptr<byte>
     [<DefaultValue(false)>]
-    val mutable color: float32
+    [<FixedBuffer(typeof<float32>, 4)>]
+    val mutable color: VkFixedArray_float32_4
 
 [<Struct;NoEquality;NoComparison>]
 type VkDebugUtilsObjectTagInfoEXT =
@@ -4396,7 +4399,8 @@ type VkShaderStatisticsInfoAMD =
     [<DefaultValue(false)>]
     val mutable numAvailableSgprs: uint32
     [<DefaultValue(false)>]
-    val mutable computeWorkGroupSize: uint32
+    [<FixedBuffer(typeof<uint32>, 3)>]
+    val mutable computeWorkGroupSize: VkFixedArray_uint32_3
 
 [<Struct;NoEquality;NoComparison>]
 type VkShaderResourceUsageAMD =
@@ -4719,7 +4723,8 @@ type VkPhysicalDeviceSampleLocationsPropertiesEXT =
     [<DefaultValue(false)>]
     val mutable maxSampleLocationGridSize: VkExtent2D
     [<DefaultValue(false)>]
-    val mutable sampleLocationCoordinateRange: float32
+    [<FixedBuffer(typeof<float32>, 2)>]
+    val mutable sampleLocationCoordinateRange: VkFixedArray_float32_2
     [<DefaultValue(false)>]
     val mutable sampleLocationSubPixelBits: uint32
     [<DefaultValue(false)>]
@@ -6788,7 +6793,8 @@ type VkDebugMarkerMarkerInfoEXT =
     val mutable pMarkerName: nativeptr<byte>
     /// Optional color for debug marker
     [<DefaultValue(false)>]
-    val mutable color: float32
+    [<FixedBuffer(typeof<float32>, 4)>]
+    val mutable color: VkFixedArray_float32_4
 
 [<Struct;NoEquality;NoComparison>]
 type VkDebugMarkerObjectTagInfoEXT =
@@ -7498,13 +7504,15 @@ type VkPhysicalDeviceLimits =
     val mutable maxComputeSharedMemorySize: uint32
     /// max num of compute work groups that may be dispatched by a single command (x,y,z)
     [<DefaultValue(false)>]
-    val mutable maxComputeWorkGroupCount: uint32
+    [<FixedBuffer(typeof<uint32>, 3)>]
+    val mutable maxComputeWorkGroupCount: VkFixedArray_uint32_3
     /// max total compute invocations in a single local work group
     [<DefaultValue(false)>]
     val mutable maxComputeWorkGroupInvocations: uint32
     /// max local size of a compute work group (x,y,z)
     [<DefaultValue(false)>]
-    val mutable maxComputeWorkGroupSize: uint32
+    [<FixedBuffer(typeof<uint32>, 3)>]
+    val mutable maxComputeWorkGroupSize: VkFixedArray_uint32_3
     /// number bits of subpixel precision in screen x and y
     [<DefaultValue(false)>]
     val mutable subPixelPrecisionBits: uint32
@@ -7531,10 +7539,12 @@ type VkPhysicalDeviceLimits =
     val mutable maxViewports: uint32
     /// max viewport dimensions (x,y)
     [<DefaultValue(false)>]
-    val mutable maxViewportDimensions: uint32
+    [<FixedBuffer(typeof<uint32>, 2)>]
+    val mutable maxViewportDimensions: VkFixedArray_uint32_2
     /// viewport bounds range (min,max)
     [<DefaultValue(false)>]
-    val mutable viewportBoundsRange: float32
+    [<FixedBuffer(typeof<float32>, 2)>]
+    val mutable viewportBoundsRange: VkFixedArray_float32_2
     /// number bits of subpixel precision for viewport
     [<DefaultValue(false)>]
     val mutable viewportSubPixelBits: uint32
@@ -7633,10 +7643,12 @@ type VkPhysicalDeviceLimits =
     val mutable discreteQueuePriorities: uint32
     /// range (min,max) of supported point sizes
     [<DefaultValue(false)>]
-    val mutable pointSizeRange: float32
+    [<FixedBuffer(typeof<float32>, 2)>]
+    val mutable pointSizeRange: VkFixedArray_float32_2
     /// range (min,max) of supported line widths
     [<DefaultValue(false)>]
-    val mutable lineWidthRange: float32
+    [<FixedBuffer(typeof<float32>, 2)>]
+    val mutable lineWidthRange: VkFixedArray_float32_2
     /// granularity of supported point sizes
     [<DefaultValue(false)>]
     val mutable pointSizeGranularity: float32
@@ -8286,7 +8298,8 @@ type VkPipelineColorBlendStateCreateInfo =
     [<DefaultValue(false)>]
     val mutable pAttachments: nativeptr<VkPipelineColorBlendAttachmentState>
     [<DefaultValue(false)>]
-    val mutable blendConstants: float32
+    [<FixedBuffer(typeof<float32>, 4)>]
+    val mutable blendConstants: VkFixedArray_float32_4
 
 [<Struct;NoEquality;NoComparison>]
 type VkPipelineColorBlendAttachmentState =
@@ -8638,12 +8651,14 @@ type VkImageBlit =
     val mutable srcSubresource: VkImageSubresourceLayers
     /// Specified in pixels for both compressed and uncompressed images
     [<DefaultValue(false)>]
-    val mutable srcOffsets: VkOffset3D
+    [<FixedBuffer(typeof<VkOffset3D>, 2)>]
+    val mutable srcOffsets: VkFixedArray_VkOffset3D_2
     [<DefaultValue(false)>]
     val mutable dstSubresource: VkImageSubresourceLayers
     /// Specified in pixels for both compressed and uncompressed images
     [<DefaultValue(false)>]
-    val mutable dstOffsets: VkOffset3D
+    [<FixedBuffer(typeof<VkOffset3D>, 2)>]
+    val mutable dstOffsets: VkFixedArray_VkOffset3D_2
 
 [<Struct;NoEquality;NoComparison>]
 type VkImageCopy =
@@ -11689,6 +11704,23 @@ type VkFixedArray_VkMemoryType_32 =
     override x.ToString() = x.DebugString
     member x.UnsafePtr = &&x |> NativePtr.toNativeInt |> NativePtr.ofNativeInt<VkMemoryType>
 
+[<Struct;StructLayout(LayoutKind.Sequential, Size = 24);UnsafeValueType;DebuggerDisplay("{DebugString}")>]
+type VkFixedArray_VkOffset3D_2 =
+    val mutable private _VkOffset3D0: VkOffset3D
+    val mutable private _VkOffset3D1: VkOffset3D
+
+    member x.Item with get i = NativePtr.get x.UnsafePtr i and set i value = NativePtr.set x.UnsafePtr i value
+    member x.Length = 2
+    member private x.DebugString =
+        let bytes = Array.zeroCreate<byte> 24
+        use p = fixed bytes
+        Marshal.Copy(&&x |> NativePtr.toNativeInt, bytes, 0, 24)
+        let str = UTF8Encoding.UTF8.GetString bytes
+        let index = str.IndexOf(char 0)
+        if index >= 0 then str.Substring(0, index) else str
+    override x.ToString() = x.DebugString
+    member x.UnsafePtr = &&x |> NativePtr.toNativeInt |> NativePtr.ofNativeInt<VkOffset3D>
+
 [<Struct;StructLayout(LayoutKind.Sequential, Size = 256);UnsafeValueType;DebuggerDisplay("{DebugString}")>]
 type VkFixedArray_VkPhysicalDevice_32 =
     val mutable private _VkPhysicalDevice0: VkPhysicalDevice
@@ -12060,6 +12092,77 @@ type VkFixedArray_byte_8 =
         if index >= 0 then str.Substring(0, index) else str
     override x.ToString() = x.DebugString
     member x.UnsafePtr = &&x |> NativePtr.toNativeInt |> NativePtr.ofNativeInt<byte>
+
+[<Struct;StructLayout(LayoutKind.Sequential, Size = 8);UnsafeValueType;DebuggerDisplay("{DebugString}")>]
+type VkFixedArray_float32_2 =
+    val mutable private _float320: float32
+    val mutable private _float321: float32
+
+    member x.Item with get i = NativePtr.get x.UnsafePtr i and set i value = NativePtr.set x.UnsafePtr i value
+    member x.Length = 2
+    member private x.DebugString =
+        let bytes = Array.zeroCreate<byte> 8
+        use p = fixed bytes
+        Marshal.Copy(&&x |> NativePtr.toNativeInt, bytes, 0, 8)
+        let str = UTF8Encoding.UTF8.GetString bytes
+        let index = str.IndexOf(char 0)
+        if index >= 0 then str.Substring(0, index) else str
+    override x.ToString() = x.DebugString
+    member x.UnsafePtr = &&x |> NativePtr.toNativeInt |> NativePtr.ofNativeInt<float32>
+
+[<Struct;StructLayout(LayoutKind.Sequential, Size = 16);UnsafeValueType;DebuggerDisplay("{DebugString}")>]
+type VkFixedArray_float32_4 =
+    val mutable private _float320: float32
+    val mutable private _float321: float32
+    val mutable private _float322: float32
+    val mutable private _float323: float32
+
+    member x.Item with get i = NativePtr.get x.UnsafePtr i and set i value = NativePtr.set x.UnsafePtr i value
+    member x.Length = 4
+    member private x.DebugString =
+        let bytes = Array.zeroCreate<byte> 16
+        use p = fixed bytes
+        Marshal.Copy(&&x |> NativePtr.toNativeInt, bytes, 0, 16)
+        let str = UTF8Encoding.UTF8.GetString bytes
+        let index = str.IndexOf(char 0)
+        if index >= 0 then str.Substring(0, index) else str
+    override x.ToString() = x.DebugString
+    member x.UnsafePtr = &&x |> NativePtr.toNativeInt |> NativePtr.ofNativeInt<float32>
+
+[<Struct;StructLayout(LayoutKind.Sequential, Size = 8);UnsafeValueType;DebuggerDisplay("{DebugString}")>]
+type VkFixedArray_uint32_2 =
+    val mutable private _uint320: uint32
+    val mutable private _uint321: uint32
+
+    member x.Item with get i = NativePtr.get x.UnsafePtr i and set i value = NativePtr.set x.UnsafePtr i value
+    member x.Length = 2
+    member private x.DebugString =
+        let bytes = Array.zeroCreate<byte> 8
+        use p = fixed bytes
+        Marshal.Copy(&&x |> NativePtr.toNativeInt, bytes, 0, 8)
+        let str = UTF8Encoding.UTF8.GetString bytes
+        let index = str.IndexOf(char 0)
+        if index >= 0 then str.Substring(0, index) else str
+    override x.ToString() = x.DebugString
+    member x.UnsafePtr = &&x |> NativePtr.toNativeInt |> NativePtr.ofNativeInt<uint32>
+
+[<Struct;StructLayout(LayoutKind.Sequential, Size = 12);UnsafeValueType;DebuggerDisplay("{DebugString}")>]
+type VkFixedArray_uint32_3 =
+    val mutable private _uint320: uint32
+    val mutable private _uint321: uint32
+    val mutable private _uint322: uint32
+
+    member x.Item with get i = NativePtr.get x.UnsafePtr i and set i value = NativePtr.set x.UnsafePtr i value
+    member x.Length = 3
+    member private x.DebugString =
+        let bytes = Array.zeroCreate<byte> 12
+        use p = fixed bytes
+        Marshal.Copy(&&x |> NativePtr.toNativeInt, bytes, 0, 12)
+        let str = UTF8Encoding.UTF8.GetString bytes
+        let index = str.IndexOf(char 0)
+        if index >= 0 then str.Substring(0, index) else str
+    override x.ToString() = x.DebugString
+    member x.UnsafePtr = &&x |> NativePtr.toNativeInt |> NativePtr.ofNativeInt<uint32>
 
 [<Struct;StructLayout(LayoutKind.Sequential, Size = 128);UnsafeValueType;DebuggerDisplay("{DebugString}")>]
 type VkFixedArray_uint32_32 =
