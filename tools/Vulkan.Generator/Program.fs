@@ -896,8 +896,8 @@ type PtrPtrHandle<'T when 'T : unmanaged> internal (handles: GCHandle[], ptrPtr:
     "let inline vkString (str: string) = UTF8Encoding.UTF8.GetBytes str\n" +
     "let inline vkNullPtr<'T when 'T : unmanaged> = nativeint 0 |> NativePtr.ofNativeInt<'T>" + "\n" +
     "let inline vkCastPtr<'T, 'U when 'T : unmanaged and 'U : unmanaged>(p: nativeptr<'T>) : nativeptr<'U> = p |> NativePtr.toNativeInt |> NativePtr.ofNativeInt" + "\n" +
-    "let inline vkDelegateOfFunctionPointer<'T when 'T :> Delegate>(func: PFN_vkVoidFunction) =\n" +
-    "    Marshal.GetDelegateForFunctionPointer<'T>(&&func |> NativePtr.toNativeInt)\n" +
+    "let vkDelegateOfFunctionPointer<'T when 'T :> Delegate>(func: PFN_vkVoidFunction) =\n" +
+    "    match func with PFN_vkVoidFunction.D p -> Marshal.GetDelegateForFunctionPointer<'T> p\n" +
     "let vkFixedStringArray (strs: string[]) =\n" +
 
     "    if strs.Length = 0 then new PtrPtrHandle<byte>([||], vkNullPtr)\n" +

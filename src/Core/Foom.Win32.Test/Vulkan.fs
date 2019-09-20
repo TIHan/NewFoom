@@ -54,12 +54,17 @@ let private getInstanceLayers(validationLayers: string[]) =
     layers
     |> Array.filter (fun x -> validationLayers |> Array.exists (fun y -> x.layerName.ToString() = y))
 
-let private mkInstance (appName: string) (engineName: string) (customExtensions: string[]) (validationLayers: string[]) =
+let private getInstanceExtension<'T when 'T :> Delegate> instance =
+    use pName = fixed vkString typeof<'T>.Name
+    vkGetInstanceProcAddr(instance, pName) 
+    |> vkDelegateOfFunctionPointer<'T>
+
+let private mkInstance (appName: string) (engineName: string) (validationLayers: string[]) =
     use appNamePtr = fixed vkString appName
     use engineNamePtr = fixed vkString engineName
    
     let appInfo = mkApplicationInfo appNamePtr engineNamePtr
-    let extensions = getInstanceExtensions() |> Array.map (fun x -> x.extensionName.ToString()) |> Array.append customExtensions
+    let extensions = getInstanceExtensions () |> Array.map (fun x -> x.extensionName.ToString())
     let layers = getInstanceLayers validationLayers |> Array.map (fun x -> x.layerName.ToString())
     
     use extensionsHandle = vkFixedStringArray extensions
@@ -73,17 +78,16 @@ let private mkInstance (appName: string) (engineName: string) (customExtensions:
 let private mkDebugMessenger instance debugCallback =
     let mutable createInfo = VkDebugUtilsMessengerCreateInfoEXT ()
     createInfo.sType <- VkStructureType.VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT
-    createInfo.messageSeverity <- VkDebugUtilsMessageSeverityFlagsEXT.VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT ||| 
+    createInfo.messageSeverity <- VkDebugUtilsMessageSeverityFlagsEXT.VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |||
                                   VkDebugUtilsMessageSeverityFlagsEXT.VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |||
                                   VkDebugUtilsMessageSeverityFlagsEXT.VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT
     createInfo.messageType <- VkDebugUtilsMessageTypeFlagsEXT.VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |||
                               VkDebugUtilsMessageTypeFlagsEXT.VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |||
                               VkDebugUtilsMessageTypeFlagsEXT.VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT
-  //  createInfo.pfnUserCallback <- debugCallback
+    createInfo.pfnUserCallback <- debugCallback
     createInfo.pUserData <- IntPtr.Zero // optional
 
-    use pName = fixed vkString "vkCreateDebugUtilsMessengerEXT"
-    let createDebugUtilsMessenger: vkCreateDebugUtilsMessengerEXT = vkGetInstanceProcAddr(instance, pName) |> vkDelegateOfFunctionPointer
+    let createDebugUtilsMessenger = getInstanceExtension<vkCreateDebugUtilsMessengerEXT> instance
     let debugMessenger = VkDebugUtilsMessengerEXT ()
     createDebugUtilsMessenger.Invoke(instance, &&createInfo, vkNullPtr, &&debugMessenger) |> checkResult
     debugMessenger
@@ -107,16 +111,17 @@ type VulkanInstance (instance: VkInstance, debugMessenger: VkDebugUtilsMessenger
             else
                 GC.SuppressFinalize x
 
-//                if debugMessenger <> IntPtr.Zero then
-               //     vkDestroyDebugUtilsMessengerEXT(instance, debugMessenger, vkNullPtr)
+                if debugMessenger <> IntPtr.Zero then
+                    let destroyDebugUtilsMessenger = getInstanceExtension<vkDestroyDebugUtilsMessengerEXT> instance
+                    destroyDebugUtilsMessenger.Invoke(instance, debugMessenger, vkNullPtr)
 
                 vkDestroyInstance(instance, vkNullPtr)
 
                 handles
                 |> Array.iter (fun x -> x.Free())
 
-let init appName engineName customExtensions validationLayers =
-    let instance = mkInstance appName engineName customExtensions validationLayers
+let init appName engineName validationLayers =
+    let instance = mkInstance appName engineName validationLayers
 
     let debugCallbackHandle, debugCallback = 
         PFN_vkDebugUtilsMessengerCallbackEXT.Create(fun messageSeverity messageType pCallbackData pUserData ->
@@ -133,7 +138,7 @@ let init appName engineName customExtensions validationLayers =
             let str = System.Text.Encoding.UTF8.GetString(callbackData.pMessage, length)
             printfn "validation layer: %s" str
 
-            VK_TRUE
+            VK_FALSE
         )
     let debugMessenger = mkDebugMessenger instance debugCallback
 
