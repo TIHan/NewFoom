@@ -122,7 +122,7 @@ let private mkDebugMessenger instance debugCallback =
     debugMessenger
 
 [<Sealed>]
-type VulkanInstance (instance: VkInstance, debugMessenger: VkDebugUtilsMessengerEXT, handles: GCHandle[]) =
+type VulkanInstance (instance: VkInstance, debugMessenger: VkDebugUtilsMessengerEXT, device: VkDevice, handles: GCHandle[]) =
 
     let mutable isDisposed = 0
 
@@ -140,6 +140,8 @@ type VulkanInstance (instance: VkInstance, debugMessenger: VkDebugUtilsMessenger
             else
                 GC.SuppressFinalize x
 
+                vkDestroyDevice(device, vkNullPtr)
+
                 if debugMessenger <> IntPtr.Zero then
                     let destroyDebugUtilsMessenger = getInstanceExtension<vkDestroyDebugUtilsMessengerEXT> instance
                     destroyDebugUtilsMessenger.Invoke(instance, debugMessenger, vkNullPtr)
@@ -148,6 +150,53 @@ type VulkanInstance (instance: VkInstance, debugMessenger: VkDebugUtilsMessenger
 
                 handles
                 |> Array.iter (fun x -> x.Free())
+
+let getPhysicalDeviceQueueGraphicsFamily physicalDevice =
+    let queueFamilyCount = 0u
+
+    vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &&queueFamilyCount, vkNullPtr)
+
+    let queueFamilies = Array.zeroCreate (int queueFamilyCount)
+    use pQueueFamilies = fixed queueFamilies
+    vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &&queueFamilyCount, pQueueFamilies)
+    queueFamilies
+    |> Array.mapi (fun i x -> (i, x))
+    |> Array.pick (fun (i, x) -> 
+        if x.queueCount > 0u && x.queueFlags &&& VkQueueFlags.VK_QUEUE_GRAPHICS_BIT = VkQueueFlags.VK_QUEUE_GRAPHICS_BIT then
+            Some(uint32 i)
+        else
+            None)
+
+let mkLogicalDevice physicalDevice graphicsFamilyIndex =
+    let mutable queueCreateInfo = VkDeviceQueueCreateInfo()
+    queueCreateInfo.sType <- VkStructureType.VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO
+    queueCreateInfo.queueFamilyIndex <- graphicsFamilyIndex
+    queueCreateInfo.queueCount <- 1u
+    
+    let mutable queuePriority = 1.f
+    queueCreateInfo.pQueuePriorities <- &&queuePriority
+
+    let deviceFeatures = VkPhysicalDeviceFeatures()
+    vkGetPhysicalDeviceFeatures(physicalDevice, &&deviceFeatures)
+
+    let mutable createInfo = VkDeviceCreateInfo()
+    createInfo.sType <- VkStructureType.VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO
+    createInfo.pQueueCreateInfos <- &&queueCreateInfo
+    createInfo.queueCreateInfoCount <- 1u
+    createInfo.pEnabledFeatures <- &&deviceFeatures
+
+    createInfo.enabledExtensionCount <- 0u
+
+    createInfo.enabledLayerCount <- 0u
+
+    let device = VkDevice()
+    vkCreateDevice(physicalDevice, &&createInfo, vkNullPtr, &&device) |> checkResult
+    device
+
+let getGraphicsQueue device graphicsFamilyIndex =
+    let graphicsQueue = VkQueue()
+    vkGetDeviceQueue(device, graphicsFamilyIndex, 0u, &&graphicsQueue)
+    graphicsQueue
 
 let init appName engineName validationLayers =
     let instance = mkInstance appName engineName validationLayers
@@ -161,6 +210,9 @@ let init appName engineName validationLayers =
             VK_FALSE
         )
     let debugMessenger = mkDebugMessenger instance debugCallback
-    let device = getSuitablePhysicalDevice instance
+    let physicalDevice = getSuitablePhysicalDevice instance
+    let graphicsFamilyIndex = getPhysicalDeviceQueueGraphicsFamily physicalDevice
+    let device = mkLogicalDevice physicalDevice graphicsFamilyIndex
+    let graphicsQueue = getGraphicsQueue device graphicsFamilyIndex
 
-    new VulkanInstance(instance, debugMessenger, [|debugCallbackHandle|])
+    new VulkanInstance(instance, debugMessenger, device, [|debugCallbackHandle|])
