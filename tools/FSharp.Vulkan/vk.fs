@@ -11547,24 +11547,38 @@ type PtrPtrHandle<'T when 'T : unmanaged> internal (handles: GCHandle[], ptrPtr:
                 GC.SuppressFinalize x
                 handles
                 |> Array.iter (fun x -> x.Free())
-    
-let inline vkString (str: string) = UTF8Encoding.UTF8.GetBytes str
+
+let inline vkBytesOfString (str: string) = UTF8Encoding.UTF8.GetBytes str
 let inline vkNullPtr<'T when 'T : unmanaged> = nativeint 0 |> NativePtr.ofNativeInt<'T>
-let inline vkCastPtr<'T, 'U when 'T : unmanaged and 'U : unmanaged>(p: nativeptr<'T>) : nativeptr<'U> = p |> NativePtr.toNativeInt |> NativePtr.ofNativeInt
-let vkDelegateOfFunctionPointer<'T when 'T :> Delegate>(func: PFN_vkVoidFunction) =
+let inline vkCastPtr<'T, 'U when 'T : unmanaged and 'U : unmanaged> (p: nativeptr<'T>) : nativeptr<'U> = p |> NativePtr.toNativeInt |> NativePtr.ofNativeInt
+
+let vkDelegateOfFunctionPointer<'T when 'T :> Delegate> (func: PFN_vkVoidFunction) =
     match func with PFN_vkVoidFunction.D p -> Marshal.GetDelegateForFunctionPointer<'T> p
+
 let vkFixedStringArray (strs: string[]) =
     if strs.Length = 0 then new PtrPtrHandle<byte>([||], vkNullPtr)
     else
-    let arrPtrPtr = Array.zeroCreate<nativeptr<byte>> strs.Length
-    let handles = Array.zeroCreate (strs.Length + 1)
-    let ptrPtr = GCHandle.Alloc (arrPtrPtr, GCHandleType.Pinned)
-    handles.[0] <- ptrPtr
-    for i = 1 to handles.Length - 1 do
-        let gcHandle = GCHandle.Alloc (vkString strs.[i - 1], GCHandleType.Pinned)
-        handles.[i] <- gcHandle
-        arrPtrPtr.[i - 1] <- gcHandle.AddrOfPinnedObject() |> NativePtr.ofNativeInt
-    new PtrPtrHandle<byte> (handles, ptrPtr.AddrOfPinnedObject() |> NativePtr.ofNativeInt)
+        let arrPtrPtr = Array.zeroCreate<nativeptr<byte>> strs.Length
+        let handles = Array.zeroCreate (strs.Length + 1)
+        let ptrPtr = GCHandle.Alloc (arrPtrPtr, GCHandleType.Pinned)
+        handles.[0] <- ptrPtr
+        for i = 1 to handles.Length - 1 do
+            let gcHandle = GCHandle.Alloc (vkBytesOfString strs.[i - 1], GCHandleType.Pinned)
+            handles.[i] <- gcHandle
+            arrPtrPtr.[i - 1] <- gcHandle.AddrOfPinnedObject() |> NativePtr.ofNativeInt
+        new PtrPtrHandle<byte> (handles, ptrPtr.AddrOfPinnedObject() |> NativePtr.ofNativeInt)
+
+let vkStringOfBytePtr (p: nativeptr<byte>) =
+    let mutable length = 0
+    let mutable p2 = p
+    let mutable isNullTerm = false
+    while not isNullTerm do
+        if NativePtr.read p2 = 0uy then
+            isNullTerm <- true
+        else
+            length <- length + 1
+            p2 <- NativePtr.add p2 1
+    System.Text.Encoding.UTF8.GetString(p, length)
 
 [<Struct;StructLayout(LayoutKind.Sequential, Size = 128);UnsafeValueType;DebuggerDisplay("{DebugString}")>]
 type VkFixedArray_VkDeviceSize_16 =

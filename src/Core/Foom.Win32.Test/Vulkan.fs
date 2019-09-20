@@ -55,13 +55,13 @@ let private getInstanceLayers(validationLayers: string[]) =
     |> Array.filter (fun x -> validationLayers |> Array.exists (fun y -> x.layerName.ToString() = y))
 
 let private getInstanceExtension<'T when 'T :> Delegate> instance =
-    use pName = fixed vkString typeof<'T>.Name
+    use pName = fixed vkBytesOfString typeof<'T>.Name
     vkGetInstanceProcAddr(instance, pName) 
     |> vkDelegateOfFunctionPointer<'T>
 
 let private mkInstance (appName: string) (engineName: string) (validationLayers: string[]) =
-    use appNamePtr = fixed vkString appName
-    use engineNamePtr = fixed vkString engineName
+    use appNamePtr = fixed vkBytesOfString appName
+    use engineNamePtr = fixed vkBytesOfString engineName
    
     let appInfo = mkApplicationInfo appNamePtr engineNamePtr
     let extensions = getInstanceExtensions () |> Array.map (fun x -> x.extensionName.ToString())
@@ -126,16 +126,7 @@ let init appName engineName validationLayers =
     let debugCallbackHandle, debugCallback = 
         PFN_vkDebugUtilsMessengerCallbackEXT.Create(fun messageSeverity messageType pCallbackData pUserData ->
             let callbackData = NativePtr.read pCallbackData
-            let mutable length = 0
-            let mutable pMessage = callbackData.pMessage
-            let mutable isNullTerm = false
-            while not isNullTerm do
-                if NativePtr.read pMessage = 0uy then
-                    isNullTerm <- true
-                else
-                    length <- length + 1
-                    pMessage <- NativePtr.add pMessage 1
-            let str = System.Text.Encoding.UTF8.GetString(callbackData.pMessage, length)
+            let str = vkStringOfBytePtr callbackData.pMessage
             printfn "validation layer: %s" str
 
             VK_FALSE
