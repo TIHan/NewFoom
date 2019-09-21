@@ -14,7 +14,7 @@ type Win32ClientGame() =
     let mutable dx12 = None
 
     member __.Init(width, height, hwnd, hinstance) =
-        use instance = VulkanInstance.CreateWin32(hwnd, hinstance, "App", "Engine", ["VK_LAYER_KHRONOS_validation"])
+        use instance = VulkanInstance.CreateWin32(hwnd, hinstance, "App", "Engine", ["VK_LAYER_KHRONOS_validation"], [VK_KHR_SWAPCHAIN_EXTENSION_NAME])
         ()
 
     override __.PreUpdate(_, _, inputs) =

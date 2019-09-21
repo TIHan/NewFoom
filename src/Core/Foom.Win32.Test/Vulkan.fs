@@ -124,7 +124,7 @@ let private mkDebugMessenger instance debugCallback =
     createDebugUtilsMessenger.Invoke(instance, &&createInfo, vkNullPtr, &&debugMessenger) |> checkResult
     debugMessenger
 
-let private getDeviceExtensions physicalDevice =
+let private getDeviceExtensions physicalDevice deviceExtensions =
     let extensionCount = 0u
 
     vkEnumerateDeviceExtensionProperties(physicalDevice, vkNullPtr, &&extensionCount, vkNullPtr) |> checkResult
@@ -132,8 +132,15 @@ let private getDeviceExtensions physicalDevice =
     let extensions = Array.zeroCreate (int extensionCount)
     use extensionsPtr = fixed extensions
     vkEnumerateDeviceExtensionProperties(physicalDevice, vkNullPtr, &&extensionCount, extensionsPtr) |> checkResult
+
+    deviceExtensions
+    |> Array.iter (fun x ->
+        if extensions |> Array.exists (fun y -> y.extensionName.ToString() = x) |> not then
+            failwithf "Unable to find device extension, %s." x
+    )
+
     extensions
-    |> Array.filter (fun x -> extensions |> Array.exists (fun y -> x.extensionName.ToString() <> "VK_NVX_binary_import"))
+    |> Array.filter (fun x -> deviceExtensions |> Array.exists (fun y -> x.extensionName.ToString() = y))
 
 let private getDeviceLayers physicalDevice validationLayers =
     let layerCount = 0u
@@ -143,6 +150,13 @@ let private getDeviceLayers physicalDevice validationLayers =
     let layers = Array.zeroCreate (int layerCount)
     use layersPtr = fixed layers
     vkEnumerateDeviceLayerProperties(physicalDevice, &&layerCount, layersPtr) |> checkResult
+
+    validationLayers
+    |> Array.iter (fun x ->
+        if layers |> Array.exists (fun y -> y.layerName.ToString() = x) |> not then
+            failwithf "Unable to find device layer, %s." x
+    )
+
     layers
     |> Array.filter (fun x -> validationLayers |> Array.exists (fun y -> x.layerName.ToString() = y))
 
@@ -205,7 +219,7 @@ let private mkDeviceCreateInfo pQueueCreateInfos queueCreateInfoCount pEnabledFe
         ppEnabledLayerNames = ppEnabledLayerNames
     )
 
-let private mkLogicalDevice physicalDevice indices validationLayers =
+let private mkLogicalDevice physicalDevice indices validationLayers deviceExtensions =
     let queueCreateInfos = 
         [|indices.graphicsFamily.Value; indices.presentFamily.Value|]
         |> Array.distinct // we need to be distinct so we do not create duplicate create infos
@@ -213,7 +227,7 @@ let private mkLogicalDevice physicalDevice indices validationLayers =
             let queuePriority = 1.f
             mkDeviceQueueCreateInfo familyIndex &&queuePriority
         )
-    let extensions = getDeviceExtensions physicalDevice |> Array.map (fun x -> x.extensionName.ToString())
+    let extensions = getDeviceExtensions physicalDevice deviceExtensions |> Array.map (fun x -> x.extensionName.ToString())
     let layers = getDeviceLayers physicalDevice validationLayers |> Array.map (fun x -> x.layerName.ToString())
 
     let deviceFeatures = VkPhysicalDeviceFeatures()
@@ -269,8 +283,9 @@ type VulkanInstance (instance: VkInstance, debugMessenger: VkDebugUtilsMessenger
                 handles
                 |> Array.iter (fun x -> x.Free())
 
-    static member Create(mkSurface, appName, engineName, validationLayers) =
+    static member Create(mkSurface, appName, engineName, validationLayers, deviceExtensions) =
         let validationLayers = validationLayers |> Array.ofList
+        let deviceExtensions = deviceExtensions |> Array.ofList
         let debugCallbackHandle, debugCallback = 
             PFN_vkDebugUtilsMessengerCallbackEXT.Create(fun messageSeverity messageType pCallbackData pUserData ->
                 let callbackData = NativePtr.read pCallbackData
@@ -285,14 +300,14 @@ type VulkanInstance (instance: VkInstance, debugMessenger: VkDebugUtilsMessenger
         let debugMessenger = mkDebugMessenger instance debugCallback
         let physicalDevice = getSuitablePhysicalDevice instance
         let indices = getPhysicalDeviceQueueFamilies physicalDevice surface
-        let device = mkLogicalDevice physicalDevice indices validationLayers
+        let device = mkLogicalDevice physicalDevice indices validationLayers deviceExtensions
 
         let graphicsQueue = mkQueue device indices.graphicsFamily.Value
         let presentQueue = mkQueue device indices.presentFamily.Value
 
         new VulkanInstance(instance, debugMessenger, device, graphicsQueue, presentQueue, surface, [|debugCallbackHandle|])
 
-    static member CreateWin32(hwnd, hinstance, appName, engineName, validationLayers) =
+    static member CreateWin32(hwnd, hinstance, appName, engineName, validationLayers, deviceExtensions) =
         let mkSurface =
             fun instance ->
                 let createInfo = 
@@ -305,4 +320,4 @@ type VulkanInstance (instance: VkInstance, debugMessenger: VkDebugUtilsMessenger
                 vkCreateWin32SurfaceKHR(instance, &&createInfo, vkNullPtr, &&surface) |> checkResult
                 surface
 
-        VulkanInstance.Create(mkSurface, appName, engineName, validationLayers)
+        VulkanInstance.Create(mkSurface, appName, engineName, validationLayers, deviceExtensions)
