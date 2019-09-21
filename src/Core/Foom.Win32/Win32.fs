@@ -118,3 +118,43 @@ type Win32Game (windowTitle: string, svGame: AbstractServerGame, clGame: Abstrac
                         clGame.Render(time, deltaTime)
                     )
                     gl
+
+open FSharp.Window
+
+[<Sealed>]
+type Win32WindowState (title: string, width: int, weight: int) =
+
+    let del = WndProcDelegate(Win32WindowState.WndProc)
+    let mutable hwnd = nativeint 0
+    let hwnd, hinstance = createWin32Window title del
+
+    static member private WndProc hWnd msg wParam lParam =
+        DefWindowProc(hWnd, msg, wParam, lParam)
+
+    // Store this so it doesn't get collected cause a System.ExecutionEngineException.
+    member val private WndProcDelegate = del
+
+    member __.Hwnd = hwnd
+
+    member __.Hinstance = hinstance
+
+    interface IWindowState with
+
+        member __.PollInput () =
+            let mutable msg = MSG ()
+            let inputs = ResizeArray ()
+            let hashKey = HashSet ()
+            while PeekMessage(&&msg, nativeint 0, 0u, 0u, 0x0001u) <> 0uy do
+                TranslateMessage(&msg) |> ignore
+                DispatchMessage(&msg) |> ignore
+
+                match msg.message with
+                | x when int x = WM_KEYDOWN ->
+                    if hashKey.Add(char msg.lParam) then
+                        inputs.Add(KeyPressed(char msg.lParam))
+                | x when int x = WM_KEYUP ->
+                    if hashKey.Remove(char msg.lParam) then
+                        inputs.Add(KeyReleased(char msg.lParam))
+                | _ -> ()
+            inputs
+            |> List.ofSeq          

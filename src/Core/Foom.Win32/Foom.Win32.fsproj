@@ -11,6 +11,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Foom.Core\Foom.Core.fsproj" />
+    <ProjectReference Include="..\FSharp.Window\FSharp.Window.fsproj" />
   </ItemGroup>
 
 </Project>
