@@ -351,7 +351,17 @@ let private mkSwapChain physicalDevice device surface indices =
 
     let swapChain = VkSwapchainKHR ()
     vkCreateSwapchainKHR(device, &&createInfo, vkNullPtr, &&swapChain) |> checkResult
-    swapChain
+
+    // get images too
+
+    let imageCount = 0u
+    vkGetSwapchainImagesKHR(device, swapChain, &&imageCount, vkNullPtr) |> checkResult
+
+    let images = Array.zeroCreate (int imageCount)
+    use pImages = fixed images
+    vkGetSwapchainImagesKHR(device, swapChain, &&imageCount, pImages) |> checkResult
+
+    swapChain, surfaceFormat, extent, images
 
 [<Sealed>]
 type VulkanInstance (instance: VkInstance, debugMessenger: VkDebugUtilsMessengerEXT, device: VkDevice, surface: VkSurfaceKHR, swapChain: VkSwapchainKHR, graphicsQueue: VkQueue, presentQueue: VkQueue, handles: GCHandle[]) =
@@ -403,7 +413,7 @@ type VulkanInstance (instance: VkInstance, debugMessenger: VkDebugUtilsMessenger
         let physicalDevice = getSuitablePhysicalDevice instance
         let indices = getPhysicalDeviceQueueFamilies physicalDevice surface
         let device = mkLogicalDevice physicalDevice indices validationLayers deviceExtensions
-        let swapChain = mkSwapChain physicalDevice device surface indices
+        let swapChain, _, _, images = mkSwapChain physicalDevice device surface indices
 
         let graphicsQueue = mkQueue device indices.graphicsFamily.Value
         let presentQueue = mkQueue device indices.presentFamily.Value
