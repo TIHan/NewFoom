@@ -363,8 +363,45 @@ let private mkSwapChain physicalDevice device surface indices =
 
     swapChain, surfaceFormat, extent, images
 
+let mkImageViewCreateInfo format image =
+    let components =
+        VkComponentMapping (
+            r = VkComponentSwizzle.VK_COMPONENT_SWIZZLE_IDENTITY, 
+            g = VkComponentSwizzle.VK_COMPONENT_SWIZZLE_IDENTITY, 
+            b = VkComponentSwizzle.VK_COMPONENT_SWIZZLE_IDENTITY, 
+            a = VkComponentSwizzle.VK_COMPONENT_SWIZZLE_IDENTITY
+        )
+
+    let subresourceRange =
+        VkImageSubresourceRange (
+            aspectMask = VkImageAspectFlags.VK_IMAGE_ASPECT_COLOR_BIT,
+            baseMipLevel = 0u,
+            levelCount = 1u,
+            baseArrayLayer = 0u,
+            layerCount = 1u
+        )
+
+    VkImageViewCreateInfo (
+        sType = VkStructureType.VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+        image = image,
+        viewType = VkImageViewType.VK_IMAGE_VIEW_TYPE_2D,
+        format = format,
+        components = components,
+        subresourceRange = subresourceRange
+    )
+
+let mkImageView device format image =
+    let createInfo = mkImageViewCreateInfo format image
+    let imageView = VkImageView()
+    vkCreateImageView(device, &&createInfo, vkNullPtr, &&imageView) |> checkResult
+    imageView
+    
+let mkImageViews device surfaceFormat images =
+    images
+    |> Array.map (mkImageView device surfaceFormat)
+
 [<Sealed>]
-type VulkanInstance (instance: VkInstance, debugMessenger: VkDebugUtilsMessengerEXT, device: VkDevice, surface: VkSurfaceKHR, swapChain: VkSwapchainKHR, graphicsQueue: VkQueue, presentQueue: VkQueue, handles: GCHandle[]) =
+type VulkanInstance (instance: VkInstance, debugMessenger: VkDebugUtilsMessengerEXT, device: VkDevice, surface: VkSurfaceKHR, swapChain: VkSwapchainKHR, imageViews: VkImageView [], graphicsQueue: VkQueue, presentQueue: VkQueue, handles: GCHandle[]) =
 
     let mutable isDisposed = 0
 
@@ -381,6 +418,11 @@ type VulkanInstance (instance: VkInstance, debugMessenger: VkDebugUtilsMessenger
                 failwith "VulkanInstance already disposed"
             else
                 GC.SuppressFinalize x
+
+                imageViews
+                |> Array.iter (fun imageView ->
+                    vkDestroyImageView(device, imageView, vkNullPtr)
+                )
 
                 vkDestroySwapchainKHR(device, swapChain, vkNullPtr)
                 vkDestroyDevice(device, vkNullPtr)
@@ -413,12 +455,13 @@ type VulkanInstance (instance: VkInstance, debugMessenger: VkDebugUtilsMessenger
         let physicalDevice = getSuitablePhysicalDevice instance
         let indices = getPhysicalDeviceQueueFamilies physicalDevice surface
         let device = mkLogicalDevice physicalDevice indices validationLayers deviceExtensions
-        let swapChain, _, _, images = mkSwapChain physicalDevice device surface indices
+        let swapChain, surfaceFormat, extent, images = mkSwapChain physicalDevice device surface indices
+        let imageViews = mkImageViews device surfaceFormat.format images
 
         let graphicsQueue = mkQueue device indices.graphicsFamily.Value
         let presentQueue = mkQueue device indices.presentFamily.Value
 
-        new VulkanInstance(instance, debugMessenger, device, surface, swapChain, graphicsQueue, presentQueue, [|debugCallbackHandle|])
+        new VulkanInstance(instance, debugMessenger, device, surface, swapChain, imageViews, graphicsQueue, presentQueue, [|debugCallbackHandle|])
 
     static member CreateWin32(hwnd, hinstance, appName, engineName, validationLayers, deviceExtensions) =
         let mkSurface =
