@@ -160,11 +160,10 @@ let private getDeviceLayers physicalDevice validationLayers =
     layers
     |> Array.filter (fun x -> validationLayers |> Array.exists (fun y -> x.layerName.ToString() = y))
 
-[<Struct>]
 type private QueueFamilyIndices =
     {
-        graphicsFamily: uint32 voption
-        presentFamily: uint32 voption
+        graphicsFamily: uint32 option
+        presentFamily: uint32 option
     }
 
     member this.IsComplete = this.graphicsFamily.IsSome && this.presentFamily.IsSome
@@ -188,16 +187,16 @@ let private getPhysicalDeviceQueueFamilies physicalDevice surface =
                     let presentSupport = VK_FALSE      
                     vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, uint32 i, surface, &&presentSupport) |> checkResult
                     if presentSupport = VK_TRUE then
-                        { indices with presentFamily = ValueSome (uint32 i) }
+                        { indices with presentFamily = Some (uint32 i) }
                     else
                         indices
 
                 let i = uint32 i
-                { indices with graphicsFamily = ValueSome (uint32 i) }
+                { indices with graphicsFamily = Some (uint32 i) }
             else
                 indices
         else
-            indices) { graphicsFamily = ValueNone; presentFamily = ValueNone }
+            indices) { graphicsFamily = None; presentFamily = None }
 
 let private mkDeviceQueueCreateInfo queueFamilyIndex pQueuePriorities =
     VkDeviceQueueCreateInfo (
@@ -252,8 +251,110 @@ let private mkQueue device familyIndex =
     vkGetDeviceQueue(device, familyIndex, 0u, &&queue)
     queue
 
+type SwapChainSupportDetails =
+    {
+        capabilities: VkSurfaceCapabilitiesKHR
+        formats: VkSurfaceFormatKHR []
+        presentModes: VkPresentModeKHR []
+    }
+
+let private querySwapChainSupport physicalDevice surface =
+    let capabilities = VkSurfaceCapabilitiesKHR ()
+    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &&capabilities) |> checkResult
+
+    let formatCount = 0u
+    vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &&formatCount, vkNullPtr) |> checkResult
+
+    let formats = Array.zeroCreate (int formatCount)
+    use pFormats = fixed formats
+    vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &&formatCount, pFormats) |> checkResult
+
+    let presentModeCount = 0u
+    vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &&presentModeCount, vkNullPtr) |> checkResult
+
+    let presentModes = Array.zeroCreate (int presentModeCount)
+    use pPresentModes = fixed presentModes
+    vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &&presentModeCount, pPresentModes) |> checkResult
+
+    {
+        capabilities = capabilities
+        formats = formats
+        presentModes = presentModes
+    }
+
+let private findSwapSurfaceFormat (formats: VkSurfaceFormatKHR []) =
+    formats
+    |> Array.find (fun x -> x.format = VkFormat.VK_FORMAT_B8G8R8A8_UNORM && x.colorSpace = VkColorSpaceKHR.VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+
+let private getSwapPresentMode (formats: VkPresentModeKHR []) =
+    formats
+    |> Array.tryFind (fun x -> x = VkPresentModeKHR.VK_PRESENT_MODE_MAILBOX_KHR)
+    |> Option.defaultValue VkPresentModeKHR.VK_PRESENT_MODE_FIFO_KHR // default is guaranteed
+
+let private getSwapExtent (capabilities: VkSurfaceCapabilitiesKHR) =
+    if capabilities.currentExtent.width <> UInt32.MaxValue then
+        capabilities.currentExtent
+    else
+        let width = 
+            [capabilities.minImageExtent.width; capabilities.maxImageExtent.width; 1280u]
+            |> List.max
+
+        let height =
+            [capabilities.minImageExtent.width; capabilities.maxImageExtent.width; 720u]
+            |> List.max
+
+        VkExtent2D (
+            width = width,
+            height = height
+        )
+
+let private mkSwapChain physicalDevice device surface indices =
+    let swapChainSupport = querySwapChainSupport physicalDevice surface
+
+    let surfaceFormat = findSwapSurfaceFormat swapChainSupport.formats
+    let presentMode = getSwapPresentMode swapChainSupport.presentModes
+    let extent = getSwapExtent swapChainSupport.capabilities
+
+    // Simply sticking to this minimum means that we may sometimes have to wait on the driver to complete internal operations before we can acquire another image to render to. 
+    // Therefore it is recommended to request at least one more image than the minimum
+    let imageCount = swapChainSupport.capabilities.minImageCount + 1u
+
+    let imageCount =
+        // We should also make sure to not exceed the maximum number of images while doing this, where 0 is a special value that means that there is no maximum
+        if swapChainSupport.capabilities.maxImageCount > 0u && imageCount > swapChainSupport.capabilities.maxImageCount then
+            swapChainSupport.capabilities.maxImageCount
+        else
+            imageCount
+
+    let queueFamilyIndices = [|indices.graphicsFamily.Value;indices.presentFamily.Value|]
+    let isConcurrent = indices.graphicsFamily.Value <> indices.presentFamily.Value
+    use pQueueFamilyIndices = fixed queueFamilyIndices
+    let createInfo = 
+        VkSwapchainCreateInfoKHR (
+            sType = VkStructureType.VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
+            surface = surface,
+            minImageCount = imageCount,
+            imageFormat = surfaceFormat.format,
+            imageColorSpace = surfaceFormat.colorSpace,
+            imageExtent = extent,
+            imageArrayLayers = 1u,
+            imageUsage = VkImageUsageFlags.VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+            imageSharingMode = (if isConcurrent then VkSharingMode.VK_SHARING_MODE_CONCURRENT else VkSharingMode.VK_SHARING_MODE_EXCLUSIVE),
+            queueFamilyIndexCount = (if isConcurrent then 2u else 0u (* optional *)),
+            pQueueFamilyIndices = (if isConcurrent then pQueueFamilyIndices else vkNullPtr (* optional *)),
+            preTransform = swapChainSupport.capabilities.currentTransform,
+            compositeAlpha = VkCompositeAlphaFlagsKHR.VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
+            presentMode = presentMode,
+            clipped = VK_TRUE,
+            oldSwapchain = VK_NULL_HANDLE
+        )
+
+    let swapChain = VkSwapchainKHR ()
+    vkCreateSwapchainKHR(device, &&createInfo, vkNullPtr, &&swapChain) |> checkResult
+    swapChain
+
 [<Sealed>]
-type VulkanInstance (instance: VkInstance, debugMessenger: VkDebugUtilsMessengerEXT, device: VkDevice, graphicsQueue: VkQueue, presentQueue: VkQueue, surface: VkSurfaceKHR, handles: GCHandle[]) =
+type VulkanInstance (instance: VkInstance, debugMessenger: VkDebugUtilsMessengerEXT, device: VkDevice, surface: VkSurfaceKHR, swapChain: VkSwapchainKHR, graphicsQueue: VkQueue, presentQueue: VkQueue, handles: GCHandle[]) =
 
     let mutable isDisposed = 0
 
@@ -271,6 +372,7 @@ type VulkanInstance (instance: VkInstance, debugMessenger: VkDebugUtilsMessenger
             else
                 GC.SuppressFinalize x
 
+                vkDestroySwapchainKHR(device, swapChain, vkNullPtr)
                 vkDestroyDevice(device, vkNullPtr)
 
                 if debugMessenger <> IntPtr.Zero then
@@ -301,11 +403,12 @@ type VulkanInstance (instance: VkInstance, debugMessenger: VkDebugUtilsMessenger
         let physicalDevice = getSuitablePhysicalDevice instance
         let indices = getPhysicalDeviceQueueFamilies physicalDevice surface
         let device = mkLogicalDevice physicalDevice indices validationLayers deviceExtensions
+        let swapChain = mkSwapChain physicalDevice device surface indices
 
         let graphicsQueue = mkQueue device indices.graphicsFamily.Value
         let presentQueue = mkQueue device indices.presentFamily.Value
 
-        new VulkanInstance(instance, debugMessenger, device, graphicsQueue, presentQueue, surface, [|debugCallbackHandle|])
+        new VulkanInstance(instance, debugMessenger, device, surface, swapChain, graphicsQueue, presentQueue, [|debugCallbackHandle|])
 
     static member CreateWin32(hwnd, hinstance, appName, engineName, validationLayers, deviceExtensions) =
         let mkSurface =
