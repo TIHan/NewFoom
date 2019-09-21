@@ -14,45 +14,24 @@ let inline private checkResult result =
         failwithf "%A" result
 
 let private mkApplicationInfo appNamePtr engineNamePtr =
-    let mutable appInfo = VkApplicationInfo()
-    appInfo.sType <- VkStructureType.VK_STRUCTURE_TYPE_APPLICATION_INFO
-    appInfo.pApplicationName <- appNamePtr
-    appInfo.applicationVersion <- VK_MAKE_VERSION(1u, 0u, 0u)
-    appInfo.pEngineName <- engineNamePtr
-    appInfo.engineVersion <- VK_MAKE_VERSION(1u, 0u, 0u)
-    appInfo.apiVersion <- VK_API_VERSION_1_0
-    appInfo
+    VkApplicationInfo (
+        sType = VkStructureType.VK_STRUCTURE_TYPE_APPLICATION_INFO,
+        pApplicationName = appNamePtr,
+        applicationVersion = VK_MAKE_VERSION(1u, 0u, 0u),
+        pEngineName = engineNamePtr,
+        engineVersion = VK_MAKE_VERSION(1u, 0u, 0u),
+        apiVersion = VK_API_VERSION_1_0
+    )
 
 let private mkInstanceCreateInfo appInfo extensionCount extensionNamesPtr layerCount layerNamesPtr =
-    let mutable createInfo = VkInstanceCreateInfo()
-    createInfo.sType <- VkStructureType.VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO
-    createInfo.pApplicationInfo <- appInfo
-    createInfo.enabledExtensionCount <- extensionCount
-    createInfo.ppEnabledExtensionNames <- extensionNamesPtr
-    createInfo.enabledLayerCount <- layerCount
-    createInfo.ppEnabledLayerNames <- layerNamesPtr
-    createInfo
-
-let private getInstanceExtensions() =
-    let extensionCount = 0u
-
-    vkEnumerateInstanceExtensionProperties(vkNullPtr, &&extensionCount, vkNullPtr) |> checkResult
-
-    let extensions = Array.zeroCreate (int extensionCount)
-    use extensionsPtr = fixed extensions
-    vkEnumerateInstanceExtensionProperties(vkNullPtr, &&extensionCount, extensionsPtr) |> checkResult
-    extensions
-
-let private getInstanceLayers(validationLayers: string[]) =
-    let layerCount = 0u
-
-    vkEnumerateInstanceLayerProperties(&&layerCount, vkNullPtr) |> checkResult
-
-    let layers = Array.zeroCreate (int layerCount)
-    use layersPtr = fixed layers
-    vkEnumerateInstanceLayerProperties(&&layerCount, layersPtr) |> checkResult
-    layers
-    |> Array.filter (fun x -> validationLayers |> Array.exists (fun y -> x.layerName.ToString() = y))
+    VkInstanceCreateInfo (
+        sType = VkStructureType.VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
+        pApplicationInfo = appInfo,
+        enabledExtensionCount = extensionCount,
+        ppEnabledExtensionNames = extensionNamesPtr,
+        enabledLayerCount = layerCount,
+        ppEnabledLayerNames = layerNamesPtr
+    )
 
 let private getSuitablePhysicalDevice instance =
     let deviceCount = 0u
@@ -88,7 +67,28 @@ let private getInstanceExtension<'T when 'T :> Delegate> instance =
     vkGetInstanceProcAddr(instance, pName) 
     |> vkDelegateOfFunctionPointer<'T>
 
-let private mkInstance (appName: string) (engineName: string) (validationLayers: string[]) =
+let private getInstanceExtensions() =
+    let extensionCount = 0u
+
+    vkEnumerateInstanceExtensionProperties(vkNullPtr, &&extensionCount, vkNullPtr) |> checkResult
+
+    let extensions = Array.zeroCreate (int extensionCount)
+    use extensionsPtr = fixed extensions
+    vkEnumerateInstanceExtensionProperties(vkNullPtr, &&extensionCount, extensionsPtr) |> checkResult
+    extensions
+
+let private getInstanceLayers validationLayers =
+    let layerCount = 0u
+
+    vkEnumerateInstanceLayerProperties(&&layerCount, vkNullPtr) |> checkResult
+
+    let layers = Array.zeroCreate (int layerCount)
+    use layersPtr = fixed layers
+    vkEnumerateInstanceLayerProperties(&&layerCount, layersPtr) |> checkResult
+    layers
+    |> Array.filter (fun x -> validationLayers |> Array.exists (fun y -> x.layerName.ToString() = y))
+
+let private mkInstance appName engineName validationLayers =
     use appNamePtr = fixed vkBytesOfString appName
     use engineNamePtr = fixed vkBytesOfString engineName
    
@@ -100,26 +100,114 @@ let private mkInstance (appName: string) (engineName: string) (validationLayers:
     use layersHandle = vkFixedStringArray layers
     let createInfo = mkInstanceCreateInfo &&appInfo (uint32 extensions.Length) extensionsHandle.PtrPtr (uint32 layers.Length) layersHandle.PtrPtr
 
-    let mutable instance = VkInstance()
+    let instance = VkInstance()
     vkCreateInstance(&&createInfo, vkNullPtr, &&instance) |> checkResult
     instance
 
+let mkDebugMessengerCreateInfo debugCallback =
+    VkDebugUtilsMessengerCreateInfoEXT (
+        sType = VkStructureType.VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT,
+        messageSeverity = (VkDebugUtilsMessageSeverityFlagsEXT.VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |||
+                           VkDebugUtilsMessageSeverityFlagsEXT.VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |||
+                           VkDebugUtilsMessageSeverityFlagsEXT.VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT),
+        messageType = (VkDebugUtilsMessageTypeFlagsEXT.VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |||
+                       VkDebugUtilsMessageTypeFlagsEXT.VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |||
+                       VkDebugUtilsMessageTypeFlagsEXT.VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT),
+        pfnUserCallback = debugCallback,
+        pUserData = IntPtr.Zero // optional
+    )
 let private mkDebugMessenger instance debugCallback =
-    let mutable createInfo = VkDebugUtilsMessengerCreateInfoEXT ()
-    createInfo.sType <- VkStructureType.VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT
-    createInfo.messageSeverity <- VkDebugUtilsMessageSeverityFlagsEXT.VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |||
-                                  VkDebugUtilsMessageSeverityFlagsEXT.VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |||
-                                  VkDebugUtilsMessageSeverityFlagsEXT.VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT
-    createInfo.messageType <- VkDebugUtilsMessageTypeFlagsEXT.VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |||
-                              VkDebugUtilsMessageTypeFlagsEXT.VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |||
-                              VkDebugUtilsMessageTypeFlagsEXT.VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT
-    createInfo.pfnUserCallback <- debugCallback
-    createInfo.pUserData <- IntPtr.Zero // optional
+    let createInfo = mkDebugMessengerCreateInfo debugCallback
 
     let createDebugUtilsMessenger = getInstanceExtension<vkCreateDebugUtilsMessengerEXT> instance
     let debugMessenger = VkDebugUtilsMessengerEXT ()
     createDebugUtilsMessenger.Invoke(instance, &&createInfo, vkNullPtr, &&debugMessenger) |> checkResult
     debugMessenger
+
+let private getDeviceExtensions physicalDevice =
+    let extensionCount = 0u
+
+    vkEnumerateDeviceExtensionProperties(physicalDevice, vkNullPtr, &&extensionCount, vkNullPtr) |> checkResult
+
+    let extensions = Array.zeroCreate (int extensionCount)
+    use extensionsPtr = fixed extensions
+    vkEnumerateDeviceExtensionProperties(physicalDevice, vkNullPtr, &&extensionCount, extensionsPtr) |> checkResult
+    extensions
+    |> Array.filter (fun x -> extensions |> Array.exists (fun y -> x.extensionName.ToString() <> "VK_NVX_binary_import"))
+
+let private getDeviceLayers physicalDevice validationLayers =
+    let layerCount = 0u
+
+    vkEnumerateDeviceLayerProperties(physicalDevice, &&layerCount, vkNullPtr) |> checkResult
+
+    let layers = Array.zeroCreate (int layerCount)
+    use layersPtr = fixed layers
+    vkEnumerateDeviceLayerProperties(physicalDevice, &&layerCount, layersPtr) |> checkResult
+    layers
+    |> Array.filter (fun x -> validationLayers |> Array.exists (fun y -> x.layerName.ToString() = y))
+
+let private getPhysicalDeviceQueueGraphicsFamily physicalDevice =
+    let queueFamilyCount = 0u
+
+    vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &&queueFamilyCount, vkNullPtr)
+
+    let queueFamilies = Array.zeroCreate (int queueFamilyCount)
+    use pQueueFamilies = fixed queueFamilies
+    vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &&queueFamilyCount, pQueueFamilies)
+    queueFamilies
+    |> Array.mapi (fun i x -> (i, x))
+    |> Array.pick (fun (i, x) -> 
+        if x.queueCount > 0u && x.queueFlags &&& VkQueueFlags.VK_QUEUE_GRAPHICS_BIT = VkQueueFlags.VK_QUEUE_GRAPHICS_BIT then
+            Some(uint32 i)
+        else
+            None)
+
+let mkDeviceQueueCreateInfo graphicsFamilyIndex pQueuePriorities =
+    VkDeviceQueueCreateInfo (
+        sType = VkStructureType.VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+        queueFamilyIndex = graphicsFamilyIndex,
+        queueCount = 1u,
+        pQueuePriorities = pQueuePriorities
+    )
+
+let mkDeviceCreateInfo pQueueCreateInfos pEnabledFeatures enabledExtensionCount ppEnabledExtensionNames enabledLayerCount ppEnabledLayerNames =
+    VkDeviceCreateInfo (
+        sType = VkStructureType.VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
+        pQueueCreateInfos = pQueueCreateInfos,
+        queueCreateInfoCount = 1u,
+        pEnabledFeatures = pEnabledFeatures,
+        enabledExtensionCount = enabledExtensionCount,
+        ppEnabledExtensionNames = ppEnabledExtensionNames,
+        enabledLayerCount = enabledLayerCount,
+        ppEnabledLayerNames = ppEnabledLayerNames
+    )
+
+let mkLogicalDevice physicalDevice graphicsFamilyIndex validationLayers =
+    let queuePriority = 1.f
+    let queueCreateInfo = mkDeviceQueueCreateInfo graphicsFamilyIndex &&queuePriority
+
+    let extensions = getDeviceExtensions physicalDevice |> Array.map (fun x -> x.extensionName.ToString())
+    let layers = getDeviceLayers physicalDevice validationLayers |> Array.map (fun x -> x.layerName.ToString())
+
+    let deviceFeatures = VkPhysicalDeviceFeatures()
+    vkGetPhysicalDeviceFeatures(physicalDevice, &&deviceFeatures)
+
+    use extensionsHandle = vkFixedStringArray extensions
+    use layersHandle = vkFixedStringArray layers
+    let createInfo = 
+        mkDeviceCreateInfo 
+            &&queueCreateInfo &&deviceFeatures 
+            (uint32 extensions.Length) extensionsHandle.PtrPtr
+            (uint32 layers.Length) layersHandle.PtrPtr
+
+    let device = VkDevice()
+    vkCreateDevice(physicalDevice, &&createInfo, vkNullPtr, &&device) |> checkResult
+    device
+
+let getGraphicsQueue device graphicsFamilyIndex =
+    let graphicsQueue = VkQueue()
+    vkGetDeviceQueue(device, graphicsFamilyIndex, 0u, &&graphicsQueue)
+    graphicsQueue
 
 [<Sealed>]
 type VulkanInstance (instance: VkInstance, debugMessenger: VkDebugUtilsMessengerEXT, device: VkDevice, handles: GCHandle[]) =
@@ -151,68 +239,22 @@ type VulkanInstance (instance: VkInstance, debugMessenger: VkDebugUtilsMessenger
                 handles
                 |> Array.iter (fun x -> x.Free())
 
-let getPhysicalDeviceQueueGraphicsFamily physicalDevice =
-    let queueFamilyCount = 0u
+    static member Create(appName, engineName, validationLayers) =
+        let validationLayers = validationLayers |> Array.ofList
+        let instance = mkInstance appName engineName validationLayers
 
-    vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &&queueFamilyCount, vkNullPtr)
+        let debugCallbackHandle, debugCallback = 
+            PFN_vkDebugUtilsMessengerCallbackEXT.Create(fun messageSeverity messageType pCallbackData pUserData ->
+                let callbackData = NativePtr.read pCallbackData
+                let str = vkStringOfBytePtr callbackData.pMessage
+                printfn "validation layer: %s" str
 
-    let queueFamilies = Array.zeroCreate (int queueFamilyCount)
-    use pQueueFamilies = fixed queueFamilies
-    vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &&queueFamilyCount, pQueueFamilies)
-    queueFamilies
-    |> Array.mapi (fun i x -> (i, x))
-    |> Array.pick (fun (i, x) -> 
-        if x.queueCount > 0u && x.queueFlags &&& VkQueueFlags.VK_QUEUE_GRAPHICS_BIT = VkQueueFlags.VK_QUEUE_GRAPHICS_BIT then
-            Some(uint32 i)
-        else
-            None)
+                VK_FALSE
+            )
+        let debugMessenger = mkDebugMessenger instance debugCallback
+        let physicalDevice = getSuitablePhysicalDevice instance
+        let graphicsFamilyIndex = getPhysicalDeviceQueueGraphicsFamily physicalDevice
+        let device = mkLogicalDevice physicalDevice graphicsFamilyIndex validationLayers
+        let graphicsQueue = getGraphicsQueue device graphicsFamilyIndex
 
-let mkLogicalDevice physicalDevice graphicsFamilyIndex =
-    let mutable queueCreateInfo = VkDeviceQueueCreateInfo()
-    queueCreateInfo.sType <- VkStructureType.VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO
-    queueCreateInfo.queueFamilyIndex <- graphicsFamilyIndex
-    queueCreateInfo.queueCount <- 1u
-    
-    let mutable queuePriority = 1.f
-    queueCreateInfo.pQueuePriorities <- &&queuePriority
-
-    let deviceFeatures = VkPhysicalDeviceFeatures()
-    vkGetPhysicalDeviceFeatures(physicalDevice, &&deviceFeatures)
-
-    let mutable createInfo = VkDeviceCreateInfo()
-    createInfo.sType <- VkStructureType.VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO
-    createInfo.pQueueCreateInfos <- &&queueCreateInfo
-    createInfo.queueCreateInfoCount <- 1u
-    createInfo.pEnabledFeatures <- &&deviceFeatures
-
-    createInfo.enabledExtensionCount <- 0u
-
-    createInfo.enabledLayerCount <- 0u
-
-    let device = VkDevice()
-    vkCreateDevice(physicalDevice, &&createInfo, vkNullPtr, &&device) |> checkResult
-    device
-
-let getGraphicsQueue device graphicsFamilyIndex =
-    let graphicsQueue = VkQueue()
-    vkGetDeviceQueue(device, graphicsFamilyIndex, 0u, &&graphicsQueue)
-    graphicsQueue
-
-let init appName engineName validationLayers =
-    let instance = mkInstance appName engineName validationLayers
-
-    let debugCallbackHandle, debugCallback = 
-        PFN_vkDebugUtilsMessengerCallbackEXT.Create(fun messageSeverity messageType pCallbackData pUserData ->
-            let callbackData = NativePtr.read pCallbackData
-            let str = vkStringOfBytePtr callbackData.pMessage
-            printfn "validation layer: %s" str
-
-            VK_FALSE
-        )
-    let debugMessenger = mkDebugMessenger instance debugCallback
-    let physicalDevice = getSuitablePhysicalDevice instance
-    let graphicsFamilyIndex = getPhysicalDeviceQueueGraphicsFamily physicalDevice
-    let device = mkLogicalDevice physicalDevice graphicsFamilyIndex
-    let graphicsQueue = getGraphicsQueue device graphicsFamilyIndex
-
-    new VulkanInstance(instance, debugMessenger, device, [|debugCallbackHandle|])
+        new VulkanInstance(instance, debugMessenger, device, [|debugCallbackHandle|])
