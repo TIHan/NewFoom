@@ -104,7 +104,7 @@ let private mkInstance appName engineName validationLayers =
     vkCreateInstance(&&createInfo, vkNullPtr, &&instance) |> checkResult
     instance
 
-let mkDebugMessengerCreateInfo debugCallback =
+let private mkDebugMessengerCreateInfo debugCallback =
     VkDebugUtilsMessengerCreateInfoEXT (
         sType = VkStructureType.VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT,
         messageSeverity = (VkDebugUtilsMessageSeverityFlagsEXT.VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |||
@@ -146,7 +146,16 @@ let private getDeviceLayers physicalDevice validationLayers =
     layers
     |> Array.filter (fun x -> validationLayers |> Array.exists (fun y -> x.layerName.ToString() = y))
 
-let private getPhysicalDeviceQueueGraphicsFamily physicalDevice =
+[<Struct>]
+type private QueueFamilyIndices =
+    {
+        graphicsFamily: uint32 voption
+        presentFamily: uint32 voption
+    }
+
+    member this.IsComplete = this.graphicsFamily.IsSome && this.presentFamily.IsSome
+
+let private getPhysicalDeviceQueueFamilies physicalDevice surface =
     let queueFamilyCount = 0u
 
     vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &&queueFamilyCount, vkNullPtr)
@@ -154,27 +163,41 @@ let private getPhysicalDeviceQueueGraphicsFamily physicalDevice =
     let queueFamilies = Array.zeroCreate (int queueFamilyCount)
     use pQueueFamilies = fixed queueFamilies
     vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &&queueFamilyCount, pQueueFamilies)
+    
     queueFamilies
     |> Array.mapi (fun i x -> (i, x))
-    |> Array.pick (fun (i, x) -> 
-        if x.queueCount > 0u && x.queueFlags &&& VkQueueFlags.VK_QUEUE_GRAPHICS_BIT = VkQueueFlags.VK_QUEUE_GRAPHICS_BIT then
-            Some(uint32 i)
-        else
-            None)
+    |> Array.fold (fun indices (i, x) ->
+        if x.queueCount > 0u then
+            if x.queueFlags &&& VkQueueFlags.VK_QUEUE_GRAPHICS_BIT = VkQueueFlags.VK_QUEUE_GRAPHICS_BIT then
 
-let mkDeviceQueueCreateInfo graphicsFamilyIndex pQueuePriorities =
+                let indices =
+                    let presentSupport = VK_FALSE      
+                    vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, uint32 i, surface, &&presentSupport) |> checkResult
+                    if presentSupport = VK_TRUE then
+                        { indices with presentFamily = ValueSome (uint32 i) }
+                    else
+                        indices
+
+                let i = uint32 i
+                { indices with graphicsFamily = ValueSome (uint32 i) }
+            else
+                indices
+        else
+            indices) { graphicsFamily = ValueNone; presentFamily = ValueNone }
+
+let private mkDeviceQueueCreateInfo queueFamilyIndex pQueuePriorities =
     VkDeviceQueueCreateInfo (
         sType = VkStructureType.VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
-        queueFamilyIndex = graphicsFamilyIndex,
+        queueFamilyIndex = queueFamilyIndex,
         queueCount = 1u,
         pQueuePriorities = pQueuePriorities
     )
 
-let mkDeviceCreateInfo pQueueCreateInfos pEnabledFeatures enabledExtensionCount ppEnabledExtensionNames enabledLayerCount ppEnabledLayerNames =
+let private mkDeviceCreateInfo pQueueCreateInfos queueCreateInfoCount pEnabledFeatures enabledExtensionCount ppEnabledExtensionNames enabledLayerCount ppEnabledLayerNames =
     VkDeviceCreateInfo (
         sType = VkStructureType.VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
         pQueueCreateInfos = pQueueCreateInfos,
-        queueCreateInfoCount = 1u,
+        queueCreateInfoCount = queueCreateInfoCount,
         pEnabledFeatures = pEnabledFeatures,
         enabledExtensionCount = enabledExtensionCount,
         ppEnabledExtensionNames = ppEnabledExtensionNames,
@@ -182,21 +205,27 @@ let mkDeviceCreateInfo pQueueCreateInfos pEnabledFeatures enabledExtensionCount 
         ppEnabledLayerNames = ppEnabledLayerNames
     )
 
-let mkLogicalDevice physicalDevice graphicsFamilyIndex validationLayers =
-    let queuePriority = 1.f
-    let queueCreateInfo = mkDeviceQueueCreateInfo graphicsFamilyIndex &&queuePriority
-
+let private mkLogicalDevice physicalDevice indices validationLayers =
+    let queueCreateInfos = 
+        [|indices.graphicsFamily.Value; indices.presentFamily.Value|]
+        |> Array.distinct // we need to be distinct so we do not create duplicate create infos
+        |> Array.map (fun familyIndex ->
+            let queuePriority = 1.f
+            mkDeviceQueueCreateInfo familyIndex &&queuePriority
+        )
     let extensions = getDeviceExtensions physicalDevice |> Array.map (fun x -> x.extensionName.ToString())
     let layers = getDeviceLayers physicalDevice validationLayers |> Array.map (fun x -> x.layerName.ToString())
 
     let deviceFeatures = VkPhysicalDeviceFeatures()
     vkGetPhysicalDeviceFeatures(physicalDevice, &&deviceFeatures)
 
+    use pQueueCreateInfos = fixed queueCreateInfos
     use extensionsHandle = vkFixedStringArray extensions
     use layersHandle = vkFixedStringArray layers
     let createInfo = 
         mkDeviceCreateInfo 
-            &&queueCreateInfo &&deviceFeatures 
+            pQueueCreateInfos (uint32 queueCreateInfos.Length)
+            &&deviceFeatures 
             (uint32 extensions.Length) extensionsHandle.PtrPtr
             (uint32 layers.Length) layersHandle.PtrPtr
 
@@ -204,13 +233,13 @@ let mkLogicalDevice physicalDevice graphicsFamilyIndex validationLayers =
     vkCreateDevice(physicalDevice, &&createInfo, vkNullPtr, &&device) |> checkResult
     device
 
-let getGraphicsQueue device graphicsFamilyIndex =
-    let graphicsQueue = VkQueue()
-    vkGetDeviceQueue(device, graphicsFamilyIndex, 0u, &&graphicsQueue)
-    graphicsQueue
+let private mkQueue device familyIndex =
+    let queue = VkQueue()
+    vkGetDeviceQueue(device, familyIndex, 0u, &&queue)
+    queue
 
 [<Sealed>]
-type VulkanInstance (instance: VkInstance, debugMessenger: VkDebugUtilsMessengerEXT, device: VkDevice, graphicsQueue: VkQueue, surface: VkSurfaceKHR, handles: GCHandle[]) =
+type VulkanInstance (instance: VkInstance, debugMessenger: VkDebugUtilsMessengerEXT, device: VkDevice, graphicsQueue: VkQueue, presentQueue: VkQueue, surface: VkSurfaceKHR, handles: GCHandle[]) =
 
     let mutable isDisposed = 0
 
@@ -242,9 +271,6 @@ type VulkanInstance (instance: VkInstance, debugMessenger: VkDebugUtilsMessenger
 
     static member Create(mkSurface, appName, engineName, validationLayers) =
         let validationLayers = validationLayers |> Array.ofList
-        let instance = mkInstance appName engineName validationLayers
-        let surface = mkSurface instance // must create surface right after instance - influences device calls
-
         let debugCallbackHandle, debugCallback = 
             PFN_vkDebugUtilsMessengerCallbackEXT.Create(fun messageSeverity messageType pCallbackData pUserData ->
                 let callbackData = NativePtr.read pCallbackData
@@ -253,13 +279,18 @@ type VulkanInstance (instance: VkInstance, debugMessenger: VkDebugUtilsMessenger
 
                 VK_FALSE
             )
+
+        let instance = mkInstance appName engineName validationLayers
+        let surface = mkSurface instance // must create surface right after instance - influences device calls
         let debugMessenger = mkDebugMessenger instance debugCallback
         let physicalDevice = getSuitablePhysicalDevice instance
-        let graphicsFamilyIndex = getPhysicalDeviceQueueGraphicsFamily physicalDevice
-        let device = mkLogicalDevice physicalDevice graphicsFamilyIndex validationLayers
-        let graphicsQueue = getGraphicsQueue device graphicsFamilyIndex
+        let indices = getPhysicalDeviceQueueFamilies physicalDevice surface
+        let device = mkLogicalDevice physicalDevice indices validationLayers
 
-        new VulkanInstance(instance, debugMessenger, device, graphicsQueue, surface, [|debugCallbackHandle|])
+        let graphicsQueue = mkQueue device indices.graphicsFamily.Value
+        let presentQueue = mkQueue device indices.presentFamily.Value
+
+        new VulkanInstance(instance, debugMessenger, device, graphicsQueue, presentQueue, surface, [|debugCallbackHandle|])
 
     static member CreateWin32(hwnd, hinstance, appName, engineName, validationLayers) =
         let mkSurface =
