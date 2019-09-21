@@ -210,7 +210,7 @@ let getGraphicsQueue device graphicsFamilyIndex =
     graphicsQueue
 
 [<Sealed>]
-type VulkanInstance (instance: VkInstance, debugMessenger: VkDebugUtilsMessengerEXT, device: VkDevice, handles: GCHandle[]) =
+type VulkanInstance (instance: VkInstance, debugMessenger: VkDebugUtilsMessengerEXT, device: VkDevice, graphicsQueue: VkQueue, surface: VkSurfaceKHR, handles: GCHandle[]) =
 
     let mutable isDisposed = 0
 
@@ -234,14 +234,16 @@ type VulkanInstance (instance: VkInstance, debugMessenger: VkDebugUtilsMessenger
                     let destroyDebugUtilsMessenger = getInstanceExtension<vkDestroyDebugUtilsMessengerEXT> instance
                     destroyDebugUtilsMessenger.Invoke(instance, debugMessenger, vkNullPtr)
 
+                vkDestroySurfaceKHR(instance, surface, vkNullPtr)
                 vkDestroyInstance(instance, vkNullPtr)
 
                 handles
                 |> Array.iter (fun x -> x.Free())
 
-    static member Create(appName, engineName, validationLayers) =
+    static member Create(mkSurface, appName, engineName, validationLayers) =
         let validationLayers = validationLayers |> Array.ofList
         let instance = mkInstance appName engineName validationLayers
+        let surface = mkSurface instance // must create surface right after instance - influences device calls
 
         let debugCallbackHandle, debugCallback = 
             PFN_vkDebugUtilsMessengerCallbackEXT.Create(fun messageSeverity messageType pCallbackData pUserData ->
@@ -257,4 +259,19 @@ type VulkanInstance (instance: VkInstance, debugMessenger: VkDebugUtilsMessenger
         let device = mkLogicalDevice physicalDevice graphicsFamilyIndex validationLayers
         let graphicsQueue = getGraphicsQueue device graphicsFamilyIndex
 
-        new VulkanInstance(instance, debugMessenger, device, [|debugCallbackHandle|])
+        new VulkanInstance(instance, debugMessenger, device, graphicsQueue, surface, [|debugCallbackHandle|])
+
+    static member CreateWin32(hwnd, hinstance, appName, engineName, validationLayers) =
+        let mkSurface =
+            fun instance ->
+                let createInfo = 
+                    VkWin32SurfaceCreateInfoKHR (
+                        sType = VkStructureType.VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR,
+                        hwnd = hwnd,
+                        hinstance = hinstance
+                    )
+                let surface = VkSurfaceKHR ()
+                vkCreateWin32SurfaceKHR(instance, &&createInfo, vkNullPtr, &&surface) |> checkResult
+                surface
+
+        VulkanInstance.Create(mkSurface, appName, engineName, validationLayers)

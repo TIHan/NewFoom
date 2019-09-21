@@ -26,7 +26,7 @@ let private createWin32Window (windowTitle: string) (del: WndProcDelegate) =
 
     if (RegisterClassExW(&windowClass) = 0) then
         printfn "Failed Registering Window Class"
-        IntPtr.Zero
+        IntPtr.Zero, IntPtr.Zero
     else
 
     printfn "- Window Class Registered"
@@ -49,25 +49,27 @@ let private createWin32Window (windowTitle: string) (del: WndProcDelegate) =
 
     if hwnd = IntPtr.Zero then
         printfn "Failed Creating Window"
-        IntPtr.Zero
+        IntPtr.Zero, IntPtr.Zero
     else
 
     printfn "- Created Window"
 
     printfn "ShowWindow Result: %A" <| ShowWindow(hwnd, 1)
     printfn "UpdateWindow Result: %A" <| UpdateWindow(hwnd)
-    hwnd
+    hwnd, hInstance
 
 [<Sealed>]
 type Win32Game (windowTitle: string, svGame: AbstractServerGame, clGame: AbstractClientGame, interval) =
 
     let del = WndProcDelegate(Win32Game.WndProc)
-    let hwnd = createWin32Window windowTitle del
+    let hwnd, hinstance = createWin32Window windowTitle del
 
     // Store this so it doesn't get collected cause a System.ExecutionEngineException.
     member val private WndProcDelegate = del
 
     member __.Hwnd = hwnd
+
+    member __.Hinstance = hinstance
 
     member __.Width = 1280
 

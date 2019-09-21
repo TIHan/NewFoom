@@ -13,8 +13,8 @@ type Win32ClientGame() =
 
     let mutable dx12 = None
 
-    member __.Init(width, height, hwnd) =
-        use instance = VulkanInstance.Create("App", "Engine", ["VK_LAYER_KHRONOS_validation"])
+    member __.Init(width, height, hwnd, hinstance) =
+        use instance = VulkanInstance.CreateWin32(hwnd, hinstance, "App", "Engine", ["VK_LAYER_KHRONOS_validation"])
         ()
 
     override __.PreUpdate(_, _, inputs) =
@@ -30,6 +30,6 @@ type Win32ClientGame() =
 let main argv =
     let clGame = Win32ClientGame()
     let game = Win32Game("F# Game", Win32ServerGame(), clGame, 30.)
-    clGame.Init(game.Width, game.Height, game.Hwnd)
+    clGame.Init(game.Width, game.Height, game.Hwnd, game.Hinstance)
     game.Start()
     0
