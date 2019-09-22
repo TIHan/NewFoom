@@ -477,3 +477,39 @@ type VulkanInstance (instance: VkInstance, debugMessenger: VkDebugUtilsMessenger
                 surface
 
         VulkanInstance.Create(mkSurface, appName, engineName, validationLayers, deviceExtensions)
+
+
+let mkShaderModule device code codeSize =
+    let createInfo = 
+        VkShaderModuleCreateInfo (
+            sType = VkStructureType.VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
+            codeSize = codeSize,
+            pCode = NativePtr.ofNativeInt code
+        )
+
+    let shaderModule = VkShaderModule ()
+    vkCreateShaderModule(device, &&createInfo, vkNullPtr, &&shaderModule) |> checkResult
+    shaderModule
+
+let mkShaderStageInfo stage name shaderModule =
+    VkPipelineShaderStageCreateInfo (
+        sType = VkStructureType.VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+        stage = stage, //VkShaderStageFlags.VK_SHADER_STAGE_VERTEX_BIT
+        modul = shaderModule,
+        pName = name
+    )
+
+let mkGraphicsPipeline device vert vertSize frag fragSize =
+    let vertShaderModule = mkShaderModule device vert vertSize
+    let fragShaderModule = mkShaderModule device frag fragSize
+
+    use pNameMain = fixed vkBytesOfString "main"
+
+    let stages =
+        [|
+            mkShaderStageInfo VkShaderStageFlags.VK_SHADER_STAGE_VERTEX_BIT pNameMain vertShaderModule
+            mkShaderStageInfo VkShaderStageFlags.VK_SHADER_STAGE_FRAGMENT_BIT pNameMain fragShaderModule
+        |]
+
+    vkDestroyShaderModule(device, fragShaderModule, vkNullPtr)
+    vkDestroyShaderModule(device, vertShaderModule, vkNullPtr)
