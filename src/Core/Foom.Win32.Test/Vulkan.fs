@@ -405,172 +405,12 @@ let mkShaderModule device (code: nativeptr<byte>) (codeSize: uint32) =
         VkShaderModuleCreateInfo (
             sType = VkStructureType.VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
             codeSize = unativeint codeSize,
-            pCode = (code |> NativePtr.toNativeInt |> NativePtr.ofNativeInt)
+            pCode = vkCastPtr code
         )
 
     let shaderModule = VkShaderModule ()
     vkCreateShaderModule(device, &&createInfo, vkNullPtr, &&shaderModule) |> checkResult
     shaderModule
-
-module Pipeline =
-
-    let mkShaderStageInfo stage name shaderModule =
-        VkPipelineShaderStageCreateInfo (
-            sType = VkStructureType.VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-            stage = stage,
-            modul = shaderModule,
-            pName = name
-        )
-
-    let mkVertexInputCreateInfo =
-        VkPipelineVertexInputStateCreateInfo (
-            sType = VkStructureType.VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
-            vertexBindingDescriptionCount = 0u,
-            pVertexBindingDescriptions = vkNullPtr, // optional
-            vertexAttributeDescriptionCount = 0u,
-            pVertexAttributeDescriptions = vkNullPtr // optional
-        )
-
-    let mkInputAssemblyCreateInfo =
-        VkPipelineInputAssemblyStateCreateInfo (
-            sType = VkStructureType.VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
-            topology = VkPrimitiveTopology.VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
-            primitiveRestartEnable = VK_FALSE
-        )
-
-    let mkViewport (extent: VkExtent2D) =
-        VkViewport (
-            x = 0.f,
-            y = 0.f,
-            width = float32 extent.width,
-            height = float32 extent.height,
-            minDepth = 0.f,
-            maxDepth = 1.f
-        )
-
-    let mkScissor (extent: VkExtent2D) =
-        VkRect2D (
-            offset = VkOffset2D (x = 0, y = 0),
-            extent = extent
-        )
-
-    let mkViewportStateCreateInfo pViewport pScissor =
-        VkPipelineViewportStateCreateInfo (
-            sType = VkStructureType.VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
-            viewportCount = 1u,
-            pViewports = pViewport,
-            scissorCount = 1u,
-            pScissors = pScissor
-        )
-
-    let mkRasterizerCreateInfo =     
-        VkPipelineRasterizationStateCreateInfo (
-            sType = VkStructureType.VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
-            depthClampEnable = VK_FALSE,
-            rasterizerDiscardEnable = VK_FALSE,
-            polygonMode = VkPolygonMode.VK_POLYGON_MODE_FILL,
-            lineWidth = 1.0f,
-            cullMode = VkCullModeFlags.VK_CULL_MODE_BACK_BIT,
-            frontFace = VkFrontFace.VK_FRONT_FACE_CLOCKWISE,
-            depthBiasEnable = VK_FALSE,
-            depthBiasConstantFactor = 0.f, // Optional
-            depthBiasClamp = 0.f, // Optional
-            depthBiasSlopeFactor = 0.f // Optional
-        )
-
-    let mkMultisampleCreateInfo =
-        VkPipelineMultisampleStateCreateInfo (
-            sType = VkStructureType.VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
-            sampleShadingEnable = VK_FALSE,
-            rasterizationSamples = VkSampleCountFlags.VK_SAMPLE_COUNT_1_BIT,
-            minSampleShading = 1.f, // Optional
-            pSampleMask = vkNullPtr, // Optional
-            alphaToCoverageEnable = VK_FALSE, // Optional
-            alphaToOneEnable = VK_FALSE // Optional
-        )
-
-    let mkDepthStencilCreateInfo =
-        VkPipelineDepthStencilStateCreateInfo ()
-
-        //colorBlendAttachment.blendEnable = VK_TRUE;
-        //colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-        //colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-        //colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
-        //colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-        //colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-        //colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
-    let mkColorBlendAttachmentCreateInfo =
-        VkPipelineColorBlendAttachmentState (
-            colorWriteMask = (VkColorComponentFlags.VK_COLOR_COMPONENT_R_BIT |||
-                              VkColorComponentFlags.VK_COLOR_COMPONENT_G_BIT |||
-                              VkColorComponentFlags.VK_COLOR_COMPONENT_B_BIT |||
-                              VkColorComponentFlags.VK_COLOR_COMPONENT_A_BIT),
-            blendEnable = VK_FALSE,
-            srcColorBlendFactor = VkBlendFactor.VK_BLEND_FACTOR_ONE, // Optional
-            dstColorBlendFactor = VkBlendFactor.VK_BLEND_FACTOR_ZERO, // Optional
-            colorBlendOp = VkBlendOp.VK_BLEND_OP_ADD, // Optional
-            srcAlphaBlendFactor = VkBlendFactor.VK_BLEND_FACTOR_ONE, // Optional
-            dstAlphaBlendFactor = VkBlendFactor.VK_BLEND_FACTOR_ZERO, // Optional
-            alphaBlendOp = VkBlendOp.VK_BLEND_OP_ADD
-        )
-
-    let mkColorBlendCreateInfo pAttachment =
-        VkPipelineColorBlendStateCreateInfo (
-            sType = VkStructureType.VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
-            logicOpEnable = VK_FALSE,
-            logicOp = VkLogicOp.VK_LOGIC_OP_COPY, // Optional
-            attachmentCount = 1u,
-            pAttachments = pAttachment,
-            blendConstants = 
-                (let mutable x = VkFixedArray_float32_4 ()
-                 x.[0] <- 0.f // Optional
-                 x.[1] <- 0.f // Optional
-                 x.[2] <- 0.f // Optional
-                 x.[3] <- 0.f // Optional
-                 x)
-        )
-
-    let defaultDynamicStates =
-        [|
-            VkDynamicState.VK_DYNAMIC_STATE_VIEWPORT
-            VkDynamicState.VK_DYNAMIC_STATE_LINE_WIDTH  
-        |]
-
-    let mkDynamicStateCreateInfo pDynamicStates dynamicStateCount =
-        VkPipelineDynamicStateCreateInfo (
-            sType = VkStructureType.VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
-            dynamicStateCount = dynamicStateCount,
-            pDynamicStates = pDynamicStates
-        )
-
-    let mkPipelineLayout device =
-        let createInfo =
-            VkPipelineLayoutCreateInfo (
-                sType = VkStructureType.VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-                setLayoutCount = 0u, // Optional
-                pSetLayouts = vkNullPtr, // Optional
-                pushConstantRangeCount = 0u, // Optional
-                pPushConstantRanges = vkNullPtr // Optional
-            )
-
-        let pipelineLayout = VkPipelineLayout ()
-        vkCreatePipelineLayout(device, &&createInfo, vkNullPtr, &&pipelineLayout) |> checkResult
-        pipelineLayout
-
-    let mkGraphicsPipeline device vert vertSize frag fragSize =
-        let vertShaderModule = mkShaderModule device vert vertSize
-        let fragShaderModule = mkShaderModule device frag fragSize
-
-        use pNameMain = fixed vkBytesOfString "main"
-
-        let stages =
-            [|
-                mkShaderStageInfo VkShaderStageFlags.VK_SHADER_STAGE_VERTEX_BIT pNameMain vertShaderModule
-                mkShaderStageInfo VkShaderStageFlags.VK_SHADER_STAGE_FRAGMENT_BIT pNameMain fragShaderModule
-            |]
-
-        vkDestroyShaderModule(device, fragShaderModule, vkNullPtr)
-        vkDestroyShaderModule(device, vertShaderModule, vkNullPtr)
 
 let mkColorAttachment format =
     VkAttachmentDescription (
@@ -617,6 +457,210 @@ let mkRenderPass device format =
     vkCreateRenderPass(device, &&createInfo, vkNullPtr, &&renderPass) |> checkResult
     renderPass
 
+module Pipeline =
+
+    let mkShaderStageInfo stage pName shaderModule =
+        VkPipelineShaderStageCreateInfo (
+            sType = VkStructureType.VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+            stage = stage,
+            modul = shaderModule,
+            pName = pName
+        )
+
+    let mkVertexInputCreateInfo () =
+        VkPipelineVertexInputStateCreateInfo (
+            sType = VkStructureType.VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
+            vertexBindingDescriptionCount = 0u,
+            pVertexBindingDescriptions = vkNullPtr, // optional
+            vertexAttributeDescriptionCount = 0u,
+            pVertexAttributeDescriptions = vkNullPtr // optional
+        )
+
+    let mkInputAssemblyCreateInfo () =
+        VkPipelineInputAssemblyStateCreateInfo (
+            sType = VkStructureType.VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
+            topology = VkPrimitiveTopology.VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+            primitiveRestartEnable = VK_FALSE
+        )
+
+    let mkViewport (extent: VkExtent2D) =
+        VkViewport (
+            x = 0.f,
+            y = 0.f,
+            width = float32 extent.width,
+            height = float32 extent.height,
+            minDepth = 0.f,
+            maxDepth = 1.f
+        )
+
+    let mkScissor (extent: VkExtent2D) =
+        VkRect2D (
+            offset = VkOffset2D (x = 0, y = 0),
+            extent = extent
+        )
+
+    let mkViewportStateCreateInfo pViewport pScissor =
+        VkPipelineViewportStateCreateInfo (
+            sType = VkStructureType.VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
+            viewportCount = 1u,
+            pViewports = pViewport,
+            scissorCount = 1u,
+            pScissors = pScissor
+        )
+
+    let mkRasterizerCreateInfo () =     
+        VkPipelineRasterizationStateCreateInfo (
+            sType = VkStructureType.VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
+            depthClampEnable = VK_FALSE,
+            rasterizerDiscardEnable = VK_FALSE,
+            polygonMode = VkPolygonMode.VK_POLYGON_MODE_FILL,
+            lineWidth = 1.0f,
+            cullMode = VkCullModeFlags.VK_CULL_MODE_BACK_BIT,
+            frontFace = VkFrontFace.VK_FRONT_FACE_CLOCKWISE,
+            depthBiasEnable = VK_FALSE,
+            depthBiasConstantFactor = 0.f, // Optional
+            depthBiasClamp = 0.f, // Optional
+            depthBiasSlopeFactor = 0.f // Optional
+        )
+
+    let mkMultisampleCreateInfo () =
+        VkPipelineMultisampleStateCreateInfo (
+            sType = VkStructureType.VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
+            sampleShadingEnable = VK_FALSE,
+            rasterizationSamples = VkSampleCountFlags.VK_SAMPLE_COUNT_1_BIT,
+            minSampleShading = 1.f, // Optional
+            pSampleMask = vkNullPtr, // Optional
+            alphaToCoverageEnable = VK_FALSE, // Optional
+            alphaToOneEnable = VK_FALSE // Optional
+        )
+
+    let mkDepthStencilCreateInfo () =
+        VkPipelineDepthStencilStateCreateInfo ()
+
+        //colorBlendAttachment.blendEnable = VK_TRUE;
+        //colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+        //colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+        //colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
+        //colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+        //colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+        //colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
+    let mkColorBlendAttachment () =
+        VkPipelineColorBlendAttachmentState (
+            colorWriteMask = (VkColorComponentFlags.VK_COLOR_COMPONENT_R_BIT |||
+                              VkColorComponentFlags.VK_COLOR_COMPONENT_G_BIT |||
+                              VkColorComponentFlags.VK_COLOR_COMPONENT_B_BIT |||
+                              VkColorComponentFlags.VK_COLOR_COMPONENT_A_BIT),
+            blendEnable = VK_FALSE,
+            srcColorBlendFactor = VkBlendFactor.VK_BLEND_FACTOR_ONE, // Optional
+            dstColorBlendFactor = VkBlendFactor.VK_BLEND_FACTOR_ZERO, // Optional
+            colorBlendOp = VkBlendOp.VK_BLEND_OP_ADD, // Optional
+            srcAlphaBlendFactor = VkBlendFactor.VK_BLEND_FACTOR_ONE, // Optional
+            dstAlphaBlendFactor = VkBlendFactor.VK_BLEND_FACTOR_ZERO, // Optional
+            alphaBlendOp = VkBlendOp.VK_BLEND_OP_ADD
+        )
+
+    let mkColorBlendCreateInfo pAttachments attachmentCount =
+        VkPipelineColorBlendStateCreateInfo (
+            sType = VkStructureType.VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
+            logicOpEnable = VK_FALSE,
+            logicOp = VkLogicOp.VK_LOGIC_OP_COPY, // Optional
+            attachmentCount = attachmentCount,
+            pAttachments = pAttachments,
+            blendConstants = 
+                (let mutable x = VkFixedArray_float32_4 ()
+                 x.[0] <- 0.f // Optional
+                 x.[1] <- 0.f // Optional
+                 x.[2] <- 0.f // Optional
+                 x.[3] <- 0.f // Optional
+                 x)
+        )
+
+    let defaultDynamicStates =
+        [|
+            VkDynamicState.VK_DYNAMIC_STATE_VIEWPORT
+            VkDynamicState.VK_DYNAMIC_STATE_LINE_WIDTH  
+        |]
+
+    let mkDynamicStateCreateInfo pDynamicStates dynamicStateCount =
+        VkPipelineDynamicStateCreateInfo (
+            sType = VkStructureType.VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+            dynamicStateCount = dynamicStateCount,
+            pDynamicStates = pDynamicStates
+        )
+
+    let mkPipelineLayout device =
+        let createInfo =
+            VkPipelineLayoutCreateInfo (
+                sType = VkStructureType.VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+                setLayoutCount = 0u, // Optional
+                pSetLayouts = vkNullPtr, // Optional
+                pushConstantRangeCount = 0u, // Optional
+                pPushConstantRanges = vkNullPtr // Optional
+            )
+
+        let pipelineLayout = VkPipelineLayout ()
+        vkCreatePipelineLayout(device, &&createInfo, vkNullPtr, &&pipelineLayout) |> checkResult
+        pipelineLayout
+
+    let mkGraphicsPipeline device extent pipelineLayout renderPass vert vertSize frag fragSize =
+        let vertShaderModule = mkShaderModule device vert vertSize
+        let fragShaderModule = mkShaderModule device frag fragSize
+
+        use pNameMain = fixed vkBytesOfString "main"
+
+        let stages =
+            [|
+                mkShaderStageInfo VkShaderStageFlags.VK_SHADER_STAGE_VERTEX_BIT pNameMain vertShaderModule
+                mkShaderStageInfo VkShaderStageFlags.VK_SHADER_STAGE_FRAGMENT_BIT pNameMain fragShaderModule
+            |]
+
+        let vertexInputCreateInfo = mkVertexInputCreateInfo ()
+        let inputAssemblyCreateInfo = mkInputAssemblyCreateInfo ()
+
+        let viewport = mkViewport extent
+        let scissor = mkScissor extent
+        let viewportStateCreateInfo = mkViewportStateCreateInfo &&viewport &&scissor
+
+        let rasterizerCreateInfo = mkRasterizerCreateInfo ()
+        let multisampleCreateInfo = mkMultisampleCreateInfo ()
+        // TODO: depth stencil state
+
+        let colorBlendAttachment = mkColorBlendAttachment ()
+        let colorBlendCreateInfo = mkColorBlendCreateInfo &&colorBlendAttachment 1u
+
+        // TODO: dynamic state
+
+        use pStages = fixed stages
+        let createInfo =
+            VkGraphicsPipelineCreateInfo (
+                sType = VkStructureType.VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
+                stageCount = uint32 stages.Length,
+                pStages = pStages,
+                
+                pVertexInputState = &&vertexInputCreateInfo,
+                pInputAssemblyState = &&inputAssemblyCreateInfo,
+                pViewportState = &&viewportStateCreateInfo,
+                pRasterizationState = &&rasterizerCreateInfo,
+                pMultisampleState = &&multisampleCreateInfo,
+                pDepthStencilState = vkNullPtr, // Optional
+                pColorBlendState = &&colorBlendCreateInfo,
+                pDynamicState = vkNullPtr, // Optional
+                layout = pipelineLayout,
+                renderPass = renderPass,
+                subpass = 0u,
+
+                basePipelineHandle = VK_NULL_HANDLE, // Optional
+                basePipelineIndex = -1 // Optional
+            )
+
+        let graphicsPipeline = VkPipeline ()
+        vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1u, &&createInfo, vkNullPtr, &&graphicsPipeline) |> checkResult
+
+        vkDestroyShaderModule(device, fragShaderModule, vkNullPtr)
+        vkDestroyShaderModule(device, vertShaderModule, vkNullPtr)
+
+        graphicsPipeline
+
 [<Sealed>]
 type VulkanInstance 
     (instance: VkInstance, 
@@ -624,9 +668,10 @@ type VulkanInstance
      device: VkDevice, 
      surface: VkSurfaceKHR, 
      swapChain: VkSwapchainKHR, 
+     extent: VkExtent2D,
      imageViews: VkImageView [], 
      renderPass: VkRenderPass,
-     pipelineLayout: VkPipelineLayout, 
+     pipelineLayout: VkPipelineLayout,
      graphicsQueue: VkQueue, presentQueue: VkQueue, handles: GCHandle[]) =
 
     let gate = obj ()
@@ -642,7 +687,7 @@ type VulkanInstance
             use pVertexBytes = fixed vertexBytes
             use pFragmentBytes = fixed fragmentBytes
 
-            Pipeline.mkGraphicsPipeline device 
+            Pipeline.mkGraphicsPipeline device extent pipelineLayout renderPass
                 pVertexBytes (uint32 vertexBytes.Length)
                 pFragmentBytes (uint32 fragmentBytes.Length)
         )
@@ -656,6 +701,11 @@ type VulkanInstance
                 failwith "VulkanInstance already disposed"
             else
                 GC.SuppressFinalize x
+
+                pipelines
+                |> Seq.iter (fun pipeline ->
+                    vkDestroyPipeline(device, pipeline, vkNullPtr)
+                )
 
                 vkDestroyPipelineLayout(device, pipelineLayout, vkNullPtr)
                 vkDestroyRenderPass(device, renderPass, vkNullPtr)
@@ -704,7 +754,7 @@ type VulkanInstance
         let graphicsQueue = mkQueue device indices.graphicsFamily.Value
         let presentQueue = mkQueue device indices.presentFamily.Value
 
-        new VulkanInstance(instance, debugMessenger, device, surface, swapChain, imageViews, renderPass, pipelineLayout, graphicsQueue, presentQueue, [|debugCallbackHandle|])
+        new VulkanInstance(instance, debugMessenger, device, surface, swapChain, extent, imageViews, renderPass, pipelineLayout, graphicsQueue, presentQueue, [|debugCallbackHandle|])
 
     static member CreateWin32(hwnd, hinstance, appName, engineName, validationLayers, deviceExtensions) =
         let mkSurface =
