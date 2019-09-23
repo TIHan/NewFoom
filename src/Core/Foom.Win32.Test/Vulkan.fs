@@ -661,6 +661,24 @@ module Pipeline =
 
         graphicsPipeline
 
+let mkFramebuffers device renderPass (extent: VkExtent2D) (imageViews: VkImageView []) =
+    imageViews
+    |> Array.map (fun imageView ->
+        let framebufferCreateInfo = 
+            VkFramebufferCreateInfo (
+                sType = VkStructureType.VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
+                renderPass = renderPass,
+                attachmentCount = 1u,
+                pAttachments = &&imageView,
+                width = extent.width,
+                height = extent.height,
+                layers = 1u
+            )
+
+        let framebuffer = VkFramebuffer ()
+        vkCreateFramebuffer(device, &&framebufferCreateInfo, vkNullPtr, &&framebuffer) |> checkResult
+        framebuffer)
+
 [<Sealed>]
 type VulkanInstance 
     (instance: VkInstance, 
@@ -672,6 +690,7 @@ type VulkanInstance
      imageViews: VkImageView [], 
      renderPass: VkRenderPass,
      pipelineLayout: VkPipelineLayout,
+     framebuffers: VkFramebuffer [],
      graphicsQueue: VkQueue, presentQueue: VkQueue, handles: GCHandle[]) =
 
     let gate = obj ()
@@ -706,6 +725,11 @@ type VulkanInstance
                 pipelines
                 |> Seq.iter (fun pipeline ->
                     vkDestroyPipeline(device, pipeline, vkNullPtr)
+                )
+
+                framebuffers
+                |> Array.iter (fun framebuffer ->
+                    vkDestroyFramebuffer(device, framebuffer, vkNullPtr)
                 )
 
                 vkDestroyPipelineLayout(device, pipelineLayout, vkNullPtr)
@@ -751,11 +775,12 @@ type VulkanInstance
         let imageViews = mkImageViews device surfaceFormat.format images
         let renderPass = mkRenderPass device surfaceFormat.format
         let pipelineLayout = Pipeline.mkPipelineLayout device
+        let framebuffers = mkFramebuffers device renderPass extent imageViews
 
         let graphicsQueue = mkQueue device indices.graphicsFamily.Value
         let presentQueue = mkQueue device indices.presentFamily.Value
 
-        new VulkanInstance(instance, debugMessenger, device, surface, swapChain, extent, imageViews, renderPass, pipelineLayout, graphicsQueue, presentQueue, [|debugCallbackHandle|])
+        new VulkanInstance(instance, debugMessenger, device, surface, swapChain, extent, imageViews, renderPass, pipelineLayout, framebuffers, graphicsQueue, presentQueue, [|debugCallbackHandle|])
 
     static member CreateWin32(hwnd, hinstance, appName, engineName, validationLayers, deviceExtensions) =
         let mkSurface =
