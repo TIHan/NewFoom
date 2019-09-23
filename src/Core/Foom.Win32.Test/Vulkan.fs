@@ -759,6 +759,29 @@ module Cmd =
             vkEndCommandBuffer(commandBuffer) |> checkResult
         )
 
+type Semaphores =
+    {
+        imageAvailable: VkSemaphore
+        renderFinished: VkSemaphore
+    }
+
+let mkSemaphores device =
+    let semaphoreCreateInfo =
+        VkSemaphoreCreateInfo (
+            sType = VkStructureType.VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO
+        )
+
+    let imageAvailableSemaphore = VkSemaphore ()
+    let renderFinishedSemaphore = VkSemaphore ()
+
+    vkCreateSemaphore(device, &&semaphoreCreateInfo, vkNullPtr, &&imageAvailableSemaphore) |> checkResult
+    vkCreateSemaphore(device, &&semaphoreCreateInfo, vkNullPtr, &&renderFinishedSemaphore) |> checkResult
+
+    {
+        imageAvailable = imageAvailableSemaphore
+        renderFinished = renderFinishedSemaphore
+    }
+
 [<Sealed>]
 type VulkanInstance 
     (instance: VkInstance, 
@@ -773,6 +796,7 @@ type VulkanInstance
      framebuffers: VkFramebuffer [],
      commandPool: VkCommandPool,
      commandBuffers: VkCommandBuffer [],
+     semaphores: Semaphores,
      graphicsQueue: VkQueue, presentQueue: VkQueue, handles: GCHandle[]) =
 
     let gate = obj ()
@@ -815,10 +839,14 @@ type VulkanInstance
 
                 lock gate (fun () ->
                     pipelines
+                    |> Seq.rev
                     |> Seq.iter (fun pipeline ->
                         vkDestroyPipeline(device, pipeline, vkNullPtr)
                     )
                 )
+
+                vkDestroySemaphore(device, semaphores.renderFinished, vkNullPtr)
+                vkDestroySemaphore(device, semaphores.imageAvailable, vkNullPtr)
 
                 vkDestroyCommandPool(device, commandPool, vkNullPtr)
 
@@ -873,6 +901,7 @@ type VulkanInstance
         let framebuffers = mkFramebuffers device renderPass extent imageViews
         let commandPool = mkCommandPool device indices
         let commandBuffers = mkCommandBuffers device commandPool framebuffers
+        let semaphores = mkSemaphores device
 
         let graphicsQueue = mkQueue device indices.graphicsFamily.Value
         let presentQueue = mkQueue device indices.presentFamily.Value
@@ -890,6 +919,7 @@ type VulkanInstance
             framebuffers,
             commandPool,
             commandBuffers,
+            semaphores,
             graphicsQueue, presentQueue, [|debugCallbackHandle|]
         )
 
