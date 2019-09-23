@@ -48,6 +48,8 @@ let WM_GETMINMAXINFO               = 0x0024
 let WM_CHAR                        = 0x0102
 let WM_KEYDOWN                     = 0x0100
 let WM_KEYUP                       = 0x0101
+let WM_SYSKEYDOWN                  = 0x0104
+let WM_SYSKEYUP                    = 0x0105
 
 // Window Styles
 
@@ -198,3 +200,5 @@ extern HANDLE CreateEventW(LPSECURITY_ATTRIBUTES lpEventAttributes, BOOL bManual
 
 [<UnmanagedFunctionPointer(CallingConvention.Cdecl)>]
 type WndProcDelegate = delegate of HWND * UINT * nativeint * nativeint -> nativeint
+
+let PM_REMOVE = 0x0001u

@@ -5,7 +5,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="Library.fs" />
+    <Compile Include="UnpickleHelper.fs" />
+    <Compile Include="Specification.fs" />
   </ItemGroup>
 
 </Project>

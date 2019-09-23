@@ -144,17 +144,21 @@ type Win32WindowState (title: string, width: int, weight: int) =
             let mutable msg = MSG ()
             let inputs = ResizeArray ()
             let hashKey = HashSet ()
-            while PeekMessage(&&msg, nativeint 0, 0u, 0u, 0x0001u) <> 0uy do
+            while PeekMessage(&&msg, hwnd, 0u, 0u, PM_REMOVE) <> 0uy do
                 TranslateMessage(&msg) |> ignore
                 DispatchMessage(&msg) |> ignore
 
                 match msg.message with
-                | x when int x = WM_KEYDOWN ->
+                | x when int x = WM_KEYDOWN || int x = WM_SYSKEYDOWN ->
+                    printfn "%A" msg.lParam
+
                     if hashKey.Add(char msg.lParam) then
                         inputs.Add(KeyPressed(char msg.lParam))
-                | x when int x = WM_KEYUP ->
+                | x when int x = WM_KEYUP || int x = WM_SYSKEYUP ->
                     if hashKey.Remove(char msg.lParam) then
                         inputs.Add(KeyReleased(char msg.lParam))
+                | x when int x = WM_QUIT ->
+                    inputs.Add QuitRequested
                 | _ -> ()
             inputs
             |> List.ofSeq          

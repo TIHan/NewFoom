@@ -400,14 +400,72 @@ let mkImageViews device surfaceFormat images =
     images
     |> Array.map (mkImageView device surfaceFormat)
 
+let mkShaderModule device (code: nativeptr<byte>) (codeSize: uint32) =
+    let createInfo = 
+        VkShaderModuleCreateInfo (
+            sType = VkStructureType.VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
+            codeSize = unativeint codeSize,
+            pCode = (code |> NativePtr.toNativeInt |> NativePtr.ofNativeInt)
+        )
+
+    let shaderModule = VkShaderModule ()
+    vkCreateShaderModule(device, &&createInfo, vkNullPtr, &&shaderModule) |> checkResult
+    shaderModule
+
+module Pipeline =
+
+    let mkShaderStageInfo stage name shaderModule =
+        VkPipelineShaderStageCreateInfo (
+            sType = VkStructureType.VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+            stage = stage,
+            modul = shaderModule,
+            pName = name
+        )
+
+    let mkVertexInputCreateInfo =
+        VkPipelineVertexInputStateCreateInfo (
+            sType = VkStructureType.VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
+            vertexBindingDescriptionCount = 0u,
+            pVertexBindingDescriptions = vkNullPtr, // optional
+            vertexAttributeDescriptionCount = 0u,
+            pVertexAttributeDescriptions = vkNullPtr // optional
+        )
+
+    let mkGraphicsPipeline device vert vertSize frag fragSize =
+        let vertShaderModule = mkShaderModule device vert vertSize
+        let fragShaderModule = mkShaderModule device frag fragSize
+
+        use pNameMain = fixed vkBytesOfString "main"
+
+        let stages =
+            [|
+                mkShaderStageInfo VkShaderStageFlags.VK_SHADER_STAGE_VERTEX_BIT pNameMain vertShaderModule
+                mkShaderStageInfo VkShaderStageFlags.VK_SHADER_STAGE_FRAGMENT_BIT pNameMain fragShaderModule
+            |]
+
+        vkDestroyShaderModule(device, fragShaderModule, vkNullPtr)
+        vkDestroyShaderModule(device, vertShaderModule, vkNullPtr)
+
 [<Sealed>]
 type VulkanInstance (instance: VkInstance, debugMessenger: VkDebugUtilsMessengerEXT, device: VkDevice, surface: VkSurfaceKHR, swapChain: VkSwapchainKHR, imageViews: VkImageView [], graphicsQueue: VkQueue, presentQueue: VkQueue, handles: GCHandle[]) =
 
+    let gate = obj ()
     let mutable isDisposed = 0
+    let pipelines = ResizeArray ()
 
     member __.Instance = instance
 
     member __.DebugMessenger = debugMessenger
+
+    member __.AddPipeline (vertexBytes: byte [], fragmentBytes: byte []) =
+        lock gate (fun () ->
+            use pVertexBytes = fixed vertexBytes
+            use pFragmentBytes = fixed fragmentBytes
+
+            Pipeline.mkGraphicsPipeline device 
+                pVertexBytes (uint32 vertexBytes.Length)
+                pFragmentBytes (uint32 fragmentBytes.Length)
+        )
 
     override x.Finalize() =
         (x :> IDisposable).Dispose ()
@@ -477,39 +535,3 @@ type VulkanInstance (instance: VkInstance, debugMessenger: VkDebugUtilsMessenger
                 surface
 
         VulkanInstance.Create(mkSurface, appName, engineName, validationLayers, deviceExtensions)
-
-
-let mkShaderModule device code codeSize =
-    let createInfo = 
-        VkShaderModuleCreateInfo (
-            sType = VkStructureType.VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
-            codeSize = codeSize,
-            pCode = NativePtr.ofNativeInt code
-        )
-
-    let shaderModule = VkShaderModule ()
-    vkCreateShaderModule(device, &&createInfo, vkNullPtr, &&shaderModule) |> checkResult
-    shaderModule
-
-let mkShaderStageInfo stage name shaderModule =
-    VkPipelineShaderStageCreateInfo (
-        sType = VkStructureType.VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-        stage = stage, //VkShaderStageFlags.VK_SHADER_STAGE_VERTEX_BIT
-        modul = shaderModule,
-        pName = name
-    )
-
-let mkGraphicsPipeline device vert vertSize frag fragSize =
-    let vertShaderModule = mkShaderModule device vert vertSize
-    let fragShaderModule = mkShaderModule device frag fragSize
-
-    use pNameMain = fixed vkBytesOfString "main"
-
-    let stages =
-        [|
-            mkShaderStageInfo VkShaderStageFlags.VK_SHADER_STAGE_VERTEX_BIT pNameMain vertShaderModule
-            mkShaderStageInfo VkShaderStageFlags.VK_SHADER_STAGE_FRAGMENT_BIT pNameMain fragShaderModule
-        |]
-
-    vkDestroyShaderModule(device, fragShaderModule, vkNullPtr)
-    vkDestroyShaderModule(device, vertShaderModule, vkNullPtr)

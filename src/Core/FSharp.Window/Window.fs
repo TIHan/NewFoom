@@ -19,6 +19,7 @@ type InputEvent =
         x: int * y: int
     | MouseMoved of
         x: int * y: int * xrel: int * yrel: int
+    | QuitRequested
 
 type IWindowEvents =
 

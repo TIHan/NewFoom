@@ -29,11 +29,17 @@ open FSharp.Window
 
 type EmptyWindowEvents () =
 
+    let mutable quit = false
+
     interface IWindowEvents with
 
-        member __.OnUpdateInput events = ()
+        member __.OnUpdateInput events = 
+            if not events.IsEmpty then
+                printfn "%A" events
 
-        member __.OnUpdateFrame (_, _) = false
+            quit <- events |> List.contains QuitRequested
+
+        member __.OnUpdateFrame (_, _) = quit
 
         member __.OnRenderFrame (_, _, _, _) = ()
 
@@ -52,5 +58,11 @@ let main argv =
     use instance = VulkanInstance.CreateWin32(hwnd, hinstance, "App", "Engine", ["VK_LAYER_KHRONOS_validation"], [VK_KHR_SWAPCHAIN_EXTENSION_NAME])
 
     let window = Window (title, 30., width, height, EmptyWindowEvents (), windowState)
+
+    let vertexBytes = System.IO.File.ReadAllBytes("triangle_fragment.spv")
+    let fragmentBytes = System.IO.File.ReadAllBytes("triangle_vertex.spv")
+
+    instance.AddPipeline(vertexBytes, fragmentBytes)
+
     window.Start ()
     0
