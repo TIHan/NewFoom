@@ -128,11 +128,16 @@ type Win32WindowState (title: string, width: int, weight: int) =
     let mutable hwnd = nativeint 0
     let hwnd, hinstance = createWin32Window title del
 
+    static let extraEvents = System.Collections.Concurrent.ConcurrentQueue ()
+
     static member private WndProc hWnd msg wParam lParam =
         match int msg with
         | x when x = WM_SYSCOMMAND ->
             match int wParam with
             | x when x = SC_KEYMENU -> nativeint 0
+            | x when x = SC_CLOSE -> 
+                extraEvents.Enqueue QuitRequested
+                DefWindowProc(hWnd, msg, wParam, lParam)
             | _ ->
                 DefWindowProc(hWnd, msg, wParam, lParam)
         | _ ->
@@ -151,6 +156,11 @@ type Win32WindowState (title: string, width: int, weight: int) =
             let mutable msg = MSG ()
             let inputs = ResizeArray ()
             let hashKey = HashSet ()
+
+            let mutable extraEvent = Unchecked.defaultof<InputEvent>
+            while extraEvents.TryDequeue &extraEvent do
+                inputs.Add extraEvent
+
             while PeekMessage(&&msg, hwnd, 0u, 0u, PM_REMOVE) <> 0uy do
                 TranslateMessage(&msg) |> ignore
                 DispatchMessage(&msg) |> ignore

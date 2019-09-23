@@ -83,7 +83,10 @@ let WS_OVERLAPPEDWINDOW =
     WS_MINIMIZEBOX |||
     WS_MAXIMIZEBOX
 
+let SC_CLOSE = 0xF060
 let SC_KEYMENU = 0xF100
+
+let PM_REMOVE = 0x0001u
 
 let NULL = IntPtr.Zero
     
@@ -203,5 +206,3 @@ extern HANDLE CreateEventW(LPSECURITY_ATTRIBUTES lpEventAttributes, BOOL bManual
 
 [<UnmanagedFunctionPointer(CallingConvention.Cdecl)>]
 type WndProcDelegate = delegate of HWND * UINT * nativeint * nativeint -> nativeint
-
-let PM_REMOVE = 0x0001u

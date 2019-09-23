@@ -37,7 +37,8 @@ type EmptyWindowEvents () =
             if not events.IsEmpty then
                 printfn "%A" events
 
-            quit <- events |> List.contains QuitRequested
+            if events |> List.contains QuitRequested then
+                quit <- true
 
         member __.OnUpdateFrame (_, _) = quit
 
@@ -65,4 +66,6 @@ let main argv =
     instance.AddPipeline(vertexBytes, fragmentBytes)
 
     window.Start ()
+
+    printfn "F# Vulkan ended...."
     0
