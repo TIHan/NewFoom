@@ -690,6 +690,7 @@ type VulkanInstance
             Pipeline.mkGraphicsPipeline device extent pipelineLayout renderPass
                 pVertexBytes (uint32 vertexBytes.Length)
                 pFragmentBytes (uint32 fragmentBytes.Length)
+            |> pipelines.Add
         )
 
     override x.Finalize() =

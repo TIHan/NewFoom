@@ -60,8 +60,8 @@ let main argv =
 
     let window = Window (title, 30., width, height, EmptyWindowEvents (), windowState)
 
-    let vertexBytes = System.IO.File.ReadAllBytes("triangle_fragment.spv")
-    let fragmentBytes = System.IO.File.ReadAllBytes("triangle_vertex.spv")
+    let vertexBytes = System.IO.File.ReadAllBytes("triangle_vertex.spv")
+    let fragmentBytes = System.IO.File.ReadAllBytes("triangle_fragment.spv")
 
     instance.AddPipeline(vertexBytes, fragmentBytes)
 
