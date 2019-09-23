@@ -572,8 +572,62 @@ module Pipeline =
         vkDestroyShaderModule(device, fragShaderModule, vkNullPtr)
         vkDestroyShaderModule(device, vertShaderModule, vkNullPtr)
 
+let mkColorAttachment format =
+    VkAttachmentDescription (
+        format = format,
+        samples = VkSampleCountFlags.VK_SAMPLE_COUNT_1_BIT,
+        loadOp = VkAttachmentLoadOp.VK_ATTACHMENT_LOAD_OP_CLEAR,
+        storeOp = VkAttachmentStoreOp.VK_ATTACHMENT_STORE_OP_STORE,
+        stencilLoadOp = VkAttachmentLoadOp.VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+        stencilStoreOp = VkAttachmentStoreOp.VK_ATTACHMENT_STORE_OP_DONT_CARE,
+        initialLayout = VkImageLayout.VK_IMAGE_LAYOUT_UNDEFINED,
+        finalLayout = VkImageLayout.VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
+    )
+
+let mkColorAttachmentRef =
+    VkAttachmentReference (
+        attachment = 0u,
+        layout = VkImageLayout.VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
+    )
+
+let mkSubpass pColorAttachmentRefs colorAttachmentRefCount =
+    // The index of the attachment in this array is directly referenced from the fragment shader 
+    // with the layout(location = 0) out vec4 outColor directive!
+    VkSubpassDescription (
+        pipelineBindPoint = VkPipelineBindPoint.VK_PIPELINE_BIND_POINT_GRAPHICS,
+        colorAttachmentCount = colorAttachmentRefCount,
+        pColorAttachments = pColorAttachmentRefs
+    )
+
+let mkRenderPass device format =
+    let colorAttachment = mkColorAttachment format
+    let colorAttachmentRef = mkColorAttachmentRef
+    let subpass = mkSubpass &&colorAttachmentRef 1u
+
+    let createInfo =
+        VkRenderPassCreateInfo (
+            sType = VkStructureType.VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
+            attachmentCount = 1u,
+            pAttachments = &&colorAttachment,
+            subpassCount = 1u,
+            pSubpasses = &&subpass
+        )
+
+    let renderPass = VkRenderPass ()
+    vkCreateRenderPass(device, &&createInfo, vkNullPtr, &&renderPass) |> checkResult
+    renderPass
+
 [<Sealed>]
-type VulkanInstance (instance: VkInstance, debugMessenger: VkDebugUtilsMessengerEXT, device: VkDevice, surface: VkSurfaceKHR, swapChain: VkSwapchainKHR, imageViews: VkImageView [], pipelineLayout: VkPipelineLayout, graphicsQueue: VkQueue, presentQueue: VkQueue, handles: GCHandle[]) =
+type VulkanInstance 
+    (instance: VkInstance, 
+     debugMessenger: VkDebugUtilsMessengerEXT, 
+     device: VkDevice, 
+     surface: VkSurfaceKHR, 
+     swapChain: VkSwapchainKHR, 
+     imageViews: VkImageView [], 
+     renderPass: VkRenderPass,
+     pipelineLayout: VkPipelineLayout, 
+     graphicsQueue: VkQueue, presentQueue: VkQueue, handles: GCHandle[]) =
 
     let gate = obj ()
     let mutable isDisposed = 0
@@ -604,6 +658,7 @@ type VulkanInstance (instance: VkInstance, debugMessenger: VkDebugUtilsMessenger
                 GC.SuppressFinalize x
 
                 vkDestroyPipelineLayout(device, pipelineLayout, vkNullPtr)
+                vkDestroyRenderPass(device, renderPass, vkNullPtr)
 
                 imageViews
                 |> Array.iter (fun imageView ->
@@ -643,12 +698,13 @@ type VulkanInstance (instance: VkInstance, debugMessenger: VkDebugUtilsMessenger
         let device = mkLogicalDevice physicalDevice indices validationLayers deviceExtensions
         let swapChain, surfaceFormat, extent, images = mkSwapChain physicalDevice device surface indices
         let imageViews = mkImageViews device surfaceFormat.format images
+        let renderPass = mkRenderPass device surfaceFormat.format
         let pipelineLayout = Pipeline.mkPipelineLayout device
 
         let graphicsQueue = mkQueue device indices.graphicsFamily.Value
         let presentQueue = mkQueue device indices.presentFamily.Value
 
-        new VulkanInstance(instance, debugMessenger, device, surface, swapChain, imageViews, pipelineLayout, graphicsQueue, presentQueue, [|debugCallbackHandle|])
+        new VulkanInstance(instance, debugMessenger, device, surface, swapChain, imageViews, renderPass, pipelineLayout, graphicsQueue, presentQueue, [|debugCallbackHandle|])
 
     static member CreateWin32(hwnd, hinstance, appName, engineName, validationLayers, deviceExtensions) =
         let mkSurface =
