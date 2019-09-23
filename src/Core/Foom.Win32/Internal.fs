@@ -50,6 +50,7 @@ let WM_KEYDOWN                     = 0x0100
 let WM_KEYUP                       = 0x0101
 let WM_SYSKEYDOWN                  = 0x0104
 let WM_SYSKEYUP                    = 0x0105
+let WM_SYSCOMMAND                  = 0x0112
 
 // Window Styles
 
@@ -81,6 +82,8 @@ let WS_OVERLAPPEDWINDOW =
     WS_THICKFRAME |||
     WS_MINIMIZEBOX |||
     WS_MAXIMIZEBOX
+
+let SC_KEYMENU = 0xF100
 
 let NULL = IntPtr.Zero
     

@@ -129,7 +129,14 @@ type Win32WindowState (title: string, width: int, weight: int) =
     let hwnd, hinstance = createWin32Window title del
 
     static member private WndProc hWnd msg wParam lParam =
-        DefWindowProc(hWnd, msg, wParam, lParam)
+        match int msg with
+        | x when x = WM_SYSCOMMAND ->
+            match int wParam with
+            | x when x = SC_KEYMENU -> nativeint 0
+            | _ ->
+                DefWindowProc(hWnd, msg, wParam, lParam)
+        | _ ->
+            DefWindowProc(hWnd, msg, wParam, lParam)
 
     // Store this so it doesn't get collected cause a System.ExecutionEngineException.
     member val private WndProcDelegate = del
@@ -148,17 +155,18 @@ type Win32WindowState (title: string, width: int, weight: int) =
                 TranslateMessage(&msg) |> ignore
                 DispatchMessage(&msg) |> ignore
 
-                match msg.message with
-                | x when int x = WM_KEYDOWN || int x = WM_SYSKEYDOWN ->
-                    printfn "%A" msg.lParam
-
+                match int msg.message with
+                | x when x = WM_KEYDOWN || x = WM_SYSKEYDOWN ->
                     if hashKey.Add(char msg.lParam) then
                         inputs.Add(KeyPressed(char msg.lParam))
-                | x when int x = WM_KEYUP || int x = WM_SYSKEYUP ->
+
+                | x when x = WM_KEYUP || x = WM_SYSKEYUP ->
                     if hashKey.Remove(char msg.lParam) then
                         inputs.Add(KeyReleased(char msg.lParam))
+
                 | x when int x = WM_QUIT ->
                     inputs.Add QuitRequested
+
                 | _ -> ()
             inputs
             |> List.ofSeq          
