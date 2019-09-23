@@ -691,6 +691,74 @@ let private mkCommandPool device indices =
     vkCreateCommandPool(device, &&poolCreateInfo, vkNullPtr, &&commandPool) |> checkResult
     commandPool
 
+let private mkCommandBuffers device commandPool (framebuffers: VkFramebuffer []) =
+    let commandBuffers = Array.zeroCreate framebuffers.Length
+
+    let allocCreateInfo =
+        VkCommandBufferAllocateInfo (
+            sType = VkStructureType.VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+            commandPool = commandPool,
+            level = VkCommandBufferLevel.VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+            commandBufferCount = uint32 commandBuffers.Length
+        )
+
+    use pCommandBuffers = fixed commandBuffers
+    vkAllocateCommandBuffers(device, &&allocCreateInfo, pCommandBuffers) |> checkResult
+    commandBuffers
+
+module Cmd =
+
+    let recordDraw extent (framebuffers: VkFramebuffer []) (commandBuffers: VkCommandBuffer []) renderPass graphicsPipeline =
+        (framebuffers, commandBuffers)
+        ||> Array.iter2 (fun framebuffer commandBuffer ->
+
+            // Begin command buffer
+
+            let beginInfo =
+                VkCommandBufferBeginInfo (
+                    sType = VkStructureType.VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+                    flags = VkCommandBufferUsageFlags (), // Optional
+                    pInheritanceInfo = vkNullPtr
+                )
+
+            vkBeginCommandBuffer(commandBuffer, &&beginInfo) |> checkResult
+
+            // Begin Render pass
+
+            let clearColor = 
+                let colorValue = VkFixedArray_float32_4 (_0 = 0.f, _1 = 0.f, _2 = 0.f, _3 = 1.f)
+                let color = VkClearColorValue (float32 = colorValue)
+                VkClearValue (color = color)
+
+            let beginInfo =
+                VkRenderPassBeginInfo (
+                    sType = VkStructureType.VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+                    renderPass = renderPass,
+                    framebuffer = framebuffer,
+                    renderArea = VkRect2D (offset = VkOffset2D (x = 0, y = 0), extent = extent),
+                    clearValueCount = 1u,
+                    pClearValues = &&clearColor
+                )
+
+            vkCmdBeginRenderPass(commandBuffer, &&beginInfo, VkSubpassContents.VK_SUBPASS_CONTENTS_INLINE)
+
+            // Bind graphics pipeline
+
+            vkCmdBindPipeline(commandBuffer, VkPipelineBindPoint.VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline)
+
+            // Draw
+
+            vkCmdDraw(commandBuffer, 3u, 1u, 0u, 0u)
+
+            // End render pass
+
+            vkCmdEndRenderPass(commandBuffer)
+
+            // Finish recording
+
+            vkEndCommandBuffer(commandBuffer) |> checkResult
+        )
+
 [<Sealed>]
 type VulkanInstance 
     (instance: VkInstance, 
@@ -704,6 +772,7 @@ type VulkanInstance
      pipelineLayout: VkPipelineLayout,
      framebuffers: VkFramebuffer [],
      commandPool: VkCommandPool,
+     commandBuffers: VkCommandBuffer [],
      graphicsQueue: VkQueue, presentQueue: VkQueue, handles: GCHandle[]) =
 
     let gate = obj ()
@@ -716,14 +785,23 @@ type VulkanInstance
 
     member __.AddPipeline (vertexBytes: byte [], fragmentBytes: byte []) =
         lock gate (fun () ->
+            if isDisposed = 1 then ()
+            else
+
             use pVertexBytes = fixed vertexBytes
             use pFragmentBytes = fixed fragmentBytes
 
-            Pipeline.mkGraphicsPipeline device extent pipelineLayout renderPass
-                pVertexBytes (uint32 vertexBytes.Length)
-                pFragmentBytes (uint32 fragmentBytes.Length)
-            |> pipelines.Add
+            let pipeline =
+                Pipeline.mkGraphicsPipeline device extent pipelineLayout renderPass
+                    pVertexBytes (uint32 vertexBytes.Length)
+                    pFragmentBytes (uint32 fragmentBytes.Length)
+
+            Cmd.recordDraw extent framebuffers commandBuffers renderPass pipeline
+
+            pipelines.Add pipeline
         )
+
+    member __.Draw () = ()
 
     override x.Finalize() =
         (x :> IDisposable).Dispose ()
@@ -735,9 +813,11 @@ type VulkanInstance
             else
                 GC.SuppressFinalize x
 
-                pipelines
-                |> Seq.iter (fun pipeline ->
-                    vkDestroyPipeline(device, pipeline, vkNullPtr)
+                lock gate (fun () ->
+                    pipelines
+                    |> Seq.iter (fun pipeline ->
+                        vkDestroyPipeline(device, pipeline, vkNullPtr)
+                    )
                 )
 
                 vkDestroyCommandPool(device, commandPool, vkNullPtr)
@@ -792,6 +872,7 @@ type VulkanInstance
         let pipelineLayout = Pipeline.mkPipelineLayout device
         let framebuffers = mkFramebuffers device renderPass extent imageViews
         let commandPool = mkCommandPool device indices
+        let commandBuffers = mkCommandBuffers device commandPool framebuffers
 
         let graphicsQueue = mkQueue device indices.graphicsFamily.Value
         let presentQueue = mkQueue device indices.presentFamily.Value
@@ -808,6 +889,7 @@ type VulkanInstance
             pipelineLayout,
             framebuffers,
             commandPool,
+            commandBuffers,
             graphicsQueue, presentQueue, [|debugCallbackHandle|]
         )
 

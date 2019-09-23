@@ -27,7 +27,7 @@ open FSharp.Window
 //    override __.Render(_, _) =
 //        ()
 
-type EmptyWindowEvents () =
+type EmptyWindowEvents (instance: VulkanInstance) =
 
     let mutable quit = false
 
@@ -42,7 +42,8 @@ type EmptyWindowEvents () =
 
         member __.OnUpdateFrame (_, _) = quit
 
-        member __.OnRenderFrame (_, _, _, _) = ()
+        member __.OnRenderFrame (_, _, _, _) =
+            instance.Draw ()
 
 [<EntryPoint>]
 let main argv =
@@ -58,7 +59,7 @@ let main argv =
 
     use instance = VulkanInstance.CreateWin32(hwnd, hinstance, "App", "Engine", ["VK_LAYER_KHRONOS_validation"], [VK_KHR_SWAPCHAIN_EXTENSION_NAME])
 
-    let window = Window (title, 30., width, height, EmptyWindowEvents (), windowState)
+    let window = Window (title, 30., width, height, EmptyWindowEvents instance, windowState)
 
     let vertexBytes = System.IO.File.ReadAllBytes("triangle_vertex.spv")
     let fragmentBytes = System.IO.File.ReadAllBytes("triangle_fragment.spv")

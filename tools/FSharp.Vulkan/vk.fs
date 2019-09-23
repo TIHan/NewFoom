@@ -2652,7 +2652,7 @@ type VkPerformanceValueDataINTEL =
     [<FieldOffset(0);DefaultValue(false)>]
     val mutable valueBool: VkBool32
     [<FieldOffset(0);DefaultValue(false)>]
-    val mutable valueString: byte
+    val mutable valueString: nativeptr<byte>
 
 [<Struct;NoEquality;NoComparison>]
 type VkPhysicalDeviceShaderIntegerFunctions2FeaturesINTEL =
@@ -8001,11 +8001,14 @@ type VkClearDepthStencilValue =
 [<Struct;StructLayout(LayoutKind.Explicit);NoEquality;NoComparison>]
 type VkClearColorValue =
     [<FieldOffset(0);DefaultValue(false)>]
-    val mutable float32: float32
+    [<FixedBuffer(typeof<float32>, 4)>]
+    val mutable float32: VkFixedArray_float32_4
     [<FieldOffset(0);DefaultValue(false)>]
-    val mutable int32: int
+    [<FixedBuffer(typeof<int>, 4)>]
+    val mutable int32: VkFixedArray_int_4
     [<FieldOffset(0);DefaultValue(false)>]
-    val mutable uint32: uint32
+    [<FixedBuffer(typeof<uint32>, 4)>]
+    val mutable uint32: VkFixedArray_uint32_4
 
 [<Struct;NoEquality;NoComparison>]
 type VkRenderPassBeginInfo =
@@ -11597,22 +11600,22 @@ let vkStringOfBytePtr (p: nativeptr<byte>) =
 
 [<Struct;StructLayout(LayoutKind.Sequential, Size = 128);UnsafeValueType;DebuggerDisplay("{DebugString}")>]
 type VkFixedArray_VkDeviceSize_16 =
-    val mutable private _VkDeviceSize0: VkDeviceSize
-    val mutable private _VkDeviceSize1: VkDeviceSize
-    val mutable private _VkDeviceSize2: VkDeviceSize
-    val mutable private _VkDeviceSize3: VkDeviceSize
-    val mutable private _VkDeviceSize4: VkDeviceSize
-    val mutable private _VkDeviceSize5: VkDeviceSize
-    val mutable private _VkDeviceSize6: VkDeviceSize
-    val mutable private _VkDeviceSize7: VkDeviceSize
-    val mutable private _VkDeviceSize8: VkDeviceSize
-    val mutable private _VkDeviceSize9: VkDeviceSize
-    val mutable private _VkDeviceSize10: VkDeviceSize
-    val mutable private _VkDeviceSize11: VkDeviceSize
-    val mutable private _VkDeviceSize12: VkDeviceSize
-    val mutable private _VkDeviceSize13: VkDeviceSize
-    val mutable private _VkDeviceSize14: VkDeviceSize
-    val mutable private _VkDeviceSize15: VkDeviceSize
+    val mutable _0: VkDeviceSize
+    val mutable _1: VkDeviceSize
+    val mutable _2: VkDeviceSize
+    val mutable _3: VkDeviceSize
+    val mutable _4: VkDeviceSize
+    val mutable _5: VkDeviceSize
+    val mutable _6: VkDeviceSize
+    val mutable _7: VkDeviceSize
+    val mutable _8: VkDeviceSize
+    val mutable _9: VkDeviceSize
+    val mutable _10: VkDeviceSize
+    val mutable _11: VkDeviceSize
+    val mutable _12: VkDeviceSize
+    val mutable _13: VkDeviceSize
+    val mutable _14: VkDeviceSize
+    val mutable _15: VkDeviceSize
 
     member x.Item with get i = NativePtr.get x.UnsafePtr i and set i value = NativePtr.set x.UnsafePtr i value
     member x.Length = 16
@@ -11628,22 +11631,22 @@ type VkFixedArray_VkDeviceSize_16 =
 
 [<Struct;StructLayout(LayoutKind.Sequential, Size = 192);UnsafeValueType;DebuggerDisplay("{DebugString}")>]
 type VkFixedArray_VkMemoryHeap_16 =
-    val mutable private _VkMemoryHeap0: VkMemoryHeap
-    val mutable private _VkMemoryHeap1: VkMemoryHeap
-    val mutable private _VkMemoryHeap2: VkMemoryHeap
-    val mutable private _VkMemoryHeap3: VkMemoryHeap
-    val mutable private _VkMemoryHeap4: VkMemoryHeap
-    val mutable private _VkMemoryHeap5: VkMemoryHeap
-    val mutable private _VkMemoryHeap6: VkMemoryHeap
-    val mutable private _VkMemoryHeap7: VkMemoryHeap
-    val mutable private _VkMemoryHeap8: VkMemoryHeap
-    val mutable private _VkMemoryHeap9: VkMemoryHeap
-    val mutable private _VkMemoryHeap10: VkMemoryHeap
-    val mutable private _VkMemoryHeap11: VkMemoryHeap
-    val mutable private _VkMemoryHeap12: VkMemoryHeap
-    val mutable private _VkMemoryHeap13: VkMemoryHeap
-    val mutable private _VkMemoryHeap14: VkMemoryHeap
-    val mutable private _VkMemoryHeap15: VkMemoryHeap
+    val mutable _0: VkMemoryHeap
+    val mutable _1: VkMemoryHeap
+    val mutable _2: VkMemoryHeap
+    val mutable _3: VkMemoryHeap
+    val mutable _4: VkMemoryHeap
+    val mutable _5: VkMemoryHeap
+    val mutable _6: VkMemoryHeap
+    val mutable _7: VkMemoryHeap
+    val mutable _8: VkMemoryHeap
+    val mutable _9: VkMemoryHeap
+    val mutable _10: VkMemoryHeap
+    val mutable _11: VkMemoryHeap
+    val mutable _12: VkMemoryHeap
+    val mutable _13: VkMemoryHeap
+    val mutable _14: VkMemoryHeap
+    val mutable _15: VkMemoryHeap
 
     member x.Item with get i = NativePtr.get x.UnsafePtr i and set i value = NativePtr.set x.UnsafePtr i value
     member x.Length = 16
@@ -11659,38 +11662,38 @@ type VkFixedArray_VkMemoryHeap_16 =
 
 [<Struct;StructLayout(LayoutKind.Sequential, Size = 256);UnsafeValueType;DebuggerDisplay("{DebugString}")>]
 type VkFixedArray_VkMemoryType_32 =
-    val mutable private _VkMemoryType0: VkMemoryType
-    val mutable private _VkMemoryType1: VkMemoryType
-    val mutable private _VkMemoryType2: VkMemoryType
-    val mutable private _VkMemoryType3: VkMemoryType
-    val mutable private _VkMemoryType4: VkMemoryType
-    val mutable private _VkMemoryType5: VkMemoryType
-    val mutable private _VkMemoryType6: VkMemoryType
-    val mutable private _VkMemoryType7: VkMemoryType
-    val mutable private _VkMemoryType8: VkMemoryType
-    val mutable private _VkMemoryType9: VkMemoryType
-    val mutable private _VkMemoryType10: VkMemoryType
-    val mutable private _VkMemoryType11: VkMemoryType
-    val mutable private _VkMemoryType12: VkMemoryType
-    val mutable private _VkMemoryType13: VkMemoryType
-    val mutable private _VkMemoryType14: VkMemoryType
-    val mutable private _VkMemoryType15: VkMemoryType
-    val mutable private _VkMemoryType16: VkMemoryType
-    val mutable private _VkMemoryType17: VkMemoryType
-    val mutable private _VkMemoryType18: VkMemoryType
-    val mutable private _VkMemoryType19: VkMemoryType
-    val mutable private _VkMemoryType20: VkMemoryType
-    val mutable private _VkMemoryType21: VkMemoryType
-    val mutable private _VkMemoryType22: VkMemoryType
-    val mutable private _VkMemoryType23: VkMemoryType
-    val mutable private _VkMemoryType24: VkMemoryType
-    val mutable private _VkMemoryType25: VkMemoryType
-    val mutable private _VkMemoryType26: VkMemoryType
-    val mutable private _VkMemoryType27: VkMemoryType
-    val mutable private _VkMemoryType28: VkMemoryType
-    val mutable private _VkMemoryType29: VkMemoryType
-    val mutable private _VkMemoryType30: VkMemoryType
-    val mutable private _VkMemoryType31: VkMemoryType
+    val mutable _0: VkMemoryType
+    val mutable _1: VkMemoryType
+    val mutable _2: VkMemoryType
+    val mutable _3: VkMemoryType
+    val mutable _4: VkMemoryType
+    val mutable _5: VkMemoryType
+    val mutable _6: VkMemoryType
+    val mutable _7: VkMemoryType
+    val mutable _8: VkMemoryType
+    val mutable _9: VkMemoryType
+    val mutable _10: VkMemoryType
+    val mutable _11: VkMemoryType
+    val mutable _12: VkMemoryType
+    val mutable _13: VkMemoryType
+    val mutable _14: VkMemoryType
+    val mutable _15: VkMemoryType
+    val mutable _16: VkMemoryType
+    val mutable _17: VkMemoryType
+    val mutable _18: VkMemoryType
+    val mutable _19: VkMemoryType
+    val mutable _20: VkMemoryType
+    val mutable _21: VkMemoryType
+    val mutable _22: VkMemoryType
+    val mutable _23: VkMemoryType
+    val mutable _24: VkMemoryType
+    val mutable _25: VkMemoryType
+    val mutable _26: VkMemoryType
+    val mutable _27: VkMemoryType
+    val mutable _28: VkMemoryType
+    val mutable _29: VkMemoryType
+    val mutable _30: VkMemoryType
+    val mutable _31: VkMemoryType
 
     member x.Item with get i = NativePtr.get x.UnsafePtr i and set i value = NativePtr.set x.UnsafePtr i value
     member x.Length = 32
@@ -11706,8 +11709,8 @@ type VkFixedArray_VkMemoryType_32 =
 
 [<Struct;StructLayout(LayoutKind.Sequential, Size = 24);UnsafeValueType;DebuggerDisplay("{DebugString}")>]
 type VkFixedArray_VkOffset3D_2 =
-    val mutable private _VkOffset3D0: VkOffset3D
-    val mutable private _VkOffset3D1: VkOffset3D
+    val mutable _0: VkOffset3D
+    val mutable _1: VkOffset3D
 
     member x.Item with get i = NativePtr.get x.UnsafePtr i and set i value = NativePtr.set x.UnsafePtr i value
     member x.Length = 2
@@ -11723,38 +11726,38 @@ type VkFixedArray_VkOffset3D_2 =
 
 [<Struct;StructLayout(LayoutKind.Sequential, Size = 256);UnsafeValueType;DebuggerDisplay("{DebugString}")>]
 type VkFixedArray_VkPhysicalDevice_32 =
-    val mutable private _VkPhysicalDevice0: VkPhysicalDevice
-    val mutable private _VkPhysicalDevice1: VkPhysicalDevice
-    val mutable private _VkPhysicalDevice2: VkPhysicalDevice
-    val mutable private _VkPhysicalDevice3: VkPhysicalDevice
-    val mutable private _VkPhysicalDevice4: VkPhysicalDevice
-    val mutable private _VkPhysicalDevice5: VkPhysicalDevice
-    val mutable private _VkPhysicalDevice6: VkPhysicalDevice
-    val mutable private _VkPhysicalDevice7: VkPhysicalDevice
-    val mutable private _VkPhysicalDevice8: VkPhysicalDevice
-    val mutable private _VkPhysicalDevice9: VkPhysicalDevice
-    val mutable private _VkPhysicalDevice10: VkPhysicalDevice
-    val mutable private _VkPhysicalDevice11: VkPhysicalDevice
-    val mutable private _VkPhysicalDevice12: VkPhysicalDevice
-    val mutable private _VkPhysicalDevice13: VkPhysicalDevice
-    val mutable private _VkPhysicalDevice14: VkPhysicalDevice
-    val mutable private _VkPhysicalDevice15: VkPhysicalDevice
-    val mutable private _VkPhysicalDevice16: VkPhysicalDevice
-    val mutable private _VkPhysicalDevice17: VkPhysicalDevice
-    val mutable private _VkPhysicalDevice18: VkPhysicalDevice
-    val mutable private _VkPhysicalDevice19: VkPhysicalDevice
-    val mutable private _VkPhysicalDevice20: VkPhysicalDevice
-    val mutable private _VkPhysicalDevice21: VkPhysicalDevice
-    val mutable private _VkPhysicalDevice22: VkPhysicalDevice
-    val mutable private _VkPhysicalDevice23: VkPhysicalDevice
-    val mutable private _VkPhysicalDevice24: VkPhysicalDevice
-    val mutable private _VkPhysicalDevice25: VkPhysicalDevice
-    val mutable private _VkPhysicalDevice26: VkPhysicalDevice
-    val mutable private _VkPhysicalDevice27: VkPhysicalDevice
-    val mutable private _VkPhysicalDevice28: VkPhysicalDevice
-    val mutable private _VkPhysicalDevice29: VkPhysicalDevice
-    val mutable private _VkPhysicalDevice30: VkPhysicalDevice
-    val mutable private _VkPhysicalDevice31: VkPhysicalDevice
+    val mutable _0: VkPhysicalDevice
+    val mutable _1: VkPhysicalDevice
+    val mutable _2: VkPhysicalDevice
+    val mutable _3: VkPhysicalDevice
+    val mutable _4: VkPhysicalDevice
+    val mutable _5: VkPhysicalDevice
+    val mutable _6: VkPhysicalDevice
+    val mutable _7: VkPhysicalDevice
+    val mutable _8: VkPhysicalDevice
+    val mutable _9: VkPhysicalDevice
+    val mutable _10: VkPhysicalDevice
+    val mutable _11: VkPhysicalDevice
+    val mutable _12: VkPhysicalDevice
+    val mutable _13: VkPhysicalDevice
+    val mutable _14: VkPhysicalDevice
+    val mutable _15: VkPhysicalDevice
+    val mutable _16: VkPhysicalDevice
+    val mutable _17: VkPhysicalDevice
+    val mutable _18: VkPhysicalDevice
+    val mutable _19: VkPhysicalDevice
+    val mutable _20: VkPhysicalDevice
+    val mutable _21: VkPhysicalDevice
+    val mutable _22: VkPhysicalDevice
+    val mutable _23: VkPhysicalDevice
+    val mutable _24: VkPhysicalDevice
+    val mutable _25: VkPhysicalDevice
+    val mutable _26: VkPhysicalDevice
+    val mutable _27: VkPhysicalDevice
+    val mutable _28: VkPhysicalDevice
+    val mutable _29: VkPhysicalDevice
+    val mutable _30: VkPhysicalDevice
+    val mutable _31: VkPhysicalDevice
 
     member x.Item with get i = NativePtr.get x.UnsafePtr i and set i value = NativePtr.set x.UnsafePtr i value
     member x.Length = 32
@@ -11770,22 +11773,22 @@ type VkFixedArray_VkPhysicalDevice_32 =
 
 [<Struct;StructLayout(LayoutKind.Sequential, Size = 16);UnsafeValueType;DebuggerDisplay("{DebugString}")>]
 type VkFixedArray_byte_16 =
-    val mutable private _byte0: byte
-    val mutable private _byte1: byte
-    val mutable private _byte2: byte
-    val mutable private _byte3: byte
-    val mutable private _byte4: byte
-    val mutable private _byte5: byte
-    val mutable private _byte6: byte
-    val mutable private _byte7: byte
-    val mutable private _byte8: byte
-    val mutable private _byte9: byte
-    val mutable private _byte10: byte
-    val mutable private _byte11: byte
-    val mutable private _byte12: byte
-    val mutable private _byte13: byte
-    val mutable private _byte14: byte
-    val mutable private _byte15: byte
+    val mutable _0: byte
+    val mutable _1: byte
+    val mutable _2: byte
+    val mutable _3: byte
+    val mutable _4: byte
+    val mutable _5: byte
+    val mutable _6: byte
+    val mutable _7: byte
+    val mutable _8: byte
+    val mutable _9: byte
+    val mutable _10: byte
+    val mutable _11: byte
+    val mutable _12: byte
+    val mutable _13: byte
+    val mutable _14: byte
+    val mutable _15: byte
 
     member x.Item with get i = NativePtr.get x.UnsafePtr i and set i value = NativePtr.set x.UnsafePtr i value
     member x.Length = 16
@@ -11801,262 +11804,262 @@ type VkFixedArray_byte_16 =
 
 [<Struct;StructLayout(LayoutKind.Sequential, Size = 256);UnsafeValueType;DebuggerDisplay("{DebugString}")>]
 type VkFixedArray_byte_256 =
-    val mutable private _byte0: byte
-    val mutable private _byte1: byte
-    val mutable private _byte2: byte
-    val mutable private _byte3: byte
-    val mutable private _byte4: byte
-    val mutable private _byte5: byte
-    val mutable private _byte6: byte
-    val mutable private _byte7: byte
-    val mutable private _byte8: byte
-    val mutable private _byte9: byte
-    val mutable private _byte10: byte
-    val mutable private _byte11: byte
-    val mutable private _byte12: byte
-    val mutable private _byte13: byte
-    val mutable private _byte14: byte
-    val mutable private _byte15: byte
-    val mutable private _byte16: byte
-    val mutable private _byte17: byte
-    val mutable private _byte18: byte
-    val mutable private _byte19: byte
-    val mutable private _byte20: byte
-    val mutable private _byte21: byte
-    val mutable private _byte22: byte
-    val mutable private _byte23: byte
-    val mutable private _byte24: byte
-    val mutable private _byte25: byte
-    val mutable private _byte26: byte
-    val mutable private _byte27: byte
-    val mutable private _byte28: byte
-    val mutable private _byte29: byte
-    val mutable private _byte30: byte
-    val mutable private _byte31: byte
-    val mutable private _byte32: byte
-    val mutable private _byte33: byte
-    val mutable private _byte34: byte
-    val mutable private _byte35: byte
-    val mutable private _byte36: byte
-    val mutable private _byte37: byte
-    val mutable private _byte38: byte
-    val mutable private _byte39: byte
-    val mutable private _byte40: byte
-    val mutable private _byte41: byte
-    val mutable private _byte42: byte
-    val mutable private _byte43: byte
-    val mutable private _byte44: byte
-    val mutable private _byte45: byte
-    val mutable private _byte46: byte
-    val mutable private _byte47: byte
-    val mutable private _byte48: byte
-    val mutable private _byte49: byte
-    val mutable private _byte50: byte
-    val mutable private _byte51: byte
-    val mutable private _byte52: byte
-    val mutable private _byte53: byte
-    val mutable private _byte54: byte
-    val mutable private _byte55: byte
-    val mutable private _byte56: byte
-    val mutable private _byte57: byte
-    val mutable private _byte58: byte
-    val mutable private _byte59: byte
-    val mutable private _byte60: byte
-    val mutable private _byte61: byte
-    val mutable private _byte62: byte
-    val mutable private _byte63: byte
-    val mutable private _byte64: byte
-    val mutable private _byte65: byte
-    val mutable private _byte66: byte
-    val mutable private _byte67: byte
-    val mutable private _byte68: byte
-    val mutable private _byte69: byte
-    val mutable private _byte70: byte
-    val mutable private _byte71: byte
-    val mutable private _byte72: byte
-    val mutable private _byte73: byte
-    val mutable private _byte74: byte
-    val mutable private _byte75: byte
-    val mutable private _byte76: byte
-    val mutable private _byte77: byte
-    val mutable private _byte78: byte
-    val mutable private _byte79: byte
-    val mutable private _byte80: byte
-    val mutable private _byte81: byte
-    val mutable private _byte82: byte
-    val mutable private _byte83: byte
-    val mutable private _byte84: byte
-    val mutable private _byte85: byte
-    val mutable private _byte86: byte
-    val mutable private _byte87: byte
-    val mutable private _byte88: byte
-    val mutable private _byte89: byte
-    val mutable private _byte90: byte
-    val mutable private _byte91: byte
-    val mutable private _byte92: byte
-    val mutable private _byte93: byte
-    val mutable private _byte94: byte
-    val mutable private _byte95: byte
-    val mutable private _byte96: byte
-    val mutable private _byte97: byte
-    val mutable private _byte98: byte
-    val mutable private _byte99: byte
-    val mutable private _byte100: byte
-    val mutable private _byte101: byte
-    val mutable private _byte102: byte
-    val mutable private _byte103: byte
-    val mutable private _byte104: byte
-    val mutable private _byte105: byte
-    val mutable private _byte106: byte
-    val mutable private _byte107: byte
-    val mutable private _byte108: byte
-    val mutable private _byte109: byte
-    val mutable private _byte110: byte
-    val mutable private _byte111: byte
-    val mutable private _byte112: byte
-    val mutable private _byte113: byte
-    val mutable private _byte114: byte
-    val mutable private _byte115: byte
-    val mutable private _byte116: byte
-    val mutable private _byte117: byte
-    val mutable private _byte118: byte
-    val mutable private _byte119: byte
-    val mutable private _byte120: byte
-    val mutable private _byte121: byte
-    val mutable private _byte122: byte
-    val mutable private _byte123: byte
-    val mutable private _byte124: byte
-    val mutable private _byte125: byte
-    val mutable private _byte126: byte
-    val mutable private _byte127: byte
-    val mutable private _byte128: byte
-    val mutable private _byte129: byte
-    val mutable private _byte130: byte
-    val mutable private _byte131: byte
-    val mutable private _byte132: byte
-    val mutable private _byte133: byte
-    val mutable private _byte134: byte
-    val mutable private _byte135: byte
-    val mutable private _byte136: byte
-    val mutable private _byte137: byte
-    val mutable private _byte138: byte
-    val mutable private _byte139: byte
-    val mutable private _byte140: byte
-    val mutable private _byte141: byte
-    val mutable private _byte142: byte
-    val mutable private _byte143: byte
-    val mutable private _byte144: byte
-    val mutable private _byte145: byte
-    val mutable private _byte146: byte
-    val mutable private _byte147: byte
-    val mutable private _byte148: byte
-    val mutable private _byte149: byte
-    val mutable private _byte150: byte
-    val mutable private _byte151: byte
-    val mutable private _byte152: byte
-    val mutable private _byte153: byte
-    val mutable private _byte154: byte
-    val mutable private _byte155: byte
-    val mutable private _byte156: byte
-    val mutable private _byte157: byte
-    val mutable private _byte158: byte
-    val mutable private _byte159: byte
-    val mutable private _byte160: byte
-    val mutable private _byte161: byte
-    val mutable private _byte162: byte
-    val mutable private _byte163: byte
-    val mutable private _byte164: byte
-    val mutable private _byte165: byte
-    val mutable private _byte166: byte
-    val mutable private _byte167: byte
-    val mutable private _byte168: byte
-    val mutable private _byte169: byte
-    val mutable private _byte170: byte
-    val mutable private _byte171: byte
-    val mutable private _byte172: byte
-    val mutable private _byte173: byte
-    val mutable private _byte174: byte
-    val mutable private _byte175: byte
-    val mutable private _byte176: byte
-    val mutable private _byte177: byte
-    val mutable private _byte178: byte
-    val mutable private _byte179: byte
-    val mutable private _byte180: byte
-    val mutable private _byte181: byte
-    val mutable private _byte182: byte
-    val mutable private _byte183: byte
-    val mutable private _byte184: byte
-    val mutable private _byte185: byte
-    val mutable private _byte186: byte
-    val mutable private _byte187: byte
-    val mutable private _byte188: byte
-    val mutable private _byte189: byte
-    val mutable private _byte190: byte
-    val mutable private _byte191: byte
-    val mutable private _byte192: byte
-    val mutable private _byte193: byte
-    val mutable private _byte194: byte
-    val mutable private _byte195: byte
-    val mutable private _byte196: byte
-    val mutable private _byte197: byte
-    val mutable private _byte198: byte
-    val mutable private _byte199: byte
-    val mutable private _byte200: byte
-    val mutable private _byte201: byte
-    val mutable private _byte202: byte
-    val mutable private _byte203: byte
-    val mutable private _byte204: byte
-    val mutable private _byte205: byte
-    val mutable private _byte206: byte
-    val mutable private _byte207: byte
-    val mutable private _byte208: byte
-    val mutable private _byte209: byte
-    val mutable private _byte210: byte
-    val mutable private _byte211: byte
-    val mutable private _byte212: byte
-    val mutable private _byte213: byte
-    val mutable private _byte214: byte
-    val mutable private _byte215: byte
-    val mutable private _byte216: byte
-    val mutable private _byte217: byte
-    val mutable private _byte218: byte
-    val mutable private _byte219: byte
-    val mutable private _byte220: byte
-    val mutable private _byte221: byte
-    val mutable private _byte222: byte
-    val mutable private _byte223: byte
-    val mutable private _byte224: byte
-    val mutable private _byte225: byte
-    val mutable private _byte226: byte
-    val mutable private _byte227: byte
-    val mutable private _byte228: byte
-    val mutable private _byte229: byte
-    val mutable private _byte230: byte
-    val mutable private _byte231: byte
-    val mutable private _byte232: byte
-    val mutable private _byte233: byte
-    val mutable private _byte234: byte
-    val mutable private _byte235: byte
-    val mutable private _byte236: byte
-    val mutable private _byte237: byte
-    val mutable private _byte238: byte
-    val mutable private _byte239: byte
-    val mutable private _byte240: byte
-    val mutable private _byte241: byte
-    val mutable private _byte242: byte
-    val mutable private _byte243: byte
-    val mutable private _byte244: byte
-    val mutable private _byte245: byte
-    val mutable private _byte246: byte
-    val mutable private _byte247: byte
-    val mutable private _byte248: byte
-    val mutable private _byte249: byte
-    val mutable private _byte250: byte
-    val mutable private _byte251: byte
-    val mutable private _byte252: byte
-    val mutable private _byte253: byte
-    val mutable private _byte254: byte
-    val mutable private _byte255: byte
+    val mutable _0: byte
+    val mutable _1: byte
+    val mutable _2: byte
+    val mutable _3: byte
+    val mutable _4: byte
+    val mutable _5: byte
+    val mutable _6: byte
+    val mutable _7: byte
+    val mutable _8: byte
+    val mutable _9: byte
+    val mutable _10: byte
+    val mutable _11: byte
+    val mutable _12: byte
+    val mutable _13: byte
+    val mutable _14: byte
+    val mutable _15: byte
+    val mutable _16: byte
+    val mutable _17: byte
+    val mutable _18: byte
+    val mutable _19: byte
+    val mutable _20: byte
+    val mutable _21: byte
+    val mutable _22: byte
+    val mutable _23: byte
+    val mutable _24: byte
+    val mutable _25: byte
+    val mutable _26: byte
+    val mutable _27: byte
+    val mutable _28: byte
+    val mutable _29: byte
+    val mutable _30: byte
+    val mutable _31: byte
+    val mutable _32: byte
+    val mutable _33: byte
+    val mutable _34: byte
+    val mutable _35: byte
+    val mutable _36: byte
+    val mutable _37: byte
+    val mutable _38: byte
+    val mutable _39: byte
+    val mutable _40: byte
+    val mutable _41: byte
+    val mutable _42: byte
+    val mutable _43: byte
+    val mutable _44: byte
+    val mutable _45: byte
+    val mutable _46: byte
+    val mutable _47: byte
+    val mutable _48: byte
+    val mutable _49: byte
+    val mutable _50: byte
+    val mutable _51: byte
+    val mutable _52: byte
+    val mutable _53: byte
+    val mutable _54: byte
+    val mutable _55: byte
+    val mutable _56: byte
+    val mutable _57: byte
+    val mutable _58: byte
+    val mutable _59: byte
+    val mutable _60: byte
+    val mutable _61: byte
+    val mutable _62: byte
+    val mutable _63: byte
+    val mutable _64: byte
+    val mutable _65: byte
+    val mutable _66: byte
+    val mutable _67: byte
+    val mutable _68: byte
+    val mutable _69: byte
+    val mutable _70: byte
+    val mutable _71: byte
+    val mutable _72: byte
+    val mutable _73: byte
+    val mutable _74: byte
+    val mutable _75: byte
+    val mutable _76: byte
+    val mutable _77: byte
+    val mutable _78: byte
+    val mutable _79: byte
+    val mutable _80: byte
+    val mutable _81: byte
+    val mutable _82: byte
+    val mutable _83: byte
+    val mutable _84: byte
+    val mutable _85: byte
+    val mutable _86: byte
+    val mutable _87: byte
+    val mutable _88: byte
+    val mutable _89: byte
+    val mutable _90: byte
+    val mutable _91: byte
+    val mutable _92: byte
+    val mutable _93: byte
+    val mutable _94: byte
+    val mutable _95: byte
+    val mutable _96: byte
+    val mutable _97: byte
+    val mutable _98: byte
+    val mutable _99: byte
+    val mutable _100: byte
+    val mutable _101: byte
+    val mutable _102: byte
+    val mutable _103: byte
+    val mutable _104: byte
+    val mutable _105: byte
+    val mutable _106: byte
+    val mutable _107: byte
+    val mutable _108: byte
+    val mutable _109: byte
+    val mutable _110: byte
+    val mutable _111: byte
+    val mutable _112: byte
+    val mutable _113: byte
+    val mutable _114: byte
+    val mutable _115: byte
+    val mutable _116: byte
+    val mutable _117: byte
+    val mutable _118: byte
+    val mutable _119: byte
+    val mutable _120: byte
+    val mutable _121: byte
+    val mutable _122: byte
+    val mutable _123: byte
+    val mutable _124: byte
+    val mutable _125: byte
+    val mutable _126: byte
+    val mutable _127: byte
+    val mutable _128: byte
+    val mutable _129: byte
+    val mutable _130: byte
+    val mutable _131: byte
+    val mutable _132: byte
+    val mutable _133: byte
+    val mutable _134: byte
+    val mutable _135: byte
+    val mutable _136: byte
+    val mutable _137: byte
+    val mutable _138: byte
+    val mutable _139: byte
+    val mutable _140: byte
+    val mutable _141: byte
+    val mutable _142: byte
+    val mutable _143: byte
+    val mutable _144: byte
+    val mutable _145: byte
+    val mutable _146: byte
+    val mutable _147: byte
+    val mutable _148: byte
+    val mutable _149: byte
+    val mutable _150: byte
+    val mutable _151: byte
+    val mutable _152: byte
+    val mutable _153: byte
+    val mutable _154: byte
+    val mutable _155: byte
+    val mutable _156: byte
+    val mutable _157: byte
+    val mutable _158: byte
+    val mutable _159: byte
+    val mutable _160: byte
+    val mutable _161: byte
+    val mutable _162: byte
+    val mutable _163: byte
+    val mutable _164: byte
+    val mutable _165: byte
+    val mutable _166: byte
+    val mutable _167: byte
+    val mutable _168: byte
+    val mutable _169: byte
+    val mutable _170: byte
+    val mutable _171: byte
+    val mutable _172: byte
+    val mutable _173: byte
+    val mutable _174: byte
+    val mutable _175: byte
+    val mutable _176: byte
+    val mutable _177: byte
+    val mutable _178: byte
+    val mutable _179: byte
+    val mutable _180: byte
+    val mutable _181: byte
+    val mutable _182: byte
+    val mutable _183: byte
+    val mutable _184: byte
+    val mutable _185: byte
+    val mutable _186: byte
+    val mutable _187: byte
+    val mutable _188: byte
+    val mutable _189: byte
+    val mutable _190: byte
+    val mutable _191: byte
+    val mutable _192: byte
+    val mutable _193: byte
+    val mutable _194: byte
+    val mutable _195: byte
+    val mutable _196: byte
+    val mutable _197: byte
+    val mutable _198: byte
+    val mutable _199: byte
+    val mutable _200: byte
+    val mutable _201: byte
+    val mutable _202: byte
+    val mutable _203: byte
+    val mutable _204: byte
+    val mutable _205: byte
+    val mutable _206: byte
+    val mutable _207: byte
+    val mutable _208: byte
+    val mutable _209: byte
+    val mutable _210: byte
+    val mutable _211: byte
+    val mutable _212: byte
+    val mutable _213: byte
+    val mutable _214: byte
+    val mutable _215: byte
+    val mutable _216: byte
+    val mutable _217: byte
+    val mutable _218: byte
+    val mutable _219: byte
+    val mutable _220: byte
+    val mutable _221: byte
+    val mutable _222: byte
+    val mutable _223: byte
+    val mutable _224: byte
+    val mutable _225: byte
+    val mutable _226: byte
+    val mutable _227: byte
+    val mutable _228: byte
+    val mutable _229: byte
+    val mutable _230: byte
+    val mutable _231: byte
+    val mutable _232: byte
+    val mutable _233: byte
+    val mutable _234: byte
+    val mutable _235: byte
+    val mutable _236: byte
+    val mutable _237: byte
+    val mutable _238: byte
+    val mutable _239: byte
+    val mutable _240: byte
+    val mutable _241: byte
+    val mutable _242: byte
+    val mutable _243: byte
+    val mutable _244: byte
+    val mutable _245: byte
+    val mutable _246: byte
+    val mutable _247: byte
+    val mutable _248: byte
+    val mutable _249: byte
+    val mutable _250: byte
+    val mutable _251: byte
+    val mutable _252: byte
+    val mutable _253: byte
+    val mutable _254: byte
+    val mutable _255: byte
 
     member x.Item with get i = NativePtr.get x.UnsafePtr i and set i value = NativePtr.set x.UnsafePtr i value
     member x.Length = 256
@@ -12072,14 +12075,14 @@ type VkFixedArray_byte_256 =
 
 [<Struct;StructLayout(LayoutKind.Sequential, Size = 8);UnsafeValueType;DebuggerDisplay("{DebugString}")>]
 type VkFixedArray_byte_8 =
-    val mutable private _byte0: byte
-    val mutable private _byte1: byte
-    val mutable private _byte2: byte
-    val mutable private _byte3: byte
-    val mutable private _byte4: byte
-    val mutable private _byte5: byte
-    val mutable private _byte6: byte
-    val mutable private _byte7: byte
+    val mutable _0: byte
+    val mutable _1: byte
+    val mutable _2: byte
+    val mutable _3: byte
+    val mutable _4: byte
+    val mutable _5: byte
+    val mutable _6: byte
+    val mutable _7: byte
 
     member x.Item with get i = NativePtr.get x.UnsafePtr i and set i value = NativePtr.set x.UnsafePtr i value
     member x.Length = 8
@@ -12095,8 +12098,8 @@ type VkFixedArray_byte_8 =
 
 [<Struct;StructLayout(LayoutKind.Sequential, Size = 8);UnsafeValueType;DebuggerDisplay("{DebugString}")>]
 type VkFixedArray_float32_2 =
-    val mutable private _float320: float32
-    val mutable private _float321: float32
+    val mutable _0: float32
+    val mutable _1: float32
 
     member x.Item with get i = NativePtr.get x.UnsafePtr i and set i value = NativePtr.set x.UnsafePtr i value
     member x.Length = 2
@@ -12112,10 +12115,10 @@ type VkFixedArray_float32_2 =
 
 [<Struct;StructLayout(LayoutKind.Sequential, Size = 16);UnsafeValueType;DebuggerDisplay("{DebugString}")>]
 type VkFixedArray_float32_4 =
-    val mutable private _float320: float32
-    val mutable private _float321: float32
-    val mutable private _float322: float32
-    val mutable private _float323: float32
+    val mutable _0: float32
+    val mutable _1: float32
+    val mutable _2: float32
+    val mutable _3: float32
 
     member x.Item with get i = NativePtr.get x.UnsafePtr i and set i value = NativePtr.set x.UnsafePtr i value
     member x.Length = 4
@@ -12129,10 +12132,29 @@ type VkFixedArray_float32_4 =
     override x.ToString() = x.DebugString
     member x.UnsafePtr = &&x |> NativePtr.toNativeInt |> NativePtr.ofNativeInt<float32>
 
+[<Struct;StructLayout(LayoutKind.Sequential, Size = 16);UnsafeValueType;DebuggerDisplay("{DebugString}")>]
+type VkFixedArray_int_4 =
+    val mutable _0: int
+    val mutable _1: int
+    val mutable _2: int
+    val mutable _3: int
+
+    member x.Item with get i = NativePtr.get x.UnsafePtr i and set i value = NativePtr.set x.UnsafePtr i value
+    member x.Length = 4
+    member private x.DebugString =
+        let bytes = Array.zeroCreate<byte> 16
+        use p = fixed bytes
+        Marshal.Copy(&&x |> NativePtr.toNativeInt, bytes, 0, 16)
+        let str = UTF8Encoding.UTF8.GetString bytes
+        let index = str.IndexOf(char 0)
+        if index >= 0 then str.Substring(0, index) else str
+    override x.ToString() = x.DebugString
+    member x.UnsafePtr = &&x |> NativePtr.toNativeInt |> NativePtr.ofNativeInt<int>
+
 [<Struct;StructLayout(LayoutKind.Sequential, Size = 8);UnsafeValueType;DebuggerDisplay("{DebugString}")>]
 type VkFixedArray_uint32_2 =
-    val mutable private _uint320: uint32
-    val mutable private _uint321: uint32
+    val mutable _0: uint32
+    val mutable _1: uint32
 
     member x.Item with get i = NativePtr.get x.UnsafePtr i and set i value = NativePtr.set x.UnsafePtr i value
     member x.Length = 2
@@ -12148,9 +12170,9 @@ type VkFixedArray_uint32_2 =
 
 [<Struct;StructLayout(LayoutKind.Sequential, Size = 12);UnsafeValueType;DebuggerDisplay("{DebugString}")>]
 type VkFixedArray_uint32_3 =
-    val mutable private _uint320: uint32
-    val mutable private _uint321: uint32
-    val mutable private _uint322: uint32
+    val mutable _0: uint32
+    val mutable _1: uint32
+    val mutable _2: uint32
 
     member x.Item with get i = NativePtr.get x.UnsafePtr i and set i value = NativePtr.set x.UnsafePtr i value
     member x.Length = 3
@@ -12166,38 +12188,38 @@ type VkFixedArray_uint32_3 =
 
 [<Struct;StructLayout(LayoutKind.Sequential, Size = 128);UnsafeValueType;DebuggerDisplay("{DebugString}")>]
 type VkFixedArray_uint32_32 =
-    val mutable private _uint320: uint32
-    val mutable private _uint321: uint32
-    val mutable private _uint322: uint32
-    val mutable private _uint323: uint32
-    val mutable private _uint324: uint32
-    val mutable private _uint325: uint32
-    val mutable private _uint326: uint32
-    val mutable private _uint327: uint32
-    val mutable private _uint328: uint32
-    val mutable private _uint329: uint32
-    val mutable private _uint3210: uint32
-    val mutable private _uint3211: uint32
-    val mutable private _uint3212: uint32
-    val mutable private _uint3213: uint32
-    val mutable private _uint3214: uint32
-    val mutable private _uint3215: uint32
-    val mutable private _uint3216: uint32
-    val mutable private _uint3217: uint32
-    val mutable private _uint3218: uint32
-    val mutable private _uint3219: uint32
-    val mutable private _uint3220: uint32
-    val mutable private _uint3221: uint32
-    val mutable private _uint3222: uint32
-    val mutable private _uint3223: uint32
-    val mutable private _uint3224: uint32
-    val mutable private _uint3225: uint32
-    val mutable private _uint3226: uint32
-    val mutable private _uint3227: uint32
-    val mutable private _uint3228: uint32
-    val mutable private _uint3229: uint32
-    val mutable private _uint3230: uint32
-    val mutable private _uint3231: uint32
+    val mutable _0: uint32
+    val mutable _1: uint32
+    val mutable _2: uint32
+    val mutable _3: uint32
+    val mutable _4: uint32
+    val mutable _5: uint32
+    val mutable _6: uint32
+    val mutable _7: uint32
+    val mutable _8: uint32
+    val mutable _9: uint32
+    val mutable _10: uint32
+    val mutable _11: uint32
+    val mutable _12: uint32
+    val mutable _13: uint32
+    val mutable _14: uint32
+    val mutable _15: uint32
+    val mutable _16: uint32
+    val mutable _17: uint32
+    val mutable _18: uint32
+    val mutable _19: uint32
+    val mutable _20: uint32
+    val mutable _21: uint32
+    val mutable _22: uint32
+    val mutable _23: uint32
+    val mutable _24: uint32
+    val mutable _25: uint32
+    val mutable _26: uint32
+    val mutable _27: uint32
+    val mutable _28: uint32
+    val mutable _29: uint32
+    val mutable _30: uint32
+    val mutable _31: uint32
 
     member x.Item with get i = NativePtr.get x.UnsafePtr i and set i value = NativePtr.set x.UnsafePtr i value
     member x.Length = 32
@@ -12205,6 +12227,25 @@ type VkFixedArray_uint32_32 =
         let bytes = Array.zeroCreate<byte> 128
         use p = fixed bytes
         Marshal.Copy(&&x |> NativePtr.toNativeInt, bytes, 0, 128)
+        let str = UTF8Encoding.UTF8.GetString bytes
+        let index = str.IndexOf(char 0)
+        if index >= 0 then str.Substring(0, index) else str
+    override x.ToString() = x.DebugString
+    member x.UnsafePtr = &&x |> NativePtr.toNativeInt |> NativePtr.ofNativeInt<uint32>
+
+[<Struct;StructLayout(LayoutKind.Sequential, Size = 16);UnsafeValueType;DebuggerDisplay("{DebugString}")>]
+type VkFixedArray_uint32_4 =
+    val mutable _0: uint32
+    val mutable _1: uint32
+    val mutable _2: uint32
+    val mutable _3: uint32
+
+    member x.Item with get i = NativePtr.get x.UnsafePtr i and set i value = NativePtr.set x.UnsafePtr i value
+    member x.Length = 4
+    member private x.DebugString =
+        let bytes = Array.zeroCreate<byte> 16
+        use p = fixed bytes
+        Marshal.Copy(&&x |> NativePtr.toNativeInt, bytes, 0, 16)
         let str = UTF8Encoding.UTF8.GetString bytes
         let index = str.IndexOf(char 0)
         if index >= 0 then str.Substring(0, index) else str

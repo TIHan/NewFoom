@@ -21,7 +21,7 @@ type VkTypeKind =
     | VkAliasOrDefine of targetName: string
     | VkStruct of members: VkMember list * extendedTypes: string list
     | VkFuncPointer of parTypes: string list * returnType: string
-    | VkUnion of members: VkUnionCase list
+    | VkUnion of members: VkUnionCase list // TODO: This needs to be unified with VkStruct
 
 and VkType = | VkType of name: string * comment: string option * VkTypeKind
 
@@ -241,7 +241,7 @@ let getVkMemberCount (vkXmlMember: Vk.Member) =
             | true, count -> count
             | _ -> 1
 
-let getVkMember env (vkXmlMember: Vk.Member) =
+let getVkMemberInfo env (vkXmlMember: Vk.Member) =
     let typeName =
         let typeName = vkXmlMember.Type
         getTypeName env typeName vkXmlMember.XElement.FirstNode
@@ -256,18 +256,15 @@ let getVkMember env (vkXmlMember: Vk.Member) =
         if count = 1 then typeName
         else typeName + "[" + string count + "]"
 
-    VkMember(memberName, typeName, vkXmlMember.Comment)
+    memberName, typeName, vkXmlMember.Comment
+
+let getVkMember env (vkXmlMember: Vk.Member) =
+    let memberName, typeName, comment = getVkMemberInfo env vkXmlMember
+    VkMember(memberName, typeName, comment)
 
 let getVkUnionCase env (vkXmlMember: Vk.Member) =
-    let typeName =
-        let typeName = vkXmlMember.Type
-        getTypeName env typeName vkXmlMember.XElement
-
-    let memberName = vkXmlMember.Name
-    // Special case this, we cannot have a member name of "type" or "module"
-    let memberName = if memberName = "type" then "typ" elif memberName = "module" then "modul" else memberName
-
-    VkUnionCase(memberName, typeName, vkXmlMember.Comment)
+    let memberName, typeName, comment = getVkMemberInfo env vkXmlMember
+    VkUnionCase(memberName, typeName, comment)
 
 let validName = function
     | "void"
@@ -581,7 +578,7 @@ let genFixedArrayType env typeName =
     | Some x -> x, env
     | _ ->
         let fields = 
-            Array.init count (fun i -> "    val mutable private _" + destTypeName + string i + ": " + destTypeName + "\n") 
+            Array.init count (fun i -> "    val mutable _" + string i + ": " + destTypeName + "\n") 
             |> Array.reduce (+)
         let gen =
             "[<Struct;StructLayout(LayoutKind.Sequential, Size = " + string size + ");UnsafeValueType;DebuggerDisplay(\"{DebugString}\")>]\n" +
@@ -602,27 +599,29 @@ let genFixedArrayType env typeName =
         let delay = VkDelayFixedArray(typeName, destTypeName, count, gen)
         delay, { env with delayGen = Map.add typeName delay env.delayGen }
 
+let getVkMemberOrUnionCaseInfo env (typeName: string) =
+    if typeName.Contains "[" then
+        match genFixedArrayType env typeName with
+        | VkDelayFixedArray(typeName, destTypeName, count, gen), env ->
+            typeName, destTypeName, count, env
+    else
+        typeName, typeName, 1, env
+
 let genVkMember env vkMember =
     match vkMember with
     | VkMember(name, typeName, comment) ->
-        let typeName, destTypeName, count, env =
-            if typeName.Contains "[" then
-                match genFixedArrayType env typeName with
-                | VkDelayFixedArray(typeName, destTypeName, count, gen), env ->
-                    typeName, destTypeName, count, env
-            else
-                typeName, typeName, 1, env
+        let typeName, destTypeName, count, env = getVkMemberOrUnionCaseInfo env typeName
         let comment = if comment.IsSome then "    " + filterComment comment else String.Empty
         let fixedBuffer = if count > 1 then "    [<FixedBuffer(typeof<" + destTypeName + ">, " + string count + ")>]\n" else ""
         comment + sprintf "    [<DefaultValue(false)>]\n%s    val mutable %s: %s" fixedBuffer name typeName, env
 
 let genVkUnionCase env vkUnionCase =
     match vkUnionCase with
-    | VkUnionCase(name, typeName, Some comment) ->
-        sprintf "    /// %s\n    [<FieldOffset(0);DefaultValue(false)>]\n    val mutable %s: %s" comment name typeName
-
-    | VkUnionCase(name, typeName, _) ->
-        sprintf "    [<FieldOffset(0);DefaultValue(false)>]\n    val mutable %s: %s" name typeName
+    | VkUnionCase(name, typeName, comment) ->
+        let typeName, destTypeName, count, env = getVkMemberOrUnionCaseInfo env typeName
+        let comment = if comment.IsSome then "    " + filterComment comment else String.Empty
+        let fixedBuffer = if count > 1 then "    [<FixedBuffer(typeof<" + destTypeName + ">, " + string count + ")>]\n" else ""
+        comment + sprintf "    [<FieldOffset(0);DefaultValue(false)>]\n%s    val mutable %s: %s" fixedBuffer name typeName, env
 
 let genDelegateBody parTypes returnType =
     " delegate of " +
@@ -694,8 +693,15 @@ let tryGenVkType env vkType =
                 genDelegateBody parTypes returnType + "\n" + genCallbackBody name, env
 
             | VkUnion cases ->
-                cases
-                |> List.map (genVkUnionCase env)
+                let env, gens =
+                    ((env, []), cases)
+                    ||> List.fold (fun (env, gens) case ->
+                        let gen, env = genVkUnionCase env case
+                        (env, gen :: gens)
+                    )
+
+                gens
+                |> List.rev
                 |> List.reduce (fun x y -> x + "\n" + y)
                 |> (+) "\n", env
 
