@@ -661,7 +661,7 @@ module Pipeline =
 
         graphicsPipeline
 
-let mkFramebuffers device renderPass (extent: VkExtent2D) (imageViews: VkImageView []) =
+let mkFramebuffers device renderPass (extent: VkExtent2D) imageViews =
     imageViews
     |> Array.map (fun imageView ->
         let framebufferCreateInfo = 
@@ -679,6 +679,18 @@ let mkFramebuffers device renderPass (extent: VkExtent2D) (imageViews: VkImageVi
         vkCreateFramebuffer(device, &&framebufferCreateInfo, vkNullPtr, &&framebuffer) |> checkResult
         framebuffer)
 
+let private mkCommandPool device indices =
+    let poolCreateInfo =
+        VkCommandPoolCreateInfo (
+            sType = VkStructureType.VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
+            queueFamilyIndex = indices.graphicsFamily.Value,
+            flags = VkCommandPoolCreateFlags () // Optional
+        )
+
+    let commandPool = VkCommandPool ()
+    vkCreateCommandPool(device, &&poolCreateInfo, vkNullPtr, &&commandPool) |> checkResult
+    commandPool
+
 [<Sealed>]
 type VulkanInstance 
     (instance: VkInstance, 
@@ -691,6 +703,7 @@ type VulkanInstance
      renderPass: VkRenderPass,
      pipelineLayout: VkPipelineLayout,
      framebuffers: VkFramebuffer [],
+     commandPool: VkCommandPool,
      graphicsQueue: VkQueue, presentQueue: VkQueue, handles: GCHandle[]) =
 
     let gate = obj ()
@@ -726,6 +739,8 @@ type VulkanInstance
                 |> Seq.iter (fun pipeline ->
                     vkDestroyPipeline(device, pipeline, vkNullPtr)
                 )
+
+                vkDestroyCommandPool(device, commandPool, vkNullPtr)
 
                 framebuffers
                 |> Array.iter (fun framebuffer ->
@@ -776,11 +791,25 @@ type VulkanInstance
         let renderPass = mkRenderPass device surfaceFormat.format
         let pipelineLayout = Pipeline.mkPipelineLayout device
         let framebuffers = mkFramebuffers device renderPass extent imageViews
+        let commandPool = mkCommandPool device indices
 
         let graphicsQueue = mkQueue device indices.graphicsFamily.Value
         let presentQueue = mkQueue device indices.presentFamily.Value
 
-        new VulkanInstance(instance, debugMessenger, device, surface, swapChain, extent, imageViews, renderPass, pipelineLayout, framebuffers, graphicsQueue, presentQueue, [|debugCallbackHandle|])
+        new VulkanInstance (
+            instance,
+            debugMessenger,
+            device,
+            surface,
+            swapChain,
+            extent,
+            imageViews,
+            renderPass,
+            pipelineLayout,
+            framebuffers,
+            commandPool,
+            graphicsQueue, presentQueue, [|debugCallbackHandle|]
+        )
 
     static member CreateWin32(hwnd, hinstance, appName, engineName, validationLayers, deviceExtensions) =
         let mkSurface =
