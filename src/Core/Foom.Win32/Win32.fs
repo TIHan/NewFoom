@@ -122,21 +122,21 @@ type Win32Game (windowTitle: string, svGame: AbstractServerGame, clGame: Abstrac
 open FSharp.Window
 
 [<Sealed>]
-type Win32WindowState (title: string, width: int, weight: int) =
+type Win32WindowState (title: string, width: int, weight: int) as this =
 
-    let del = WndProcDelegate(Win32WindowState.WndProc)
+    let mutable del = Unchecked.defaultof<_>
     let mutable hwnd = nativeint 0
-    let hwnd, hinstance = createWin32Window title del
+    let mutable hinstance = nativeint 0
 
-    static let extraEvents = System.Collections.Concurrent.ConcurrentQueue ()
+    let windowClosing = Event<unit> ()
 
-    static member private WndProc hWnd msg wParam lParam =
+    member private __.WndProc hWnd msg wParam lParam =
         match int msg with
         | x when x = WM_SYSCOMMAND ->
             match int wParam with
             | x when x = SC_KEYMENU -> nativeint 0
             | x when x = SC_CLOSE -> 
-                extraEvents.Enqueue WindowClosed
+                windowClosing.Trigger ()
                 DefWindowProc(hWnd, msg, wParam, lParam)
             | _ ->
                 DefWindowProc(hWnd, msg, wParam, lParam)
@@ -145,6 +145,14 @@ type Win32WindowState (title: string, width: int, weight: int) =
 
     // Store this so it doesn't get collected cause a System.ExecutionEngineException.
     member val private WndProcDelegate = del
+
+    member __.WindowClosing = windowClosing.Publish
+
+    member __.Show () =
+        del <- WndProcDelegate(this.WndProc)
+        let hwnd2, hinstance2 = createWin32Window title del
+        hwnd <- hwnd2
+        hinstance <- hinstance2
 
     member __.Hwnd = hwnd
 
@@ -158,10 +166,6 @@ type Win32WindowState (title: string, width: int, weight: int) =
             let mutable msg = MSG ()
             let inputs = ResizeArray ()
             let hashKey = HashSet ()
-
-            let mutable extraEvent = Unchecked.defaultof<WindowEvent>
-            while extraEvents.TryDequeue &extraEvent do
-                inputs.Add extraEvent
 
             while PeekMessage(&&msg, hwnd, 0u, 0u, PM_REMOVE) <> 0uy do
                 TranslateMessage(&msg) |> ignore

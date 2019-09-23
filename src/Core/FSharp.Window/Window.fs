@@ -10,7 +10,7 @@ type MouseButtonType =
     | X1 = 4
     | X2 = 5
 
-type WindowEvent =
+type InputEvent =
     | KeyPressed of char
     | KeyReleased of char
     | MouseButtonPressed of MouseButtonType
@@ -19,11 +19,12 @@ type WindowEvent =
         x: int * y: int
     | MouseMoved of
         x: int * y: int * xrel: int * yrel: int
-    | WindowClosed
 
 type IWindowEvents =
 
-    abstract OnEvent: WindowEvent list -> unit
+    abstract OnWindowClosing: unit -> unit
+
+    abstract OnInputEvents: InputEvent list -> unit
 
     abstract OnUpdateFrame: time: float * interval: float -> bool
 
@@ -33,7 +34,7 @@ type IWindowState =
 
     abstract ShowWindow: unit -> unit
 
-    abstract PollInput: unit -> WindowEvent list
+    abstract PollInput: unit -> InputEvent list
 
 [<Sealed>]
 type CreateStateArgs internal (title: string, width: int, height: int) =
@@ -50,7 +51,7 @@ type Window (title: string, updateInterval: float, width: int, height: int, even
     member __.Start () =
         GameLoop.start
             updateInterval
-            (fun () -> events.OnEvent (state.PollInput ()))
+            (fun () -> events.OnInputEvents (state.PollInput ()))
             (fun ticks intervalTicks ->
                 let time = TimeSpan.FromTicks ticks
                 let interval = TimeSpan.FromTicks intervalTicks

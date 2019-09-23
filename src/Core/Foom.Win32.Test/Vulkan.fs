@@ -444,13 +444,25 @@ let mkRenderPass device format =
     let colorAttachmentRef = mkColorAttachmentRef
     let subpass = mkSubpass &&colorAttachmentRef 1u
 
+    let dependency = 
+        VkSubpassDependency (
+            srcSubpass = VK_SUBPASS_EXTERNAL,
+            dstSubpass = 0u,
+            srcStageMask = VkPipelineStageFlags.VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+            srcAccessMask = VkAccessFlags (),
+            dstStageMask = VkPipelineStageFlags.VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+            dstAccessMask = (VkAccessFlags.VK_ACCESS_COLOR_ATTACHMENT_READ_BIT ||| VkAccessFlags.VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT)
+        )
+
     let createInfo =
         VkRenderPassCreateInfo (
             sType = VkStructureType.VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
             attachmentCount = 1u,
             pAttachments = &&colorAttachment,
             subpassCount = 1u,
-            pSubpasses = &&subpass
+            pSubpasses = &&subpass,
+            dependencyCount = 1u,
+            pDependencies = &&dependency
         )
 
     let renderPass = VkRenderPass ()
@@ -782,6 +794,54 @@ let mkSemaphores device =
         renderFinished = renderFinishedSemaphore
     }
 
+let drawFrame device swapChain semaphores (commandBuffers: VkCommandBuffer []) graphicsQueue presentQueue =
+    let imageIndex = 0u
+
+    vkAcquireNextImageKHR(device, swapChain, UInt64.MaxValue, semaphores.imageAvailable, VK_NULL_HANDLE, &&imageIndex) |> checkResult
+
+    let waitSemaphores = [|semaphores.imageAvailable|]
+    let waitStages = [|VkPipelineStageFlags.VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT|]
+
+    let signalSemaphores = [|semaphores.renderFinished|]
+
+    use pWaitSemaphores = fixed waitSemaphores
+    use waitStages = fixed waitStages
+    use pSignalSemaphores = fixed signalSemaphores
+    use pCommandBuffers = fixed &commandBuffers.[int imageIndex]
+    let submitInfo =
+        VkSubmitInfo (
+            sType = VkStructureType.VK_STRUCTURE_TYPE_SUBMIT_INFO,
+            waitSemaphoreCount = uint32 waitSemaphores.Length,
+            pWaitSemaphores = pWaitSemaphores,
+            pWaitDstStageMask = waitStages,
+            commandBufferCount = 1u,
+            pCommandBuffers = pCommandBuffers,
+            signalSemaphoreCount = uint32 signalSemaphores.Length,
+            pSignalSemaphores = pSignalSemaphores
+        )
+
+    vkQueueSubmit(graphicsQueue, 1u, &&submitInfo, VK_NULL_HANDLE) |> checkResult
+
+    // Presentation
+
+    let swapChains = [|swapChain|]
+
+    use pSwapChains = fixed swapChains
+    let presentInfo =
+        VkPresentInfoKHR (
+            sType = VkStructureType.VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+            waitSemaphoreCount = uint32 signalSemaphores.Length,
+            pWaitSemaphores = pSignalSemaphores,
+            swapchainCount = uint32 swapChains.Length,
+            pSwapchains = pSwapChains,
+            pImageIndices = &&imageIndex,
+            pResults = vkNullPtr // Optional
+        )
+
+    vkQueuePresentKHR(presentQueue, &&presentInfo) |> checkResult
+
+    vkQueueWaitIdle(presentQueue) |> checkResult
+
 [<Sealed>]
 type VulkanInstance 
     (instance: VkInstance, 
@@ -825,7 +885,13 @@ type VulkanInstance
             pipelines.Add pipeline
         )
 
-    member __.Draw () = ()
+    member __.DrawFrame () =
+        drawFrame device swapChain semaphores commandBuffers graphicsQueue presentQueue
+
+    member __.WaitIdle () =
+        vkQueueWaitIdle(presentQueue) |> checkResult
+        vkQueueWaitIdle(graphicsQueue) |> checkResult
+        vkDeviceWaitIdle(device) |> checkResult
 
     override x.Finalize() =
         (x :> IDisposable).Dispose ()
