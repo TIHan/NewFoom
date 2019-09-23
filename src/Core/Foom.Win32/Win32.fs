@@ -136,7 +136,7 @@ type Win32WindowState (title: string, width: int, weight: int) =
             match int wParam with
             | x when x = SC_KEYMENU -> nativeint 0
             | x when x = SC_CLOSE -> 
-                extraEvents.Enqueue QuitRequested
+                extraEvents.Enqueue WindowClosed
                 DefWindowProc(hWnd, msg, wParam, lParam)
             | _ ->
                 DefWindowProc(hWnd, msg, wParam, lParam)
@@ -152,12 +152,14 @@ type Win32WindowState (title: string, width: int, weight: int) =
 
     interface IWindowState with
 
+        member __.ShowWindow () = () // TODO:
+
         member __.PollInput () =
             let mutable msg = MSG ()
             let inputs = ResizeArray ()
             let hashKey = HashSet ()
 
-            let mutable extraEvent = Unchecked.defaultof<InputEvent>
+            let mutable extraEvent = Unchecked.defaultof<WindowEvent>
             while extraEvents.TryDequeue &extraEvent do
                 inputs.Add extraEvent
 
@@ -175,7 +177,7 @@ type Win32WindowState (title: string, width: int, weight: int) =
                         inputs.Add(KeyReleased(char msg.lParam))
 
                 | x when int x = WM_QUIT ->
-                    inputs.Add QuitRequested
+                    CloseWindow(hwnd) |> ignore
 
                 | _ -> ()
             inputs

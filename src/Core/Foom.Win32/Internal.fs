@@ -169,6 +169,9 @@ extern BOOL ShowWindow(HWND hWnd, int nCmdShow)
 extern BOOL UpdateWindow(HWND hWnd)
 
 [<DllImport("user32.dll")>]
+extern BOOL CloseWindow(HWND hWnd)
+
+[<DllImport("user32.dll")>]
 extern HCURSOR LoadCursor(HINSTANCE hInstance, int lpCursorName)
 
 [<DllImport("kernel32.dll")>]

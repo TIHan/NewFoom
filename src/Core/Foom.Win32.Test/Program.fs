@@ -33,11 +33,11 @@ type EmptyWindowEvents () =
 
     interface IWindowEvents with
 
-        member __.OnUpdateInput events = 
+        member __.OnEvent events = 
             if not events.IsEmpty then
                 printfn "%A" events
 
-            if events |> List.contains QuitRequested then
+            if events |> List.contains WindowClosed then
                 quit <- true
 
         member __.OnUpdateFrame (_, _) = quit
