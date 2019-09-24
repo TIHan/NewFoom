@@ -581,7 +581,7 @@ let genFixedArrayType env typeName =
             Array.init count (fun i -> "    val mutable _" + string i + ": " + destTypeName + "\n") 
             |> Array.reduce (+)
         let gen =
-            "[<Struct;StructLayout(LayoutKind.Sequential, Size = " + string size + ");UnsafeValueType;DebuggerDisplay(\"{DebugString}\")>]\n" +
+            "[<Struct;StructLayout(LayoutKind.Sequential, Size = " + string size + ");UnsafeValueType;DebuggerDisplay(\"{DebugString}\");NoEquality;NoComparison>]\n" +
             "type " + typeName + " =\n" +
             fields + "\n" +
             "    member x.Item with get i = NativePtr.get x.UnsafePtr i and set i value = NativePtr.set x.UnsafePtr i value\n" +

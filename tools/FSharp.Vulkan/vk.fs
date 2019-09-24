@@ -11598,7 +11598,7 @@ let vkStringOfBytePtr (p: nativeptr<byte>) =
             p2 <- NativePtr.add p2 1
     System.Text.Encoding.UTF8.GetString(p, length)
 
-[<Struct;StructLayout(LayoutKind.Sequential, Size = 128);UnsafeValueType;DebuggerDisplay("{DebugString}")>]
+[<Struct;StructLayout(LayoutKind.Sequential, Size = 128);UnsafeValueType;DebuggerDisplay("{DebugString}");NoEquality;NoComparison>]
 type VkFixedArray_VkDeviceSize_16 =
     val mutable _0: VkDeviceSize
     val mutable _1: VkDeviceSize
@@ -11629,7 +11629,7 @@ type VkFixedArray_VkDeviceSize_16 =
     override x.ToString() = x.DebugString
     member x.UnsafePtr = &&x |> NativePtr.toNativeInt |> NativePtr.ofNativeInt<VkDeviceSize>
 
-[<Struct;StructLayout(LayoutKind.Sequential, Size = 192);UnsafeValueType;DebuggerDisplay("{DebugString}")>]
+[<Struct;StructLayout(LayoutKind.Sequential, Size = 192);UnsafeValueType;DebuggerDisplay("{DebugString}");NoEquality;NoComparison>]
 type VkFixedArray_VkMemoryHeap_16 =
     val mutable _0: VkMemoryHeap
     val mutable _1: VkMemoryHeap
@@ -11660,7 +11660,7 @@ type VkFixedArray_VkMemoryHeap_16 =
     override x.ToString() = x.DebugString
     member x.UnsafePtr = &&x |> NativePtr.toNativeInt |> NativePtr.ofNativeInt<VkMemoryHeap>
 
-[<Struct;StructLayout(LayoutKind.Sequential, Size = 256);UnsafeValueType;DebuggerDisplay("{DebugString}")>]
+[<Struct;StructLayout(LayoutKind.Sequential, Size = 256);UnsafeValueType;DebuggerDisplay("{DebugString}");NoEquality;NoComparison>]
 type VkFixedArray_VkMemoryType_32 =
     val mutable _0: VkMemoryType
     val mutable _1: VkMemoryType
@@ -11707,7 +11707,7 @@ type VkFixedArray_VkMemoryType_32 =
     override x.ToString() = x.DebugString
     member x.UnsafePtr = &&x |> NativePtr.toNativeInt |> NativePtr.ofNativeInt<VkMemoryType>
 
-[<Struct;StructLayout(LayoutKind.Sequential, Size = 24);UnsafeValueType;DebuggerDisplay("{DebugString}")>]
+[<Struct;StructLayout(LayoutKind.Sequential, Size = 24);UnsafeValueType;DebuggerDisplay("{DebugString}");NoEquality;NoComparison>]
 type VkFixedArray_VkOffset3D_2 =
     val mutable _0: VkOffset3D
     val mutable _1: VkOffset3D
@@ -11724,7 +11724,7 @@ type VkFixedArray_VkOffset3D_2 =
     override x.ToString() = x.DebugString
     member x.UnsafePtr = &&x |> NativePtr.toNativeInt |> NativePtr.ofNativeInt<VkOffset3D>
 
-[<Struct;StructLayout(LayoutKind.Sequential, Size = 256);UnsafeValueType;DebuggerDisplay("{DebugString}")>]
+[<Struct;StructLayout(LayoutKind.Sequential, Size = 256);UnsafeValueType;DebuggerDisplay("{DebugString}");NoEquality;NoComparison>]
 type VkFixedArray_VkPhysicalDevice_32 =
     val mutable _0: VkPhysicalDevice
     val mutable _1: VkPhysicalDevice
@@ -11771,7 +11771,7 @@ type VkFixedArray_VkPhysicalDevice_32 =
     override x.ToString() = x.DebugString
     member x.UnsafePtr = &&x |> NativePtr.toNativeInt |> NativePtr.ofNativeInt<VkPhysicalDevice>
 
-[<Struct;StructLayout(LayoutKind.Sequential, Size = 16);UnsafeValueType;DebuggerDisplay("{DebugString}")>]
+[<Struct;StructLayout(LayoutKind.Sequential, Size = 16);UnsafeValueType;DebuggerDisplay("{DebugString}");NoEquality;NoComparison>]
 type VkFixedArray_byte_16 =
     val mutable _0: byte
     val mutable _1: byte
@@ -11802,7 +11802,7 @@ type VkFixedArray_byte_16 =
     override x.ToString() = x.DebugString
     member x.UnsafePtr = &&x |> NativePtr.toNativeInt |> NativePtr.ofNativeInt<byte>
 
-[<Struct;StructLayout(LayoutKind.Sequential, Size = 256);UnsafeValueType;DebuggerDisplay("{DebugString}")>]
+[<Struct;StructLayout(LayoutKind.Sequential, Size = 256);UnsafeValueType;DebuggerDisplay("{DebugString}");NoEquality;NoComparison>]
 type VkFixedArray_byte_256 =
     val mutable _0: byte
     val mutable _1: byte
@@ -12073,7 +12073,7 @@ type VkFixedArray_byte_256 =
     override x.ToString() = x.DebugString
     member x.UnsafePtr = &&x |> NativePtr.toNativeInt |> NativePtr.ofNativeInt<byte>
 
-[<Struct;StructLayout(LayoutKind.Sequential, Size = 8);UnsafeValueType;DebuggerDisplay("{DebugString}")>]
+[<Struct;StructLayout(LayoutKind.Sequential, Size = 8);UnsafeValueType;DebuggerDisplay("{DebugString}");NoEquality;NoComparison>]
 type VkFixedArray_byte_8 =
     val mutable _0: byte
     val mutable _1: byte
@@ -12096,7 +12096,7 @@ type VkFixedArray_byte_8 =
     override x.ToString() = x.DebugString
     member x.UnsafePtr = &&x |> NativePtr.toNativeInt |> NativePtr.ofNativeInt<byte>
 
-[<Struct;StructLayout(LayoutKind.Sequential, Size = 8);UnsafeValueType;DebuggerDisplay("{DebugString}")>]
+[<Struct;StructLayout(LayoutKind.Sequential, Size = 8);UnsafeValueType;DebuggerDisplay("{DebugString}");NoEquality;NoComparison>]
 type VkFixedArray_float32_2 =
     val mutable _0: float32
     val mutable _1: float32
@@ -12113,7 +12113,7 @@ type VkFixedArray_float32_2 =
     override x.ToString() = x.DebugString
     member x.UnsafePtr = &&x |> NativePtr.toNativeInt |> NativePtr.ofNativeInt<float32>
 
-[<Struct;StructLayout(LayoutKind.Sequential, Size = 16);UnsafeValueType;DebuggerDisplay("{DebugString}")>]
+[<Struct;StructLayout(LayoutKind.Sequential, Size = 16);UnsafeValueType;DebuggerDisplay("{DebugString}");NoEquality;NoComparison>]
 type VkFixedArray_float32_4 =
     val mutable _0: float32
     val mutable _1: float32
@@ -12132,7 +12132,7 @@ type VkFixedArray_float32_4 =
     override x.ToString() = x.DebugString
     member x.UnsafePtr = &&x |> NativePtr.toNativeInt |> NativePtr.ofNativeInt<float32>
 
-[<Struct;StructLayout(LayoutKind.Sequential, Size = 16);UnsafeValueType;DebuggerDisplay("{DebugString}")>]
+[<Struct;StructLayout(LayoutKind.Sequential, Size = 16);UnsafeValueType;DebuggerDisplay("{DebugString}");NoEquality;NoComparison>]
 type VkFixedArray_int_4 =
     val mutable _0: int
     val mutable _1: int
@@ -12151,7 +12151,7 @@ type VkFixedArray_int_4 =
     override x.ToString() = x.DebugString
     member x.UnsafePtr = &&x |> NativePtr.toNativeInt |> NativePtr.ofNativeInt<int>
 
-[<Struct;StructLayout(LayoutKind.Sequential, Size = 8);UnsafeValueType;DebuggerDisplay("{DebugString}")>]
+[<Struct;StructLayout(LayoutKind.Sequential, Size = 8);UnsafeValueType;DebuggerDisplay("{DebugString}");NoEquality;NoComparison>]
 type VkFixedArray_uint32_2 =
     val mutable _0: uint32
     val mutable _1: uint32
@@ -12168,7 +12168,7 @@ type VkFixedArray_uint32_2 =
     override x.ToString() = x.DebugString
     member x.UnsafePtr = &&x |> NativePtr.toNativeInt |> NativePtr.ofNativeInt<uint32>
 
-[<Struct;StructLayout(LayoutKind.Sequential, Size = 12);UnsafeValueType;DebuggerDisplay("{DebugString}")>]
+[<Struct;StructLayout(LayoutKind.Sequential, Size = 12);UnsafeValueType;DebuggerDisplay("{DebugString}");NoEquality;NoComparison>]
 type VkFixedArray_uint32_3 =
     val mutable _0: uint32
     val mutable _1: uint32
@@ -12186,7 +12186,7 @@ type VkFixedArray_uint32_3 =
     override x.ToString() = x.DebugString
     member x.UnsafePtr = &&x |> NativePtr.toNativeInt |> NativePtr.ofNativeInt<uint32>
 
-[<Struct;StructLayout(LayoutKind.Sequential, Size = 128);UnsafeValueType;DebuggerDisplay("{DebugString}")>]
+[<Struct;StructLayout(LayoutKind.Sequential, Size = 128);UnsafeValueType;DebuggerDisplay("{DebugString}");NoEquality;NoComparison>]
 type VkFixedArray_uint32_32 =
     val mutable _0: uint32
     val mutable _1: uint32
@@ -12233,7 +12233,7 @@ type VkFixedArray_uint32_32 =
     override x.ToString() = x.DebugString
     member x.UnsafePtr = &&x |> NativePtr.toNativeInt |> NativePtr.ofNativeInt<uint32>
 
-[<Struct;StructLayout(LayoutKind.Sequential, Size = 16);UnsafeValueType;DebuggerDisplay("{DebugString}")>]
+[<Struct;StructLayout(LayoutKind.Sequential, Size = 16);UnsafeValueType;DebuggerDisplay("{DebugString}");NoEquality;NoComparison>]
 type VkFixedArray_uint32_4 =
     val mutable _0: uint32
     val mutable _1: uint32
