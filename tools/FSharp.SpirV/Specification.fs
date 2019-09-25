@@ -1368,6 +1368,8 @@ type SPVInstr =
     /// 2 words
     | DecorationGroup of Result_id
 
+    | UnhandledOp of Op
+
 [<NoEquality;NoComparison>]
 type SPVModule = 
     private {
@@ -1395,23 +1397,27 @@ module internal Unpickle =
                 failwith "Invalid op."
             LanguagePrimitives.EnumOfValue (int word)
 
-    let u_instr =
-        u_bpipe2 u_wordCount u_op <|
-        fun wordCount op ->
-            let remainingWordCount = wordCount - 1us
+    let u_instr: Unpickle<SPVInstr> =
+        u_bpipe2 u_op u_wordCount <|
+        fun op wordCount ->
+            let remainingWordCount = int wordCount - 1
+            u_array remainingWordCount u_word |>> fun _ -> SPVInstr.UnhandledOp op
 
-            
-            u_array (int remainingWordCount) u_word
+    let u_instrs (stream: ReadStream) =
+        let xs = ResizeArray()
+        while stream.Position < stream.Length do
+            xs.Add(u_instr stream)
+        xs |> List.ofSeq
 
     let u_module: Unpickle<SPVModule> =
-        u_pipe5 u_word u_word u_word u_word u_word <|
-        fun magicNumber versionNumber genMagicNumber bound _reserved ->
+        u_pipe6 u_word u_word u_word u_word u_word u_instrs <|
+        fun magicNumber versionNumber genMagicNumber bound _reserved instrs ->
             {
                 magicNumber = magicNumber
                 versionNumber = versionNumber
                 genMagicNumber = genMagicNumber
                 bound = bound
-                instrs = []
+                instrs = instrs
             }
 
 open System.IO

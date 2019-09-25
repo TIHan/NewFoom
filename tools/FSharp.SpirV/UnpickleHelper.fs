@@ -24,6 +24,11 @@ type ReadStream =
 
     new(stream) = { bytes = Array.empty; position = -1; stream = Some stream }
 
+    member this.Length =
+        match this.stream with
+        | None -> int64 this.bytes.Length
+        | Some stream -> stream.Length
+
     member this.Position =
         match this.stream with
         | None -> int64 this.position
