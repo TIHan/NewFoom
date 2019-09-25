@@ -162,6 +162,9 @@ let inline u_pipe13 a b c d e g h i j k l m n f : Unpickle<_> =
 let inline u_bpipe2 (a: Unpickle<'a>) (b: Unpickle<'b>) (f: 'a -> 'b -> Unpickle<'c>) : Unpickle<_> =
     fun stream -> f (a stream) (b stream) stream
 
+let inline u_bpipe3 a b c f : Unpickle<_> =
+    fun stream -> f (a stream) (b stream) (c stream) stream
+
 let inline u<'a when 'a : unmanaged> : Unpickle<_> =
     fun stream -> stream.Read<'a>()
 
@@ -170,6 +173,12 @@ let inline u_array n (p: Unpickle<'a>) =
         match n with
         | 0 -> [||]
         | _ -> Array.init n (fun _ -> p stream)
+
+let inline u_list n (p: Unpickle<'a>) =
+    fun stream ->
+        match n with
+        | 0 -> []
+        | _ -> List.init n (fun _ -> p stream)
 
 let inline u_dictionary n f (p: Unpickle<'a>) =
     fun stream ->
@@ -190,6 +199,9 @@ let inline u_lookAhead (p: Unpickle<'a>) : Unpickle<'a> =
         let result = p stream
         stream.Seek prevPosition
         result
+
+let u_streamPosition: Unpickle<int64> =
+    fun stream -> stream.Position
 
 // fmap
 let inline (|>>) (u: Unpickle<'a>) (f: 'a -> 'b) : Unpickle<'b> =

@@ -1347,15 +1347,14 @@ type SPVInstr =
     | Undef of resultType: id * Result_id
     /// 2 + variable words
     | SourceContinued of continuedSource: LiteralString
-    /// 3 + variable words
-    | Source of SourceLanguage * version: LiteralNumberLimitOne * file: id option * source: LiteralString option
+
+    | Source of SourceLanguage * version: LiteralNumberLimitOne * file: id * source: LiteralString
     /// 2 + variable words
     | SourceExtension of extension: LiteralString
     /// 3 + variable words
     | Name of target: id * name: LiteralString
     /// 4 + variable words
     | MemberName of type': id * member': LiteralNumberLimitOne * name: LiteralString
-    /// 3 + variable words
     | String of Result_id * string: LiteralString
     /// 4 words
     | Line of file: id * line: LiteralNumberLimitOne * column: LiteralNumberLimitOne
@@ -1367,6 +1366,14 @@ type SPVInstr =
     | MemberDecorate of structureType: id * member': LiteralNumber * Decoration
     /// 2 words
     | DecorationGroup of Result_id
+
+    | ExtInstImport of Result_id * name: LiteralString
+    | MemoryModel of AddressingModel * MemoryModel
+    | EntryPoint of ExecutionModel * entryPoint: id * name: LiteralString * interfaceIds: id list
+    | ExecutionMode of entryPoint: id * ExecutionMode * LiteralNumber
+    | Capability of Capability
+
+    | ExecutionModeId of entryPoint: id * mode: ExecutionMode * id list
 
     | UnhandledOp of Op
 
@@ -1382,6 +1389,8 @@ type SPVModule =
 
     member x.MagicNumber = x.magicNumber
 
+open System
+
 module internal Unpickle =
 
     open FSharp.SpirV.UnpickleHelper
@@ -1389,19 +1398,172 @@ module internal Unpickle =
     let u_word = u_uint32
 
     let u_wordCount = u_uint16
-    
+
+    let u_id: Unpickle<id> = u_word
+
+    let u_resultId: Unpickle<Result_id> = u_word
+
+    let u_idOpt opPos wordCount : Unpickle<id option> =
+        u_streamPosition >>= fun pos ->
+            let length = ((int wordCount * sizeof<id>) - (int pos - int opPos)) / sizeof<id>
+            if length > 0 then
+                u_id |>>
+                fun id -> Some id
+            else
+                u_return None
+
+    let u_ids opPos wordCount : Unpickle<id list> =
+        u_streamPosition >>= fun pos ->
+            let length = ((int wordCount * sizeof<id>) - (int pos - int opPos)) / sizeof<id>
+            if length > 0 then
+                u_list length u_id
+            else
+                u_return []
+
+    let u_literalNumber opPos wordCount : Unpickle<LiteralNumber> =
+        u_streamPosition >>= fun pos ->
+            let length = ((int wordCount * sizeof<Word>) - (int pos - int opPos)) / sizeof<Word>
+            if length > 0 then
+                u_list length u_word
+            else
+                u_return []
+
+    let u_literalNumberLimitOne : Unpickle<LiteralNumberLimitOne> = u_word
+
+    let u_literalString: Unpickle<LiteralString> =
+        fun stream ->
+            let position = stream.Position
+            let mutable length = 0
+            while u_byte stream <> 0uy do
+                length <- length + 1
+            stream.Seek position
+            let bytes = Array.zeroCreate length
+            for i = 0 to length - 1 do
+                bytes.[i] <- u_byte stream
+
+            // Padding
+            u_word stream |> ignore
+
+            Text.UTF8Encoding.UTF8.GetString(bytes)
+
+    let u_literalStringOpt opPos wordCount =
+        u_streamPosition >>= fun pos ->
+            let length = ((int wordCount * sizeof<Word>) - (int pos - int opPos)) / sizeof<Word>
+            if length > 0 then
+                u_literalString |>>
+                fun str -> Some str
+            else
+                u_return None
+
+    let u_interface_ids opPos wordCount : Unpickle<id list> =
+        u_streamPosition >>= fun pos ->
+            let length = ((int wordCount * sizeof<Word>) - (int pos - int opPos)) / sizeof<Word>
+            if length > 0 then
+                u_list length u_id
+            else
+                u_return []           
+
+    // Enums
+
     let u_op: Unpickle<Op> = 
-        u_uint16 |>> 
-        fun word -> 
-            if System.Enum.GetName(typeof<Op>, int word) = null then
+        u_uint16
+        |>> fun word -> 
+            if Enum.GetName(typeof<Op>, int word) = null then
                 failwith "Invalid op."
             LanguagePrimitives.EnumOfValue (int word)
 
+    let u_sourceLanguage: Unpickle<SourceLanguage> = 
+        u_uint16
+        |>> fun word -> 
+            if Enum.GetName(typeof<SourceLanguage>, int word) = null then
+                failwith "Invalid source language."
+            LanguagePrimitives.EnumOfValue (int word)
+
+    let u_addressingModel =
+        u_word
+        |>> fun word ->
+            if Enum.GetName(typeof<AddressingModel>, int word) = null then
+                failwith "Invalid addressing model."
+            LanguagePrimitives.EnumOfValue (int word)
+
+    let u_memoryModel =
+        u_word
+        |>> fun word ->
+            if Enum.GetName(typeof<MemoryModel>, int word) = null then
+                failwith "Invalid memory model."
+            LanguagePrimitives.EnumOfValue (int word)
+
+    let u_executionModel =
+        u_word
+        |>> fun word ->
+            if Enum.GetName(typeof<ExecutionModel>, int word) = null then
+                failwith "Invalid execution model."
+            LanguagePrimitives.EnumOfValue (int word)
+
+    let u_executionMode =
+        u_word
+        |>> fun word ->
+            if Enum.GetName(typeof<ExecutionMode>, int word) = null then
+                failwith "Invalid execution mode."
+            LanguagePrimitives.EnumOfValue (int word)
+
+    let u_capability =
+        u_word
+        |>> fun word ->
+            if Enum.GetName(typeof<Capability>, int word) = null then
+                failwith "Invalid capability."
+            LanguagePrimitives.EnumOfValue (int word)
+
+    // Instruction
+
     let u_instr: Unpickle<SPVInstr> =
-        u_bpipe2 u_op u_wordCount <|
-        fun op wordCount ->
-            let remainingWordCount = int wordCount - 1
-            u_array remainingWordCount u_word |>> fun _ -> SPVInstr.UnhandledOp op
+        u_streamPosition >>= fun opPos ->
+            u_bpipe2 u_op u_wordCount <|
+            fun op wordCount ->
+                let remainingWordCount = int wordCount - 1
+
+                match op with
+
+                //| Op.OpSource ->
+                //    u_bpipe3 u_sourceLanguage u_literalNumberLimitOne u_id <|
+                //    fun sourceLanguage version fileOpt ->
+                //        u_streamPosition >>= fun opPos2 ->
+                //            u_literalString |>>
+                //            fun sourceOpt ->
+                //                SPVInstr.Source (sourceLanguage, version, fileOpt, sourceOpt)
+
+                | Op.OpExtInstImport ->
+                    u_pipe2 u_resultId u_literalString <|
+                    fun resultId name ->
+                        SPVInstr.ExtInstImport (resultId, name)
+
+                | Op.OpMemoryModel ->
+                    u_pipe2 u_addressingModel u_memoryModel <|
+                    fun addressingModel memoryModel ->
+                        SPVInstr.MemoryModel (addressingModel, memoryModel)
+
+                | Op.OpEntryPoint ->
+                    u_pipe4 u_executionModel u_id u_literalString (u_interface_ids opPos wordCount) <|
+                    fun executionModel entryPoint name interfaceIds ->
+                        SPVInstr.EntryPoint (executionModel, entryPoint, name, interfaceIds)
+
+                | Op.OpExecutionMode ->
+                    u_pipe3 u_id u_executionMode (u_literalNumber opPos wordCount) <|
+                    fun id executionMode literalNumber ->
+                        SPVInstr.ExecutionMode (id, executionMode, literalNumber)
+
+                | Op.OpExecutionModeId ->
+                    u_pipe3 u_id u_executionMode (u_ids opPos wordCount) <|
+                    fun id executionMode ids ->
+                        SPVInstr.ExecutionModeId (id, executionMode, ids)
+
+                | Op.OpCapability ->
+                    u_capability |>>
+                    fun cap -> 
+                        SPVInstr.Capability cap
+
+                | _ ->
+                    u_array remainingWordCount u_word |>> fun _ -> SPVInstr.UnhandledOp op
 
     let u_instrs (stream: ReadStream) =
         let xs = ResizeArray()
