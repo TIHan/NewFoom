@@ -32,7 +32,7 @@ type SPVInstruction =
     /// 2 + variable words
     | OpSourceContinued of continuedSource: LiteralString
 
-    | OpSource of SourceLanguage * version: LiteralNumberLimitOne * file: id * source: LiteralString
+    | OpSource of SourceLanguage * version: LiteralNumberLimitOne * file: id option * source: LiteralString option
     /// 2 + variable words
     | OpSourceExtension of extension: LiteralString
     /// 3 + variable words

@@ -223,6 +223,21 @@ let Words count =
         )
     }
 
+let Opt (p: SPVPickle<_>) =
+    {
+        read = (fun stream ->
+            if stream.remaining > 0 then
+                Some (p.read stream)
+            else
+                None
+        )
+        write = (fun stream resOpt ->
+            match resOpt with
+            | Some res -> p.write stream res
+            | _ -> ()
+        )
+    }
+
 let Id = 
     {
         read = (fun stream ->
@@ -281,6 +296,21 @@ let LiteralNumber =
         write = (fun stream res ->
             let mutable res = res
             stream.LiteralNumber &res
+        )
+    }
+
+let LiteralNumberLimitOne: SPVPickle<LiteralNumberLimitOne> = 
+    {
+        read = (fun stream ->
+            let mutable res = 0u
+            stream.Word &res
+            if stream.remaining > 0 then
+                stream.remaining <- stream.remaining - 1
+            res
+        )
+        write = (fun stream res ->
+            let mutable res = res
+            stream.Word &res
         )
     }
 
@@ -388,12 +418,13 @@ module Instructions =
 
     type private IMarker = interface end
         
-    let OpExtInstImport =   p2 OpExtInstImport ResultId LiteralString                          (function OpExtInstImport (arg1, arg2) -> (arg1, arg2) | _ -> failwith "invalid")
-    let OpMemoryModel =     p2 OpMemoryModel Enum<AddressingModel> Enum<MemoryModel>           (function OpMemoryModel (arg1, arg2) -> (arg1, arg2) | _ -> failwith "invalid")
-    let OpEntryPoint =      p4 OpEntryPoint Enum<ExecutionModel> Id LiteralString InterfaceIds (function OpEntryPoint (arg1, arg2, arg3, arg4) -> (arg1, arg2, arg3, arg4) | _ -> failwith "invalid")
-    let OpExecutionMode =   p3 OpExecutionMode Id Enum<ExecutionMode> LiteralNumber            (function OpExecutionMode (arg1, arg2, arg3) -> (arg1, arg2, arg3) | _ -> failwith "invalid")
-    let OpExecutionModeId = p3 OpExecutionModeId Id Enum<ExecutionMode> Ids                    (function OpExecutionModeId (arg1, arg2, arg3) -> (arg1, arg2, arg3) | _ -> failwith "invalid")
-    let OpCapability =      p1 OpCapability Enum<Capability>                                   (function OpCapability arg1 -> arg1 | _ -> failwith "invalid")
+    let OpSource =          p4 OpSource Enum<SourceLanguage> LiteralNumberLimitOne (Opt Id) (Opt LiteralString) (function OpSource (arg1, arg2, arg3, arg4) -> (arg1, arg2, arg3, arg4) | _ -> failwith "invalid")
+    let OpExtInstImport =   p2 OpExtInstImport ResultId LiteralString                                           (function OpExtInstImport (arg1, arg2) -> (arg1, arg2) | _ -> failwith "invalid")
+    let OpMemoryModel =     p2 OpMemoryModel Enum<AddressingModel> Enum<MemoryModel>                            (function OpMemoryModel (arg1, arg2) -> (arg1, arg2) | _ -> failwith "invalid")
+    let OpEntryPoint =      p4 OpEntryPoint Enum<ExecutionModel> Id LiteralString InterfaceIds                  (function OpEntryPoint (arg1, arg2, arg3, arg4) -> (arg1, arg2, arg3, arg4) | _ -> failwith "invalid")
+    let OpExecutionMode =   p3 OpExecutionMode Id Enum<ExecutionMode> LiteralNumber                             (function OpExecutionMode (arg1, arg2, arg3) -> (arg1, arg2, arg3) | _ -> failwith "invalid")
+    let OpExecutionModeId = p3 OpExecutionModeId Id Enum<ExecutionMode> Ids                                     (function OpExecutionModeId (arg1, arg2, arg3) -> (arg1, arg2, arg3) | _ -> failwith "invalid")
+    let OpCapability =      p1 OpCapability Enum<Capability>                                                    (function OpCapability arg1 -> arg1 | _ -> failwith "invalid")
 
     let InstructionsType = typeof<IMarker>.DeclaringType
 
