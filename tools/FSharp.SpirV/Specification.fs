@@ -1434,7 +1434,7 @@ module internal Unpickle =
         fun stream ->
             let position = stream.Position
             let mutable length = 0
-            while u_byte stream <> 0uy do
+            while not (u_byte stream = 0uy && length % sizeof<Word> = 0) do
                 length <- length + 1
             stream.Seek position
             let bytes = Array.zeroCreate length
@@ -1473,7 +1473,7 @@ module internal Unpickle =
             LanguagePrimitives.EnumOfValue (int word)
 
     let u_sourceLanguage: Unpickle<SourceLanguage> = 
-        u_uint16
+        u_word
         |>> fun word -> 
             if Enum.GetName(typeof<SourceLanguage>, int word) = null then
                 failwith "Invalid source language."
@@ -1582,6 +1582,7 @@ module internal Unpickle =
                 instrs = instrs
             }
 
+open System
 open System.IO
 
 type SPVModule with
@@ -1589,3 +1590,391 @@ type SPVModule with
     static member Deserialize(stream: Stream) =
         let readStream = UnpickleHelper.ReadStream (stream)
         UnpickleHelper.u_run Unpickle.u_module readStream
+
+[<RequireQualifiedAccess>]
+module LittleEndian =
+
+    let inline write8 (data: Span<byte>) offset value =
+        data.[offset] <- byte value
+
+    let inline write16 (data: Span<byte>) offset value =
+        data.[offset] <- byte value
+        data.[offset + 1] <- byte (value >>> 8)
+
+    let inline write32 (data: Span<byte>) offset value =
+        data.[offset] <- byte value
+        data.[offset + 1] <- byte (value >>> 8)
+        data.[offset + 2] <- byte (value >>> 16)
+        data.[offset + 3] <- byte (value >>> 24)
+
+    let inline write64 (data: Span<byte>) offset value =
+        data.[offset] <- byte value
+        data.[offset + 1] <- byte (value >>> 8)
+        data.[offset + 2] <- byte (value >>> 16)
+        data.[offset + 3] <- byte (value >>> 24)
+        data.[offset + 4] <- byte (value >>> 32)
+        data.[offset + 5] <- byte (value >>> 40)
+        data.[offset + 6] <- byte (value >>> 48)
+        data.[offset + 7] <- byte (value >>> 56)
+
+    let inline read8 (data: ReadOnlySpan<byte>) offset =
+        data.[offset]
+
+    let inline read16 (data: ReadOnlySpan<byte>) offset =
+        ( uint16 data.[offset]) |||
+        ((uint16 data.[offset + 1]) <<< 8)
+
+    let inline read32 (data: ReadOnlySpan<byte>) offset =
+        ( uint32 data.[offset]) |||
+        ((uint32 data.[offset + 1]) <<< 8) |||
+        ((uint32 data.[offset + 2]) <<< 16) |||
+        ((uint32 data.[offset + 3]) <<< 24)
+
+    let inline read64 (data: ReadOnlySpan<byte>) offset =
+        ( uint64 data.[offset]) |||
+        ((uint64 data.[offset + 1]) <<< 8) |||
+        ((uint64 data.[offset + 2]) <<< 16) |||
+        ((uint64 data.[offset + 3]) <<< 24) |||
+        ((uint64 data.[offset + 4]) <<< 32) |||
+        ((uint64 data.[offset + 5]) <<< 40) |||
+        ((uint64 data.[offset + 6]) <<< 48) |||
+        ((uint64 data.[offset + 7]) <<< 56)
+
+type SPVPicklerStream =
+    {
+        stream: Stream
+        mutable remaining: int
+        buffer128: byte []
+        isReader: bool
+    }
+
+    member inline x.ReadOnlyBuffer len = ReadOnlySpan(x.buffer128, 0, len)
+
+    member inline x.Buffer len = Span(x.buffer128, 0, len)
+
+    member inline x.Position = int x.stream.Position
+
+    member inline x.Seek (offset, origin) = x.stream.Seek (int64 offset, origin) |> ignore
+
+    member x.Int (res: byref<int>) =
+        if x.isReader then
+            let buf = x.Buffer 4
+            x.stream.Read buf |> ignore
+            res <- int (LittleEndian.read32 (Span.op_Implicit buf) 0)
+        else
+            let buf = x.Buffer 4
+            LittleEndian.write32 buf 0 res
+            x.stream.Write (Span.op_Implicit buf)
+
+    member x.UInt32 (res: byref<uint32>) =
+        if x.isReader then
+            let buf = x.Buffer 4
+            x.stream.Read buf |> ignore
+            res <- LittleEndian.read32 (Span.op_Implicit buf) 0
+        else
+            let buf = x.Buffer 4
+            LittleEndian.write32 buf 0 res
+            x.stream.Write (Span.op_Implicit buf)
+
+    member x.Word (res: byref<Word>) =
+        x.UInt32 &res
+
+    member x.WordList (res: byref<Word list>) =
+        if x.isReader then
+            if x.remaining % sizeof<Word> <> 0 then
+                failwith "Remaining not a multiple of four."
+
+            let count = x.remaining / sizeof<Word>
+            let arr = Array.zeroCreate count
+            for i = 0 to count - 1 do
+                x.Word &arr.[i]
+            res <- arr |> List.ofArray
+        else
+            res
+            |> List.iter (fun word ->
+                let mutable word = word
+                x.Word &word
+            )
+
+    member x.Id (res: byref<id>) =
+        x.UInt32 &res
+
+    member x.ResultId (res: byref<Result_id>) =
+        x.UInt32 &res
+
+    member x.LiteralString (res: byref<LiteralString>) =
+        if x.isReader then
+            let position = x.Position
+            let mutable length = 0
+
+            while not (x.stream.ReadByte() = 0 && length % sizeof<Word> = 0) do
+                length <- length + 1
+
+            x.Seek(position, SeekOrigin.Begin)
+
+            let bytes = Array.zeroCreate length
+            x.stream.Read(bytes, 0, bytes.Length) |> ignore
+
+            // Padding
+            x.Seek(4, SeekOrigin.Current)
+
+            res <- Text.UTF8Encoding.UTF8.GetString(bytes)
+        else
+            let bytes = Text.UTF8Encoding.UTF8.GetBytes res
+            let remainder = bytes.Length % sizeof<Word>
+
+            for i = 0 to remainder - 1 do
+                x.buffer128.[i] <- 0uy
+
+            x.buffer128.[remainder + 0] <- 0uy
+            x.buffer128.[remainder + 1] <- 0uy
+            x.buffer128.[remainder + 2] <- 0uy
+            x.buffer128.[remainder + 3] <- 0uy
+
+            x.stream.Write(bytes, 0, bytes.Length)
+            x.stream.Write(x.buffer128, 0, remainder + sizeof<Word>)
+
+    member x.InterfaceIds (res: byref<id list>) =
+        x.WordList &res
+
+    member x.LiteralNumber (res: byref<LiteralNumber>) =
+        x.WordList &res
+
+    member x.Ids (res: byref<id list>) =
+        x.WordList &res
+
+type SPVPickler<'T> = 
+    {
+        read: SPVPicklerStream -> 'T
+        write: SPVPicklerStream -> 'T -> unit
+    }
+
+module SPVPickler =
+
+    let Id = 
+        {
+            read = (fun stream ->
+                let mutable res = 0u
+                stream.ResultId &res
+                res
+            )
+            write = (fun stream res ->
+                let mutable res = res
+                stream.ResultId &res
+            )
+        }
+
+    let ResultId = 
+        {
+            read = (fun stream ->
+                let mutable res = 0u
+                stream.ResultId &res
+                res
+            )
+            write = (fun stream res ->
+                let mutable res = res
+                stream.ResultId &res
+            )
+        }
+
+    let LiteralString =
+        {
+            read = (fun stream ->
+                let mutable res = Unchecked.defaultof<string>
+                stream.LiteralString &res
+                res
+            )
+            write = (fun stream res ->
+                let mutable res = res
+                stream.LiteralString &res
+            )
+        }
+
+    let LiteralNumber =
+        {
+            read = (fun stream ->
+                let mutable res = Unchecked.defaultof<LiteralNumber>
+                stream.LiteralNumber &res
+                res
+            )
+            write = (fun stream res ->
+                let mutable res = res
+                stream.LiteralNumber &res
+            )
+        }
+
+    let InterfaceIds =
+        {
+            read = (fun stream ->
+                let mutable res = []
+                stream.InterfaceIds &res
+                res
+            )
+            write = (fun stream res ->
+                let mutable res = res
+                stream.InterfaceIds &res
+            )
+        }
+
+    let Ids =
+        {
+            read = (fun stream ->
+                let mutable res = []
+                stream.Ids &res
+                res
+            )
+            write = (fun stream res ->
+                let mutable res = res
+                stream.Ids &res
+            )
+        }
+
+    let Enum<'T when 'T : enum<int>> =
+        {
+            read = (fun stream ->
+                let mutable res = 0
+                stream.Int &res
+                LanguagePrimitives.EnumOfValue<int, 'T> res
+            )
+            write = (fun stream res ->
+                let mutable res = LanguagePrimitives.EnumToValue res
+                stream.Int &res
+            )
+        }
+
+    let p1 (f: ('Arg1 -> 'T)) (v1: SPVPickler<'Arg1>) (g: 'T -> 'Arg1) : SPVPickler<'T> =
+        {
+            read = (fun stream ->
+                f (v1.read stream)
+            )
+            write = (fun stream res ->
+                let mutable arg1 = g res
+                v1.write stream arg1
+            )
+        }
+
+    let p2 (f: ('Arg1 * 'Arg2 -> 'T)) (v1: SPVPickler<'Arg1>) (v2: SPVPickler<'Arg2>) (g: 'T -> 'Arg1 * 'Arg2) : SPVPickler<'T> =
+        {
+            read = (fun stream ->
+                f (v1.read stream, v2.read stream)
+            )
+            write = (fun stream res ->
+                let mutable (arg1, arg2) = g res
+                v1.write stream arg1
+                v2.write stream arg2
+            )
+        }
+
+    let p3 (f: ('Arg1 * 'Arg2 * 'Arg3 -> 'T)) (v1: SPVPickler<'Arg1>) (v2: SPVPickler<'Arg2>) (v3: SPVPickler<'Arg3>) (g: 'T -> 'Arg1 * 'Arg2 * 'Arg3) : SPVPickler<'T> =
+        {
+            read = (fun stream ->
+                f (v1.read stream, v2.read stream, v3.read stream)
+            )
+            write = (fun stream res ->
+                let mutable (arg1, arg2, arg3) = g res
+                v1.write stream arg1
+                v2.write stream arg2
+                v3.write stream arg3
+            )
+        }
+
+    let p4 (f: ('Arg1 * 'Arg2 * 'Arg3 * 'Arg4 -> 'T)) (v1: SPVPickler<'Arg1>) (v2: SPVPickler<'Arg2>) (v3: SPVPickler<'Arg3>) (v4: SPVPickler<'Arg4>) (g: 'T -> 'Arg1 * 'Arg2 * 'Arg3 * 'Arg4) : SPVPickler<'T> =
+        {
+            read = (fun stream ->
+                f (v1.read stream, v2.read stream, v3.read stream, v4.read stream)
+            )
+            write = (fun stream res ->
+                let mutable (arg1, arg2, arg3, arg4) = g res
+                v1.write stream arg1
+                v2.write stream arg2
+                v3.write stream arg3
+                v4.write stream arg4
+            )
+        }
+
+    let instrsLooup =
+        [
+            Op.OpExtInstImport,   p2 SPVInstr.ExtInstImport ResultId LiteralString                          (function SPVInstr.ExtInstImport (arg1, arg2) -> (arg1, arg2) | _ -> failwith "invalid")
+            Op.OpMemoryModel,     p2 SPVInstr.MemoryModel Enum<AddressingModel> Enum<MemoryModel>           (function SPVInstr.MemoryModel (arg1, arg2) -> (arg1, arg2) | _ -> failwith "invalid")
+            Op.OpEntryPoint,      p4 SPVInstr.EntryPoint Enum<ExecutionModel> Id LiteralString InterfaceIds (function SPVInstr.EntryPoint (arg1, arg2, arg3, arg4) -> (arg1, arg2, arg3, arg4) | _ -> failwith "invalid")
+            Op.OpExecutionMode,   p3 SPVInstr.ExecutionMode Id Enum<ExecutionMode> LiteralNumber            (function SPVInstr.ExecutionMode (arg1, arg2, arg3) -> (arg1, arg2, arg3) | _ -> failwith "invalid")
+            Op.OpExecutionModeId, p3 SPVInstr.ExecutionModeId Id Enum<ExecutionMode> Ids                    (function SPVInstr.ExecutionModeId (arg1, arg2, arg3) -> (arg1, arg2, arg3) | _ -> failwith "invalid")
+            Op.OpCapability,      p1 SPVInstr.Capability Enum<Capability>                                   (function SPVInstr.Capability arg1 -> arg1 | _ -> failwith "invalid")
+        ]
+        |> Map.ofList
+
+    let Instruction =
+        {
+            read = (fun stream ->
+            // TODO:
+            )
+            write = (fun stream res -> ()
+            )
+        }
+
+    let Instructions =
+        {
+            read = (fun stream ->
+                let xs = ResizeArray()
+                while stream.stream.Position < stream.stream.Length do
+                    xs.Add(Instruction.read stream)
+                xs |> List.ofSeq
+            )
+            write = (fun stream res -> ()
+            )
+        }
+
+    let Module =
+        {
+            read = (fun stream ->
+                let mutable magicNumber = 0u
+                let mutable versionNumber = 0u
+                let mutable genMagicNumber = 0u
+                let mutable bound = 0u
+
+                stream.Word &magicNumber
+                stream.Word &versionNumber
+                stream.Word &genMagicNumber
+                stream.Word &bound
+
+                {
+                    magicNumber = magicNumber
+                    versionNumber = versionNumber
+                    genMagicNumber = genMagicNumber
+                    bound = bound
+                    instrs = []
+                }
+            )
+            write = (fun stream res -> ()
+            )
+        }
+//let u_instr: Unpickle<SPVInstr> =
+//    u_streamPosition >>= fun opPos ->
+//        u_bpipe2 u_op u_wordCount <|
+//        fun op wordCount ->
+//            let remainingWordCount = int wordCount - 1
+//            | _ ->
+//                u_array remainingWordCount u_word |>> fun _ -> SPVInstr.UnhandledOp op
+
+//let u_instrs (stream: ReadStream) =
+//    let xs = ResizeArray()
+//    while stream.Position < stream.Length do
+//        xs.Add(u_instr stream)
+//    xs |> List.ofSeq
+
+
+type SPVModule with
+
+    static member Deserialize2(stream: Stream) =
+        let readStream = UnpickleHelper.ReadStream (stream)
+        UnpickleHelper.u_run Unpickle.u_module readStream
+
+    static member Serialize(spvModule: SPVModule, stream: Stream) =
+        stream.Position <- 0L
+        //let stream =
+        //    {
+        //        stream = stream
+        //        remaining = 0
+        //        buffer = Array.zeroCreate 128
+        //        isReader = false
+        //    }
