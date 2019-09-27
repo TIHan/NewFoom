@@ -94,35 +94,14 @@ type SPVPickleStream =
             let buf = x.Buffer 4
             x.stream.Read buf |> ignore
             res <- LittleEndian.read32 (Span.op_Implicit buf) 0
+            if x.remaining > 0 then
+                x.remaining <- x.remaining - 1
         else
             let buf = x.Buffer 4
             LittleEndian.write32 buf 0 res
             x.stream.Write (Span.op_Implicit buf)
 
-    member x.Word (res: byref<Word>) =
-        x.UInt32 &res
-
-    member x.WordList (res: byref<Word list>) =
-        if x.isReader then
-            let count = x.remaining
-            let arr = Array.zeroCreate count
-            for i = 0 to count - 1 do
-                x.Word &arr.[i]
-            res <- arr |> List.ofArray
-        else
-            res
-            |> List.iter (fun word ->
-                let mutable word = word
-                x.Word &word
-            )
-
-    member x.Id (res: byref<id>) =
-        x.UInt32 &res
-
-    member x.ResultId (res: byref<Result_id>) =
-        x.UInt32 &res
-
-    member x.LiteralString (res: byref<LiteralString>) =
+    member x.String (res: byref<LiteralString>) =
         if x.isReader then
             let startPos = x.Position
             let mutable length = 0
@@ -141,7 +120,10 @@ type SPVPickleStream =
             res <- Text.UTF8Encoding.UTF8.GetString(bytes)
             let endPos = x.Position
 
-            int (endPos - startPos) / sizeof<Word>
+            let wordCount = int (endPos - startPos) / sizeof<Word>
+            if x.remaining > 0 then
+                x.remaining <- x.remaining - wordCount
+
         else
             let bytes = Text.UTF8Encoding.UTF8.GetBytes res
             let remainder = bytes.Length % sizeof<Word>
@@ -154,26 +136,28 @@ type SPVPickleStream =
             x.buffer128.[remainder + 2] <- 0uy
             x.buffer128.[remainder + 3] <- 0uy
 
-            let startPos = x.Position
             x.stream.Write(bytes, 0, bytes.Length)
             x.stream.Write(x.buffer128, 0, remainder + sizeof<Word>)
-            let endPos = x.Position
-
-            int (endPos - startPos) / sizeof<Word>
-
-    member x.InterfaceIds (res: byref<id list>) =
-        x.WordList &res
-
-    member x.LiteralNumber (res: byref<LiteralNumber>) =
-        x.WordList &res
-
-    member x.Ids (res: byref<id list>) =
-        x.WordList &res
 
 type SPVPickle<'T> = 
     {
         read: SPVPickleStream -> 'T
         write: SPVPickleStream -> 'T -> unit
+    }
+
+let Opt (p: SPVPickle<_>) =
+    {
+        read = (fun stream ->
+            if stream.remaining > 0 then
+                Some (p.read stream)
+            else
+                None
+        )
+        write = (fun stream resOpt ->
+            match resOpt with
+            | Some res -> p.write stream res
+            | _ -> ()
+        )
     }
 
 let OpCode =
@@ -205,144 +189,41 @@ let WordCount =
         )
     }
 
+let Word: SPVPickle<Word> =
+    {
+        read = (fun stream ->
+            let mutable res = 0u
+            stream.UInt32 &res
+            res
+        )
+        write = (fun stream res ->
+            let mutable res = res
+            stream.UInt32 &res
+        )
+    }
+
 let Words count =
     {
         read = (fun stream ->
-            let words = Array.zeroCreate count
-            for i = 0 to count - 1 do
-                stream.Word &words.[i]
-            words
-            |> List.ofArray
+            List.init count (fun _ -> Word.read stream)
         )
         write = (fun stream res ->
-            res
-            |> List.iter (fun word ->
-                let mutable word = word
-                stream.Word &word
-            )
+            res.[..(count - 1)]
+            |> List.iter (Word.write stream)
         )
     }
 
-let Opt (p: SPVPickle<_>) =
-    {
-        read = (fun stream ->
-            if stream.remaining > 0 then
-                Some (p.read stream)
-            else
-                None
-        )
-        write = (fun stream resOpt ->
-            match resOpt with
-            | Some res -> p.write stream res
-            | _ -> ()
-        )
-    }
+let Id: SPVPickle<id> = Word
 
-let Id = 
+let ResultId: SPVPickle<Result_id> = Word
+
+let Ids: SPVPickle<id list> = 
     {
         read = (fun stream ->
-            let mutable res = 0u
-            stream.Id &res
-            if stream.remaining > 0 then
-                stream.remaining <- stream.remaining - 1
-            res
+            (Words stream.remaining).read stream
         )
         write = (fun stream res ->
-            let mutable res = res
-            stream.Id &res
-        )
-    }
-
-let ResultId = 
-    {
-        read = (fun stream ->
-            let mutable res = 0u
-            stream.ResultId &res
-            if stream.remaining > 0 then
-                stream.remaining <- stream.remaining - 1
-            res
-        )
-        write = (fun stream res ->
-            let mutable res = res
-            stream.ResultId &res
-        )
-    }
-
-let LiteralString =
-    {
-        read = (fun stream ->
-            let mutable res = Unchecked.defaultof<string>
-            let wordCount = stream.LiteralString &res
-            if stream.remaining > 0 then
-                stream.remaining <- stream.remaining - wordCount
-            res
-        )
-        write = (fun stream res ->
-            let mutable res = res
-            stream.LiteralString &res |> ignore
-        )
-    }
-
-let LiteralNumber =
-    {
-        read = (fun stream ->
-            let mutable res = Unchecked.defaultof<LiteralNumber>
-            stream.LiteralNumber &res
-            let wordCount = res.Length / sizeof<Word>
-            if stream.remaining > 0 then
-                stream.remaining <- stream.remaining - wordCount
-            res
-        )
-        write = (fun stream res ->
-            let mutable res = res
-            stream.LiteralNumber &res
-        )
-    }
-
-let LiteralNumberLimitOne: SPVPickle<LiteralNumberLimitOne> = 
-    {
-        read = (fun stream ->
-            let mutable res = 0u
-            stream.Word &res
-            if stream.remaining > 0 then
-                stream.remaining <- stream.remaining - 1
-            res
-        )
-        write = (fun stream res ->
-            let mutable res = res
-            stream.Word &res
-        )
-    }
-
-let InterfaceIds =
-    {
-        read = (fun stream ->
-            let mutable res = []
-            stream.InterfaceIds &res
-            let wordCount = res.Length / sizeof<Word>
-            if stream.remaining > 0 then
-                stream.remaining <- stream.remaining - wordCount
-            res
-        )
-        write = (fun stream res ->
-            let mutable res = res
-            stream.InterfaceIds &res
-        )
-    }
-
-let Ids =
-    {
-        read = (fun stream ->
-            let mutable res = []
-            stream.Ids &res
-            let wordCount = res.Length / sizeof<Word>
-            if stream.remaining > 0 then
-                stream.remaining <- stream.remaining - wordCount
-            res
-        )
-        write = (fun stream res ->
-            let mutable res = res
-            stream.Ids &res
+            (Words res.Length).write stream res
         )
     }
 
@@ -364,7 +245,24 @@ let Enum<'T when 'T : enum<int>> =
         )
     }
 
-let p1 (f: ('Arg1 -> 'T)) (v1: SPVPickle<'Arg1>) (g: 'T -> 'Arg1) : SPVPickle<'T> =
+let LiteralString: SPVPickle<LiteralString> =
+    {
+        read = (fun stream ->
+            let mutable res = Unchecked.defaultof<string>
+            stream.String &res
+            res
+        )
+        write = (fun stream res ->
+            let mutable res = res
+            stream.String &res
+        )
+    }
+
+let LiteralNumber = Ids
+
+let LiteralNumberLimitOne: SPVPickle<LiteralNumberLimitOne> = Word
+
+let p1 (f: ('Arg1 -> SPVInstruction)) (v1: SPVPickle<'Arg1>) (g: SPVInstruction -> 'Arg1) : SPVPickle<SPVInstruction> =
     {
         read = (fun stream ->
             f (v1.read stream)
@@ -375,7 +273,7 @@ let p1 (f: ('Arg1 -> 'T)) (v1: SPVPickle<'Arg1>) (g: 'T -> 'Arg1) : SPVPickle<'T
         )
     }
 
-let p2 (f: ('Arg1 * 'Arg2 -> 'T)) (v1: SPVPickle<'Arg1>) (v2: SPVPickle<'Arg2>) (g: 'T -> 'Arg1 * 'Arg2) : SPVPickle<'T> =
+let p2 (f: ('Arg1 * 'Arg2 -> SPVInstruction)) (v1: SPVPickle<'Arg1>) (v2: SPVPickle<'Arg2>) (g: SPVInstruction -> 'Arg1 * 'Arg2) : SPVPickle<SPVInstruction> =
     {
         read = (fun stream ->
             f (v1.read stream, v2.read stream)
@@ -387,7 +285,7 @@ let p2 (f: ('Arg1 * 'Arg2 -> 'T)) (v1: SPVPickle<'Arg1>) (v2: SPVPickle<'Arg2>) 
         )
     }
 
-let p3 (f: ('Arg1 * 'Arg2 * 'Arg3 -> 'T)) (v1: SPVPickle<'Arg1>) (v2: SPVPickle<'Arg2>) (v3: SPVPickle<'Arg3>) (g: 'T -> 'Arg1 * 'Arg2 * 'Arg3) : SPVPickle<'T> =
+let p3 (f: ('Arg1 * 'Arg2 * 'Arg3 -> SPVInstruction)) (v1: SPVPickle<'Arg1>) (v2: SPVPickle<'Arg2>) (v3: SPVPickle<'Arg3>) (g: SPVInstruction -> 'Arg1 * 'Arg2 * 'Arg3) : SPVPickle<SPVInstruction> =
     {
         read = (fun stream ->
             f (v1.read stream, v2.read stream, v3.read stream)
@@ -400,7 +298,7 @@ let p3 (f: ('Arg1 * 'Arg2 * 'Arg3 -> 'T)) (v1: SPVPickle<'Arg1>) (v2: SPVPickle<
         )
     }
 
-let p4 (f: ('Arg1 * 'Arg2 * 'Arg3 * 'Arg4 -> 'T)) (v1: SPVPickle<'Arg1>) (v2: SPVPickle<'Arg2>) (v3: SPVPickle<'Arg3>) (v4: SPVPickle<'Arg4>) (g: 'T -> 'Arg1 * 'Arg2 * 'Arg3 * 'Arg4) : SPVPickle<'T> =
+let p4 (f: ('Arg1 * 'Arg2 * 'Arg3 * 'Arg4 -> SPVInstruction)) (v1: SPVPickle<'Arg1>) (v2: SPVPickle<'Arg2>) (v3: SPVPickle<'Arg3>) (v4: SPVPickle<'Arg4>) (g: SPVInstruction -> 'Arg1 * 'Arg2 * 'Arg3 * 'Arg4) : SPVPickle<SPVInstruction> =
     {
         read = (fun stream ->
             f (v1.read stream, v2.read stream, v3.read stream, v4.read stream)
@@ -421,7 +319,7 @@ module Instructions =
     let OpSource =          p4 OpSource Enum<SourceLanguage> LiteralNumberLimitOne (Opt Id) (Opt LiteralString) (function OpSource (arg1, arg2, arg3, arg4) -> (arg1, arg2, arg3, arg4) | _ -> failwith "invalid")
     let OpExtInstImport =   p2 OpExtInstImport ResultId LiteralString                                           (function OpExtInstImport (arg1, arg2) -> (arg1, arg2) | _ -> failwith "invalid")
     let OpMemoryModel =     p2 OpMemoryModel Enum<AddressingModel> Enum<MemoryModel>                            (function OpMemoryModel (arg1, arg2) -> (arg1, arg2) | _ -> failwith "invalid")
-    let OpEntryPoint =      p4 OpEntryPoint Enum<ExecutionModel> Id LiteralString InterfaceIds                  (function OpEntryPoint (arg1, arg2, arg3, arg4) -> (arg1, arg2, arg3, arg4) | _ -> failwith "invalid")
+    let OpEntryPoint =      p4 OpEntryPoint Enum<ExecutionModel> Id LiteralString Ids                           (function OpEntryPoint (arg1, arg2, arg3, arg4) -> (arg1, arg2, arg3, arg4) | _ -> failwith "invalid")
     let OpExecutionMode =   p3 OpExecutionMode Id Enum<ExecutionMode> LiteralNumber                             (function OpExecutionMode (arg1, arg2, arg3) -> (arg1, arg2, arg3) | _ -> failwith "invalid")
     let OpExecutionModeId = p3 OpExecutionModeId Id Enum<ExecutionMode> Ids                                     (function OpExecutionModeId (arg1, arg2, arg3) -> (arg1, arg2, arg3) | _ -> failwith "invalid")
     let OpCapability =      p1 OpCapability Enum<Capability>                                                    (function OpCapability arg1 -> arg1 | _ -> failwith "invalid")
@@ -503,17 +401,11 @@ let Instructions =
 let Module =
     {
         read = (fun stream ->
-            let mutable magicNumber = 0u
-            let mutable versionNumber = 0u
-            let mutable genMagicNumber = 0u
-            let mutable bound = 0u
-            let mutable reserved = 0u
-
-            stream.Word &magicNumber
-            stream.Word &versionNumber
-            stream.Word &genMagicNumber
-            stream.Word &bound
-            stream.Word &reserved
+            let magicNumber = Word.read stream
+            let versionNumber = Word.read stream
+            let genMagicNumber = Word.read stream
+            let bound = Word.read stream
+            let _reserved = Word.read stream
 
             let instrs = Instructions.read stream
 
@@ -526,17 +418,11 @@ let Module =
             }
         )
         write = (fun stream res ->
-            let mutable magicNumber = res.magicNumber
-            let mutable versionNumber = res.versionNumber
-            let mutable genMagicNumber = res.genMagicNumber
-            let mutable bound = res.bound
-            let mutable reserved = 0u
-                
-            stream.Word &magicNumber
-            stream.Word &versionNumber
-            stream.Word &genMagicNumber
-            stream.Word &bound
-            stream.Word &reserved
+            Word.write stream res.magicNumber
+            Word.write stream res.versionNumber
+            Word.write stream res.genMagicNumber
+            Word.write stream res.bound
+            Word.write stream (let reserved = 0u in reserved)
 
             Instructions.write stream res.instrs
         )
