@@ -106,24 +106,34 @@ type SPVPickleStream =
             let startPos = x.Position
             let mutable length = 0
 
-            while not (x.stream.ReadByte() = 0 && length % sizeof<Word> = 0) do
+            while not (x.stream.ReadByte() = 0) do
                 length <- length + 1
 
             x.Seek(startPos, SeekOrigin.Begin)
 
             let bytes = Array.zeroCreate length
             x.stream.Read(bytes, 0, bytes.Length) |> ignore
+            res <- Text.UTF8Encoding.UTF8.GetString(bytes)
 
             // Padding
-            x.Seek(4, SeekOrigin.Current)
+            let remainder = 
+                let remainder = length % sizeof<Word>
+                if remainder = 0 then
+                    sizeof<Word>
+                else
+                    sizeof<Word> - remainder
+            x.Seek(remainder, SeekOrigin.Current)
 
-            res <- Text.UTF8Encoding.UTF8.GetString(bytes)
             let endPos = x.Position
 
-            let wordCount = int (endPos - startPos) / sizeof<Word>
+            let bytesRead = int (endPos - startPos)
+
+            if bytesRead % sizeof<Word> <> 0 then
+                failwithf "Not divisible by %i." sizeof<Word>
+
+            let wordCount = bytesRead / sizeof<Word>
             if x.remaining > 0 then
                 x.remaining <- x.remaining - wordCount
-
         else
             let bytes = Text.UTF8Encoding.UTF8.GetBytes res
             let remainder = bytes.Length % sizeof<Word>
@@ -390,6 +400,7 @@ module Instructions =
     let OpSource =               p4 OpSource Enum<SourceLanguage> LiteralNumberLimitOne (Opt Id) (Opt LiteralString)      (function OpSource (arg1, arg2, arg3, arg4) -> (arg1, arg2, arg3, arg4) | _ -> failwith "invalid")
     let OpSourceExtension =      p1 OpSourceExtension LiteralString                                                       (function OpSourceExtension arg1 -> arg1 | _ -> failwith "invalid")
     let OpName =                 p2 OpName Id LiteralString                                                               (function OpName (arg1, arg2) -> (arg1, arg2) | _ -> failwith "invalid")
+    let OpMemberName =           p3 OpMemberName Id LiteralNumberLimitOne LiteralString (function OpMemberName (arg1, arg2, arg3) -> (arg1, arg2, arg3) | _ -> failwith "invalid")
     let OpString =               p2 OpString ResultId LiteralString                                                       (function OpString (arg1, arg2) -> (arg1, arg2) | _ -> failwith "invalid")
     let OpLine =                 p3 OpLine Id LiteralNumberLimitOne LiteralNumberLimitOne                                 (function OpLine (arg1, arg2, arg3) -> (arg1, arg2, arg3) | _ -> failwith "invalid")
     let OpNoLine =               p0 OpNoLine                                                                              
@@ -398,7 +409,7 @@ module Instructions =
     // Annotation Instructions
     
     let OpDecorate =             p3 OpDecorate Id Enum<Decoration> Literal                                                (function OpDecorate (arg1, arg2, arg3) -> (arg1, arg2, arg3) | _ -> failwith "invalid")
-    let OpMemberDecorate =       p4 OpMemberDecorate Id LiteralNumber Enum<Decoration> Literal                            (function OpMemberDecorate (arg1, arg2, arg3, arg4) -> (arg1, arg2, arg3, arg4) | _ -> failwith "invalid")
+    let OpMemberDecorate =       p4 OpMemberDecorate Id LiteralNumberLimitOne Enum<Decoration> Literal                            (function OpMemberDecorate (arg1, arg2, arg3, arg4) -> (arg1, arg2, arg3, arg4) | _ -> failwith "invalid")
     let OpDecorationGroup =      p1 OpDecorationGroup ResultId                                                            (function OpDecorationGroup arg1 -> arg1 | _ -> failwith "invalid")
     let OpGroupDecorate =        p2 OpGroupDecorate Id Ids                                                                (function OpGroupDecorate (arg1, arg2) -> (arg1, arg2) | _ -> failwith "invalid")
     let OpGroupMemberDecorate =  p2 OpGroupMemberDecorate Id Ids                                                          (function OpGroupMemberDecorate (arg1, arg2) -> (arg1, arg2) | _ -> failwith "invalid")
@@ -492,6 +503,7 @@ let Instruction =
                 stream.remaining <- wordCount - 1
                 p.read stream
             | _ ->
+                stream.remaining <- wordCount - 1
                 UnhandledOp (op, (Words (wordCount - 1)).read stream)
         )
         write = (fun stream res ->

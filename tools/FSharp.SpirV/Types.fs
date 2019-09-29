@@ -49,7 +49,7 @@ type SPVInstruction =
     // Annotation Instructions
 
     | OpDecorate of target: id * Decoration * Literal
-    | OpMemberDecorate of structureType: id * member': LiteralNumber * Decoration * Literal
+    | OpMemberDecorate of structureType: id * member': LiteralNumberLimitOne * Decoration * Literal
     | [<Obsolete("directly use non-group decoration instructions instead")>] OpDecorationGroup of Result_id
     | [<Obsolete("directly use non-group decoration instructions instead")>] OpGroupDecorate of decorationGroup: id * targets: id list
     | [<Obsolete("directly use non-group decoration instructions instead")>] OpGroupMemberDecorate of decorationGroup: id * targets: Word list
