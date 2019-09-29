@@ -281,6 +281,8 @@ let LiteralNumberLimitOne: SPVPickle<LiteralNumberLimitOne> = Word
 
 let Literal: SPVPickle<Literal> = Ids
 
+let Literals: SPVPickle<Literals> = Ids
+
 let p0 (instr: SPVInstruction) : SPVPickle<SPVInstruction> =
     {
         read = (fun _ -> instr)
@@ -375,10 +377,15 @@ let p9 (f: ('Arg1 * 'Arg2 * 'Arg3 * 'Arg4 * 'Arg5 * 'Arg6 * 'Arg7 * 'Arg8 * 'Arg
 module Instructions =
 
     type private IMarker = interface end
+
+    // Miscellaneous Instructions
         
     let OpNop =                  p0 OpNop
     let OpUndef =                p2 OpUndef Id ResultId                                                                   (function OpUndef (arg1, arg2) -> (arg1, arg2) | _ -> failwith "invalid") 
     let OpSizeOf =               p3 OpSizeOf Id ResultId Id                                                               (function OpSizeOf (arg1, arg2, arg3) -> (arg1, arg2, arg3) | _ -> failwith "invalid")
+    
+    // Debug Instructions
+    
     let OpSourceContinued =      p1 OpSourceContinued LiteralString                                                       (function OpSourceContinued arg1 -> arg1 | _ -> failwith "invalid")
     let OpSource =               p4 OpSource Enum<SourceLanguage> LiteralNumberLimitOne (Opt Id) (Opt LiteralString)      (function OpSource (arg1, arg2, arg3, arg4) -> (arg1, arg2, arg3, arg4) | _ -> failwith "invalid")
     let OpSourceExtension =      p1 OpSourceExtension LiteralString                                                       (function OpSourceExtension arg1 -> arg1 | _ -> failwith "invalid")
@@ -387,6 +394,9 @@ module Instructions =
     let OpLine =                 p3 OpLine Id LiteralNumberLimitOne LiteralNumberLimitOne                                 (function OpLine (arg1, arg2, arg3) -> (arg1, arg2, arg3) | _ -> failwith "invalid")
     let OpNoLine =               p0 OpNoLine                                                                              
     let OpModuleProcessed =      p1 OpModuleProcessed LiteralString                                                       (function OpModuleProcessed arg1 -> arg1 | _ -> failwith "invalid")
+    
+    // Annotation Instructions
+    
     let OpDecorate =             p3 OpDecorate Id Enum<Decoration> Literal                                                (function OpDecorate (arg1, arg2, arg3) -> (arg1, arg2, arg3) | _ -> failwith "invalid")
     let OpMemberDecorate =       p4 OpMemberDecorate Id LiteralNumber Enum<Decoration> Literal                            (function OpMemberDecorate (arg1, arg2, arg3, arg4) -> (arg1, arg2, arg3, arg4) | _ -> failwith "invalid")
     let OpDecorationGroup =      p1 OpDecorationGroup ResultId                                                            (function OpDecorationGroup arg1 -> arg1 | _ -> failwith "invalid")
@@ -395,15 +405,23 @@ module Instructions =
     let OpDecorateId =           p3 OpDecorateId Id Enum<Decoration> Ids                                                  (function OpDecorateId (arg1, arg2, arg3) -> (arg1, arg2, arg3) | _ -> failwith "invalid")
     let OpDecorateString =       p4 OpDecorateString Id Enum<Decoration> LiteralString LiteralStrings                     (function OpDecorateString (arg1, arg2, arg3, arg4) -> (arg1, arg2, arg3, arg4) | _ -> failwith "invalid")
     let OpMemberDecorateString = p5 OpMemberDecorateString Id LiteralNumber Enum<Decoration> LiteralString LiteralStrings (function OpMemberDecorateString (arg1, arg2, arg3, arg4, arg5) -> (arg1, arg2, arg3, arg4, arg5) | _ -> failwith "invalid")
+    
+    // Extension Instructions
+    
     let OpExtension =            p1 OpExtension LiteralString                                                             (function OpExtension arg1 -> arg1 | _ -> failwith "invalid")
     let OpExtInstImport =        p2 OpExtInstImport ResultId LiteralString                                                (function OpExtInstImport (arg1, arg2) -> (arg1, arg2) | _ -> failwith "invalid")
     let OpExtInst =              p5 OpExtInst Id ResultId Id LiteralNumber Ids                                            (function OpExtInst (arg1, arg2, arg3, arg4, arg5) -> (arg1, arg2, arg3, arg4, arg5) | _ -> failwith "invalid")
+    
+    // Mode-Settings Instructions
+    
     let OpMemoryModel =          p2 OpMemoryModel Enum<AddressingModel> Enum<MemoryModel>                                 (function OpMemoryModel (arg1, arg2) -> (arg1, arg2) | _ -> failwith "invalid")
     let OpEntryPoint =           p4 OpEntryPoint Enum<ExecutionModel> Id LiteralString Ids                                (function OpEntryPoint (arg1, arg2, arg3, arg4) -> (arg1, arg2, arg3, arg4) | _ -> failwith "invalid")
     let OpExecutionMode =        p3 OpExecutionMode Id Enum<ExecutionMode> LiteralNumber                                  (function OpExecutionMode (arg1, arg2, arg3) -> (arg1, arg2, arg3) | _ -> failwith "invalid")
     let OpCapability =           p1 OpCapability Enum<Capability>                                                         (function OpCapability arg1 -> arg1 | _ -> failwith "invalid")
     let OpExecutionModeId =      p3 OpExecutionModeId Id Enum<ExecutionMode> Ids                                          (function OpExecutionModeId (arg1, arg2, arg3) -> (arg1, arg2, arg3) | _ -> failwith "invalid")
 
+    // Type-Declaration Instructions
+    
     let OpTypeVoid =             p1 OpTypeVoid ResultId                                                                                                                                                     (function OpTypeVoid arg1 -> arg1 | _ -> failwith "invalid")
     let OpTypeBool =             p1 OpTypeBool ResultId                                                                                                                                                     (function OpTypeBool arg1 -> arg1 | _ -> failwith "invalid")
     let OpTypeInt =              p3 OpTypeInt ResultId LiteralNumberLimitOne LiteralNumber                                                                                                                  (function OpTypeInt (arg1, arg2, arg3) -> (arg1, arg2, arg3) | _ -> failwith "invalid")
@@ -412,6 +430,37 @@ module Instructions =
     let OpTypeMatrix =           p3 OpTypeMatrix ResultId Id LiteralNumber                                                                                                                                  (function OpTypeMatrix (arg1, arg2, arg3) -> (arg1, arg2, arg3) | _ -> failwith "invalid")
     let OpTypeImage =            p9 OpTypeImage ResultId Id Enum<Dim> LiteralNumberLimitOne LiteralNumberLimitOne LiteralNumberLimitOne LiteralNumberLimitOne Enum<ImageFormat> (Opt Enum<AccessQualifier>) (function OpTypeImage (arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9) -> (arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9) | _ -> failwith "invalid")
     let OpTypeSampler =          p1 OpTypeSampler ResultId                                                                                                                                                  (function OpTypeSampler arg1 -> arg1 | _ -> failwith "invalid")
+    
+    let OpTypePointer =          p3 OpTypePointer ResultId Enum<StorageClass> Id (function OpTypePointer (arg1, arg2, arg3) -> (arg1, arg2, arg3) | _ -> failwith "invalid")
+    let OpTypeFunction =         p3 OpTypeFunction ResultId Id Ids (function OpTypeFunction (arg1, arg2, arg3) -> (arg1, arg2, arg3) | _ -> failwith "invalid")
+
+    // Constant-Create Instructions
+
+    let OpConstant = p3 OpConstant Id ResultId Literal (function OpConstant (arg1, arg2, arg3) -> (arg1, arg2, arg3) | _ -> failwith "invalid")
+
+    // Memory Instructions
+
+    let OpVariable = p4 OpVariable Id ResultId Enum<StorageClass> (Opt Id) (function OpVariable (arg1, arg2, arg3, arg4) -> (arg1, arg2, arg3, arg4) | _ -> failwith "invalid")
+    let OpLoad =     p4 OpLoad Id ResultId Id (Opt Enum<MemoryAccessMask>) (function OpLoad (arg1, arg2, arg3, arg4) -> (arg1, arg2, arg3, arg4) | _ -> failwith "invalid")
+    let OpStore =    p3 OpStore Id Id (Opt Enum<MemoryAccessMask>) (function OpStore (arg1, arg2, arg3) -> (arg1, arg2, arg3) | _ -> failwith "invalid")
+
+    // Function Instructions
+
+    let OpFunction =    p4 OpFunction Id ResultId Enum<FunctionControlMask> Id (function OpFunction (arg1, arg2, arg3, arg4) -> (arg1, arg2, arg3, arg4) | _ -> failwith "invalid")
+    let OpFunctionEnd = p0 OpFunctionEnd
+
+    // Composite Instructions
+
+    let OpCompositeConstruct = p3 OpCompositeConstruct Id ResultId Ids (function OpCompositeConstruct (arg1, arg2, arg3) -> (arg1, arg2, arg3) | _ -> failwith "invalid")
+    let OpCompositeExtract = p4 OpCompositeExtract Id ResultId Id Literals (function OpCompositeExtract (arg1, arg2, arg3, arg4) -> (arg1, arg2, arg3, arg4) | _ -> failwith "invalid")
+
+    // Relational and Logical Instructions
+
+    let OpReturn = p0 OpReturn
+
+    // Control-Flow Instructions
+
+    let OpLabel = p1 OpLabel ResultId (function OpLabel arg1 -> arg1 | _ -> failwith "invalid")
 
     let InstructionsType = typeof<IMarker>.DeclaringType
 
