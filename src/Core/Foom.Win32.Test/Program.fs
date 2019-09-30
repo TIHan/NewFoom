@@ -5,30 +5,6 @@ open FSharp.Vulkan.Interop
 open FSharp.Window
 open FSharp.SpirV
 open FSharp.SpirV.Quotations
-
-//type Win32ServerGame() =
-//    inherit AbstractServerGame()
-
-//    override __.Update(_, _) = false
-    
-//type Win32ClientGame() =
-//    inherit AbstractClientGame()
-
-//    let mutable dx12 = None
-
-//    member __.Init(width, height, hwnd, hinstance) =
-//        use instance = VulkanInstance.CreateWin32(hwnd, hinstance, "App", "Engine", ["VK_LAYER_KHRONOS_validation"], [VK_KHR_SWAPCHAIN_EXTENSION_NAME])
-//        ()
-
-//    override __.PreUpdate(_, _, inputs) =
-//        inputs
-//        |> List.iter (printfn "%A")
-
-//    override __.Update(_, _, _) = false
-
-//    override __.Render(_, _) =
-//        ()
-
 open System.Numerics
     
 let fragment = 
@@ -36,7 +12,7 @@ let fragment =
         let fragColor = input<Vector3>
         let outColor = output<Vector4>
 
-        outColor := Vector4(fragColor, 1.f)
+        outColor := Vector4(fragColor, 1.0f)
     @>
 
 let spvFragment = SPVGen.GenFragment fragment

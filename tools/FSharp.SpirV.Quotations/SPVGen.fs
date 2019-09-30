@@ -27,7 +27,7 @@ type cenv =
         typePointers: Dictionary<Result_id, SPVInstruction>
         typePointersByResultType: Dictionary<id, Result_id>
         globalVariables: Dictionary<Var, Result_id * SPVInstruction>
-        constants: Dictionary<Literal, Result_id * SPVInstruction list>
+        constants: Dictionary<Literal, Result_id * SPVInstruction>
         // Functions
 
         functions: Dictionary<string, Result_id * SPVInstruction list>
@@ -169,8 +169,7 @@ let genConstant cenv resultType literal =
     | true, (resultId, _) -> resultId
     | _ ->
         let resultId = nextResultId cenv
-
-        cenv.currentInstructions.Add (OpConstant(resultType, resultId, literal))
+        cenv.constants.[literal] <- (resultId, OpConstant(resultType, resultId, literal))
         resultId
 
 let genConstantInt cenv (n: int) =
@@ -271,14 +270,10 @@ let GenFragment expr =
 
     Gen cenv { inApp = true } expr
 
+    cenv.currentInstructions.Add OpReturn
     cenv.currentInstructions.Add OpFunctionEnd
 
     // Entry Point End
-
-    let interfaces =
-        cenv.globalVariables.Values
-        |> Seq.map (fun (resultId, _) -> resultId)
-        |> List.ofSeq
 
     let annotations =
         let mutable input = 0u
@@ -303,6 +298,33 @@ let GenFragment expr =
         annoations
         |> List.ofSeq
 
+    let types =
+        (cenv.types.Values
+         |> List.ofSeq)
+        @
+        (cenv.typePointers.Values
+         |> List.ofSeq)
+        @
+        (cenv.typeFunctions.Values
+         |> Seq.map (fun (_, instr) -> instr)
+         |> Seq.concat
+         |> List.ofSeq)
+
+    let variables =
+        cenv.globalVariables.Values
+        |> Seq.map (fun (_, instr) -> instr)
+        |> List.ofSeq
+
+    let constants =
+        cenv.constants.Values
+        |> Seq.map (fun (_, instr) -> instr)
+        |> List.ofSeq
+
+    let interfaces =
+        cenv.globalVariables.Values
+        |> Seq.map (fun (resultId, _) -> resultId)
+        |> List.ofSeq
+
     let instrs = 
         [
             OpCapability Capability.Shader
@@ -312,34 +334,8 @@ let GenFragment expr =
             OpExecutionMode (entryPoint, ExecutionMode.OriginUpperLeft, [])
         ]
         @
-        annotations
+        annotations @ types @ variables @ constants
         @
         (cenv.currentInstructions |> List.ofSeq)
 
     SPVModule.Create(instrs = instrs)
-
-//let mkSPVModule cenv =
-//    let spv = 
-//        SPVModule.Create(
-//            instrs =
-//                [
-//                    OpCapability Capability.Shader
-//                    OpExtInstImport (nextResultId cenv, "GLSL.std.450")
-//                    OpMemoryModel (AddressingModel.Logical, MemoryModel.GLSL450)
-//                  //  OpEntryPoint (ExecutionModel.Fragment, )
-//                ]
-//        )
-
-//    { cenv with spv = spv }
-
-
-//let a = 2
-
-//// exprLambda has type "(int -> int)".
-//let exprLambda = <@ fun x -> x + 1 @>
-//// exprCall has type unit.
-//let exprCall = <@ a + 1 @>
-
-//cln exprLambda
-//cln exprCall
-//cln <@@ let f x = x + 10 in f 10 @@>
