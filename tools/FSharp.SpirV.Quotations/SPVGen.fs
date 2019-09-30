@@ -248,6 +248,10 @@ let Gen cenv (env: env) expr =
             addInstructions cenv [OpCompositeConstruct(genType cenv typeof<Vector4>, resultId, constituents)]
             [resultId]
 
+        | Let(var, Lambda(_, expr), expr2) ->
+            gen cenv env expr |> ignore
+            gen cenv env expr2
+
         | _ ->
             failwithf "Expression not supported: %A" expr
 

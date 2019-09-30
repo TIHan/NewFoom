@@ -16,5 +16,11 @@ let ``Compiler Fragment`` () =
             outColor := Vector4(fragColor, 1.f)
         @>
 
-    let spv = SPVGen.GenFragment fragment
+    let ideal =
+        <@
+            fun (args: {| fragColor: Vector3 |}) ->
+                {| outColor = Vector4(args.fragColor, 1.f) |}
+        @>
+
+    let spv = SPVGen.GenFragment ideal
     ()
