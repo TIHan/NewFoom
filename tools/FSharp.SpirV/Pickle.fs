@@ -458,7 +458,7 @@ module Instructions =
 
     // Constant-Create Instructions
 
-    let OpConstant = p3 OpConstant Id ResultId Literal (function OpConstant (arg1, arg2, arg3) -> (arg1, arg2, arg3) | _ -> failwith "invalid")
+    let OpConstant = p3 OpConstant Id ResultId Literals (function OpConstant (arg1, arg2, arg3) -> (arg1, arg2, arg3) | _ -> failwith "invalid")
     let OpConstantComposite = p3 OpConstantComposite Id ResultId Ids (function OpConstantComposite (arg1, arg2, arg3) -> (arg1, arg2, arg3) | _ -> failwith "invalid")
 
     // Memory Instructions

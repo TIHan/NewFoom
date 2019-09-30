@@ -104,7 +104,7 @@ type SPVInstruction =
 
     | OpConstantTrue of resultType: id * Result_id
     | OpConstantFalse of resultType: id * Result_id
-    | OpConstant of resultType: id * Result_id * value: Literal
+    | OpConstant of resultType: id * Result_id * value: Literals
     | OpConstantComposite of resultType: id * Result_id * constituents: id list
     | OpConstantSampler of resultType: id * Result_id * SamplerAddressingMode * param: LiteralNumberLimitOne * SamplerFilterMode
     | OpConstantNull of resultType: id * Result_id
@@ -217,11 +217,27 @@ type SPVInstruction =
 [<NoEquality;NoComparison>]
 type SPVModule = 
     internal {
-        magicNumber: uint32
-        versionNumber: uint32
-        genMagicNumber: uint32
-        bound: uint32
+        magicNumber: Word
+        versionNumber: Word
+        genMagicNumber: Word
+        bound: Word
         instrs: SPVInstruction list
     }
 
-    member x.MagicNumber = x.magicNumber
+    static member Create (?version: Word, ?bound: Word, ?instrs) =
+        let version = defaultArg version 65536u
+        let bound = defaultArg bound 65536u
+        let instrs = defaultArg instrs []
+
+        {
+            magicNumber = MagicNumber
+            versionNumber = version
+            genMagicNumber = 0u
+            bound = bound
+            instrs = instrs
+        }
+
+    member x.Instructions = x.instrs
+
+    member x.AddInstructions instrs =
+        { x with instrs = x.instrs @ instrs }
