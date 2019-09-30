@@ -3,6 +3,8 @@ open Foom.Win32
 open Foom.Vulkan
 open FSharp.Vulkan.Interop
 open FSharp.Window
+open FSharp.SpirV
+open FSharp.SpirV.Quotations
 
 //type Win32ServerGame() =
 //    inherit AbstractServerGame()
@@ -26,6 +28,18 @@ open FSharp.Window
 
 //    override __.Render(_, _) =
 //        ()
+
+open System.Numerics
+    
+let fragment = 
+    <@ 
+        let fragColor = input<Vector3>
+        let outColor = output<Vector4>
+
+        outColor := Vector4(fragColor, 1.f)
+    @>
+
+let spvFragment = SPVGen.GenFragment fragment
 
 type EmptyWindowEvents (instance: VulkanInstance) =
 
@@ -73,7 +87,14 @@ let main argv =
     let window = Window (title, 30., width, height, windowEvents, windowState)
 
     let vertexBytes = System.IO.File.ReadAllBytes("triangle_vertex.spv")
-    let fragmentBytes = System.IO.File.ReadAllBytes("triangle_fragment.spv")
+    let fragmentBytes =
+        use ms = new System.IO.MemoryStream 100
+        SpirV.serialize ms spvFragment
+        let bytes = Array.zeroCreate (int ms.Length)
+        ms.Position <- 0L
+        ms.Read(bytes, 0, bytes.Length) |> ignore
+        bytes
+   // let fragmentBytes = System.IO.File.ReadAllBytes("triangle_fragment.spv")
 
     instance.AddPipeline(vertexBytes, fragmentBytes)
 

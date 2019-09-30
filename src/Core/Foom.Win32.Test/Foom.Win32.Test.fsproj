@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp2.1</TargetFramework>
+    <TargetFramework>netcoreapp3.0</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
@@ -16,9 +16,8 @@
     <Compile Include="Program.fs" />
   </ItemGroup>
 
-  <ItemGroup />
-
   <ItemGroup>
+    <ProjectReference Include="..\..\..\tools\FSharp.SpirV.Quotations\FSharp.SpirV.Quotations.fsproj" />
     <ProjectReference Include="..\..\..\tools\FSharp.Vulkan\FSharp.Vulkan.fsproj" />
     <ProjectReference Include="..\Foom.Core\Foom.Core.fsproj" />
     <ProjectReference Include="..\Foom.Win32\Foom.Win32.fsproj" />
