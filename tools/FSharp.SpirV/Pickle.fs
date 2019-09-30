@@ -53,6 +53,13 @@ module LittleEndian =
         ((uint64 data.[offset + 6]) <<< 48) |||
         ((uint64 data.[offset + 7]) <<< 56)
 
+let wordRemainder n =
+    let remainder = n % sizeof<Word>
+    if remainder = 0 then
+        sizeof<Word>
+    else
+        sizeof<Word> - remainder
+
 type SPVPickleStream =
     {
         stream: Stream
@@ -116,12 +123,7 @@ type SPVPickleStream =
             res <- Text.UTF8Encoding.UTF8.GetString(bytes)
 
             // Padding
-            let remainder = 
-                let remainder = length % sizeof<Word>
-                if remainder = 0 then
-                    sizeof<Word>
-                else
-                    sizeof<Word> - remainder
+            let remainder = wordRemainder bytes.Length
             x.Seek(remainder, SeekOrigin.Current)
 
             let endPos = x.Position
@@ -136,18 +138,13 @@ type SPVPickleStream =
                 x.remaining <- x.remaining - wordCount
         else
             let bytes = Text.UTF8Encoding.UTF8.GetBytes res
-            let remainder = bytes.Length % sizeof<Word>
+            let remainder = wordRemainder bytes.Length
 
             for i = 0 to remainder - 1 do
                 x.buffer128.[i] <- 0uy
 
-            x.buffer128.[remainder + 0] <- 0uy
-            x.buffer128.[remainder + 1] <- 0uy
-            x.buffer128.[remainder + 2] <- 0uy
-            x.buffer128.[remainder + 3] <- 0uy
-
             x.stream.Write(bytes, 0, bytes.Length)
-            x.stream.Write(x.buffer128, 0, remainder + sizeof<Word>)
+            x.stream.Write(x.buffer128, 0, remainder)
 
 type SPVPickle<'T> = 
     {
@@ -386,6 +383,8 @@ let p9 (f: ('Arg1 * 'Arg2 * 'Arg3 * 'Arg4 * 'Arg5 * 'Arg6 * 'Arg7 * 'Arg8 * 'Arg
 
 module Instructions =
 
+    open FSharp.Reflection
+
     type private IMarker = interface end
 
     // Miscellaneous Instructions
@@ -441,19 +440,33 @@ module Instructions =
     let OpTypeMatrix =           p3 OpTypeMatrix ResultId Id LiteralNumber                                                                                                                                  (function OpTypeMatrix (arg1, arg2, arg3) -> (arg1, arg2, arg3) | _ -> failwith "invalid")
     let OpTypeImage =            p9 OpTypeImage ResultId Id Enum<Dim> LiteralNumberLimitOne LiteralNumberLimitOne LiteralNumberLimitOne LiteralNumberLimitOne Enum<ImageFormat> (Opt Enum<AccessQualifier>) (function OpTypeImage (arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9) -> (arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9) | _ -> failwith "invalid")
     let OpTypeSampler =          p1 OpTypeSampler ResultId                                                                                                                                                  (function OpTypeSampler arg1 -> arg1 | _ -> failwith "invalid")
-    
+    let OpTypeSampledImage =     p2 OpTypeSampledImage ResultId Id (function OpTypeSampledImage (arg1, arg2) -> (arg1, arg2) | _ -> failwith "invalid")
+    let OpTypeArray =            p3 OpTypeArray ResultId Id Id (function OpTypeArray (arg1, arg2, arg3) -> (arg1, arg2, arg3) | _ -> failwith "invalid")
+    let OpTypeRuntimeArray =     p2 OpTypeRuntimeArray ResultId Id (function OpTypeRuntimeArray (arg1, arg2) -> (arg1, arg2) | _ -> failwith "invalid")
+    let OpTypeStruct =           p2 OpTypeStruct ResultId Ids (function OpTypeStruct (arg1, arg2) -> (arg1, arg2) | _ -> failwith "invalid")
+    let OpTypeOpaque =           p2 OpTypeOpaque ResultId LiteralString (function OpTypeOpaque (arg1, arg2) -> (arg1, arg2) | _ -> failwith "invalid")
     let OpTypePointer =          p3 OpTypePointer ResultId Enum<StorageClass> Id (function OpTypePointer (arg1, arg2, arg3) -> (arg1, arg2, arg3) | _ -> failwith "invalid")
     let OpTypeFunction =         p3 OpTypeFunction ResultId Id Ids (function OpTypeFunction (arg1, arg2, arg3) -> (arg1, arg2, arg3) | _ -> failwith "invalid")
+    let OpTypeEvent =            p1 OpTypeEvent ResultId (function OpTypeEvent arg1 -> arg1 | _ -> failwith "invalid")
+    let OpTypeDeviceEvent =      p1 OpTypeDeviceEvent ResultId (function OpTypeDeviceEvent arg1 -> arg1 | _ -> failwith "invalid")
+    let OpReservedId =           p1 OpTypeReserveId ResultId (function OpTypeReserveId arg1 -> arg1 | _ -> failwith "invalid")
+    let OpTypeQueue =            p1 OpTypeQueue ResultId (function OpTypeQueue arg1 -> arg1 | _ -> failwith "invalid")
+    let OpTypePipe =             p2 OpTypePipe ResultId Enum<AccessQualifier> (function OpTypePipe (arg1, arg2) -> (arg1, arg2) | _ -> failwith "invalid")
+    let OpTypeForwardPointer =   p2 OpTypeForwardPointer Id Enum<StorageClass> (function OpTypeForwardPointer (arg1, arg2) -> (arg1, arg2) | _ -> failwith "invalid")
+    let OpTypePipeStorage =      p1 OpTypePipeStorage ResultId (function OpTypePipeStorage arg1 -> arg1 | _ -> failwith "invalid")
+    let OpTypeNamedBarrier =     p1 OpTypeNamedBarrier ResultId (function OpTypeNamedBarrier arg1 -> arg1 | _ -> failwith "invalid")
 
     // Constant-Create Instructions
 
     let OpConstant = p3 OpConstant Id ResultId Literal (function OpConstant (arg1, arg2, arg3) -> (arg1, arg2, arg3) | _ -> failwith "invalid")
+    let OpConstantComposite = p3 OpConstantComposite Id ResultId Ids (function OpConstantComposite (arg1, arg2, arg3) -> (arg1, arg2, arg3) | _ -> failwith "invalid")
 
     // Memory Instructions
 
     let OpVariable = p4 OpVariable Id ResultId Enum<StorageClass> (Opt Id) (function OpVariable (arg1, arg2, arg3, arg4) -> (arg1, arg2, arg3, arg4) | _ -> failwith "invalid")
     let OpLoad =     p4 OpLoad Id ResultId Id (Opt Enum<MemoryAccessMask>) (function OpLoad (arg1, arg2, arg3, arg4) -> (arg1, arg2, arg3, arg4) | _ -> failwith "invalid")
     let OpStore =    p3 OpStore Id Id (Opt Enum<MemoryAccessMask>) (function OpStore (arg1, arg2, arg3) -> (arg1, arg2, arg3) | _ -> failwith "invalid")
+    let OpAccessChain = p4 OpAccessChain Id ResultId Id Ids (function OpAccessChain (arg1, arg2, arg3, arg4) -> (arg1, arg2, arg3, arg4) | _ -> failwith "invalid")
 
     // Function Instructions
 
@@ -487,8 +500,12 @@ module Instructions =
         | _ -> failwith "Unable to find pickle."
 
     let getOp (instr: SPVInstruction) =
-        let name = instr.GetType().Name
-        System.Enum.Parse<Op> name
+        let ty = instr.GetType()
+        let name = ty.Name
+        match System.Enum.TryParse<Op> name with
+        | true, result -> result
+        | _ ->
+            System.Enum.Parse<Op> (instr.ToString())
 
 let Instruction =
     {
@@ -510,12 +527,12 @@ let Instruction =
             let op = Instructions.getOp res
             let p = Instructions.getPickle op
 
+            let startPos = stream.Position
             OpCode.write stream op
 
             let wordCountPos = stream.Position
             stream.Seek(2, SeekOrigin.Current)
-
-            let startPos = stream.Position
+            
             p.write stream res 
             let endPos = stream.Position
 
