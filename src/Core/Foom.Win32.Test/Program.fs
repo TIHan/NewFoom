@@ -9,11 +9,11 @@ open System.Numerics
     
 let fragment = 
     <@ 
-        let fragColor = input<Vector3>
-        let outColor = output<Vector4>
-
-        outColor := Vector4(fragColor, 1.0f)
+        fun (fragColor: Vector3) ->
+            let doot = fragColor
+            {| outColor = Vector4(doot, 1.f) |}
     @>
+
 
 let spvFragment = SPVGen.GenFragment fragment
 
