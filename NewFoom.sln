@@ -70,13 +70,13 @@ Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "FSharp.Vulkan", "tools\FSha
 EndProject
 Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "FSharp.Window", "src\Core\FSharp.Window\FSharp.Window.fsproj", "{673EE958-6B80-42B5-87F1-D713F19EA294}"
 EndProject
-Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "FSharp.SpirV", "tools\FSharp.SpirV\FSharp.SpirV.fsproj", "{9405FDC4-1CFC-4768-BE5B-A735743C424A}"
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "FSharp.Spirv", "tools\FSharp.SpirV\FSharp.Spirv.fsproj", "{9405FDC4-1CFC-4768-BE5B-A735743C424A}"
 EndProject
-Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "FSharp.SpirV.Tests", "tools\FSharp.SpirV.Tests\FSharp.SpirV.Tests.fsproj", "{45C86377-78DE-4FB1-B787-E3702008B55A}"
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "FSharp.Spirv.Tests", "tools\FSharp.SpirV.Tests\FSharp.Spirv.Tests.fsproj", "{45C86377-78DE-4FB1-B787-E3702008B55A}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FSharp.SpirV.Quotations", "tools\FSharp.SpirV.Quotations\FSharp.SpirV.Quotations.fsproj", "{3419FE3B-28C3-4057-A58A-D61B2B9417E0}"
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "FSharp.Spirv.Quotations", "tools\FSharp.SpirV.Quotations\FSharp.Spirv.Quotations.fsproj", "{3419FE3B-28C3-4057-A58A-D61B2B9417E0}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FSharp.SpirV.Quotations.Tests", "tools\FSharp.SpirV.Quotations.Tests\FSharp.SpirV.Quotations.Tests.fsproj", "{B49EAF57-5940-480D-A808-E67E4B9E6CAF}"
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "FSharp.Spirv.Quotations.Tests", "tools\FSharp.SpirV.Quotations.Tests\FSharp.Spirv.Quotations.Tests.fsproj", "{B49EAF57-5940-480D-A808-E67E4B9E6CAF}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

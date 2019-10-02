@@ -1,4 +1,4 @@
-﻿namespace FSharp.SpirV
+﻿namespace FSharp.Spirv
 
 open System
 open Specification
@@ -24,7 +24,7 @@ type Literal = Word list
 type Literals = Word list
 
 [<NoEquality;NoComparison>]
-type SPVInstruction =
+type SpirvInstruction =
 
     // Miscellaneous Instructions
 
@@ -215,13 +215,13 @@ type SPVInstruction =
     | UnhandledOp of Op * Word list
 
 [<NoEquality;NoComparison>]
-type SPVModule = 
+type SpirvModule = 
     internal {
         magicNumber: Word
         versionNumber: Word
         genMagicNumber: Word
         bound: Word
-        instrs: SPVInstruction list
+        instrs: SpirvInstruction list
     }
 
     static member Create (?version: Word, ?bound: Word, ?instrs) =

@@ -1,8 +1,8 @@
-﻿module internal FSharp.SpirV.Pickle
+﻿module internal FSharp.Spirv.Pickle
 
 open System
 open System.IO
-open FSharp.SpirV.Specification
+open Specification
 
 [<RequireQualifiedAccess>]
 module LittleEndian =
@@ -290,13 +290,13 @@ let Literal: SPVPickle<Literal> = Ids
 
 let Literals: SPVPickle<Literals> = Ids
 
-let p0 (instr: SPVInstruction) : SPVPickle<SPVInstruction> =
+let p0 (instr: SpirvInstruction) : SPVPickle<SpirvInstruction> =
     {
         read = (fun _ -> instr)
         write = (fun _ _ -> ())
     }
 
-let p1 (f: ('Arg1 -> SPVInstruction)) (v1: SPVPickle<'Arg1>) (g: SPVInstruction -> 'Arg1) : SPVPickle<SPVInstruction> =
+let p1 (f: ('Arg1 -> SpirvInstruction)) (v1: SPVPickle<'Arg1>) (g: SpirvInstruction -> 'Arg1) : SPVPickle<SpirvInstruction> =
     {
         read = (fun stream ->
             f (v1.read stream)
@@ -307,7 +307,7 @@ let p1 (f: ('Arg1 -> SPVInstruction)) (v1: SPVPickle<'Arg1>) (g: SPVInstruction 
         )
     }
 
-let p2 (f: ('Arg1 * 'Arg2 -> SPVInstruction)) (v1: SPVPickle<'Arg1>) (v2: SPVPickle<'Arg2>) (g: SPVInstruction -> 'Arg1 * 'Arg2) : SPVPickle<SPVInstruction> =
+let p2 (f: ('Arg1 * 'Arg2 -> SpirvInstruction)) (v1: SPVPickle<'Arg1>) (v2: SPVPickle<'Arg2>) (g: SpirvInstruction -> 'Arg1 * 'Arg2) : SPVPickle<SpirvInstruction> =
     {
         read = (fun stream ->
             f (v1.read stream, v2.read stream)
@@ -319,7 +319,7 @@ let p2 (f: ('Arg1 * 'Arg2 -> SPVInstruction)) (v1: SPVPickle<'Arg1>) (v2: SPVPic
         )
     }
 
-let p3 (f: ('Arg1 * 'Arg2 * 'Arg3 -> SPVInstruction)) (v1: SPVPickle<'Arg1>) (v2: SPVPickle<'Arg2>) (v3: SPVPickle<'Arg3>) (g: SPVInstruction -> 'Arg1 * 'Arg2 * 'Arg3) : SPVPickle<SPVInstruction> =
+let p3 (f: ('Arg1 * 'Arg2 * 'Arg3 -> SpirvInstruction)) (v1: SPVPickle<'Arg1>) (v2: SPVPickle<'Arg2>) (v3: SPVPickle<'Arg3>) (g: SpirvInstruction -> 'Arg1 * 'Arg2 * 'Arg3) : SPVPickle<SpirvInstruction> =
     {
         read = (fun stream ->
             f (v1.read stream, v2.read stream, v3.read stream)
@@ -332,7 +332,7 @@ let p3 (f: ('Arg1 * 'Arg2 * 'Arg3 -> SPVInstruction)) (v1: SPVPickle<'Arg1>) (v2
         )
     }
 
-let p4 (f: ('Arg1 * 'Arg2 * 'Arg3 * 'Arg4 -> SPVInstruction)) (v1: SPVPickle<'Arg1>) (v2: SPVPickle<'Arg2>) (v3: SPVPickle<'Arg3>) (v4: SPVPickle<'Arg4>) (g: SPVInstruction -> 'Arg1 * 'Arg2 * 'Arg3 * 'Arg4) : SPVPickle<SPVInstruction> =
+let p4 (f: ('Arg1 * 'Arg2 * 'Arg3 * 'Arg4 -> SpirvInstruction)) (v1: SPVPickle<'Arg1>) (v2: SPVPickle<'Arg2>) (v3: SPVPickle<'Arg3>) (v4: SPVPickle<'Arg4>) (g: SpirvInstruction -> 'Arg1 * 'Arg2 * 'Arg3 * 'Arg4) : SPVPickle<SpirvInstruction> =
     {
         read = (fun stream ->
             f (v1.read stream, v2.read stream, v3.read stream, v4.read stream)
@@ -346,7 +346,7 @@ let p4 (f: ('Arg1 * 'Arg2 * 'Arg3 * 'Arg4 -> SPVInstruction)) (v1: SPVPickle<'Ar
         )
     }
 
-let p5 (f: ('Arg1 * 'Arg2 * 'Arg3 * 'Arg4 * 'Arg5 -> SPVInstruction)) (v1: SPVPickle<'Arg1>) (v2: SPVPickle<'Arg2>) (v3: SPVPickle<'Arg3>) (v4: SPVPickle<'Arg4>) (v5: SPVPickle<'Arg5>) (g: SPVInstruction -> 'Arg1 * 'Arg2 * 'Arg3 * 'Arg4 * 'Arg5) : SPVPickle<SPVInstruction> =
+let p5 (f: ('Arg1 * 'Arg2 * 'Arg3 * 'Arg4 * 'Arg5 -> SpirvInstruction)) (v1: SPVPickle<'Arg1>) (v2: SPVPickle<'Arg2>) (v3: SPVPickle<'Arg3>) (v4: SPVPickle<'Arg4>) (v5: SPVPickle<'Arg5>) (g: SpirvInstruction -> 'Arg1 * 'Arg2 * 'Arg3 * 'Arg4 * 'Arg5) : SPVPickle<SpirvInstruction> =
     {
         read = (fun stream ->
             f (v1.read stream, v2.read stream, v3.read stream, v4.read stream, v5.read stream)
@@ -362,7 +362,7 @@ let p5 (f: ('Arg1 * 'Arg2 * 'Arg3 * 'Arg4 * 'Arg5 -> SPVInstruction)) (v1: SPVPi
         )
     }
 
-let p9 (f: ('Arg1 * 'Arg2 * 'Arg3 * 'Arg4 * 'Arg5 * 'Arg6 * 'Arg7 * 'Arg8 * 'Arg9 -> SPVInstruction)) (v1: SPVPickle<'Arg1>) (v2: SPVPickle<'Arg2>) (v3: SPVPickle<'Arg3>) (v4: SPVPickle<'Arg4>) (v5: SPVPickle<'Arg5>) (v6: SPVPickle<'Arg6>) (v7: SPVPickle<'Arg7>) (v8: SPVPickle<'Arg8>) (v9: SPVPickle<'Arg9>) (g: SPVInstruction -> 'Arg1 * 'Arg2 * 'Arg3 * 'Arg4 * 'Arg5 * 'Arg6 * 'Arg7 * 'Arg8 * 'Arg9) : SPVPickle<SPVInstruction> =
+let p9 (f: ('Arg1 * 'Arg2 * 'Arg3 * 'Arg4 * 'Arg5 * 'Arg6 * 'Arg7 * 'Arg8 * 'Arg9 -> SpirvInstruction)) (v1: SPVPickle<'Arg1>) (v2: SPVPickle<'Arg2>) (v3: SPVPickle<'Arg3>) (v4: SPVPickle<'Arg4>) (v5: SPVPickle<'Arg5>) (v6: SPVPickle<'Arg6>) (v7: SPVPickle<'Arg7>) (v8: SPVPickle<'Arg8>) (v9: SPVPickle<'Arg9>) (g: SpirvInstruction -> 'Arg1 * 'Arg2 * 'Arg3 * 'Arg4 * 'Arg5 * 'Arg6 * 'Arg7 * 'Arg8 * 'Arg9) : SPVPickle<SpirvInstruction> =
     {
         read = (fun stream ->
             f (v1.read stream, v2.read stream, v3.read stream, v4.read stream, v5.read stream, v6.read stream, v7.read stream, v8.read stream, v9.read stream)
@@ -492,14 +492,14 @@ module Instructions =
         let name = System.Enum.GetName (typeof<Op>, op)
         match InstructionsType.GetProperty (name, Reflection.BindingFlags.NonPublic ||| Reflection.BindingFlags.Static) with
         | null -> None
-        | prop -> Some (prop.GetValue null :?> SPVPickle<SPVInstruction>)
+        | prop -> Some (prop.GetValue null :?> SPVPickle<SpirvInstruction>)
 
     let getPickle (op: Op) =
         match tryGetPickle op with
         | Some x -> x
         | _ -> failwith "Unable to find pickle."
 
-    let getOp (instr: SPVInstruction) =
+    let getOp (instr: SpirvInstruction) =
         let ty = instr.GetType()
         let name = ty.Name
         match System.Enum.TryParse<Op> name with

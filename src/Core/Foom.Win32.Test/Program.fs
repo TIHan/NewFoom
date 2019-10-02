@@ -3,19 +3,15 @@ open Foom.Win32
 open Foom.Vulkan
 open FSharp.Vulkan.Interop
 open FSharp.Window
-open FSharp.SpirV
-open FSharp.SpirV.Quotations
+open FSharp.Spirv
+open FSharp.Spirv.Quotations
 open System.Numerics
     
 let fragment = 
-    <@ 
-        fun (fragColor: Vector3) ->
-            let doot = fragColor
-            {| outColor = Vector4(doot, 1.f) |}
-    @>
+    <@ fun fragColor -> {| outColor = Vector4(fragColor, 1.f) |} @>
 
 
-let spvFragment = SPVGen.GenFragment fragment
+let spvFragment = SpirV.GenModule fragment
 
 type EmptyWindowEvents (instance: VulkanInstance) =
 
@@ -65,7 +61,7 @@ let main argv =
     let vertexBytes = System.IO.File.ReadAllBytes("triangle_vertex.spv")
     let fragmentBytes =
         use ms = new System.IO.MemoryStream 100
-        SpirV.serialize ms spvFragment
+        SpirvModule.Serialize (ms, spvFragment)
         let bytes = Array.zeroCreate (int ms.Length)
         ms.Position <- 0L
         ms.Read(bytes, 0, bytes.Length) |> ignore

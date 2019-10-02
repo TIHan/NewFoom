@@ -19,7 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\FSharp.SpirV.Quotations\FSharp.SpirV.Quotations.fsproj" />
+    <ProjectReference Include="..\FSharp.SpirV.Quotations\FSharp.Spirv.Quotations.fsproj" />
   </ItemGroup>
 
 </Project>

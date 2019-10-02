@@ -8,7 +8,7 @@
     <Compile Include="Specification.fs" />
     <Compile Include="Types.fs" />
     <Compile Include="Pickle.fs" />
-    <Compile Include="SpirV.fs" />
+    <Compile Include="Spirv.fs" />
   </ItemGroup>
 
 </Project>

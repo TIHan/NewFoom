@@ -1,4 +1,4 @@
-﻿module FSharp.SpirV.Specification
+﻿module FSharp.Spirv.Specification
 
 // https://www.khronos.org/registry/spir-v/#spec
 // https://www.khronos.org/registry/spir-v/specs/unified1/SPIRV.pdf

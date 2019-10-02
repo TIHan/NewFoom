@@ -1,5 +1,5 @@
 ﻿[<RequireQualifiedAccess>]
-module FSharp.SpirV.Quotations.SPVGen
+module FSharp.Spirv.Quotations.Spirv
 
 open System
 open System.Numerics
@@ -8,8 +8,8 @@ open FSharp.NativeInterop
 open FSharp.Quotations
 open FSharp.Quotations.Patterns
 open FSharp.Quotations.DerivedPatterns
-open FSharp.SpirV
-open FSharp.SpirV.Specification
+open FSharp.Spirv
+open FSharp.Spirv.Specification
 
 [<NoEquality;NoComparison>]
 type cenv =
@@ -18,26 +18,26 @@ type cenv =
 
         // Types, Variables, Constants
 
-        types: Dictionary<Result_id, SPVInstruction>
+        types: Dictionary<Result_id, SpirvInstruction>
         typesByType: Dictionary<Type, Result_id>
-        typeFunctions: Dictionary<id list, Result_id * SPVInstruction list>
-        typePointers: Dictionary<Result_id, SPVInstruction>
+        typeFunctions: Dictionary<id list, Result_id * SpirvInstruction list>
+        typePointers: Dictionary<Result_id, SpirvInstruction>
         typePointersByResultType: Dictionary<StorageClass * id, Result_id>
-        globalVariables: Dictionary<Var, Result_id * SPVInstruction>
-        constants: Dictionary<Literal, Result_id * SPVInstruction>
-        constantComposites: Dictionary<id list, Result_id * SPVInstruction>
+        globalVariables: Dictionary<Var, Result_id * SpirvInstruction>
+        constants: Dictionary<Literal, Result_id * SpirvInstruction>
+        constantComposites: Dictionary<id list, Result_id * SpirvInstruction>
 
         loadPointers: Dictionary<id, id>
 
         // Functions
 
-        functions: Dictionary<string, Result_id * SPVInstruction list>
-        mainInitInstructions: ResizeArray<SPVInstruction>
+        functions: Dictionary<string, Result_id * SpirvInstruction list>
+        mainInitInstructions: ResizeArray<SpirvInstruction>
 
         // Local
 
-        localVariables: Dictionary<Var, Result_id * SPVInstruction>
-        currentInstructions: ResizeArray<SPVInstruction>
+        localVariables: Dictionary<Var, Result_id * SpirvInstruction>
+        currentInstructions: ResizeArray<SpirvInstruction>
     }
 
     static member Default =
@@ -461,7 +461,7 @@ and GenMainLambda cenv env expr =
 
     []
 
-let GenFragment expr =
+let GenModule expr =
     let cenv = cenv.Default
 
     let entryPoint = nextResultId cenv
@@ -538,4 +538,4 @@ let GenFragment expr =
         @
         (cenv.currentInstructions |> List.ofSeq)
 
-    SPVModule.Create(instrs = instrs)
+    SpirvModule.Create(instrs = instrs)

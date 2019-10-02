@@ -1,11 +1,11 @@
-﻿namespace FSharp.SpirV
+﻿[<AutoOpen>]
+module FSharp.Spirv.Extensions
 
 open Pickle
 
-[<RequireQualifiedAccess>]
-module SpirV =
+type SpirvModule with
 
-    let deserialize stream =
+    static member Deserialize stream =
         let stream =
             {
                 stream = stream
@@ -15,7 +15,7 @@ module SpirV =
             }
         Module.read stream
 
-    let serialize stream spvModule =
+    static member Serialize (stream, spvModule) =
         let stream =
             {
                 stream = stream

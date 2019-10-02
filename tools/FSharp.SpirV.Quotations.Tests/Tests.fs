@@ -1,9 +1,9 @@
 module Tests
 
 open System.Numerics
-open FSharp.SpirV
-open FSharp.SpirV.Specification
-open FSharp.SpirV.Quotations
+open FSharp.Spirv
+open FSharp.Spirv.Specification
+open FSharp.Spirv.Quotations
 open Xunit
 
 [<Fact>]
@@ -48,7 +48,7 @@ let ``Compiler Vertex`` () =
                 |}
         @>
 
-    let spv = SPVGen.GenFragment vertex
+    let spv = Spirv.GenModule vertex
     ()
 
 [<Fact>]
@@ -60,5 +60,5 @@ let ``Compiler Fragment`` () =
             {| outColor = Vector4(doot, 1.f) |}
         @>
 
-    let spv = SPVGen.GenFragment fragment
+    let spv = Spirv.GenModule fragment
     ()

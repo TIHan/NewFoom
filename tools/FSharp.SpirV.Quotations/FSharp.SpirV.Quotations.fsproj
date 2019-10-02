@@ -5,11 +5,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="SPVGen.fs" />
+    <Compile Include="Spirv.fs" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\FSharp.SpirV\FSharp.SpirV.fsproj" />
+    <ProjectReference Include="..\FSharp.SpirV\FSharp.Spirv.fsproj" />
   </ItemGroup>
 
 </Project>

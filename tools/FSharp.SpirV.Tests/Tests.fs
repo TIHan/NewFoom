@@ -3,35 +3,35 @@ module Tests
 open System
 open System.IO
 open Xunit
-open FSharp.SpirV
+open FSharp.Spirv
 
 [<Fact>]
 let ``Deserialize triangle_vertex`` () =
     use file = File.OpenRead("triangle_vertex.spv")
-    let spv = SpirV.deserialize file
+    let spv = SpirvModule.Deserialize file
     ()
 
 [<Fact>]
 let ``Deserialize triangle_fragment`` () =
     use file = File.OpenRead("triangle_fragment.spv")
-    let spv = SpirV.deserialize file
+    let spv = SpirvModule.Deserialize file
     ()
 
 [<Fact>]
 let ``Serialize triangle_vertex`` () =
     use file = File.OpenRead("triangle_vertex.spv")
-    let spv = SpirV.deserialize file
+    let spv = SpirvModule.Deserialize file
 
     let tmp = Path.GetTempFileName()
     try
         use file2 = File.Open(tmp, FileMode.OpenOrCreate)
-        SpirV.serialize file2 spv
+        SpirvModule.Serialize (file2, spv)
 
         Assert.Equal(file.Length, file2.Length)
 
         file2.Position <- 0L
 
-        let spv2 = SpirV.deserialize file2
+        let spv2 = SpirvModule.Deserialize file2
         ()
     finally
         try File.Delete tmp with | _ -> () 
@@ -39,16 +39,16 @@ let ``Serialize triangle_vertex`` () =
 [<Fact>]
 let ``Serialize triangle_fragment`` () =
     use file = File.OpenRead("triangle_fragment.spv")
-    let spv = SpirV.deserialize file
+    let spv = SpirvModule.Deserialize file
 
     let tmp = Path.GetTempFileName()
     try
         use file2 = File.Open(tmp, FileMode.OpenOrCreate)
-        SpirV.serialize file2 spv
+        SpirvModule.Serialize (file2, spv)
 
         file2.Position <- 0L
 
-        let spv2 = SpirV.deserialize file2
+        let spv2 = SpirvModule.Deserialize file2
         ()
     finally
         try File.Delete tmp with | _ -> () 
