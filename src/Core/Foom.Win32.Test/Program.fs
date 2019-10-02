@@ -4,14 +4,13 @@ open Foom.Vulkan
 open FSharp.Vulkan.Interop
 open FSharp.Window
 open FSharp.Spirv
+open FSharp.Spirv.Specification
 open FSharp.Spirv.Quotations
 open System.Numerics
     
-let fragment = 
-    <@ fun fragColor -> {| outColor = Vector4(fragColor, 1.f) |} @>
-
-
-let spvFragment = SpirV.GenModule fragment
+let fragment = <@ fun fragColor -> {| outColor = Vector4(fragColor, 1.f) |} @>
+let spvFragmentInfo = SpirvGenInfo.Create(AddressingModel.Logical, MemoryModel.GLSL450, ExecutionModel.Fragment, [Capability.Shader], ["GLSL.std.450"], (ExecutionMode.OriginUpperLeft, []))
+let spvFragment = Spirv.GenModule spvFragmentInfo fragment
 
 type EmptyWindowEvents (instance: VulkanInstance) =
 

@@ -461,7 +461,7 @@ and GenMainLambda cenv env expr =
 
     []
 
-let GenModule expr =
+let GenModule (info: SpirvGenInfo) expr =
     let cenv = cenv.Default
 
     let entryPoint = nextResultId cenv
@@ -526,13 +526,19 @@ let GenModule expr =
         |> List.ofSeq
 
     let instrs = 
-        [
-            OpCapability Capability.Shader
-            OpExtInstImport (nextResultId cenv, "GLSL.std.450")
-            OpMemoryModel (AddressingModel.Logical, MemoryModel.GLSL450)
-            OpEntryPoint (ExecutionModel.Fragment, entryPoint, "main", interfaces)
-            OpExecutionMode (entryPoint, ExecutionMode.OriginUpperLeft, [])
-        ]
+        (info.Capabilities
+         |> List.map OpCapability)
+        @
+        (info.ExtendedInstructionSets
+         |> List.map (fun x -> OpExtInstImport (nextResultId cenv, x)))
+        @
+        [OpMemoryModel (info.AddressingModel, info.MemoryModel)]
+        @
+        [OpEntryPoint (info.ExecutionModel, entryPoint, "main", interfaces)]
+        @
+        (info.ExecutionMode
+         |> Option.map (fun (executionMode, literalNumber) -> OpExecutionMode (entryPoint, executionMode, literalNumber))
+         |> Option.toList)
         @
         annotations @ types @ variables @ constants @ constantComposites
         @

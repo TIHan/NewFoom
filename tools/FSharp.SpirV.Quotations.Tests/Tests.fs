@@ -48,7 +48,8 @@ let ``Compiler Vertex`` () =
                 |}
         @>
 
-    let spv = Spirv.GenModule vertex
+    let info = SpirvGenInfo.Create(AddressingModel.Logical, MemoryModel.GLSL450, ExecutionModel.Vertex, [Capability.Shader], ["GLSL.std.450"])
+    let spv = Spirv.GenModule info vertex
     ()
 
 [<Fact>]
@@ -60,5 +61,6 @@ let ``Compiler Fragment`` () =
             {| outColor = Vector4(doot, 1.f) |}
         @>
 
-    let spv = Spirv.GenModule fragment
+    let info = SpirvGenInfo.Create(AddressingModel.Logical, MemoryModel.GLSL450, ExecutionModel.Fragment, [Capability.Shader], ["GLSL.std.450"], (ExecutionMode.OriginUpperLeft, []))
+    let spv = Spirv.GenModule info fragment
     ()
