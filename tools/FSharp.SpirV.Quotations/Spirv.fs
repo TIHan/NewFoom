@@ -23,11 +23,13 @@ type cenv =
         typeFunctions: Dictionary<id list, Result_id * SpirvInstruction list>
         typePointers: Dictionary<Result_id, SpirvInstruction>
         typePointersByResultType: Dictionary<StorageClass * id, Result_id>
-        globalVariables: Dictionary<Var, Result_id * SpirvInstruction>
+        globalVariables: Dictionary<Var, Result_id * SpirvInstruction * BuiltIn option>
         constants: Dictionary<Literal, Result_id * SpirvInstruction>
         constantComposites: Dictionary<id list, Result_id * SpirvInstruction>
 
         loadPointers: Dictionary<id, id>
+
+
 
         // Functions
 
@@ -259,11 +261,22 @@ let emitLocalVariable cenv (var: Var) =
 
 let emitGlobalVariableAux cenv storageClass (var: Var) =
     match cenv.globalVariables.TryGetValue var with
-    | true, (resultId, _) -> resultId
+    | true, (resultId, _, _) -> resultId
     | _ ->
+        let builtInOpt =
+            if var.Name.StartsWith("fs_") then
+                let mutable builtIn = Unchecked.defaultof<BuiltIn>
+                match storageClass, BuiltIn.TryParse(var.Name.Replace("fs_", ""), &builtIn) with
+                | StorageClass.Input, true -> Some builtIn
+                | StorageClass.Output, true -> Some builtIn
+                | _, true -> failwithf "BuiltIn not valid with StorageClass: %A" storageClass
+                | _ -> None
+            else
+                None
+
         let resultType = emitType cenv var.Type |> emitPointer cenv storageClass
         let resultId = nextResultId cenv
-        cenv.globalVariables.[var] <- (resultId, OpVariable(resultType, resultId, storageClass, None))
+        cenv.globalVariables.[var] <- (resultId, OpVariable(resultType, resultId, storageClass, None), builtInOpt)
         resultId
 
 let emitGlobalVariable cenv var =
@@ -293,7 +306,7 @@ let rec GenExpr cenv (env: env) expr =
             | true, (resultId, _) -> resultId, StorageClass.Function
             | _ ->
                 match cenv.globalVariables.TryGetValue var with
-                | true, (resultId, OpVariable(_, _, storageClass, _)) -> resultId, storageClass
+                | true, (resultId, OpVariable(_, _, storageClass, _), _) -> resultId, storageClass
                 | _ ->  failwithf "Unable to find variable: %A" var
 
         let resultType = emitType cenv var.Type
@@ -301,6 +314,10 @@ let rec GenExpr cenv (env: env) expr =
         addInstructions cenv [OpLoad(resultType, resultId, pointer, None)]
         cenv.loadPointers.[resultId] <- emitPointer cenv storageClass resultType
         [resultId]
+
+    | Sequential(expr1, expr2) when env.inMain ->
+        GenExpr cenv env expr1 |> ignore
+        GenExpr cenv env expr2
 
     | Call (None, methInfo, args) when env.inMain ->
         GenCall cenv env methInfo args
@@ -473,17 +490,25 @@ let GenModule (info: SpirvGenInfo) expr =
         let mutable output = 0u
         let annoations = ResizeArray ()
         cenv.globalVariables.Values
-        |> Seq.iter (fun (_, instr) ->
-            match instr with
-            | OpVariable (_, resultId, StorageClass.Input, _) ->
-                OpDecorate (resultId, Decoration.Location, [input])
+        |> Seq.iter (fun (resultId, instr, builtInOpt) ->
+            match builtInOpt with
+            | Some builtIn ->
+                OpDecorate (resultId, Decoration.BuiltIn, [uint32 builtIn])
                 |> annoations.Add
-                input <- input + 1u
+            | _ -> ()
 
-            | OpVariable (_, resultId, StorageClass.Output, _) ->
-                OpDecorate (resultId, Decoration.Location, [output])
-                |> annoations.Add
-                output <- output + 1u
+            match instr with
+            | OpVariable (_, _, StorageClass.Input, _) ->
+                if builtInOpt.IsNone then
+                    OpDecorate (resultId, Decoration.Location, [input])
+                    |> annoations.Add
+                    input <- input + 1u
+
+            | OpVariable (_, _, StorageClass.Output, _) ->
+                if builtInOpt.IsNone then
+                    OpDecorate (resultId, Decoration.Location, [output])
+                    |> annoations.Add
+                    output <- output + 1u
 
             | OpVariable (_, _, StorageClass.Private, _) -> ()
 
@@ -507,7 +532,7 @@ let GenModule (info: SpirvGenInfo) expr =
 
     let variables =
         cenv.globalVariables.Values
-        |> Seq.map (fun (_, instr) -> instr)
+        |> Seq.map (fun (_, instr, _) -> instr)
         |> List.ofSeq
 
     let constants =
@@ -522,7 +547,7 @@ let GenModule (info: SpirvGenInfo) expr =
 
     let interfaces =
         cenv.globalVariables.Values
-        |> Seq.map (fun (resultId, _) -> resultId)
+        |> Seq.map (fun (resultId, _, _) -> resultId)
         |> List.ofSeq
 
     let instrs = 
