@@ -23,10 +23,10 @@ let ``Compiler Vertex`` () =
                     Vector3 (0.f, 0.f, 1.f)
                 |]
 
-            fun fs_VertexIndex ->              
+            fun (gl_VertexIndex: int) ->              
                 {| 
-                    fs_Position = Vector4(positions.[fs_VertexIndex], 0.f, 1.f)
-                    fragColor = colors.[fs_VertexIndex]
+                    fs_Position = Vector4(positions.[gl_VertexIndex], 0.f, 1.f)
+                    fragColor = colors.[gl_VertexIndex]
                 |}
         @>
 

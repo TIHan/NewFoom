@@ -9,26 +9,28 @@ open FSharp.Spirv.Quotations
 open System.Numerics
 
 let vertex =
-    <@
-        let positions =
-            [|
-                Vector2 (0.f, -0.5f)
-                Vector2 (0.5f, 0.5f)
-                Vector2 (-0.5f, 0.5f)
-            |]
-        let colors =
-            [|
-                Vector3 (1.f, 0.f, 0.f)
-                Vector3 (0.f, 1.f, 0.f)
-                Vector3 (0.f, 0.f, 1.f)
-            |]
+        <@
+            let positions =
+                [|
+                    Vector2 (0.f, -0.5f)
+                    Vector2 (0.5f, 0.5f)
+                    Vector2 (-0.5f, 0.5f)
+                |]
+            let colors =
+                [|
+                    Vector3 (1.f, 0.f, 0.f)
+                    Vector3 (0.f, 1.f, 0.f)
+                    Vector3 (0.f, 0.f, 1.f)
+                |]
 
-        fun fs_VertexIndex ->              
-            {| 
-                fs_Position = Vector4(positions.[fs_VertexIndex], 0.f, 1.f)
-                fragColor = colors.[fs_VertexIndex]
-            |}
-    @>
+            fun (gl_VertexIndex: int) ->              
+                {| 
+                    gl_Position = Vector4(positions.[gl_VertexIndex], 0.f, 1.f)
+                    fragColor = colors.[gl_VertexIndex]
+                |}
+        @>
+
+
 let spvVertexInfo = SpirvGenInfo.Create(AddressingModel.Logical, MemoryModel.GLSL450, ExecutionModel.Vertex, [Capability.Shader], ["GLSL.std.450"])
 let spvVertex = Spirv.GenModule spvVertexInfo vertex
     

@@ -23,13 +23,10 @@ type cenv =
         typeFunctions: Dictionary<id list, Result_id * SpirvInstruction list>
         typePointers: Dictionary<Result_id, SpirvInstruction>
         typePointersByResultType: Dictionary<StorageClass * id, Result_id>
-        globalVariables: Dictionary<Var, Result_id * SpirvInstruction * BuiltIn option>
+        globalVariables: Dictionary<Result_id, SpirvInstruction * BuiltIn option>
+        globalVariablesByVar: Dictionary<Var, Result_id>
         constants: Dictionary<Literal, Result_id * SpirvInstruction>
         constantComposites: Dictionary<id list, Result_id * SpirvInstruction>
-
-        loadPointers: Dictionary<id, id>
-
-
 
         // Functions
 
@@ -38,8 +35,10 @@ type cenv =
 
         // Local
 
-        localVariables: Dictionary<Var, Result_id * SpirvInstruction>
+        localVariables: Dictionary<Result_id, SpirvInstruction>
+        localVariablesByVar: Dictionary<Var, Result_id>
         currentInstructions: ResizeArray<SpirvInstruction>
+        locals: Dictionary<Result_id, SpirvInstruction>
     }
 
     static member Default =
@@ -51,13 +50,15 @@ type cenv =
             typePointers = Dictionary ()
             typePointersByResultType = Dictionary ()
             globalVariables = Dictionary ()
+            globalVariablesByVar = Dictionary ()
             constants = Dictionary ()
             constantComposites = Dictionary ()
-            loadPointers = Dictionary ()
             functions = Dictionary ()
             mainInitInstructions = ResizeArray 100
             localVariables = Dictionary ()
+            localVariablesByVar = Dictionary ()
             currentInstructions = ResizeArray 100
+            locals = Dictionary ()
         }
 
 [<NoEquality;NoComparison>]
@@ -92,7 +93,7 @@ let getTypeByTypeInstruction cenv ty : id =
     cenv.typesByType.[ty]
 
 let getTypePointerInstruction cenv id =
-    cenv.typePointers.[id]
+    cenv.typePointers.[id]            
 
 let isCompositeType ty =
     match ty with
@@ -135,51 +136,6 @@ let emitTypeSingle cenv =
 let emitTypeInt cenv =
     emitTypeAux cenv typeof<int> (fun resultId -> OpTypeInt(resultId, 32u, [1u]))
 
-let emitTypeVector2 cenv =
-    emitTypeAux cenv typeof<Vector2> (fun resultId -> OpTypeVector(resultId, emitTypeSingle cenv, [2u]))
-
-let emitTypeVector3 cenv =
-    emitTypeAux cenv typeof<Vector3> (fun resultId -> OpTypeVector(resultId, emitTypeSingle cenv, [3u]))
-
-let emitTypeVector4 cenv =
-    emitTypeAux cenv typeof<Vector4> (fun resultId -> OpTypeVector(resultId, emitTypeSingle cenv, [4u]))
-
-let emitType cenv ty =
-    match ty with
-    | _ when ty = typeof<unit> -> emitTypeUnit cenv
-    | _ when ty = typeof<single> -> emitTypeSingle cenv
-    | _ when ty = typeof<int> -> emitTypeInt cenv
-    | _ when ty = typeof<Vector2> -> emitTypeVector2 cenv
-    | _ when ty = typeof<Vector3> -> emitTypeVector3 cenv
-    | _ when ty = typeof<Vector4> -> emitTypeVector4 cenv
-    | _ ->
-        emitTypeAux cenv ty (fun _ -> failwithf "Type not supported: %A" ty)
-
-let emitArrayType cenv elementTy length =
-    match elementTy with
-    | _ when elementTy = typeof<unit> -> failwith "Element type, 'unit', is not valid."
-    | _ ->
-        let sizeOfType = System.Runtime.InteropServices.Marshal.SizeOf(elementTy)
-        let elementType = emitType cenv elementTy
-        let arrayTy = elementTy.MakeArrayType()
-        emitTypeAux cenv arrayTy (fun resultId -> OpTypeArray(resultId, elementType, uint32 (sizeOfType * length)))
-
-let emitTypeFunction cenv paramTys retTy =
-    let paramTyIds =
-        paramTys
-        |> List.filter (fun x -> x <> typeof<unit>)
-        |> List.map (emitType cenv)
-    let retTyId = emitType cenv retTy
-
-    let tys = paramTyIds @ [retTyId]
-
-    match cenv.typeFunctions.TryGetValue tys with
-    | true, (resultId, _) -> resultId
-    | _ ->
-        let resultId = nextResultId cenv
-        cenv.typeFunctions.[tys] <- (resultId, [OpTypeFunction(resultId, retTyId, paramTyIds)])
-        resultId
-
 let emitPointer cenv storageClass typeId =    
     match cenv.typePointersByResultType.TryGetValue ((storageClass, typeId)) with
     | true, resultId -> resultId
@@ -200,6 +156,9 @@ let emitConstantAux cenv resultType literal =
 let emitConstantInt cenv (n: int) =
     emitConstantAux cenv (emitTypeInt cenv) [BitConverter.ToUInt32(ReadOnlySpan(&&n |> NativePtr.toVoidPtr, 4))]
 
+let emitConstantUInt32 cenv (n: uint32) =
+    emitConstantAux cenv (emitTypeInt cenv) [n]
+
 let emitConstantSingle cenv (n: single) =
     emitConstantAux cenv (emitTypeSingle cenv) [BitConverter.ToUInt32(ReadOnlySpan(&&n |> NativePtr.toVoidPtr, 4))]
 
@@ -211,6 +170,18 @@ let emitConstantComposite cenv resultType constituents =
         cenv.constantComposites.[constituents] <- (resultId, OpConstantComposite(resultType, resultId, constituents))
         resultId
 
+let emitTypeVector2 cenv =
+    let componentType = emitTypeSingle cenv
+    emitTypeAux cenv typeof<Vector2> (fun resultId -> OpTypeVector(resultId, componentType, [2u]))
+
+let emitTypeVector3 cenv =
+    let componentType = emitTypeSingle cenv
+    emitTypeAux cenv typeof<Vector3> (fun resultId -> OpTypeVector(resultId, componentType, [3u]))
+
+let emitTypeVector4 cenv =
+    let componentType = emitTypeSingle cenv
+    emitTypeAux cenv typeof<Vector4> (fun resultId -> OpTypeVector(resultId, componentType, [4u]))
+
 let emitConstantVector2 cenv constituents =
     emitConstantComposite cenv (emitTypeVector2 cenv) constituents
 
@@ -219,6 +190,42 @@ let emitConstantVector3 cenv constituents =
 
 let emitConstantVector4 cenv constituents =
     emitConstantComposite cenv (emitTypeVector4 cenv) constituents
+
+let emitType cenv ty =
+    match ty with
+    | _ when ty = typeof<unit> -> emitTypeUnit cenv
+    | _ when ty = typeof<single> -> emitTypeSingle cenv
+    | _ when ty = typeof<int> -> emitTypeInt cenv
+    | _ when ty = typeof<Vector2> -> emitTypeVector2 cenv
+    | _ when ty = typeof<Vector3> -> emitTypeVector3 cenv
+    | _ when ty = typeof<Vector4> -> emitTypeVector4 cenv
+    | _ ->
+        emitTypeAux cenv ty (fun _ -> failwithf "Type not supported: %A" ty)
+
+let emitArrayType cenv elementTy length =
+    match elementTy with
+    | _ when elementTy = typeof<unit> -> failwith "Element type, 'unit', is not valid."
+    | _ ->
+        let elementType = emitType cenv elementTy
+        let arrayTy = elementTy.MakeArrayType()
+        let lengthId = uint32 length |> emitConstantUInt32 cenv
+        emitTypeAux cenv arrayTy (fun resultId -> OpTypeArray(resultId, elementType, lengthId))
+
+let emitTypeFunction cenv paramTys retTy =
+    let paramTyIds =
+        paramTys
+        |> List.filter (fun x -> x <> typeof<unit>)
+        |> List.map (emitType cenv)
+    let retTyId = emitType cenv retTy
+
+    let tys = paramTyIds @ [retTyId]
+
+    match cenv.typeFunctions.TryGetValue tys with
+    | true, (resultId, _) -> resultId
+    | _ ->
+        let resultId = nextResultId cenv
+        cenv.typeFunctions.[tys] <- (resultId, [OpTypeFunction(resultId, retTyId, paramTyIds)])
+        resultId
 
 let rec isConstant expr =
     match expr with
@@ -256,17 +263,18 @@ let emitConstants cenv (exprs: Expr list) =
 let emitLocalVariable cenv (var: Var) =
     let resultType = emitType cenv var.Type |> emitPointer cenv StorageClass.Function
     let resultId = nextResultId cenv
-    cenv.localVariables.[var] <- (resultId, OpVariable(resultType, resultId, StorageClass.Function, None))
+    cenv.localVariables.[resultId] <- OpVariable(resultType, resultId, StorageClass.Function, None)
+    cenv.localVariablesByVar.[var] <- resultId
     resultId
 
 let emitGlobalVariableAux cenv storageClass (var: Var) =
-    match cenv.globalVariables.TryGetValue var with
-    | true, (resultId, _, _) -> resultId
+    match cenv.globalVariablesByVar.TryGetValue var with
+    | true, resultId -> resultId
     | _ ->
         let builtInOpt =
-            if var.Name.StartsWith("fs_") then
+            if var.Name.StartsWith("gl_") then
                 let mutable builtIn = Unchecked.defaultof<BuiltIn>
-                match storageClass, BuiltIn.TryParse(var.Name.Replace("fs_", ""), &builtIn) with
+                match storageClass, BuiltIn.TryParse(var.Name.Replace("gl_", ""), &builtIn) with
                 | StorageClass.Input, true -> Some builtIn
                 | StorageClass.Output, true -> Some builtIn
                 | _, true -> failwithf "BuiltIn not valid with StorageClass: %A" storageClass
@@ -276,7 +284,8 @@ let emitGlobalVariableAux cenv storageClass (var: Var) =
 
         let resultType = emitType cenv var.Type |> emitPointer cenv storageClass
         let resultId = nextResultId cenv
-        cenv.globalVariables.[var] <- (resultId, OpVariable(resultType, resultId, storageClass, None), builtInOpt)
+        cenv.globalVariables.[resultId] <- (OpVariable(resultType, resultId, storageClass, None), builtInOpt)
+        cenv.globalVariablesByVar.[var] <- resultId
         resultId
 
 let emitGlobalVariable cenv var =
@@ -287,6 +296,45 @@ let emitGlobalInputVariable cenv var =
 
 let emitGlobalOutputVariable cenv var =
     emitGlobalVariableAux cenv StorageClass.Output var
+
+let getAccessChainResultType cenv pointer =
+    let resultType = 
+        match cenv.localVariables.TryGetValue pointer with
+        | true, OpVariable(resultType, _, _, _) -> resultType
+        | _ ->
+            match cenv.globalVariables.TryGetValue pointer with
+            | true, (OpVariable(resultType, _, _, _), _) -> resultType
+            | _ ->  failwithf "Unable to find variable: %A" pointer
+
+    match cenv.typePointers.TryGetValue resultType with
+    | true, OpTypePointer(_, storageClass, baseType) -> 
+        match cenv.types.TryGetValue baseType with
+        | true, OpTypeArray (_, elementType, _) -> elementType
+        | _ -> baseType
+        |> emitPointer cenv storageClass
+    | _ ->
+        failwith "Invalid pointer type."
+
+let emitLoad cenv pointer =
+    let resultType = 
+        match cenv.localVariables.TryGetValue pointer with
+        | true, OpVariable(resultType, _, _, _) -> resultType
+        | _ ->
+            match cenv.globalVariables.TryGetValue pointer with
+            | true, (OpVariable(resultType, _, _, _), _) -> resultType
+            | _ ->
+                match cenv.locals.TryGetValue pointer with
+                | true, OpAccessChain(resultType, _, _, _) -> resultType
+                | _ -> failwith "Unable to emit load instruction."
+
+    let baseType =
+        match cenv.typePointers.TryGetValue resultType with
+        | true, OpTypePointer(_, _, baseType) -> baseType
+        | _ -> failwith "Invalid pointer type."
+
+    let resultId = nextResultId cenv
+    addInstructions cenv [OpLoad(baseType, resultId, pointer, None)]
+    resultId
 
 let rec GenExpr cenv (env: env) expr =
     match expr with
@@ -301,19 +349,9 @@ let rec GenExpr cenv (env: env) expr =
         GenNewRecord cenv env ty args
 
     | Var var when env.inMain ->
-        let pointer, storageClass = 
-            match cenv.localVariables.TryGetValue var with
-            | true, (resultId, _) -> resultId, StorageClass.Function
-            | _ ->
-                match cenv.globalVariables.TryGetValue var with
-                | true, (resultId, OpVariable(_, _, storageClass, _), _) -> resultId, storageClass
-                | _ ->  failwithf "Unable to find variable: %A" var
-
-        let resultType = emitType cenv var.Type
-        let resultId = nextResultId cenv
-        addInstructions cenv [OpLoad(resultType, resultId, pointer, None)]
-        cenv.loadPointers.[resultId] <- emitPointer cenv storageClass resultType
-        [resultId]
+        match cenv.localVariablesByVar.TryGetValue var with
+        | true, resultId -> [resultId]
+        | _ -> [cenv.globalVariablesByVar.[var]]
 
     | Sequential(expr1, expr2) when env.inMain ->
         GenExpr cenv env expr1 |> ignore
@@ -360,7 +398,6 @@ and GenNewArray cenv env ty (args: Expr list) =
 
     let resultType = 
         emitArrayType cenv ty args.Length
-        |> emitPointer cenv StorageClass.Private
     
     [emitConstantComposite cenv resultType (emitConstants cenv args)]
 
@@ -390,6 +427,11 @@ and GenNewObject cenv env ctorInfo args =
         |> List.map (fun arg ->
             match GenExpr cenv env arg with
             | [id] ->
+                let id =
+                    match cenv.locals.TryGetValue id with
+                    | true, OpAccessChain _ ->
+                        emitLoad cenv id
+                    | _ -> id
                 match tryAddCompositeExtractInstructions cenv arg.Type id with
                 | [] -> [id]
                 | ids -> ids
@@ -406,10 +448,9 @@ and GenNewRecord cenv env ty args =
     if not env.isReturnable then
         failwith "Record construction must only appear at the end of the main function to dictate output."
 
-    let ids =
+    let gens =
         args
-        |> List.map (GenExpr cenv env)
-        |> List.concat
+        |> List.map (fun x -> (fun () -> GenExpr cenv env x))
 
     let vars =
         ty.GetProperties()
@@ -417,10 +458,18 @@ and GenNewRecord cenv env ty args =
             Var(prop.Name, prop.PropertyType, false)
         )
 
-    (ids, vars)
-    ||> Seq.iter2 (fun id var ->
-        let pointer = emitGlobalOutputVariable cenv var
-        addInstructions cenv [OpStore(pointer, id, None)]
+    (gens, vars)
+    ||> Seq.iter2 (fun gen var ->
+        match gen () with
+        | [pointer] ->
+            let pointer =
+              //  match cenv.locals.TryGetValue id with
+             ////   | true, OpAccessChain _ ->
+                    emitLoad cenv pointer
+              //  | _ -> id
+            let id = emitGlobalOutputVariable cenv var
+            addInstructions cenv [OpStore(pointer, id, None)]
+        | _ -> failwith "Invalid instruction."
     )
 
     []
@@ -434,10 +483,13 @@ and GenCall cenv env methInfo args =
         match methInfo.Name, args with
         | "GetArray", [receiverExpr;indexExpr] ->
             match GenExpr cenv env receiverExpr, GenExpr cenv env indexExpr with
-            | [receiverId], [indexId] ->
-                let receiverType = cenv.loadPointers.[receiverId]
+            | [pointer], [indexPointer] ->
+                let resultType = getAccessChainResultType cenv pointer
+                let index = emitLoad cenv indexPointer
                 let resultId = nextResultId cenv
-                addInstructions cenv [OpAccessChain(receiverType, resultId, receiverId, [indexId])]
+                let op = OpAccessChain(resultType, resultId, pointer, [index])
+                addInstructions cenv [op]
+                cenv.locals.[resultId] <- op
                 [resultId]
             | _ ->
                 failwith "Invalid arg expressions for GetArray."
@@ -451,7 +503,7 @@ and GenMainLambda cenv env expr =
     GenExpr cenv { env with isReturnable = true } expr |> ignore
 
     let instrs = ResizeArray cenv.currentInstructions
-    let localVarInstrs = ResizeArray (cenv.localVariables.Values |> Seq.map (fun (_, instr) -> instr))
+    let localVarInstrs = ResizeArray (cenv.localVariables.Values)
 
     cenv.currentInstructions.Clear()
     cenv.localVariables.Clear()
@@ -489,8 +541,11 @@ let GenModule (info: SpirvGenInfo) expr =
         let mutable input = 0u
         let mutable output = 0u
         let annoations = ResizeArray ()
-        cenv.globalVariables.Values
-        |> Seq.iter (fun (resultId, instr, builtInOpt) ->
+        cenv.globalVariables
+        |> Seq.iter (fun pair ->
+            let resultId = pair.Key
+            let instr, builtInOpt = pair.Value
+
             match builtInOpt with
             | Some builtIn ->
                 OpDecorate (resultId, Decoration.BuiltIn, [uint32 builtIn])
@@ -518,36 +573,43 @@ let GenModule (info: SpirvGenInfo) expr =
         annoations
         |> List.ofSeq
 
-    let types =
-        (cenv.types.Values
+    let typesAndConstants =
+        (cenv.types
+         |> Seq.map (fun pair -> pair.Key, pair.Value)
          |> List.ofSeq)
         @
-        (cenv.typePointers.Values
+        (cenv.typePointers
+         |> Seq.map (fun pair -> pair.Key, pair.Value)
          |> List.ofSeq)
         @
         (cenv.typeFunctions.Values
-         |> Seq.map (fun (_, instr) -> instr)
+         |> Seq.map (fun (resultId, instrs) -> instrs |> List.map (fun x -> resultId, x))
          |> Seq.concat
          |> List.ofSeq)
+        @
+        (cenv.constants.Values
+         |> List.ofSeq)
+        @
+        (cenv.constantComposites.Values
+         |> List.ofSeq)
+        |> List.sortBy (fun (resultId, _) -> resultId)
+        |> List.map (fun (_, instr) -> instr)
 
     let variables =
         cenv.globalVariables.Values
-        |> Seq.map (fun (_, instr, _) -> instr)
-        |> List.ofSeq
-
-    let constants =
-        cenv.constants.Values
-        |> Seq.map (fun (_, instr) -> instr)
-        |> List.ofSeq
-
-    let constantComposites =
-        cenv.constantComposites.Values
-        |> Seq.map (fun (_, instr) -> instr)
+        |> Seq.map (fun (instr, _) -> instr)
         |> List.ofSeq
 
     let interfaces =
-        cenv.globalVariables.Values
-        |> Seq.map (fun (resultId, _, _) -> resultId)
+        cenv.globalVariables
+        |> Seq.choose (fun pair ->
+            let resultId = pair.Key
+            let instr = fst pair.Value
+            match instr with
+            | OpVariable (_, _, StorageClass.Input, _)
+            | OpVariable (_, _, StorageClass.Output, _) -> Some resultId
+            | _ -> None
+        )
         |> List.ofSeq
 
     let instrs = 
@@ -565,7 +627,7 @@ let GenModule (info: SpirvGenInfo) expr =
          |> Option.map (fun (executionMode, literalNumber) -> OpExecutionMode (entryPoint, executionMode, literalNumber))
          |> Option.toList)
         @
-        annotations @ types @ variables @ constants @ constantComposites
+        annotations @ typesAndConstants @ variables
         @
         (cenv.currentInstructions |> List.ofSeq)
 
