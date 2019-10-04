@@ -25,7 +25,7 @@ let ``Compiler Vertex`` () =
 
             fun (gl_VertexIndex: int) ->              
                 {| 
-                    fs_Position = Vector4(positions.[gl_VertexIndex], 0.f, 1.f)
+                    gl_Position = Vector4(positions.[gl_VertexIndex], 0.f, 1.f)
                     fragColor = colors.[gl_VertexIndex]
                 |}
         @>

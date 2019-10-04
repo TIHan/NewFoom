@@ -7,36 +7,10 @@ open FSharp.Spirv
 open FSharp.Spirv.Specification
 open FSharp.Spirv.Quotations
 open System.Numerics
-
-let vertex =
-        <@
-            let positions =
-                [|
-                    Vector2 (0.f, -0.5f)
-                    Vector2 (0.5f, 0.5f)
-                    Vector2 (-0.5f, 0.5f)
-                |]
-            let colors =
-                [|
-                    Vector3 (1.f, 0.f, 0.f)
-                    Vector3 (0.f, 1.f, 0.f)
-                    Vector3 (0.f, 0.f, 1.f)
-                |]
-
-            fun (gl_VertexIndex: int) ->              
-                {| 
-                    gl_Position = Vector4(positions.[gl_VertexIndex], 0.f, 1.f)
-                    fragColor = colors.[gl_VertexIndex]
-                |}
-        @>
-
-
-let spvVertexInfo = SpirvGenInfo.Create(AddressingModel.Logical, MemoryModel.GLSL450, ExecutionModel.Vertex, [Capability.Shader], ["GLSL.std.450"])
-let spvVertex = Spirv.GenModule spvVertexInfo vertex
     
-let fragment = <@ fun fragColor -> {| outColor = Vector4(fragColor, 1.f) |} @>
-let spvFragmentInfo = SpirvGenInfo.Create(AddressingModel.Logical, MemoryModel.GLSL450, ExecutionModel.Fragment, [Capability.Shader], ["GLSL.std.450"], (ExecutionMode.OriginUpperLeft, []))
-let spvFragment = Spirv.GenModule spvFragmentInfo fragment
+//let fragment = <@ fun fragColor -> {| outColor = Vector4(fragColor, 1.f) |} @>
+//let spvFragmentInfo = SpirvGenInfo.Create(AddressingModel.Logical, MemoryModel.GLSL450, ExecutionModel.Fragment, [Capability.Shader], ["GLSL.std.450"], (ExecutionMode.OriginUpperLeft, []))
+//let spvFragment = Spirv.GenModule spvFragmentInfo fragment
 
 type EmptyWindowEvents (instance: VulkanInstance) =
 
@@ -83,6 +57,32 @@ let main argv =
 
     let window = Window (title, 30., width, height, windowEvents, windowState)
 
+    let vertex =
+        <@
+            let positions =
+                [|
+                    Vector2 (0.f, -0.5f)
+                    Vector2 (0.5f, 0.5f)
+                    Vector2 (-0.5f, 0.5f)
+                |]
+            let colors =
+                [|
+                    Vector3 (1.f, 0.f, 0.f)
+                    Vector3 (0.f, 1.f, 0.f)
+                    Vector3 (0.f, 0.f, 1.f)
+                |]
+
+            fun (gl_VertexIndex: int) ->              
+                {| 
+                    gl_Position = Vector4(positions.[gl_VertexIndex], 0.f, 1.f)
+                    fragColor = colors.[gl_VertexIndex]
+                |}
+        @>
+
+
+    let spvVertexInfo = SpirvGenInfo.Create(AddressingModel.Logical, MemoryModel.GLSL450, ExecutionModel.Vertex, [Capability.Shader], ["GLSL.std.450"])
+    let spvVertex = Spirv.GenModule spvVertexInfo vertex
+
    // let vertexBytes = System.IO.File.ReadAllBytes("triangle_vertex.spv")
     let vertexBytes =
         use ms = new System.IO.MemoryStream 100
@@ -91,14 +91,14 @@ let main argv =
         ms.Position <- 0L
         ms.Read(bytes, 0, bytes.Length) |> ignore
         bytes
-    let fragmentBytes =
-        use ms = new System.IO.MemoryStream 100
-        SpirvModule.Serialize (ms, spvFragment)
-        let bytes = Array.zeroCreate (int ms.Length)
-        ms.Position <- 0L
-        ms.Read(bytes, 0, bytes.Length) |> ignore
-        bytes
-   // let fragmentBytes = System.IO.File.ReadAllBytes("triangle_fragment.spv")
+    //let fragmentBytes =
+    //    use ms = new System.IO.MemoryStream 100
+    //    SpirvModule.Serialize (ms, spvFragment)
+    //    let bytes = Array.zeroCreate (int ms.Length)
+    //    ms.Position <- 0L
+    //    ms.Read(bytes, 0, bytes.Length) |> ignore
+    //    bytes
+    let fragmentBytes = System.IO.File.ReadAllBytes("triangle_fragment.spv")
 
     instance.AddPipeline(vertexBytes, fragmentBytes)
 

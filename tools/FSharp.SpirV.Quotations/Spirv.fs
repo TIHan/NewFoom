@@ -462,13 +462,10 @@ and GenNewRecord cenv env ty args =
     ||> Seq.iter2 (fun gen var ->
         match gen () with
         | [pointer] ->
-            let pointer =
-              //  match cenv.locals.TryGetValue id with
-             ////   | true, OpAccessChain _ ->
-                    emitLoad cenv pointer
-              //  | _ -> id
+            let pointer = 
+                emitLoad cenv pointer
             let id = emitGlobalOutputVariable cenv var
-            addInstructions cenv [OpStore(pointer, id, None)]
+            addInstructions cenv [OpStore(id, pointer, None)]
         | _ -> failwith "Invalid instruction."
     )
 
