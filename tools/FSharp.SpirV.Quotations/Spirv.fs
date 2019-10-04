@@ -315,26 +315,35 @@ let getAccessChainResultType cenv pointer =
     | _ ->
         failwith "Invalid pointer type."
 
-let emitLoad cenv pointer =
-    let resultType = 
+let tryEmitLoad cenv pointer =
+    let resultTypeOpt = 
         match cenv.localVariables.TryGetValue pointer with
-        | true, OpVariable(resultType, _, _, _) -> resultType
+        | true, OpVariable(resultType, _, _, _) -> resultType |> Some
         | _ ->
             match cenv.globalVariables.TryGetValue pointer with
-            | true, (OpVariable(resultType, _, _, _), _) -> resultType
+            | true, (OpVariable(resultType, _, _, _), _) -> resultType |> Some
             | _ ->
                 match cenv.locals.TryGetValue pointer with
-                | true, OpAccessChain(resultType, _, _, _) -> resultType
-                | _ -> failwith "Unable to emit load instruction."
+                | true, OpAccessChain(resultType, _, _, _) -> resultType |> Some
+                | _ -> None
 
-    let baseType =
-        match cenv.typePointers.TryGetValue resultType with
-        | true, OpTypePointer(_, _, baseType) -> baseType
-        | _ -> failwith "Invalid pointer type."
+    match resultTypeOpt with
+    | Some resultType ->
+        let baseType =
+            match cenv.typePointers.TryGetValue resultType with
+            | true, OpTypePointer(_, _, baseType) -> baseType
+            | _ -> failwith "Invalid pointer type."
 
-    let resultId = nextResultId cenv
-    addInstructions cenv [OpLoad(baseType, resultId, pointer, None)]
-    resultId
+        let resultId = nextResultId cenv
+        addInstructions cenv [OpLoad(baseType, resultId, pointer, None)]
+        Some resultId
+    | _ ->
+        None
+
+let emitLoad cenv pointer =
+    match tryEmitLoad cenv pointer with
+    | Some resultId -> resultId
+    | _ -> failwith "Unable to emit load instruction."
 
 let rec GenExpr cenv (env: env) expr =
     match expr with
@@ -463,7 +472,9 @@ and GenNewRecord cenv env ty args =
         match gen () with
         | [pointer] ->
             let pointer = 
-                emitLoad cenv pointer
+                match tryEmitLoad cenv pointer with
+                | Some pointer -> pointer
+                | _ -> pointer
             let id = emitGlobalOutputVariable cenv var
             addInstructions cenv [OpStore(id, pointer, None)]
         | _ -> failwith "Invalid instruction."
