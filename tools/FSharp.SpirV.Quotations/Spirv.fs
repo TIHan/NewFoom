@@ -437,13 +437,9 @@ and GenNewObject cenv env ctorInfo args =
             match GenExpr cenv env arg with
             | [id] ->
                 let id =
-                    match cenv.globalVariables.TryGetValue id with
-                    | true, _ ->
-                        emitLoad cenv id
-                    | _ ->
-                        match cenv.locals.TryGetValue id with
-                        | true, _ -> emitLoad cenv id
-                        | _ -> id
+                    match tryEmitLoad cenv id with
+                    | Some id -> id
+                    | _ -> id
                 match tryAddCompositeExtractInstructions cenv arg.Type id with
                 | [] -> [id]
                 | ids -> ids
