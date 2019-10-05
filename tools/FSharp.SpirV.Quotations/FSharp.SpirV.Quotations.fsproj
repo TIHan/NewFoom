@@ -6,6 +6,7 @@
 
   <ItemGroup>
     <Compile Include="Tast.fs" />
+    <Compile Include="TypeChecker.fs" />
     <Compile Include="SpirvGenInfo.fs" />
     <Compile Include="Spirv.fs" />
   </ItemGroup>

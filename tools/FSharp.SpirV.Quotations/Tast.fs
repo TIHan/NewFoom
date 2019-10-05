@@ -1,6 +1,5 @@
 ﻿module FSharp.Spirv.Quotations.Tast
 
-open FSharp.Spirv
 open FSharp.Spirv.Specification
 
 type Decorations = (Decoration * uint32 list) list
@@ -19,6 +18,8 @@ type SpirvVar =
         Name: string
         Type: SpirvType
         Decorations: Decorations
+        StorageClass: StorageClass
+        IsMutable: bool
     }
 
 type SpirvConst =
@@ -28,28 +29,28 @@ type SpirvConst =
     | SpirvDecorationConst of Decorations * SpirvConst
 
 type SpirvExpr =
-    | SpirvLet of SpirvVar * SpirvExpr * isMutable: bool * cont: SpirvExpr
+    | SpirvNop
+    | SpirvConst of SpirvConst
+    | SpirvLet of SpirvVar * body: SpirvExpr * cont: SpirvExpr
     | SpirvSequential of SpirvExpr * SpirvExpr
     | SpirvNewVector2 of arg1: SpirvExpr * arg2: SpirvExpr
     | SpirvNewVector3 of arg1: SpirvExpr * arg2: SpirvExpr * arg3: SpirvExpr
     | SpirvNewVector4 of arg1: SpirvExpr * arg2: SpirvExpr * arg3: SpirvExpr * arg4: SpirvExpr
-    | SpirvArrayIndexerGet of receiver: SpirvVar * arg: SpirvExpr 
+    | SpirvArrayIndexerGet of receiver: SpirvExpr * arg: SpirvExpr
+    | SpirvVar of SpirvVar
+    | SpirvVarSet of SpirvVar * SpirvExpr
 
-type SpirvDefnExpr =
-    | SpirvDefnConst of SpirvConst   
-    | SpirvDefnVar of SpirvVar
-    | SpirvDefnLambda of SpirvVar
+type SpirvTopLevelExpr =
+    | SpirvTopLevelLambda of SpirvVar
 
-type SpirvDefnDecl =
-    | SpirvDefnDeclConst of SpirvConst
-    | SpirvDefnDeclVar of SpirvVar
-    | SpirvDefnDeclType of SpirvType
+type SpirvTopLevelDecl =
+    | SpirvTopLevelDeclConst of SpirvVar * SpirvConst
+    | SpirvTopLevelDeclVar of SpirvVar
 
-type EntryPoint =
+type SpirvEntryPoint =
     {
         ExecutionModel: ExecutionModel
         FunctionName: string
-        Interface: SpirvVar list
     }
 
 type SpirvDefnModule =
@@ -58,9 +59,8 @@ type SpirvDefnModule =
         Extensions: string list
         ExtendedInstructionSets: string list
         MemoryModel: MemoryModel
-        EntryPoints: EntryPoint list
+        EntryPoints: SpirvEntryPoint list
         ExecutionModes: ExecutionMode list
-        Annoations: Decorations
+        Declarations: SpirvTopLevelDecl list
+        Body: SpirvTopLevelExpr
     }
-
-
