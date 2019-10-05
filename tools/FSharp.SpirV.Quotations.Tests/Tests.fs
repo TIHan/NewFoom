@@ -12,7 +12,7 @@ let ``Compiler Vertex`` () =
         <@
             let positions =
                 [|
-                    Vector2 (0.f, -0.5f)
+                    Vector2 (1.f, -0.5f)
                     Vector2 (0.5f, 0.5f)
                     Vector2 (-0.5f, 0.5f)
                 |]

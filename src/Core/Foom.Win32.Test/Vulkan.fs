@@ -54,8 +54,8 @@ let private getSuitablePhysicalDevice instance =
             let deviceFeatures = VkPhysicalDeviceFeatures()
             vkGetPhysicalDeviceFeatures(device, &&deviceFeatures)
 
-            deviceProperties.deviceType = VkPhysicalDeviceType.VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU &&
-            deviceFeatures.geometryShader = VK_TRUE
+            (deviceProperties.deviceType = VkPhysicalDeviceType.VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU &&
+            deviceFeatures.geometryShader = VK_TRUE) || deviceProperties.deviceType = VkPhysicalDeviceType.VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU
         )
 
     match deviceOpt with
