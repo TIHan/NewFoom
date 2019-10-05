@@ -5,7 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="File1.fs" />
+    <Compile Include="Tast.fs" />
     <Compile Include="SpirvGenInfo.fs" />
     <Compile Include="Spirv.fs" />
   </ItemGroup>
