@@ -1,6 +1,10 @@
-﻿module FSharp.Spirv.Quotations.Tast
+﻿module internal FSharp.Spirv.Quotations.Tast
 
 open FSharp.Spirv.Specification
+
+let mutable nextStamp = 0L 
+let newStamp () =
+    System.Threading.Interlocked.Increment &nextStamp 
 
 type Decorations = (Decoration * uint32 list) list
 
@@ -15,11 +19,23 @@ type SpirvType =
 
 type SpirvVar = 
     {
+        Stamp: int64
         Name: string
         Type: SpirvType
         Decorations: Decorations
         StorageClass: StorageClass
         IsMutable: bool
+    }
+
+let mkSpirvVar (name, ty, decorations, storageClass, isMutable) =
+    let stamp = newStamp ()
+    {
+        Stamp = stamp
+        Name = name
+        Type = ty
+        Decorations = decorations
+        StorageClass = storageClass
+        IsMutable = isMutable
     }
 
 type SpirvConst =
@@ -43,9 +59,9 @@ type SpirvExpr =
 type SpirvTopLevelExpr =
     | SpirvTopLevelLambda of SpirvVar
 
-type SpirvTopLevelDecl =
-    | SpirvTopLevelDeclConst of SpirvVar * SpirvConst
-    | SpirvTopLevelDeclVar of SpirvVar
+type SpirvDecl =
+    | SpirvDeclConst of SpirvVar * SpirvConst
+    | SpirvDeclVar of SpirvVar
 
 type SpirvEntryPoint =
     {
@@ -61,6 +77,6 @@ type SpirvDefnModule =
         MemoryModel: MemoryModel
         EntryPoints: SpirvEntryPoint list
         ExecutionModes: ExecutionMode list
-        Declarations: SpirvTopLevelDecl list
+        Declarations: SpirvDecl list
         Body: SpirvTopLevelExpr
     }

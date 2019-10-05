@@ -1,5 +1,5 @@
 ﻿[<RequireQualifiedAccess>]
-module FSharp.Spirv.Quotations.TypeChecker
+module internal FSharp.Spirv.Quotations.TypeChecker
 
 open System
 open System.Numerics
@@ -13,19 +13,9 @@ open FSharp.Spirv.Specification
 open Tast
 
 [<NoEquality;NoComparison>]
-type cenv =
-    {
-        decls: Dictionary<string, SpirvTopLevelDecl>
-    }
-
-    static member Default =
-        {
-            decls = Dictionary ()
-        }
-
-[<NoEquality;NoComparison>]
 type env =
     {
+        decls: SpirvDecl list
         entryPoint: uint32
         isReturnable: bool
     }
@@ -51,40 +41,70 @@ let outputDecorationsByPropertyName (name: string) =
     | "gl_VertexIndex" -> [(Decoration.BuiltIn, [uint32 BuiltIn.VertexIndex])]
     | _ -> []
 
-let mkSpirvVar (var: Var) =
+let mkSpirvVarOfVar storageClass (var: Var) =
     let spvTy = mkSpirvType var.Type
-    { Name = var.Name; Type = spvTy; Decorations = []; StorageClass = StorageClass.Private; IsMutable = var.IsMutable }
+    mkSpirvVar (var.Name, spvTy, [], storageClass, var.IsMutable)
 
-let rec TcExpr cenv (env: env) expr =
+let mkSpirvConst expr =
     match expr with
-
     | Int32 n ->
         SpirvInt n
-        |> SpirvConst
 
     | Single n ->
         SpirvSingle n
-        |> SpirvConst
+
+    | _ ->
+        failwithf "Invalid expression for constant: %A" expr
+
+let addSpirvDeclVar env spvVar =
+    { env with decls = env.decls @ [SpirvDeclVar spvVar] }
+
+let addInputSpirvDeclVar env var =
+    let spvVar = mkSpirvVarOfVar StorageClass.Input var
+    addSpirvDeclVar env spvVar
+
+let addSpirvDeclConst env var rhs =
+    let spvVar = mkSpirvVarOfVar StorageClass.Private var
+    let spvConst = mkSpirvConst rhs
+    { env with decls = env.decls @ [SpirvDeclConst (spvVar, spvConst)] }
+
+let TcValue expr =
+    mkSpirvConst expr
+    |> SpirvConst
+
+let rec TcExpr env expr =
+    match expr with
+
+    | Value _ ->
+        env, TcValue expr
 
     | NewRecord(ty, args) when env.isReturnable ->
-        (None, args, ty.GetProperties() |> List.ofArray)
-        |||> List.fold2 (fun exprOpt arg prop ->
-            let spvTy = mkSpirvType prop.PropertyType
-            let decorations = outputDecorationsByPropertyName prop.Name
-            let var = { Name = Guid.NewGuid().ToString(); Type = spvTy; Decorations = decorations; StorageClass = StorageClass.Output; IsMutable = true }
-            cenv.decls.Add(prop.PropertyType.FullName, SpirvTopLevelDeclVar var)
+        let env, exprOpt =
+            ((env, None), args, ty.GetProperties() |> List.ofArray)
+            |||> List.fold2 (fun (env, exprOpt) arg prop ->
+                let spvTy = mkSpirvType prop.PropertyType
+                let decorations = outputDecorationsByPropertyName prop.Name
+                let var = mkSpirvVar (prop.Name, spvTy, decorations, StorageClass.Output, false)
+                let env = addSpirvDeclVar env var
 
-            match exprOpt with
-            | None -> Some (SpirvVarSet (var, TcExpr cenv { env with isReturnable = false } arg))
-            | Some expr -> Some (SpirvSequential (expr, SpirvVarSet (var, TcExpr cenv { env with isReturnable = false } arg))) 
-        )
-        |> Option.defaultValue SpirvNop
+                let env, spvExpr = TcExpr { env with isReturnable = false } arg
+                match exprOpt with
+                | None -> 
+                    env, Some (SpirvVarSet (var, spvExpr))
+                | Some expr ->
+                    env, Some (SpirvSequential (expr, SpirvVarSet (var, spvExpr))) 
+            )
+        match exprOpt with
+        | Some expr -> env, expr
+        | _ -> env, SpirvNop
 
     | Var var ->
-        SpirvVar (mkSpirvVar var)
+        env, SpirvVar (mkSpirvVarOfVar StorageClass.Private var)
 
     | Sequential(expr1, expr2) ->
-        SpirvSequential (TcExpr cenv env expr1, TcExpr cenv env expr2)
+        let env, spvExpr1 = TcExpr env expr1
+        let env, spvExpr2 = TcExpr env expr2 
+        env, SpirvSequential (spvExpr1, spvExpr2)
 
     | Call (None, methInfo, args) ->
         let env = { env with isReturnable = false }
@@ -94,7 +114,9 @@ let rec TcExpr cenv (env: env) expr =
 
             match methInfo.Name, args with
             | "GetArray", [receiver;arg] ->
-                SpirvArrayIndexerGet (TcExpr cenv env receiver, TcExpr cenv env arg)
+                let env, spvReceiver = TcExpr env receiver
+                let env, spvArg = TcExpr env arg
+                env, SpirvArrayIndexerGet (spvReceiver, spvArg)
             | _ ->
                 failwithf "Method not supported: %A" methInfo
 
@@ -105,33 +127,54 @@ let rec TcExpr cenv (env: env) expr =
         let spvTy = mkSpirvType ctorInfo.DeclaringType
         match spvTy, args with
         | SpirvTypeVector2, [arg1;arg2] -> 
-            SpirvNewVector2 (TcExpr cenv env arg1, TcExpr cenv env arg2)
+            let env, spvArg1 = TcExpr env arg1
+            let env, spvArg2 = TcExpr env arg2
+            env, SpirvNewVector2 (spvArg1, spvArg2)
+
         | SpirvTypeVector3, [arg1;arg2;arg3] -> 
-            SpirvNewVector3 (TcExpr cenv env arg1, TcExpr cenv env arg2, TcExpr cenv env arg3)
+            let env, spvArg1 = TcExpr env arg1
+            let env, spvArg2 = TcExpr env arg2
+            let env, spvArg3 = TcExpr env arg3
+            env, SpirvNewVector3 (spvArg1, spvArg2, spvArg3)
+
         | SpirvTypeVector4, [arg1;arg2;arg3;arg4] ->
-            SpirvNewVector4 (TcExpr cenv env arg1, TcExpr cenv env arg2, TcExpr cenv env arg3, TcExpr cenv env arg4)
+            let env, spvArg1 = TcExpr env arg1
+            let env, spvArg2 = TcExpr env arg2
+            let env, spvArg3 = TcExpr env arg3
+            let env, spvArg4 = TcExpr env arg4
+            env, SpirvNewVector4 (spvArg1, spvArg2, spvArg3, spvArg4)
+
         | _ ->
             failwithf "Invalid type for NewObject: %A" spvTy
 
-    //| Lambda(var, expr) when not env.inMain ->
-    //    SpirvLa
-    //    match expr with
-    //    | Lambda(var, expr) ->
-    //        emitGlobalInputVariable cenv var |> ignore
-    //        GenExpr cenv env expr
-    //    | _ ->
-    //        failwith "Should not happen."
-
-    //| Lambda(var, expr) when not env.inMain ->
-    //    emitGlobalInputVariable cenv var |> ignore
-    //    GenMainLambda cenv { env with inMain = true } expr
-
-    //// Only supports constants
-    //| NewArray(ty, args) when not env.inMain ->
-    //    GenNewArray cenv env ty args
-
-    | Let(var, body, expr) ->
-        SpirvLet (mkSpirvVar var, TcExpr cenv env body, TcExpr cenv env expr)
+    | Let(var, rhs, body) ->
+        let env, spvRhs = TcExpr env rhs
+        let env, spvBody = TcExpr env body
+        env, SpirvLet (mkSpirvVarOfVar StorageClass.Private var, spvRhs, spvBody)
 
     | _ ->
         failwithf "Expression not supported: %A" expr
+
+and TcExprs (env: env) exprs =
+    ((env, []), exprs)
+    ||> List.fold (fun (env, spvExprs) expr ->
+        let env, spvExpr = TcExpr env expr
+        (env, spvExprs @ [spvExpr])
+    )
+
+let rec TcTopLevelExpr env expr =
+    match expr with
+    | Let(var, rhs, body) ->
+        let env = addSpirvDeclConst env var rhs
+        TcTopLevelExpr env body
+
+    | Lambda(var, ((Lambda _) as body)) ->
+        let env = addInputSpirvDeclVar env var
+        TcTopLevelExpr env body
+
+    | Lambda(var, body) ->
+        let env = addInputSpirvDeclVar env var
+        TcExpr env body
+                
+    | _ ->
+        failwithf "Top-level expression not supported: %A" expr

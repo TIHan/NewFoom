@@ -5,7 +5,9 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="Intrinsics.fs" />
     <Compile Include="Tast.fs" />
+    <Compile Include="SpirvGen.fs" />
     <Compile Include="TypeChecker.fs" />
     <Compile Include="SpirvGenInfo.fs" />
     <Compile Include="Spirv.fs" />
