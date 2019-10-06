@@ -904,11 +904,13 @@ type private SwapChainState =
 [<Sealed>]
 type private SwapChain (physicalDevice, device, surface, indices, commandPool) =
 
+    let gate = obj ()
     let mutable state = None
     let mutable isDisposed = 0
 
-    let checkDispose () =
-        
+    let pipelines = ResizeArray ()
+
+    let checkDispose () =       
         if isDisposed <> 0 then
             failwith "SwapChain disposed."
 
@@ -931,6 +933,12 @@ type private SwapChain (physicalDevice, device, surface, indices, commandPool) =
                 } ->
 
         vkDeviceWaitIdle(device) |> checkResult
+
+        pipelines
+        |> Seq.rev
+        |> Seq.iter (fun pipeline ->
+            vkDestroyPipeline(device, pipeline, vkNullPtr)
+        )
 
         use pCommandBuffers = fixed commandBuffers
         vkFreeCommandBuffers(device, commandPool, uint32 commandBuffers.Length, pCommandBuffers)
@@ -975,6 +983,8 @@ type private SwapChain (physicalDevice, device, surface, indices, commandPool) =
         state.Value.commandBuffers
 
     member _.Recreate () =
+        lock gate |> fun _ ->
+
         checkDispose ()
         destroy ()
 
@@ -997,6 +1007,23 @@ type private SwapChain (physicalDevice, device, surface, indices, commandPool) =
             }
             |> Some
 
+    member x.AddPipeline (vertexBytes: byte [], fragmentBytes: byte []) =
+        lock gate |> fun _ ->
+
+        check ()
+
+        use pVertexBytes = fixed vertexBytes
+        use pFragmentBytes = fixed fragmentBytes
+
+        let pipeline =
+            Pipeline.mkGraphicsPipeline device x.Extent x.PipelineLayout x.RenderPass
+                pVertexBytes (uint32 vertexBytes.Length)
+                pFragmentBytes (uint32 fragmentBytes.Length)
+
+        Cmd.recordDraw x.Extent x.Framebuffers x.CommandBuffers x.RenderPass pipeline
+
+        pipelines.Add pipeline
+
     interface IDisposable with
 
         member x.Dispose () =
@@ -1004,7 +1031,7 @@ type private SwapChain (physicalDevice, device, surface, indices, commandPool) =
                 failwith "SwapChain already disposed"
             else
                 GC.SuppressFinalize x
-                destroy ()
+                lock gate destroy
 
 [<Sealed>]
 type VulkanInstance 
@@ -1027,23 +1054,8 @@ type VulkanInstance
 
     member __.DebugMessenger = debugMessenger
 
-    member __.AddPipeline (vertexBytes: byte [], fragmentBytes: byte []) =
-        lock gate (fun () ->
-            if isDisposed = 1 then ()
-            else
-
-            use pVertexBytes = fixed vertexBytes
-            use pFragmentBytes = fixed fragmentBytes
-
-            let pipeline =
-                Pipeline.mkGraphicsPipeline device swapChain.Extent swapChain.PipelineLayout swapChain.RenderPass
-                    pVertexBytes (uint32 vertexBytes.Length)
-                    pFragmentBytes (uint32 fragmentBytes.Length)
-
-            Cmd.recordDraw swapChain.Extent swapChain.Framebuffers swapChain.CommandBuffers swapChain.RenderPass pipeline
-
-            pipelines.Add pipeline
-        )
+    member __.AddPipeline (vertexBytes, fragmentBytes) =
+        swapChain.AddPipeline (vertexBytes, fragmentBytes)
 
     member __.DrawFrame () =
         currentFrame <- drawFrame device swapChain.SwapChain sync swapChain.CommandBuffers graphicsQueue presentQueue currentFrame
@@ -1059,14 +1071,6 @@ type VulkanInstance
                 failwith "VulkanInstance already disposed"
             else
                 GC.SuppressFinalize x
-
-                lock gate (fun () ->
-                    pipelines
-                    |> Seq.rev
-                    |> Seq.iter (fun pipeline ->
-                        vkDestroyPipeline(device, pipeline, vkNullPtr)
-                    )
-                )
 
                 (swapChain :> IDisposable).Dispose ()
 
