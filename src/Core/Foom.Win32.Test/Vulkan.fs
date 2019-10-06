@@ -1038,12 +1038,12 @@ type private SwapChain (physicalDevice, device, surface, indices, commandPool) =
             check ()
 
             let nextFrame, res = drawFrame device x.SwapChain sync x.CommandBuffers graphicsQueue presentQueue currentFrame
-            currentFrame <- nextFrame
 
-            if res = VkResult.VK_ERROR_OUT_OF_DATE_KHR then
+            if res = VkResult.VK_ERROR_OUT_OF_DATE_KHR || res = VkResult.VK_SUBOPTIMAL_KHR then
                 x.Recreate ()
             else
                 checkResult res
+                currentFrame <- nextFrame
 
     interface IDisposable with
 
