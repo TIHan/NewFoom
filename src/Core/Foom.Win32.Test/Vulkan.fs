@@ -886,8 +886,6 @@ let drawFrame device swapChain sync (commandBuffers: VkCommandBuffer []) graphic
 
     vkQueuePresentKHR(presentQueue, &&presentInfo) |> checkResult
 
-    vkQueueWaitIdle(presentQueue) |> checkResult
-
     (currentFrame + 1) % MaxFramesInFlight
 
 type private SwapChainState =
@@ -1055,7 +1053,6 @@ type VulkanInstance
      swapChain: SwapChain) =
 
     let mutable isDisposed = 0
-    let mutable currentFrame = 0
 
     member __.Instance = instance
 
