@@ -36,6 +36,10 @@ type cenv =
         localVariablesByVar: Dictionary<SpirvVar, Result_id>
         currentInstructions: ResizeArray<SpirvInstruction>
         locals: Dictionary<Result_id, SpirvInstruction>
+
+        // Debug Info
+
+        debugNames: ResizeArray<(string * id)>
     }
 
     static member Default =
@@ -56,6 +60,7 @@ type cenv =
             localVariablesByVar = Dictionary ()
             currentInstructions = ResizeArray 100
             locals = Dictionary ()
+            debugNames = ResizeArray 100
         }
 
 [<NoEquality;NoComparison>]
@@ -121,6 +126,7 @@ let emitTypeAux cenv ty f =
         let resultId = nextResultId cenv
         cenv.typesByType.[ty] <- resultId
         cenv.types.[resultId] <- f resultId
+        cenv.debugNames.Add("type_" + ty.Name, resultId)
         resultId
 
 let emitTypeVoid cenv =
@@ -141,29 +147,31 @@ let emitPointer cenv storageClass typeId =
         cenv.typePointers.[resultId] <- OpTypePointer(resultId, storageClass, typeId)
         resultId
 
-let emitConstantAux cenv resultType literal =
+let emitConstantAux cenv resultType debugName literal =
     match cenv.constants.TryGetValue literal with
     | true, (resultId, _) -> resultId
     | _ ->
         let resultId = nextResultId cenv
         cenv.constants.[literal] <- (resultId, OpConstant(resultType, resultId, literal))
+        cenv.debugNames.Add(string resultId + "_const_" + debugName, resultId)
         resultId
 
 let emitConstantInt cenv (n: int) =
-    emitConstantAux cenv (emitTypeInt cenv) [BitConverter.ToUInt32(ReadOnlySpan(&&n |> NativePtr.toVoidPtr, 4))]
+    emitConstantAux cenv (emitTypeInt cenv) "int" [BitConverter.ToUInt32(ReadOnlySpan(&&n |> NativePtr.toVoidPtr, 4))]
 
 let emitConstantUInt32 cenv (n: uint32) =
-    emitConstantAux cenv (emitTypeInt cenv) [n]
+    emitConstantAux cenv (emitTypeInt cenv) "uint32" [n]
 
 let emitConstantSingle cenv (n: single) =
-    emitConstantAux cenv (emitTypeSingle cenv) [BitConverter.ToUInt32(ReadOnlySpan(&&n |> NativePtr.toVoidPtr, 4))]
+    emitConstantAux cenv (emitTypeSingle cenv) "single" [BitConverter.ToUInt32(ReadOnlySpan(&&n |> NativePtr.toVoidPtr, 4))]
 
-let emitConstantComposite cenv resultType constituents =
+let emitConstantComposite cenv resultType debugName constituents =
     match cenv.constantComposites.TryGetValue constituents with
     | true, (resultId, _) -> resultId
     | _ ->
         let resultId = nextResultId cenv
         cenv.constantComposites.[constituents] <- (resultId, OpConstantComposite(resultType, resultId, constituents))
+        cenv.debugNames.Add(string resultId + "_const_" + debugName, resultId)
         resultId
 
 let emitTypeVector2 cenv =
@@ -178,14 +186,14 @@ let emitTypeVector4 cenv =
     let componentType = emitTypeSingle cenv
     emitTypeAux cenv SpirvTypeVector4 (fun resultId -> OpTypeVector(resultId, componentType, [4u]))
 
-let emitConstantVector2 cenv constituents =
-    emitConstantComposite cenv (emitTypeVector2 cenv) constituents
+let emitConstantVector2 cenv (constituents: id list) =
+    emitConstantComposite cenv (emitTypeVector2 cenv) "Vector2" constituents
 
-let emitConstantVector3 cenv constituents =
-    emitConstantComposite cenv (emitTypeVector3 cenv) constituents
+let emitConstantVector3 cenv (constituents: id list) =
+    emitConstantComposite cenv (emitTypeVector3 cenv) "Vector3" constituents
 
-let emitConstantVector4 cenv constituents =
-    emitConstantComposite cenv (emitTypeVector4 cenv) constituents
+let emitConstantVector4 cenv (constituents: id list) =
+    emitConstantComposite cenv (emitTypeVector4 cenv) "Vector4" constituents
 
 let rec emitType cenv ty =
     match ty with
@@ -244,21 +252,24 @@ let rec GenConst cenv spvConst =
         emitConstantVector4 cenv ([n1;n2;n3;n4] |> List.map (emitConstantSingle cenv))
 
     | SpirvConstArray (elementTy, constants, decorations) ->
-        let elementTyId = emitType cenv elementTy
+        let arrayTyId = emitArrayType cenv elementTy constants.Length
         let constantIds = constants |> List.map (GenConst cenv)
-        emitConstantComposite cenv elementTyId constantIds
+        emitConstantComposite cenv arrayTyId (elementTy.Name + "[" + string constantIds.Length + "]") constantIds
 
 let GenLocalVar cenv spvVar =
     let resultType = emitType cenv spvVar.Type |> emitPointer cenv StorageClass.Function
     let resultId = nextResultId cenv
     cenv.localVariables.[resultId] <- OpVariable(resultType, resultId, StorageClass.Function, None)
     cenv.localVariablesByVar.[spvVar] <- resultId
+    cenv.debugNames.Add(string resultId + "_" + spvVar.Name, resultId)
     resultId
 
-let GenGlobalVarAux cenv storageClass spvVar =
+let GenGlobalVar cenv spvVar =
     match cenv.globalVariablesByVar.TryGetValue spvVar with
     | true, resultId -> resultId
     | _ ->
+        let storageClass = spvVar.StorageClass
+
         let builtInOpt =
             match spvVar.Decorations with
             | [(Decoration.BuiltIn, [builtInValue])] -> 
@@ -270,16 +281,8 @@ let GenGlobalVarAux cenv storageClass spvVar =
         let resultId = nextResultId cenv
         cenv.globalVariables.[resultId] <- (OpVariable(resultType, resultId, storageClass, None), builtInOpt)
         cenv.globalVariablesByVar.[spvVar] <- resultId
+        cenv.debugNames.Add(string resultId + "_" + spvVar.Name, resultId)
         resultId
-
-let GenGlobalVar cenv var =
-    GenGlobalVarAux cenv StorageClass.Private var
-
-let GenGlobalInputVar cenv var =
-    GenGlobalVarAux cenv StorageClass.Input var
-
-let GenGlobalOutputVar cenv var =
-    GenGlobalVarAux cenv StorageClass.Output var
 
 let getAccessChainResultType cenv pointer =
     let resultType = 
@@ -378,7 +381,7 @@ let rec GenExpr cenv (env: env) expr =
             match tryEmitLoad cenv rhsId with
             | Some pointer -> pointer
             | _ -> rhsId
-        let id = GenGlobalOutputVar cenv var
+        let id = GenGlobalVar cenv var
         addInstructions cenv [OpStore(id, pointer, None)]
         id
 
@@ -405,12 +408,12 @@ and GenVector cenv env retTy args =
 let GenDecl cenv decl =
     match decl with
     | SpirvDeclConst (var, constt) ->
-        let varId = GenGlobalInputVar cenv var
+        let varId = GenGlobalVar cenv var
         let constId = GenConst cenv constt
         addMainInitInstructions cenv [OpStore(varId, constId, None)]
 
     | SpirvDeclVar var ->
-        GenGlobalInputVar cenv var |> ignore
+        GenGlobalVar cenv var |> ignore
 
 let rec GenTopLevelExpr cenv env expr =
     match expr with
@@ -422,11 +425,11 @@ let rec GenTopLevelExpr cenv env expr =
         GenDecl cenv decl
 
     | SpirvTopLevelLambda (var, body) ->
-        GenGlobalInputVar cenv var |> ignore
+        GenGlobalVar cenv var |> ignore
         GenTopLevelExpr cenv env body
 
     | SpirvTopLevelLambdaBody (var, body) ->
-        GenGlobalInputVar cenv var |> ignore
+        GenGlobalVar cenv var |> ignore
         GenExpr cenv env body |> ignore
 
 and GenMain cenv env expr =
@@ -556,6 +559,10 @@ let GenModule (info: SpirvGenInfo) expr =
         (info.ExecutionMode
          |> Option.map (fun (executionMode, literalNumber) -> OpExecutionMode (entryPoint, executionMode, literalNumber))
          |> Option.toList)
+        @
+        (cenv.debugNames
+         |> Seq.map (fun (name, id) -> OpName (id, name))
+         |> List.ofSeq)
         @
         annotations @ typesAndConstants @ variables
         @

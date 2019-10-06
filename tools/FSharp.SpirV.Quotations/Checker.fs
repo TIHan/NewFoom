@@ -25,10 +25,7 @@ type env =
             decls = []
         }
 
-let rec mkSpirvType ty length =
-    if length < 1 then
-        failwith "Length must be one or greater."
-
+let rec mkSpirvType ty =
     match ty with
     | _ when ty = typeof<int> -> 
         SpirvTypeInt
@@ -43,9 +40,12 @@ let rec mkSpirvType ty length =
     | _ when ty = typeof<unit> ->
         SpirvTypeVoid
     | _ when ty.IsArray ->
-        SpirvTypeArray (mkSpirvType (ty.GetElementType()) 1, length)
+        failwith "Array can not be made here as it needs a specific length."
     | _ -> 
         failwithf "Unable to make SpirvType from Type: %A" ty
+
+let mkSpirvArrayType elementSpvTy length =
+    SpirvTypeArray (elementSpvTy, length)
 
 let outputDecorationsByName (name: string) =
     match name with
@@ -57,14 +57,20 @@ let inputDecorationsByName (name: string) =
     | "gl_VertexIndex" -> [(Decoration.BuiltIn, [uint32 BuiltIn.VertexIndex])]
     | _ -> []
 
-let mkSpirvVarOfVar env storageClass var (length: int) =
+let mkSpirvVarOfVarAux env storageClass var getSpvTy =
     match env.varCache.TryFind var with
     | Some spvVar -> env, spvVar
     | _ ->
-        let spvTy = mkSpirvType var.Type length
+        let spvTy = getSpvTy ()
         let decorations = inputDecorationsByName var.Name
         let spvVar = mkSpirvVar (var.Name, spvTy, decorations, storageClass, var.IsMutable)
         { env with varCache = env.varCache.Add(var, spvVar) }, spvVar
+
+let mkSpirvVarOfVar env storageClass var =
+    mkSpirvVarOfVarAux env storageClass var (fun () -> mkSpirvType var.Type)
+
+let mkSpirvVarOfVarWithArrayType env storageClass var elementSpvTy arrayLen =
+    mkSpirvVarOfVarAux env storageClass var (fun () -> mkSpirvArrayType elementSpvTy arrayLen)
 
 let rec mkSpirvConst expr =
     match expr with
@@ -75,7 +81,7 @@ let rec mkSpirvConst expr =
         SpirvConstSingle (n, [])
 
     | NewObject (ctorInfo, args) ->
-        let spvTy = mkSpirvType ctorInfo.DeclaringType 1
+        let spvTy = mkSpirvType ctorInfo.DeclaringType
         match spvTy, args with
         | SpirvTypeVector2, [Single arg1; Single arg2] -> 
             SpirvConstVector2 (arg1, arg2, [])
@@ -90,7 +96,7 @@ let rec mkSpirvConst expr =
             failwithf "Invalid NewObject for constant: %A" spvTy
 
     | NewArray (elementTy, exprs) ->
-        let elementSpvTy = mkSpirvType elementTy 1
+        let elementSpvTy = mkSpirvType elementTy
         SpirvConstArray(elementSpvTy, exprs |> List.map mkSpirvConst, [])
 
     | _ ->
@@ -100,16 +106,18 @@ let addSpirvDeclVar env spvVar =
     { env with decls = env.decls @ [SpirvDeclVar spvVar] }, spvVar
 
 let addInputSpirvDeclVar env var =
-    let env, spvVar = mkSpirvVarOfVar env StorageClass.Input var 1
+    let env, spvVar = mkSpirvVarOfVar env StorageClass.Input var
     addSpirvDeclVar env spvVar
 
 let addSpirvDeclConst env var rhs =
     let spvConst = mkSpirvConst rhs
-    let length =
+    let env, spvVar =
         match spvConst with
-        | SpirvConstArray (_, constants, _) -> constants.Length
-        | _ -> 1
-    let env, spvVar = mkSpirvVarOfVar env StorageClass.Private var length
+        | SpirvConstArray (elementTy, constants, _) -> 
+            mkSpirvVarOfVarWithArrayType env StorageClass.Private var elementTy constants.Length
+        | _ -> 
+            mkSpirvVarOfVar env StorageClass.Private var
+
     { env with decls = env.decls @ [SpirvDeclConst (spvVar, spvConst)] }, spvVar
 
 let CheckValue expr =
@@ -126,7 +134,7 @@ let rec CheckExpr env isReturnable expr =
         let env, exprOpt =
             ((env, None), args, ty.GetProperties() |> List.ofArray)
             |||> List.fold2 (fun (env, exprOpt) arg prop ->
-                let spvTy = mkSpirvType prop.PropertyType 1
+                let spvTy = mkSpirvType prop.PropertyType
                 let decorations = outputDecorationsByName prop.Name
                 let var = mkSpirvVar (prop.Name, spvTy, decorations, StorageClass.Output, true)
                 let env, _ = addSpirvDeclVar env var
@@ -143,7 +151,7 @@ let rec CheckExpr env isReturnable expr =
         | _ -> env, SpirvNop
 
     | Var var ->
-        let env, spvVar = mkSpirvVarOfVar env StorageClass.Private var 1
+        let env, spvVar = mkSpirvVarOfVar env StorageClass.Private var
         env, SpirvVar spvVar
 
     | Sequential(expr1, expr2) ->
@@ -167,7 +175,7 @@ let rec CheckExpr env isReturnable expr =
             failwithf "Declaring type of method not supported: %A" methInfo.DeclaringType
 
     | NewObject (ctorInfo, args) ->
-        let spvTy = mkSpirvType ctorInfo.DeclaringType 1
+        let spvTy = mkSpirvType ctorInfo.DeclaringType
         match spvTy, args with
         | SpirvTypeVector2, args -> 
             let env, spvArgs = CheckExprs env args
@@ -185,7 +193,7 @@ let rec CheckExpr env isReturnable expr =
             failwithf "Invalid type for NewObject: %A" spvTy
 
     | Let(var, rhs, body) ->
-        let env, spvVar = mkSpirvVarOfVar env StorageClass.Private var 1
+        let env, spvVar = mkSpirvVarOfVar env StorageClass.Private var
         let env, spvRhs = CheckExpr env false rhs
         let env, spvBody = CheckExpr env true body
         env, SpirvLet (spvVar, spvRhs, spvBody)

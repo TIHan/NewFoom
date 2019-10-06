@@ -18,6 +18,17 @@ type SpirvType =
     | SpirvTypeVector4
     | SpirvTypeArray of SpirvType * length: int
 
+    member x.Name =
+        match x with
+        | SpirvTypeVoid -> "void"
+        | SpirvTypeInt -> "int"
+        | SpirvTypeSingle -> "single"
+        | SpirvTypeVector2 -> "Vector2"
+        | SpirvTypeVector3 -> "Vector3"
+        | SpirvTypeVector4 -> "Vector4"
+        | SpirvTypeArray (elementTy, length) -> 
+            elementTy.Name + "[" + string length + "]" 
+
 type SpirvVar = 
     {
         Stamp: int64

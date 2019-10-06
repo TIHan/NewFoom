@@ -33,7 +33,6 @@ let ``Compiler Vertex`` () =
     let info = SpirvGenInfo.Create(AddressingModel.Logical, MemoryModel.GLSL450, ExecutionModel.Vertex, [Capability.Shader], ["GLSL.std.450"])
     let expr = Checker.Check vertex
     let spv = SpirvGen.GenModule info expr
-   // let spv = Spirv.GenModule info vertex
     ()
 
 [<Fact>]
@@ -45,5 +44,6 @@ let ``Compiler Fragment`` () =
         @>
 
     let info = SpirvGenInfo.Create(AddressingModel.Logical, MemoryModel.GLSL450, ExecutionModel.Fragment, [Capability.Shader], ["GLSL.std.450"], (ExecutionMode.OriginUpperLeft, []))
-    let spv = Spirv.GenModule info fragment
+    let expr = Checker.Check fragment
+    let spv = SpirvGen.GenModule info expr
     ()

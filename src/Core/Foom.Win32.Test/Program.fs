@@ -77,13 +77,15 @@ let main argv =
 
 
     let spvVertexInfo = SpirvGenInfo.Create(AddressingModel.Logical, MemoryModel.GLSL450, ExecutionModel.Vertex, [Capability.Shader], ["GLSL.std.450"])
-    //let spvVertex = Spirv.GenModule spvVertexInfo vertex
-    let expr = Checker.Check vertex
-    let spvVertex = SpirvGen.GenModule spvVertexInfo expr
+    let spvVertex =
+        Checker.Check vertex
+        |> SpirvGen.GenModule spvVertexInfo
 
     let fragment = <@ fun fragColor -> {| outColor = Vector4(fragColor, 1.f) |} @>
     let spvFragmentInfo = SpirvGenInfo.Create(AddressingModel.Logical, MemoryModel.GLSL450, ExecutionModel.Fragment, [Capability.Shader], ["GLSL.std.450"], (ExecutionMode.OriginUpperLeft, []))
-    let spvFragment = Spirv.GenModule spvFragmentInfo fragment
+    let spvFragment = 
+        Checker.Check fragment
+        |> SpirvGen.GenModule spvFragmentInfo
 
    // let vertexBytes = System.IO.File.ReadAllBytes("triangle_vertex.spv")
     let vertexBytes =
