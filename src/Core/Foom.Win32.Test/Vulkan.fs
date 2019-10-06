@@ -827,14 +827,14 @@ let drawFrame device swapChain semaphores (commandBuffers: VkCommandBuffer []) g
 
     vkAcquireNextImageKHR(device, swapChain, UInt64.MaxValue, semaphores.imageAvailable.[currentFrame], VK_NULL_HANDLE, &&imageIndex) |> checkResult
 
-    let waitSemaphores = [|semaphores.imageAvailable|]
+    let waitSemaphores = [|semaphores.imageAvailable.[currentFrame]|]
     let waitStages = [|VkPipelineStageFlags.VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT|]
 
-    let signalSemaphores = [|semaphores.renderFinished|]
+    let signalSemaphores = [|semaphores.renderFinished.[currentFrame]|]
 
-    use pWaitSemaphores = fixed waitSemaphores.[currentFrame]
+    use pWaitSemaphores = fixed waitSemaphores
     use waitStages = fixed waitStages
-    use pSignalSemaphores = fixed signalSemaphores.[currentFrame]
+    use pSignalSemaphores = fixed signalSemaphores
     use pCommandBuffers = fixed &commandBuffers.[int imageIndex]
     let submitInfo =
         VkSubmitInfo (
@@ -870,6 +870,8 @@ let drawFrame device swapChain semaphores (commandBuffers: VkCommandBuffer []) g
 
     vkQueueWaitIdle(presentQueue) |> checkResult
 
+    (currentFrame + 1) % MaxFramesInFlight
+
 [<Sealed>]
 type VulkanInstance 
     (instance: VkInstance, 
@@ -890,6 +892,7 @@ type VulkanInstance
     let gate = obj ()
     let mutable isDisposed = 0
     let pipelines = ResizeArray ()
+    let mutable currentFrame = 0
 
     member __.Instance = instance
 
@@ -914,7 +917,7 @@ type VulkanInstance
         )
 
     member __.DrawFrame () =
-        drawFrame device swapChain semaphores commandBuffers graphicsQueue presentQueue 0
+        currentFrame <- drawFrame device swapChain semaphores commandBuffers graphicsQueue presentQueue currentFrame
 
     member __.WaitIdle () =
         vkQueueWaitIdle(presentQueue) |> checkResult
