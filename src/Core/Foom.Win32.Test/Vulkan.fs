@@ -790,9 +790,12 @@ module Cmd =
 
 type Semaphores =
     {
-        imageAvailable: VkSemaphore
-        renderFinished: VkSemaphore
+        imageAvailable: VkSemaphore []
+        renderFinished: VkSemaphore []
     }
+
+[<Literal>]
+let MaxFramesInFlight = 2
 
 let mkSemaphores device =
     let semaphoreCreateInfo =
@@ -800,30 +803,38 @@ let mkSemaphores device =
             sType = VkStructureType.VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO
         )
 
-    let imageAvailableSemaphore = VkSemaphore ()
-    let renderFinishedSemaphore = VkSemaphore ()
+    let imageAvailableSemaphores =
+        Array.init MaxFramesInFlight (fun _ ->
+            let imageAvailableSemaphore = VkSemaphore ()
+            vkCreateSemaphore(device, &&semaphoreCreateInfo, vkNullPtr, &&imageAvailableSemaphore) |> checkResult
+            imageAvailableSemaphore
+        )
 
-    vkCreateSemaphore(device, &&semaphoreCreateInfo, vkNullPtr, &&imageAvailableSemaphore) |> checkResult
-    vkCreateSemaphore(device, &&semaphoreCreateInfo, vkNullPtr, &&renderFinishedSemaphore) |> checkResult
+    let renderFinishedSemaphores =
+        Array.init MaxFramesInFlight (fun _ ->
+            let renderFinishedSemaphore = VkSemaphore ()
+            vkCreateSemaphore(device, &&semaphoreCreateInfo, vkNullPtr, &&renderFinishedSemaphore) |> checkResult
+            renderFinishedSemaphore
+        )
 
     {
-        imageAvailable = imageAvailableSemaphore
-        renderFinished = renderFinishedSemaphore
+        imageAvailable = imageAvailableSemaphores
+        renderFinished = renderFinishedSemaphores
     }
 
-let drawFrame device swapChain semaphores (commandBuffers: VkCommandBuffer []) graphicsQueue presentQueue =
+let drawFrame device swapChain semaphores (commandBuffers: VkCommandBuffer []) graphicsQueue presentQueue currentFrame =
     let imageIndex = 0u
 
-    vkAcquireNextImageKHR(device, swapChain, UInt64.MaxValue, semaphores.imageAvailable, VK_NULL_HANDLE, &&imageIndex) |> checkResult
+    vkAcquireNextImageKHR(device, swapChain, UInt64.MaxValue, semaphores.imageAvailable.[currentFrame], VK_NULL_HANDLE, &&imageIndex) |> checkResult
 
     let waitSemaphores = [|semaphores.imageAvailable|]
     let waitStages = [|VkPipelineStageFlags.VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT|]
 
     let signalSemaphores = [|semaphores.renderFinished|]
 
-    use pWaitSemaphores = fixed waitSemaphores
+    use pWaitSemaphores = fixed waitSemaphores.[currentFrame]
     use waitStages = fixed waitStages
-    use pSignalSemaphores = fixed signalSemaphores
+    use pSignalSemaphores = fixed signalSemaphores.[currentFrame]
     use pCommandBuffers = fixed &commandBuffers.[int imageIndex]
     let submitInfo =
         VkSubmitInfo (
@@ -903,7 +914,7 @@ type VulkanInstance
         )
 
     member __.DrawFrame () =
-        drawFrame device swapChain semaphores commandBuffers graphicsQueue presentQueue
+        drawFrame device swapChain semaphores commandBuffers graphicsQueue presentQueue 0
 
     member __.WaitIdle () =
         vkQueueWaitIdle(presentQueue) |> checkResult
@@ -928,8 +939,17 @@ type VulkanInstance
                     )
                 )
 
-                vkDestroySemaphore(device, semaphores.renderFinished, vkNullPtr)
-                vkDestroySemaphore(device, semaphores.imageAvailable, vkNullPtr)
+                semaphores.renderFinished
+                |> Array.rev
+                |> Array.iter (fun s ->
+                    vkDestroySemaphore(device, s, vkNullPtr)
+                )
+
+                semaphores.imageAvailable
+                |> Array.rev
+                |> Array.iter (fun s ->
+                    vkDestroySemaphore(device, s, vkNullPtr)
+                )
 
                 vkDestroyCommandPool(device, commandPool, vkNullPtr)
 
