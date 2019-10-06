@@ -913,10 +913,10 @@ type private SwapChain (physicalDevice, device, surface, indices, commandPool) =
             failwith "SwapChain disposed."
 
     let check () =
+        checkDispose ()
+
         if state.IsNone then
             failwith "SwapChain never created."
-
-        checkDispose ()
 
     let destroy () =
         match Interlocked.Exchange(&state, None) with
