@@ -884,9 +884,9 @@ let drawFrame device swapChain sync (commandBuffers: VkCommandBuffer []) graphic
             pResults = vkNullPtr // Optional
         )
 
-    vkQueuePresentKHR(presentQueue, &&presentInfo) |> checkResult
+    let res = vkQueuePresentKHR(presentQueue, &&presentInfo)
 
-    (currentFrame + 1) % MaxFramesInFlight
+    (currentFrame + 1) % MaxFramesInFlight, res
 
 type private SwapChainState =
     {
@@ -941,6 +941,8 @@ type private SwapChain (physicalDevice, device, surface, indices, commandPool) =
             vkDestroyPipeline(device, pipeline, vkNullPtr)
         )
 
+        pipelines.Clear ()
+
         use pCommandBuffers = fixed commandBuffers
         vkFreeCommandBuffers(device, commandPool, uint32 commandBuffers.Length, pCommandBuffers)
 
@@ -984,29 +986,33 @@ type private SwapChain (physicalDevice, device, surface, indices, commandPool) =
         state.Value.commandBuffers
 
     member _.Recreate () =
-        lock gate |> fun _ ->
+        if not (Monitor.IsEntered gate) then
+            Monitor.Enter gate
 
-        checkDispose ()
-        destroy ()
+        try
+            checkDispose ()
+            destroy ()
 
-        let swapChain, surfaceFormat, extent, images = mkSwapChain physicalDevice device surface indices
-        let imageViews = mkImageViews device surfaceFormat.format images
-        let renderPass = mkRenderPass device surfaceFormat.format
-        let pipelineLayout = Pipeline.mkPipelineLayout device
-        let framebuffers = mkFramebuffers device renderPass extent imageViews
-        let commandBuffers = mkCommandBuffers device commandPool framebuffers
+            let swapChain, surfaceFormat, extent, images = mkSwapChain physicalDevice device surface indices
+            let imageViews = mkImageViews device surfaceFormat.format images
+            let renderPass = mkRenderPass device surfaceFormat.format
+            let pipelineLayout = Pipeline.mkPipelineLayout device
+            let framebuffers = mkFramebuffers device renderPass extent imageViews
+            let commandBuffers = mkCommandBuffers device commandPool framebuffers
 
-        state <- 
-            { 
-                extent = extent
-                swapChain = swapChain
-                imageViews = imageViews
-                renderPass = renderPass
-                pipelineLayout = pipelineLayout
-                framebuffers = framebuffers
-                commandBuffers = commandBuffers
-            }
-            |> Some
+            state <- 
+                { 
+                    extent = extent
+                    swapChain = swapChain
+                    imageViews = imageViews
+                    renderPass = renderPass
+                    pipelineLayout = pipelineLayout
+                    framebuffers = framebuffers
+                    commandBuffers = commandBuffers
+                }
+                |> Some
+        finally
+            Monitor.Exit gate
 
     member x.AddPipeline (vertexBytes: byte [], fragmentBytes: byte []) =
         lock gate |> fun _ ->
@@ -1028,8 +1034,16 @@ type private SwapChain (physicalDevice, device, surface, indices, commandPool) =
     member x.DrawFrame (sync, graphicsQueue, presentQueue) =
         lock gate |> fun _ ->
 
-        check ()
-        currentFrame <- drawFrame device x.SwapChain sync x.CommandBuffers graphicsQueue presentQueue currentFrame
+        if pipelines.Count > 0 then
+            check ()
+
+            let nextFrame, res = drawFrame device x.SwapChain sync x.CommandBuffers graphicsQueue presentQueue currentFrame
+            currentFrame <- nextFrame
+
+            if res = VkResult.VK_ERROR_OUT_OF_DATE_KHR then
+                x.Recreate ()
+            else
+                checkResult res
 
     interface IDisposable with
 
