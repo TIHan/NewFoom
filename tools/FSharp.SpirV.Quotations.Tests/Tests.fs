@@ -31,7 +31,9 @@ let ``Compiler Vertex`` () =
         @>
 
     let info = SpirvGenInfo.Create(AddressingModel.Logical, MemoryModel.GLSL450, ExecutionModel.Vertex, [Capability.Shader], ["GLSL.std.450"])
-    let spv = Spirv.GenModule info vertex
+    let expr = Checker.Check vertex
+    let spv = SpirvGen.GenModule info expr
+   // let spv = Spirv.GenModule info vertex
     ()
 
 [<Fact>]
