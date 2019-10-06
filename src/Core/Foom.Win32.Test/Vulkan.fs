@@ -820,7 +820,8 @@ let mkSync device =
 
     let fenceCreateInfo =
         VkFenceCreateInfo (
-            sType = VkStructureType.VK_STRUCTURE_TYPE_FENCE_CREATE_INFO
+            sType = VkStructureType.VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+            flags = VkFenceCreateFlags.VK_FENCE_CREATE_SIGNALED_BIT // we need this so we do not lock up on the first 'drawFrame'
         )
 
     let inFlightFences = 
@@ -837,8 +838,11 @@ let mkSync device =
     }
 
 let drawFrame device swapChain sync (commandBuffers: VkCommandBuffer []) graphicsQueue presentQueue currentFrame =
-    let imageIndex = 0u
+    use pFences = fixed &sync.inFlightFences.[currentFrame]
+    vkWaitForFences(device, 1u, pFences, VK_TRUE, UInt64.MaxValue) |> checkResult
+    vkResetFences(device, 1u, pFences) |> checkResult
 
+    let imageIndex = 0u
     vkAcquireNextImageKHR(device, swapChain, UInt64.MaxValue, sync.imageAvailableSemaphores.[currentFrame], VK_NULL_HANDLE, &&imageIndex) |> checkResult
 
     let waitSemaphores = [|sync.imageAvailableSemaphores.[currentFrame]|]
@@ -862,7 +866,7 @@ let drawFrame device swapChain sync (commandBuffers: VkCommandBuffer []) graphic
             pSignalSemaphores = pSignalSemaphores
         )
 
-    vkQueueSubmit(graphicsQueue, 1u, &&submitInfo, VK_NULL_HANDLE) |> checkResult
+    vkQueueSubmit(graphicsQueue, 1u, &&submitInfo, sync.inFlightFences.[currentFrame]) |> checkResult
 
     // Presentation
 
