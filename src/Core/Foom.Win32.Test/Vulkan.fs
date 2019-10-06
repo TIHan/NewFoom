@@ -906,6 +906,7 @@ type private SwapChain (physicalDevice, device, surface, indices, commandPool) =
 
     let gate = obj ()
     let mutable state = None
+    let mutable currentFrame = 0
     let mutable isDisposed = 0
 
     let pipelines = ResizeArray ()
@@ -933,6 +934,8 @@ type private SwapChain (physicalDevice, device, surface, indices, commandPool) =
                 } ->
 
         vkDeviceWaitIdle(device) |> checkResult
+
+        currentFrame <- 0
 
         pipelines
         |> Seq.rev
@@ -1024,6 +1027,12 @@ type private SwapChain (physicalDevice, device, surface, indices, commandPool) =
 
         pipelines.Add pipeline
 
+    member x.DrawFrame (sync, graphicsQueue, presentQueue) =
+        lock gate |> fun _ ->
+
+        check ()
+        currentFrame <- drawFrame device x.SwapChain sync x.CommandBuffers graphicsQueue presentQueue currentFrame
+
     interface IDisposable with
 
         member x.Dispose () =
@@ -1045,9 +1054,7 @@ type VulkanInstance
      graphicsQueue: VkQueue, presentQueue: VkQueue, handles: GCHandle[],
      swapChain: SwapChain) =
 
-    let gate = obj ()
     let mutable isDisposed = 0
-    let pipelines = ResizeArray ()
     let mutable currentFrame = 0
 
     member __.Instance = instance
@@ -1058,7 +1065,7 @@ type VulkanInstance
         swapChain.AddPipeline (vertexBytes, fragmentBytes)
 
     member __.DrawFrame () =
-        currentFrame <- drawFrame device swapChain.SwapChain sync swapChain.CommandBuffers graphicsQueue presentQueue currentFrame
+        swapChain.DrawFrame(sync, graphicsQueue, presentQueue)
 
     member __.WaitIdle () =
         vkQueueWaitIdle(presentQueue) |> checkResult
