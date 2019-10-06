@@ -919,7 +919,7 @@ type private SwapChain (physicalDevice, device, surface, indices, commandPool) =
         checkDispose ()
 
     let destroy () =
-        match state with
+        match Interlocked.Exchange(&state, None) with
         | None -> ()
         | Some {
                 swapChain = swapChain
@@ -929,6 +929,8 @@ type private SwapChain (physicalDevice, device, surface, indices, commandPool) =
                 framebuffers = framebuffers
                 commandBuffers = commandBuffers
                 } ->
+
+        vkDeviceWaitIdle(device) |> checkResult
 
         use pCommandBuffers = fixed commandBuffers
         vkFreeCommandBuffers(device, commandPool, uint32 commandBuffers.Length, pCommandBuffers)
@@ -947,7 +949,6 @@ type private SwapChain (physicalDevice, device, surface, indices, commandPool) =
         )
 
         vkDestroySwapchainKHR(device, swapChain, vkNullPtr)
-        state <- None
 
     member _.Extent =
         check ()
