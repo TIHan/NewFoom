@@ -12,7 +12,6 @@
     <Compile Include="Intrinsics.fs" />
     <Compile Include="Checker.fsi" />
     <Compile Include="Checker.fs" />
-    <Compile Include="Spirv.fs" />
   </ItemGroup>
 
   <ItemGroup>

@@ -33,6 +33,15 @@ let private mkInstanceCreateInfo appInfo extensionCount extensionNamesPtr layerC
         ppEnabledLayerNames = layerNamesPtr
     )
 
+let private isDiscreteGpu (deviceProperties: VkPhysicalDeviceProperties) =
+    deviceProperties.deviceType = VkPhysicalDeviceType.VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU
+
+let private isDiscreteGpuWithGeometryShader deviceProperties (deviceFeatures: VkPhysicalDeviceFeatures) =
+    isDiscreteGpu deviceProperties && deviceFeatures.geometryShader = VK_TRUE
+
+let private isIntegratedGpu (deviceProperties: VkPhysicalDeviceProperties) =
+    deviceProperties.deviceType = VkPhysicalDeviceType.VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU
+
 let private getSuitablePhysicalDevice instance =
     let deviceCount = 0u
 
@@ -47,16 +56,24 @@ let private getSuitablePhysicalDevice instance =
 
     let deviceOpt =
         devices
-        |> Array.tryFind (fun device ->
+        |> Array.map (fun device ->
             let deviceProperties = VkPhysicalDeviceProperties()
             vkGetPhysicalDeviceProperties(device, &&deviceProperties)
 
             let deviceFeatures = VkPhysicalDeviceFeatures()
             vkGetPhysicalDeviceFeatures(device, &&deviceFeatures)
 
-            (deviceProperties.deviceType = VkPhysicalDeviceType.VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU &&
-            deviceFeatures.geometryShader = VK_TRUE) || deviceProperties.deviceType = VkPhysicalDeviceType.VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU
+            (device, deviceProperties, deviceFeatures)
         )
+        |> Array.filter (fun (_, deviceProperties, _) -> isDiscreteGpu deviceProperties || isIntegratedGpu deviceProperties)
+        |> Array.sortBy (fun (_, deviceProperties, deviceFeatures) ->
+            if isDiscreteGpuWithGeometryShader deviceProperties deviceFeatures then 0
+            elif isDiscreteGpu deviceProperties then 1
+            elif isIntegratedGpu deviceProperties then 2
+            else Int32.MaxValue                
+        )
+        |> Array.tryHead
+        |> Option.map (fun (device, _, _) -> device)
 
     match deviceOpt with
     | Some device -> device 
