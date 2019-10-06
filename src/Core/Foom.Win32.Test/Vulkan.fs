@@ -890,22 +890,132 @@ let drawFrame device swapChain sync (commandBuffers: VkCommandBuffer []) graphic
 
     (currentFrame + 1) % MaxFramesInFlight
 
+type private SwapChainState =
+    {
+        extent: VkExtent2D
+        swapChain: VkSwapchainKHR
+        imageViews: VkImageView []
+        renderPass: VkRenderPass
+        pipelineLayout: VkPipelineLayout
+        framebuffers: VkFramebuffer []
+        commandBuffers: VkCommandBuffer []
+    }
+
+[<Sealed>]
+type private SwapChain (physicalDevice, device, surface, indices, commandPool) =
+
+    let mutable state = None
+    let mutable isDisposed = 0
+
+    let checkDispose () =
+        
+        if isDisposed <> 0 then
+            failwith "SwapChain disposed."
+
+    let check () =
+        if state.IsNone then
+            failwith "SwapChain never created."
+
+        checkDispose ()
+
+    let destroy () =
+        match state with
+        | None -> ()
+        | Some {
+                swapChain = swapChain
+                imageViews = imageViews
+                renderPass = renderPass
+                pipelineLayout = pipelineLayout
+                framebuffers = framebuffers
+                commandBuffers = commandBuffers
+                } ->
+
+        use pCommandBuffers = fixed commandBuffers
+        vkFreeCommandBuffers(device, commandPool, uint32 commandBuffers.Length, pCommandBuffers)
+
+        framebuffers
+        |> Array.iter (fun framebuffer ->
+            vkDestroyFramebuffer(device, framebuffer, vkNullPtr)
+        )
+
+        vkDestroyPipelineLayout(device, pipelineLayout, vkNullPtr)
+        vkDestroyRenderPass(device, renderPass, vkNullPtr)
+
+        imageViews
+        |> Array.iter (fun imageView ->
+            vkDestroyImageView(device, imageView, vkNullPtr)
+        )
+
+        vkDestroySwapchainKHR(device, swapChain, vkNullPtr)
+        state <- None
+
+    member _.Extent =
+        check ()
+        state.Value.extent
+
+    member _.SwapChain = 
+        check ()
+        state.Value.swapChain
+
+    member _.RenderPass =
+        check ()
+        state.Value.renderPass
+
+    member _.PipelineLayout =
+        check ()
+        state.Value.pipelineLayout
+
+    member _.Framebuffers =
+        check ()
+        state.Value.framebuffers
+
+    member _.CommandBuffers =
+        check ()
+        state.Value.commandBuffers
+
+    member _.Recreate () =
+        checkDispose ()
+        destroy ()
+
+        let swapChain, surfaceFormat, extent, images = mkSwapChain physicalDevice device surface indices
+        let imageViews = mkImageViews device surfaceFormat.format images
+        let renderPass = mkRenderPass device surfaceFormat.format
+        let pipelineLayout = Pipeline.mkPipelineLayout device
+        let framebuffers = mkFramebuffers device renderPass extent imageViews
+        let commandBuffers = mkCommandBuffers device commandPool framebuffers
+
+        state <- 
+            { 
+                extent = extent
+                swapChain = swapChain
+                imageViews = imageViews
+                renderPass = renderPass
+                pipelineLayout = pipelineLayout
+                framebuffers = framebuffers
+                commandBuffers = commandBuffers
+            }
+            |> Some
+
+    interface IDisposable with
+
+        member x.Dispose () =
+            if Interlocked.CompareExchange(&isDisposed, 1, 0) = 1 then
+                failwith "SwapChain already disposed"
+            else
+                GC.SuppressFinalize x
+                destroy ()
+
 [<Sealed>]
 type VulkanInstance 
+    private
     (instance: VkInstance, 
      debugMessenger: VkDebugUtilsMessengerEXT, 
      device: VkDevice, 
-     surface: VkSurfaceKHR, 
-     swapChain: VkSwapchainKHR, 
-     extent: VkExtent2D,
-     imageViews: VkImageView [], 
-     renderPass: VkRenderPass,
-     pipelineLayout: VkPipelineLayout,
-     framebuffers: VkFramebuffer [],
+     surface: VkSurfaceKHR,
      commandPool: VkCommandPool,
-     commandBuffers: VkCommandBuffer [],
      sync: Sync,
-     graphicsQueue: VkQueue, presentQueue: VkQueue, handles: GCHandle[]) =
+     graphicsQueue: VkQueue, presentQueue: VkQueue, handles: GCHandle[],
+     swapChain: SwapChain) =
 
     let gate = obj ()
     let mutable isDisposed = 0
@@ -925,25 +1035,22 @@ type VulkanInstance
             use pFragmentBytes = fixed fragmentBytes
 
             let pipeline =
-                Pipeline.mkGraphicsPipeline device extent pipelineLayout renderPass
+                Pipeline.mkGraphicsPipeline device swapChain.Extent swapChain.PipelineLayout swapChain.RenderPass
                     pVertexBytes (uint32 vertexBytes.Length)
                     pFragmentBytes (uint32 fragmentBytes.Length)
 
-            Cmd.recordDraw extent framebuffers commandBuffers renderPass pipeline
+            Cmd.recordDraw swapChain.Extent swapChain.Framebuffers swapChain.CommandBuffers swapChain.RenderPass pipeline
 
             pipelines.Add pipeline
         )
 
     member __.DrawFrame () =
-        currentFrame <- drawFrame device swapChain sync commandBuffers graphicsQueue presentQueue currentFrame
+        currentFrame <- drawFrame device swapChain.SwapChain sync swapChain.CommandBuffers graphicsQueue presentQueue currentFrame
 
     member __.WaitIdle () =
         vkQueueWaitIdle(presentQueue) |> checkResult
         vkQueueWaitIdle(graphicsQueue) |> checkResult
         vkDeviceWaitIdle(device) |> checkResult
-
-    override x.Finalize() =
-        (x :> IDisposable).Dispose ()
 
     interface IDisposable with
         member x.Dispose () =
@@ -959,6 +1066,8 @@ type VulkanInstance
                         vkDestroyPipeline(device, pipeline, vkNullPtr)
                     )
                 )
+
+                (swapChain :> IDisposable).Dispose ()
 
                 sync.inFlightFences
                 |> Array.rev
@@ -979,21 +1088,6 @@ type VulkanInstance
                 )
 
                 vkDestroyCommandPool(device, commandPool, vkNullPtr)
-
-                framebuffers
-                |> Array.iter (fun framebuffer ->
-                    vkDestroyFramebuffer(device, framebuffer, vkNullPtr)
-                )
-
-                vkDestroyPipelineLayout(device, pipelineLayout, vkNullPtr)
-                vkDestroyRenderPass(device, renderPass, vkNullPtr)
-
-                imageViews
-                |> Array.iter (fun imageView ->
-                    vkDestroyImageView(device, imageView, vkNullPtr)
-                )
-
-                vkDestroySwapchainKHR(device, swapChain, vkNullPtr)
                 vkDestroyDevice(device, vkNullPtr)
 
                 if debugMessenger <> IntPtr.Zero then
@@ -1024,33 +1118,23 @@ type VulkanInstance
         let physicalDevice = getSuitablePhysicalDevice instance
         let indices = getPhysicalDeviceQueueFamilies physicalDevice surface
         let device = mkLogicalDevice physicalDevice indices validationLayers deviceExtensions
-        let swapChain, surfaceFormat, extent, images = mkSwapChain physicalDevice device surface indices
-        let imageViews = mkImageViews device surfaceFormat.format images
-        let renderPass = mkRenderPass device surfaceFormat.format
-        let pipelineLayout = Pipeline.mkPipelineLayout device
-        let framebuffers = mkFramebuffers device renderPass extent imageViews
         let commandPool = mkCommandPool device indices
-        let commandBuffers = mkCommandBuffers device commandPool framebuffers
         let sync = mkSync device
-
         let graphicsQueue = mkQueue device indices.graphicsFamily.Value
         let presentQueue = mkQueue device indices.presentFamily.Value
+
+        let swapChain = new SwapChain(physicalDevice, device, surface, indices, commandPool)
+        swapChain.Recreate ()
 
         new VulkanInstance (
             instance,
             debugMessenger,
             device,
             surface,
-            swapChain,
-            extent,
-            imageViews,
-            renderPass,
-            pipelineLayout,
-            framebuffers,
             commandPool,
-            commandBuffers,
             sync,
-            graphicsQueue, presentQueue, [|debugCallbackHandle|]
+            graphicsQueue, presentQueue, [|debugCallbackHandle|],
+            swapChain
         )
 
     static member CreateWin32(hwnd, hinstance, appName, engineName, validationLayers, deviceExtensions) =
