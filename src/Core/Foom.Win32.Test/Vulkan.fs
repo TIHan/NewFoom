@@ -313,11 +313,11 @@ let private getSwapExtent (capabilities: VkSurfaceCapabilitiesKHR) =
         capabilities.currentExtent
     else
         let width = 
-            [capabilities.minImageExtent.width; capabilities.maxImageExtent.width; 1280u]
+            [capabilities.minImageExtent.width; capabilities.maxImageExtent.width]
             |> List.max
 
         let height =
-            [capabilities.minImageExtent.width; capabilities.maxImageExtent.width; 720u]
+            [capabilities.minImageExtent.width; capabilities.maxImageExtent.width]
             |> List.max
 
         VkExtent2D (
@@ -631,16 +631,31 @@ module Pipeline =
         vkCreatePipelineLayout(device, &&createInfo, vkNullPtr, &&pipelineLayout) |> checkResult
         pipelineLayout
 
-    let mkGraphicsPipeline device extent pipelineLayout renderPass vert vertSize frag fragSize =
+    type ShaderGroup =
+        {
+            vertex: VkShaderModule
+            fragment: VkShaderModule
+        }
+
+    let createShaderGroup device vert vertSize frag fragSize =
         let vertShaderModule = mkShaderModule device vert vertSize
         let fragShaderModule = mkShaderModule device frag fragSize
+        {
+            vertex = vertShaderModule
+            fragment = fragShaderModule
+        }
 
+    let destroyShaderGroup device group =
+        vkDestroyShaderModule(device, group.vertex, vkNullPtr)
+        vkDestroyShaderModule(device, group.fragment, vkNullPtr)
+
+    let mkGraphicsPipeline device extent pipelineLayout renderPass group =
         use pNameMain = fixed vkBytesOfString "main"
 
         let stages =
             [|
-                mkShaderStageInfo VkShaderStageFlags.VK_SHADER_STAGE_VERTEX_BIT pNameMain vertShaderModule
-                mkShaderStageInfo VkShaderStageFlags.VK_SHADER_STAGE_FRAGMENT_BIT pNameMain fragShaderModule
+                mkShaderStageInfo VkShaderStageFlags.VK_SHADER_STAGE_VERTEX_BIT pNameMain group.vertex
+                mkShaderStageInfo VkShaderStageFlags.VK_SHADER_STAGE_FRAGMENT_BIT pNameMain group.fragment
             |]
 
         let vertexInputCreateInfo = mkVertexInputCreateInfo ()
@@ -684,10 +699,6 @@ module Pipeline =
 
         let graphicsPipeline = VkPipeline ()
         vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1u, &&createInfo, vkNullPtr, &&graphicsPipeline) |> checkResult
-
-        vkDestroyShaderModule(device, fragShaderModule, vkNullPtr)
-        vkDestroyShaderModule(device, vertShaderModule, vkNullPtr)
-
         graphicsPipeline
 
 let mkFramebuffers device renderPass (extent: VkExtent2D) imageViews =
@@ -907,6 +918,7 @@ type private SwapChain (physicalDevice, device, surface, indices, commandPool) =
     let mutable currentFrame = 0
     let mutable isDisposed = 0
 
+    let shaderGroups = ResizeArray ()
     let pipelines = ResizeArray ()
 
     let checkDispose () =       
@@ -961,6 +973,17 @@ type private SwapChain (physicalDevice, device, surface, indices, commandPool) =
 
         vkDestroySwapchainKHR(device, swapChain, vkNullPtr)
 
+    let addPipeline group =
+        match state with
+        | Some state ->
+            let pipeline = Pipeline.mkGraphicsPipeline device state.extent state.pipelineLayout state.renderPass group
+
+            Cmd.recordDraw state.extent state.framebuffers state.commandBuffers state.renderPass pipeline
+
+            pipelines.Add pipeline
+        | _ ->
+            ()
+
     member _.Extent =
         check ()
         state.Value.extent
@@ -985,7 +1008,7 @@ type private SwapChain (physicalDevice, device, surface, indices, commandPool) =
         check ()
         state.Value.commandBuffers
 
-    member _.Recreate () =
+    member x.Recreate () =
         if not (Monitor.IsEntered gate) then
             Monitor.Enter gate
 
@@ -1011,10 +1034,16 @@ type private SwapChain (physicalDevice, device, surface, indices, commandPool) =
                     commandBuffers = commandBuffers
                 }
                 |> Some
+
+            shaderGroups
+            |> Seq.iter (fun group ->
+                addPipeline group
+            )
+
         finally
             Monitor.Exit gate
 
-    member x.AddPipeline (vertexBytes: byte [], fragmentBytes: byte []) =
+    member x.AddShader (vertexBytes: byte [], fragmentBytes: byte []) =
         lock gate |> fun _ ->
 
         check ()
@@ -1022,14 +1051,13 @@ type private SwapChain (physicalDevice, device, surface, indices, commandPool) =
         use pVertexBytes = fixed vertexBytes
         use pFragmentBytes = fixed fragmentBytes
 
-        let pipeline =
-            Pipeline.mkGraphicsPipeline device x.Extent x.PipelineLayout x.RenderPass
-                pVertexBytes (uint32 vertexBytes.Length)
+        let group = 
+            Pipeline.createShaderGroup device 
+                pVertexBytes (uint32 vertexBytes.Length) 
                 pFragmentBytes (uint32 fragmentBytes.Length)
 
-        Cmd.recordDraw x.Extent x.Framebuffers x.CommandBuffers x.RenderPass pipeline
-
-        pipelines.Add pipeline
+        shaderGroups.Add group
+        addPipeline group
 
     member x.DrawFrame (sync, graphicsQueue, presentQueue) =
         lock gate |> fun _ ->
@@ -1052,7 +1080,15 @@ type private SwapChain (physicalDevice, device, surface, indices, commandPool) =
                 failwith "SwapChain already disposed"
             else
                 GC.SuppressFinalize x
-                lock gate destroy
+                lock gate (fun () ->
+                    shaderGroups
+                    |> Seq.rev
+                    |> Seq.iter (fun group -> 
+                        Pipeline.destroyShaderGroup device group
+                    )
+
+                    destroy ()
+                )
 
 [<Sealed>]
 type VulkanInstance 
@@ -1072,8 +1108,8 @@ type VulkanInstance
 
     member __.DebugMessenger = debugMessenger
 
-    member __.AddPipeline (vertexBytes, fragmentBytes) =
-        swapChain.AddPipeline (vertexBytes, fragmentBytes)
+    member __.AddShader (vertexBytes, fragmentBytes) =
+        swapChain.AddShader (vertexBytes, fragmentBytes)
 
     member __.DrawFrame () =
         swapChain.DrawFrame(sync, graphicsQueue, presentQueue)

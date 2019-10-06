@@ -104,7 +104,7 @@ let main argv =
         bytes
    // let fragmentBytes = System.IO.File.ReadAllBytes("triangle_fragment.spv")
 
-    instance.AddPipeline(vertexBytes, fragmentBytes)
+    instance.AddShader(vertexBytes, fragmentBytes)
 
     window.Start ()
 
