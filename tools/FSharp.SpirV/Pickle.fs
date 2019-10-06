@@ -478,6 +478,11 @@ module Instructions =
     let OpCompositeConstruct = p3 OpCompositeConstruct Id ResultId Ids (function OpCompositeConstruct (arg1, arg2, arg3) -> (arg1, arg2, arg3) | _ -> failwith "invalid")
     let OpCompositeExtract = p4 OpCompositeExtract Id ResultId Id Literals (function OpCompositeExtract (arg1, arg2, arg3, arg4) -> (arg1, arg2, arg3, arg4) | _ -> failwith "invalid")
 
+    // Arithmetic Instructions
+
+    let OpVectorTimesMatrix = p4 OpVectorTimesMatrix Id ResultId Id Id (function OpVectorTimesMatrix (arg1, arg2, arg3, arg4) -> (arg1, arg2, arg3, arg4) | _ -> failwith "invalid")
+    let OpMatrixTimesVector = p4 OpMatrixTimesVector Id ResultId Id Id (function OpMatrixTimesVector (arg1, arg2, arg3, arg4) -> (arg1, arg2, arg3, arg4) | _ -> failwith "invalid")
+
     // Relational and Logical Instructions
 
     let OpReturn = p0 OpReturn

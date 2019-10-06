@@ -16,6 +16,7 @@ type SpirvType =
     | SpirvTypeVector2
     | SpirvTypeVector3
     | SpirvTypeVector4
+    | SpirvTypeMatrix4x4
     | SpirvTypeArray of SpirvType * length: int
 
     member x.Name =
@@ -26,6 +27,7 @@ type SpirvType =
         | SpirvTypeVector2 -> "Vector2"
         | SpirvTypeVector3 -> "Vector3"
         | SpirvTypeVector4 -> "Vector4"
+        | SpirvTypeMatrix4x4 -> "Matrix4x4"
         | SpirvTypeArray (elementTy, length) -> 
             elementTy.Name + "[" + string length + "]" 
 
@@ -78,6 +80,7 @@ type SpirvExpr =
     | SpirvArrayIndexerGet of receiver: SpirvExpr * arg: SpirvExpr
     | SpirvVar of SpirvVar
     | SpirvVarSet of SpirvVar * SpirvExpr
+    | SpirvIntrinsicCall of SpirvIntrinsicCall 
 
     member x.Type =
         let rec getType expr =
@@ -109,7 +112,23 @@ type SpirvExpr =
                 spvVar.Type
             | SpirvVarSet _ ->
                 SpirvTypeVoid
+            | SpirvIntrinsicCall call ->
+                call.ReturnType
         getType x
+
+and SpirvIntrinsicCall =
+    | Transform__Vector4_Matrix4x4__Vector4 of vector4: SpirvExpr * matrix4x4: SpirvExpr
+    | Multiply__Matrix4x4_Matrix4x4__Matrix4x4 of matrix4x4_1: SpirvExpr * matrix4x4_2: SpirvExpr
+
+    member x.ReturnType =
+        match x with
+        | Transform__Vector4_Matrix4x4__Vector4 _ -> SpirvTypeVector4
+        | Multiply__Matrix4x4_Matrix4x4__Matrix4x4 _ -> SpirvTypeMatrix4x4
+
+    member x.Arguments =
+        match x with
+        | Transform__Vector4_Matrix4x4__Vector4 (arg1, arg2)
+        | Multiply__Matrix4x4_Matrix4x4__Matrix4x4 (arg1, arg2) -> [arg1;arg2]
 
 type SpirvDecl =
     | SpirvDeclConst of SpirvVar * SpirvConst

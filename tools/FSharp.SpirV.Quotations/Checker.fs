@@ -39,6 +39,8 @@ let rec mkSpirvType ty =
         SpirvTypeVector4
     | _ when ty = typeof<unit> ->
         SpirvTypeVoid
+    | _ when ty = typeof<Matrix4x4> ->
+        SpirvTypeMatrix4x4
     | _ when ty.IsArray ->
         failwith "Array can not be made here as it needs a specific length."
     | _ -> 
@@ -160,14 +162,42 @@ let rec CheckExpr env isReturnable expr =
         env, SpirvSequential (spvExpr1, spvExpr2)
 
     | Call (None, methInfo, args) ->
+        let env, args = CheckExprs env args
+
         match methInfo.DeclaringType.FullName with
         | "Microsoft.FSharp.Core.LanguagePrimitives+IntrinsicFunctions" ->
 
             match methInfo.Name, args with
             | "GetArray", [receiver;arg] ->
-                let env, spvReceiver = CheckExpr env false receiver
-                let env, spvArg = CheckExpr env false arg
-                env, SpirvArrayIndexerGet (spvReceiver, spvArg)
+                env, SpirvArrayIndexerGet (receiver, arg)
+            | _ ->
+                failwithf "Method not supported: %A" methInfo
+
+        | "System.Numerics.Vector4" ->
+
+            match methInfo.Name with
+            | "Transform" ->
+
+                let pars = methInfo.GetParameters() |> List.ofArray
+                match pars, args with
+                | [par1;par2], [arg1;arg2] when par1.ParameterType = typeof<Vector4> && par2.ParameterType = typeof<Matrix4x4> ->
+                    env, Transform__Vector4_Matrix4x4__Vector4 (arg1, arg2) |> SpirvIntrinsicCall
+                | _ ->
+                    failwithf "Method not supported: %A" methInfo
+
+            | _ ->
+                failwithf "Method not supported: %A" methInfo
+
+        | "Microsoft.FSharp.Core.Operators" ->
+
+            match methInfo.Name with
+            | "op_Multiply" ->
+                let pars = methInfo.GetParameters() |> List.ofArray
+                match pars, args with
+                | [par1;par2], [arg1;arg2] when par1.ParameterType = typeof<Matrix4x4> && par2.ParameterType = typeof<Matrix4x4> ->
+                    env, Multiply__Matrix4x4_Matrix4x4__Matrix4x4 (arg1, arg2) |> SpirvIntrinsicCall
+                | _ ->
+                    failwithf "Method not supported: %A" methInfo
             | _ ->
                 failwithf "Method not supported: %A" methInfo
 

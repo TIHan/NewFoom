@@ -204,6 +204,12 @@ type SpirvInstruction =
     | OpCompositeConstruct of resultType: id * Result_id * constituents: id list
     | OpCompositeExtract of resultType: id * Result_id * composite: id * indexes: Literals
 
+    // Arithmetic Instructions
+
+    | OpVectorTimesMatrix of resultType: id * Result_id * vector: id * matrix: id
+    | OpMatrixTimesVector of resultType: id * Result_id * matrix: id * vector: id
+    | OpMatrixTimesMatrix of resultType: id * Result_id * leftMatrix: id * rightMatrix: id
+
     // Relational and Logical Instructions
 
     | OpReturn

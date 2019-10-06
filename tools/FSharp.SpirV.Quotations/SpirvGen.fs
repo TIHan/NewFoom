@@ -195,6 +195,10 @@ let emitConstantVector3 cenv (constituents: id list) =
 let emitConstantVector4 cenv (constituents: id list) =
     emitConstantComposite cenv (emitTypeVector4 cenv) "Vector4" constituents
 
+let emitTypeMatrix4x4 cenv =
+    let columnType = emitTypeVector4 cenv
+    emitTypeAux cenv SpirvTypeMatrix4x4 (fun resultId -> OpTypeMatrix(resultId, columnType, [4u]))
+
 let rec emitType cenv ty =
     match ty with
     | SpirvTypeVoid -> emitTypeVoid cenv
@@ -203,6 +207,7 @@ let rec emitType cenv ty =
     | SpirvTypeVector2 -> emitTypeVector2 cenv
     | SpirvTypeVector3 -> emitTypeVector3 cenv
     | SpirvTypeVector4 -> emitTypeVector4 cenv
+    | SpirvTypeMatrix4x4 -> emitTypeMatrix4x4 cenv
     | SpirvTypeArray (elementTy, length) -> emitArrayType cenv elementTy length
 
 and emitArrayType cenv elementTy length =
@@ -384,6 +389,25 @@ let rec GenExpr cenv (env: env) expr =
         let id = GenGlobalVar cenv var
         addInstructions cenv [OpStore(id, pointer, None)]
         id
+
+    | SpirvIntrinsicCall call ->
+        let retTy = emitType cenv call.ReturnType
+        match call with
+        | Transform__Vector4_Matrix4x4__Vector4 (arg1, arg2) ->
+            let arg1 = GenExpr cenv env arg1
+            let arg2 = GenExpr cenv env arg2
+
+            let resultId = nextResultId cenv
+            addInstructions cenv [OpMatrixTimesVector(retTy, resultId, arg1, arg2)]
+            resultId
+
+        | Multiply__Matrix4x4_Matrix4x4__Matrix4x4 (arg1, arg2) ->
+            let arg1 = GenExpr cenv env arg1
+            let arg2 = GenExpr cenv env arg2
+
+            let resultId = nextResultId cenv
+            addInstructions cenv [OpMatrixTimesMatrix(retTy, resultId, arg1, arg2)]
+            resultId
 
 and GenVector cenv env retTy args =
     let constituents =
