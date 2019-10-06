@@ -264,11 +264,10 @@ let rec GenConst cenv spvConst =
                            m31, m32, m33, m34,
                            m41, m42, m43, m44, decorations) ->
         let constituents =
-            [ m11; m12; m13; m14;
-              m21; m22; m23; m24;
-              m31; m32; m33; m34;
-              m41; m42; m43; m44 ]
-            |> List.map (emitConstantSingle cenv)
+            [ [m11; m12; m13; m14] |> List.map (emitConstantSingle cenv) |> emitConstantVector4 cenv
+              [m21; m22; m23; m24] |> List.map (emitConstantSingle cenv) |> emitConstantVector4 cenv
+              [m31; m32; m33; m34] |> List.map (emitConstantSingle cenv) |> emitConstantVector4 cenv
+              [m41; m42; m43; m44] |> List.map (emitConstantSingle cenv) |> emitConstantVector4 cenv ]
         emitConstantMatrix4x4 cenv constituents
 
     | SpirvConstArray (elementTy, constants, decorations) ->

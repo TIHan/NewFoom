@@ -94,6 +94,16 @@ let rec mkSpirvConst expr =
         | SpirvTypeVector4, [Single arg1; Single arg2; Single arg3; Single arg4] ->
             SpirvConstVector4 (arg1, arg2, arg3, arg4, [])
 
+        | SpirvTypeMatrix4x4, 
+            [Single m11; Single m12; Single m13; Single m14
+             Single m21; Single m22; Single m23; Single m24
+             Single m31; Single m32; Single m33; Single m34
+             Single m41; Single m42; Single m43; Single m44] ->
+            SpirvConstMatrix4x4 (m11, m12, m13, m14,
+                                 m21, m22, m23, m24,
+                                 m31, m32, m33, m34,
+                                 m41, m42, m43, m44, [])
+
         | _ ->
             failwithf "Invalid NewObject for constant: %A" spvTy
 
