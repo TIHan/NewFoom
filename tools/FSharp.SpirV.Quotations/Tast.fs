@@ -53,21 +53,27 @@ let mkSpirvVar (name, ty, decorations, storageClass, isMutable) =
     }
 
 type SpirvConst =
-    | SpirvConstInt of int * Decorations
-    | SpirvConstSingle of single * Decorations
-    | SpirvConstVector2 of single * single * Decorations
-    | SpirvConstVector3 of single * single * single * Decorations
-    | SpirvConstVector4 of single * single * single * single * Decorations
-    | SpirvConstArray of elementTy: SpirvType * constants: SpirvConst list * Decorations
+    | SpirvConstInt of int * decorations: Decorations
+    | SpirvConstSingle of single * decorations: Decorations
+    | SpirvConstVector2 of single * single * decorations: Decorations
+    | SpirvConstVector3 of single * single * single * decorations: Decorations
+    | SpirvConstVector4 of single * single * single * single * decorations: Decorations
+    | SpirvConstMatrix4x4 of single * single * single * single *
+                             single * single * single * single *
+                             single * single * single * single *
+                             single * single * single * single *
+                             decorations: Decorations                            
+    | SpirvConstArray of elementTy: SpirvType * constants: SpirvConst list * decorations: Decorations
 
     member x.Decorations =
         match x with
-        | SpirvConstInt (_, decorations)
-        | SpirvConstSingle (_, decorations)
-        | SpirvConstVector2 (_, _, decorations)
-        | SpirvConstVector3 (_, _, _, decorations)
-        | SpirvConstVector4 (_, _, _, _, decorations)
-        | SpirvConstArray (_, _, decorations) -> decorations
+        | SpirvConstInt (decorations=decorations)
+        | SpirvConstSingle (decorations=decorations)
+        | SpirvConstVector2 (decorations=decorations)
+        | SpirvConstVector3 (decorations=decorations)
+        | SpirvConstVector4 (decorations=decorations)
+        | SpirvConstMatrix4x4 (decorations=decorations)
+        | SpirvConstArray (decorations=decorations) -> decorations
 
 type SpirvExpr =
     | SpirvNop
@@ -94,6 +100,7 @@ type SpirvExpr =
                 | SpirvConstVector2 _ -> SpirvTypeVector2
                 | SpirvConstVector3 _ -> SpirvTypeVector3
                 | SpirvConstVector4 _ -> SpirvTypeVector4
+                | SpirvConstMatrix4x4 _ -> SpirvTypeMatrix4x4
                 | SpirvConstArray (elementTy, constants, _) ->
                     SpirvTypeArray (elementTy, constants.Length)
             | SpirvLet(_, _, body) ->

@@ -199,6 +199,9 @@ let emitTypeMatrix4x4 cenv =
     let columnType = emitTypeVector4 cenv
     emitTypeAux cenv SpirvTypeMatrix4x4 (fun resultId -> OpTypeMatrix(resultId, columnType, [4u]))
 
+let emitConstantMatrix4x4 cenv (constituents: id list) =
+    emitConstantComposite cenv (emitTypeMatrix4x4 cenv) "Matrix4x4" constituents
+
 let rec emitType cenv ty =
     match ty with
     | SpirvTypeVoid -> emitTypeVoid cenv
@@ -255,6 +258,18 @@ let rec GenConst cenv spvConst =
 
     | SpirvConstVector4 (n1, n2, n3, n4, decorations) ->
         emitConstantVector4 cenv ([n1;n2;n3;n4] |> List.map (emitConstantSingle cenv))
+
+    | SpirvConstMatrix4x4 (m11, m12, m13, m14,
+                           m21, m22, m23, m24,
+                           m31, m32, m33, m34,
+                           m41, m42, m43, m44, decorations) ->
+        let constituents =
+            [ m11; m12; m13; m14;
+              m21; m22; m23; m24;
+              m31; m32; m33; m34;
+              m41; m42; m43; m44 ]
+            |> List.map (emitConstantSingle cenv)
+        emitConstantMatrix4x4 cenv constituents
 
     | SpirvConstArray (elementTy, constants, decorations) ->
         let arrayTyId = emitArrayType cenv elementTy constants.Length
