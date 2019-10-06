@@ -788,16 +788,17 @@ module Cmd =
             vkEndCommandBuffer(commandBuffer) |> checkResult
         )
 
-type Semaphores =
+type Sync =
     {
-        imageAvailable: VkSemaphore []
-        renderFinished: VkSemaphore []
+        imageAvailableSemaphores: VkSemaphore []
+        renderFinishedSemaphores: VkSemaphore []
+        inFlightFences: VkFence []
     }
 
 [<Literal>]
 let MaxFramesInFlight = 2
 
-let mkSemaphores device =
+let mkSync device =
     let semaphoreCreateInfo =
         VkSemaphoreCreateInfo (
             sType = VkStructureType.VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO
@@ -817,20 +818,33 @@ let mkSemaphores device =
             renderFinishedSemaphore
         )
 
+    let fenceCreateInfo =
+        VkFenceCreateInfo (
+            sType = VkStructureType.VK_STRUCTURE_TYPE_FENCE_CREATE_INFO
+        )
+
+    let inFlightFences = 
+        Array.init MaxFramesInFlight (fun _ ->
+            let fence = VkFence ()
+            vkCreateFence(device, &&fenceCreateInfo, vkNullPtr, &&fence) |> checkResult
+            fence
+        )
+
     {
-        imageAvailable = imageAvailableSemaphores
-        renderFinished = renderFinishedSemaphores
+        imageAvailableSemaphores = imageAvailableSemaphores
+        renderFinishedSemaphores = renderFinishedSemaphores
+        inFlightFences = inFlightFences
     }
 
-let drawFrame device swapChain semaphores (commandBuffers: VkCommandBuffer []) graphicsQueue presentQueue currentFrame =
+let drawFrame device swapChain sync (commandBuffers: VkCommandBuffer []) graphicsQueue presentQueue currentFrame =
     let imageIndex = 0u
 
-    vkAcquireNextImageKHR(device, swapChain, UInt64.MaxValue, semaphores.imageAvailable.[currentFrame], VK_NULL_HANDLE, &&imageIndex) |> checkResult
+    vkAcquireNextImageKHR(device, swapChain, UInt64.MaxValue, sync.imageAvailableSemaphores.[currentFrame], VK_NULL_HANDLE, &&imageIndex) |> checkResult
 
-    let waitSemaphores = [|semaphores.imageAvailable.[currentFrame]|]
+    let waitSemaphores = [|sync.imageAvailableSemaphores.[currentFrame]|]
     let waitStages = [|VkPipelineStageFlags.VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT|]
 
-    let signalSemaphores = [|semaphores.renderFinished.[currentFrame]|]
+    let signalSemaphores = [|sync.renderFinishedSemaphores.[currentFrame]|]
 
     use pWaitSemaphores = fixed waitSemaphores
     use waitStages = fixed waitStages
@@ -886,7 +900,7 @@ type VulkanInstance
      framebuffers: VkFramebuffer [],
      commandPool: VkCommandPool,
      commandBuffers: VkCommandBuffer [],
-     semaphores: Semaphores,
+     sync: Sync,
      graphicsQueue: VkQueue, presentQueue: VkQueue, handles: GCHandle[]) =
 
     let gate = obj ()
@@ -917,7 +931,7 @@ type VulkanInstance
         )
 
     member __.DrawFrame () =
-        currentFrame <- drawFrame device swapChain semaphores commandBuffers graphicsQueue presentQueue currentFrame
+        currentFrame <- drawFrame device swapChain sync commandBuffers graphicsQueue presentQueue currentFrame
 
     member __.WaitIdle () =
         vkQueueWaitIdle(presentQueue) |> checkResult
@@ -942,13 +956,19 @@ type VulkanInstance
                     )
                 )
 
-                semaphores.renderFinished
+                sync.inFlightFences
+                |> Array.rev
+                |> Array.iter (fun f ->
+                    vkDestroyFence(device, f, vkNullPtr)
+                )
+
+                sync.renderFinishedSemaphores
                 |> Array.rev
                 |> Array.iter (fun s ->
                     vkDestroySemaphore(device, s, vkNullPtr)
                 )
 
-                semaphores.imageAvailable
+                sync.imageAvailableSemaphores
                 |> Array.rev
                 |> Array.iter (fun s ->
                     vkDestroySemaphore(device, s, vkNullPtr)
@@ -1007,7 +1027,7 @@ type VulkanInstance
         let framebuffers = mkFramebuffers device renderPass extent imageViews
         let commandPool = mkCommandPool device indices
         let commandBuffers = mkCommandBuffers device commandPool framebuffers
-        let semaphores = mkSemaphores device
+        let sync = mkSync device
 
         let graphicsQueue = mkQueue device indices.graphicsFamily.Value
         let presentQueue = mkQueue device indices.presentFamily.Value
@@ -1025,7 +1045,7 @@ type VulkanInstance
             framebuffers,
             commandPool,
             commandBuffers,
-            semaphores,
+            sync,
             graphicsQueue, presentQueue, [|debugCallbackHandle|]
         )
 
