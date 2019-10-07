@@ -705,11 +705,11 @@ let mkVertexAttributeDescriptions<'T when 'T : unmanaged> locationOffset binding
     
     mk typeof<'T> locationOffset 0u
 
-let mkVertexBuffer<'T when 'T : unmanaged> device (data: 'T []) =
+let mkVertexBuffer<'T when 'T : unmanaged> device count =
     let bufferInfo =
         VkBufferCreateInfo (
             sType = VkStructureType.VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-            size = uint64 (sizeof<'T> * data.Length),
+            size = uint64 (sizeof<'T> * count),
             usage = VkBufferUsageFlags.VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
             sharingMode = VkSharingMode.VK_SHARING_MODE_EXCLUSIVE
         )
@@ -717,6 +717,40 @@ let mkVertexBuffer<'T when 'T : unmanaged> device (data: 'T []) =
     let vertexBuffer = VkBuffer ()
     vkCreateBuffer(device, &&bufferInfo, vkNullPtr, &&vertexBuffer) |> checkResult
     vertexBuffer
+
+let getMemoryRequirements device buffer =
+    let memRequirements = VkMemoryRequirements ()
+    vkGetBufferMemoryRequirements(device, buffer, &&memRequirements)
+    memRequirements
+
+let getSuitableMemoryTypeIndex physicalDevice typeFilter properties =
+    let memProperties = VkPhysicalDeviceMemoryProperties ()
+    vkGetPhysicalDeviceMemoryProperties(physicalDevice, &&memProperties)
+
+    [| for i = 0 to int memProperties.memoryTypeCount - 1 do
+        if typeFilter &&& (1u <<< i) <> 0u then
+            let memType = memProperties.memoryTypes.[i]
+            if memType.propertyFlags &&& properties = properties then
+                yield uint32 i |]
+    |> Array.head
+
+let allocateMemory physicalDevice device (memRequirements: VkMemoryRequirements) =
+    let memTypeIndex = 
+        getSuitableMemoryTypeIndex 
+            physicalDevice memRequirements.memoryTypeBits 
+            (VkMemoryPropertyFlags.VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT ||| 
+             VkMemoryPropertyFlags.VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)
+
+    let allocInfo =
+        VkMemoryAllocateInfo (
+            sType = VkStructureType.VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+            allocationSize = memRequirements.size,
+            memoryTypeIndex = memTypeIndex
+        )
+
+    let bufferMemory = VkDeviceMemory ()
+    vkAllocateMemory(device, &&allocInfo, vkNullPtr, &&bufferMemory) |> checkResult
+    bufferMemory
 
 let mkGraphicsPipeline device extent pipelineLayout renderPass group =
     use pNameMain = fixed vkBytesOfString "main"
@@ -1161,6 +1195,7 @@ type VulkanInstance
     private
     (instance: VkInstance, 
      debugMessenger: VkDebugUtilsMessengerEXT, 
+     physicalDevice: VkPhysicalDevice,
      device: VkDevice, 
      surface: VkSurfaceKHR,
      commandPool: VkCommandPool,
@@ -1168,7 +1203,8 @@ type VulkanInstance
      graphicsQueue: VkQueue, presentQueue: VkQueue, handles: GCHandle[],
      swapChain: SwapChain) =
 
-    let vertexBuffers = Collections.Generic.HashSet ()
+    let gate = obj ()
+    let buffers = Collections.Generic.Dictionary<VkBuffer, struct (VkBuffer * VkDeviceMemory)>()
     let mutable isDisposed = 0
 
     let checkDispose () =
@@ -1198,9 +1234,16 @@ type VulkanInstance
         vkDeviceWaitIdle(device) |> checkResult
 
     [<RequiresExplicitTypeArguments>]
-    member _.CreateVertexBuffer<'T when 'T : unmanaged> data =
+    member _.CreateVertexBuffer<'T when 'T : unmanaged> count =
+        lock gate <| fun _ ->
+
         checkDispose ()
-        mkVertexBuffer<'T> device data
+        let buffer = mkVertexBuffer<'T> device count
+        let memRequirements = getMemoryRequirements device buffer
+        let bufferMemory = allocateMemory physicalDevice device memRequirements
+        vkBindBufferMemory(device, buffer, bufferMemory, 0UL) |> checkResult
+        buffers.[buffer] <- struct (buffer, bufferMemory)
+        buffer
 
     interface IDisposable with
         member x.Dispose () =
@@ -1211,8 +1254,15 @@ type VulkanInstance
 
                 (swapChain :> IDisposable).Dispose ()
 
-                vertexBuffers
-                |> Seq.iter (fun buffer -> vkDestroyBuffer(device, buffer, vkNullPtr))
+                lock gate (fun () ->
+                    buffers.Values
+                    |> Seq.iter (fun (struct (buffer, bufferMemory)) -> 
+                        vkDestroyBuffer(device, buffer, vkNullPtr)
+                        vkFreeMemory(device, bufferMemory, vkNullPtr)
+                    )
+
+                    buffers.Clear()
+                )
 
                 sync.inFlightFences
                 |> Array.rev
@@ -1274,6 +1324,7 @@ type VulkanInstance
         new VulkanInstance (
             instance,
             debugMessenger,
+            physicalDevice,
             device,
             surface,
             commandPool,
