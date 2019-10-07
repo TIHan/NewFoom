@@ -35,6 +35,14 @@ type EmptyWindowEvents (instance: VulkanInstance) =
                     instance.DrawFrame ()
             )
 
+// The builder class.
+[<ReflectedDefinition>]
+type EventuallyBuilder() =
+    member x.Bind(comp, func) = Eventually.bind func comp
+    member x.Return(value) = Eventually.result value
+    member x.ReturnFrom(value) = value
+    member x.Combine(expr1, expr2) = Eventually.combine expr1 expr2
+
 [<EntryPoint>]
 let main argv =
     let title = "F# Vulkan"

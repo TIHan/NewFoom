@@ -5,6 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="SpirvGen.fs" />
     <Compile Include="Specification.fs" />
     <Compile Include="Types.fs" />
     <Compile Include="Pickle.fs" />
