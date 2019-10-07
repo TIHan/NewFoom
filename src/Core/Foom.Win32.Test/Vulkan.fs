@@ -1190,6 +1190,13 @@ type private SwapChain (physicalDevice, device, surface, indices, commandPool) =
                     destroy ()
                 )
 
+[<Struct>]
+type VulkanBuffer (buffer: VkBuffer, bufferMemory: VkDeviceMemory) =
+
+    member _.Buffer = buffer
+
+    member _.BufferMemory = bufferMemory
+
 [<Sealed>]
 type VulkanInstance 
     private
@@ -1204,7 +1211,7 @@ type VulkanInstance
      swapChain: SwapChain) =
 
     let gate = obj ()
-    let buffers = Collections.Generic.Dictionary<VkBuffer, struct (VkBuffer * VkDeviceMemory)>()
+    let buffers = Collections.Generic.Dictionary<VkBuffer, VulkanBuffer>()
     let mutable isDisposed = 0
 
     let checkDispose () =
@@ -1238,12 +1245,39 @@ type VulkanInstance
         lock gate <| fun _ ->
 
         checkDispose ()
+
         let buffer = mkVertexBuffer<'T> device count
         let memRequirements = getMemoryRequirements device buffer
         let bufferMemory = allocateMemory physicalDevice device memRequirements
+
         vkBindBufferMemory(device, buffer, bufferMemory, 0UL) |> checkResult
-        buffers.[buffer] <- struct (buffer, bufferMemory)
-        buffer
+
+        let vulkanBuffer = VulkanBuffer(buffer, bufferMemory)
+        buffers.[buffer] <- vulkanBuffer
+        vulkanBuffer
+
+    member _.PrepareBuffer<'T when 'T : unmanaged> (vulkanBuffer: VulkanBuffer, data: ReadOnlySpan<'T>) =
+        checkDispose ()
+
+        let size = sizeof<'T> * data.Length
+        let deviceData = nativeint 0
+        let pDeviceData = &&deviceData |> NativePtr.toNativeInt
+        let deviceData = Span<'T>(deviceData |> NativePtr.ofNativeInt<'T> |> NativePtr.toVoidPtr, size)
+
+        vkMapMemory(device, vulkanBuffer.BufferMemory, 0UL, uint64 (sizeof<'T> * data.Length), VkMemoryMapFlags.MinValue, pDeviceData) |> checkResult
+        data.CopyTo deviceData
+        vkUnmapMemory(device, vulkanBuffer.BufferMemory)
+
+    member _.DestroyBuffer (vulkanBuffer: VulkanBuffer) =
+        lock gate <| fun _ ->
+
+        checkDispose ()
+        match buffers.Remove vulkanBuffer.Buffer with
+        | true -> 
+            vkDestroyBuffer(device, vulkanBuffer.Buffer, vkNullPtr)
+            vkFreeMemory(device, vulkanBuffer.BufferMemory, vkNullPtr)
+        | _ ->
+            failwith "Buffer is not in the vulkan instance."
 
     interface IDisposable with
         member x.Dispose () =
@@ -1256,9 +1290,9 @@ type VulkanInstance
 
                 lock gate (fun () ->
                     buffers.Values
-                    |> Seq.iter (fun (struct (buffer, bufferMemory)) -> 
-                        vkDestroyBuffer(device, buffer, vkNullPtr)
-                        vkFreeMemory(device, bufferMemory, vkNullPtr)
+                    |> Seq.iter (fun vulkanBuffer -> 
+                        vkDestroyBuffer(device, vulkanBuffer.Buffer, vkNullPtr)
+                        vkFreeMemory(device, vulkanBuffer.BufferMemory, vkNullPtr)
                     )
 
                     buffers.Clear()
