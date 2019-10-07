@@ -51,6 +51,14 @@ let genKinds () =
     |> Array.filter (fun x -> not (String.IsNullOrWhiteSpace x))
     |> Array.reduce (fun x y -> x + "\n" + y)
 
+[<RequireQualifiedAccess>]
+type OperandType =
+    | UInt32
+    | String
+    | Enum of name: string
+    | Option of OperandType
+    | List of OperandType
+
 let genOperand (operand: SpirvSpec.Operand) =
     let name =
         match operand.Name with
