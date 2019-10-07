@@ -1048,7 +1048,7 @@ type private SwapChain (physicalDevice, device, surface, indices, commandPool) =
     let mutable currentFrame = 0
     let mutable isDisposed = 0
 
-    let recordings = Collections.Concurrent.ConcurrentDictionary<int, DrawRecording>()
+    let recordings = Collections.Generic.Dictionary<int, DrawRecording>()
     let shaders = ResizeArray ()
     let pipelines = ResizeArray ()
 
