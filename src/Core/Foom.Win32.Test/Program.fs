@@ -36,12 +36,25 @@ type EmptyWindowEvents (instance: VulkanInstance) =
             )
 
 // The builder class.
+type Vertex<'T> = Vertex of 'T
 [<ReflectedDefinition>]
-type EventuallyBuilder() =
-    member x.Bind(comp, func) = Eventually.bind func comp
-    member x.Return(value) = Eventually.result value
+type VertexBuilder() =
+    member x.Bind(comp, func) =
+        match comp with
+        | Vertex x -> Vertex (func x)
+    member x.Return(value) = Vertex value
     member x.ReturnFrom(value) = value
-    member x.Combine(expr1, expr2) = Eventually.combine expr1 expr2
+    member x.Quote(y: FSharp.Quotations.Expr<'T>) = y
+
+let vertex = VertexBuilder ()
+
+type IMarker = interface end
+let f x =
+    vertex {
+        return x
+    }
+
+let x = f 1
 
 [<EntryPoint>]
 let main argv =
