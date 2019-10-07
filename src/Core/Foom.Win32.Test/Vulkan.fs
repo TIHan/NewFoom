@@ -3,6 +3,7 @@
 open System
 open System.Threading
 open System.Runtime.InteropServices
+open System.Runtime.CompilerServices
 open FSharp.NativeInterop
 open FSharp.Vulkan.Interop
 
@@ -1106,17 +1107,18 @@ type private SwapChain (physicalDevice, device, surface, indices, commandPool) =
         finally
             Monitor.Exit gate
 
-    member x.AddShader (vertexBytes: byte [], fragmentBytes: byte []) =
-        lock gate |> fun _ ->
+    member x.AddShader (vertexBindings, vertexAttributes, vertexBytes: ReadOnlySpan<byte>, fragmentBytes: ReadOnlySpan<byte>) =
+        if not (Monitor.IsEntered gate) then
+            Monitor.Enter gate
 
         check ()
 
-        use pVertexBytes = fixed vertexBytes
-        use pFragmentBytes = fixed fragmentBytes
+        let pVertexBytes = Unsafe.AsPointer(&Unsafe.AsRef(&vertexBytes.GetPinnableReference())) |> NativePtr.ofVoidPtr
+        let pFragmentBytes = Unsafe.AsPointer(&Unsafe.AsRef(&fragmentBytes.GetPinnableReference())) |> NativePtr.ofVoidPtr
 
         let group = 
             mkShaderGroup device 
-                [||] [||]
+                vertexBindings vertexAttributes
                 pVertexBytes (uint32 vertexBytes.Length) 
                 pFragmentBytes (uint32 fragmentBytes.Length)
 
@@ -1181,9 +1183,9 @@ type VulkanInstance
         checkDispose ()
         debugMessenger
 
-    member __.AddShader (vertexBytes, fragmentBytes) =
+    member __.AddShader (vertexBindings, vertexAttributes, vertexBytes, fragmentBytes) =
         checkDispose ()
-        swapChain.AddShader (vertexBytes, fragmentBytes)
+        swapChain.AddShader (vertexBindings, vertexAttributes, vertexBytes, fragmentBytes)
 
     member __.DrawFrame () =
         checkDispose ()

@@ -6,6 +6,7 @@ open FSharp.Window
 open FSharp.Spirv
 open FSharp.Spirv.Specification
 open FSharp.Spirv.Quotations
+open System
 open System.Numerics
 
 type EmptyWindowEvents (instance: VulkanInstance) =
@@ -104,7 +105,7 @@ let main argv =
         bytes
    // let fragmentBytes = System.IO.File.ReadAllBytes("triangle_fragment.spv")
 
-    instance.AddShader(vertexBytes, fragmentBytes)
+    instance.AddShader([||], [||], ReadOnlySpan vertexBytes, ReadOnlySpan fragmentBytes)
 
     window.Start ()
 
