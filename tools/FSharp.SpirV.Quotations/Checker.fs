@@ -171,48 +171,9 @@ let rec CheckExpr env isReturnable expr =
         let env, spvExpr2 = CheckExpr env true expr2 
         env, SpirvSequential (spvExpr1, spvExpr2)
 
-    | Call (None, methInfo, args) ->
-        let env, args = CheckExprs env args
-
-        match methInfo.DeclaringType.FullName with
-        | "Microsoft.FSharp.Core.LanguagePrimitives+IntrinsicFunctions" ->
-
-            match methInfo.Name, args with
-            | "GetArray", [receiver;arg] ->
-                env, SpirvArrayIndexerGet (receiver, arg)
-            | _ ->
-                failwithf "Method not supported: %A" methInfo
-
-        | "System.Numerics.Vector4" ->
-
-            match methInfo.Name with
-            | "Transform" ->
-
-                let pars = methInfo.GetParameters() |> List.ofArray
-                match pars, args with
-                | [par1;par2], [arg1;arg2] when par1.ParameterType = typeof<Vector4> && par2.ParameterType = typeof<Matrix4x4> ->
-                    env, Transform__Vector4_Matrix4x4__Vector4 (arg1, arg2) |> SpirvIntrinsicCall
-                | _ ->
-                    failwithf "Method not supported: %A" methInfo
-
-            | _ ->
-                failwithf "Method not supported: %A" methInfo
-
-        | "Microsoft.FSharp.Core.Operators" ->
-
-            match methInfo.Name with
-            | "op_Multiply" ->
-                let pars = methInfo.GetParameters() |> List.ofArray
-                match pars, args with
-                | [par1;par2], [arg1;arg2] when par1.ParameterType = typeof<Matrix4x4> && par2.ParameterType = typeof<Matrix4x4> ->
-                    env, Multiply__Matrix4x4_Matrix4x4__Matrix4x4 (arg1, arg2) |> SpirvIntrinsicCall
-                | _ ->
-                    failwithf "Method not supported: %A" methInfo
-            | _ ->
-                failwithf "Method not supported: %A" methInfo
-
-        | _ ->
-            failwithf "Declaring type of method not supported: %A" methInfo.DeclaringType
+    | Call (None, _, args) ->
+        let env, checkedArgs = CheckExprs env args
+        CheckIntrinsicCall env checkedArgs expr
 
     | NewObject (ctorInfo, args) ->
         let spvTy = mkSpirvType ctorInfo.DeclaringType
@@ -240,6 +201,25 @@ let rec CheckExpr env isReturnable expr =
 
     | _ ->
         failwithf "Expression not supported: %A" expr
+
+/// Check for intrinsic calls.
+and CheckIntrinsicCall env checkedArgs expr =
+    match expr, checkedArgs with
+    | SpecificCall <@ Unchecked.defaultof<_[]>.[0] @> _, [receiver;arg] ->
+        env, SpirvArrayIndexerGet (receiver, arg)
+
+    | SpecificCall <@ Vector4.Transform(Unchecked.defaultof<Vector4>, Unchecked.defaultof<Matrix4x4>) @> _, [arg1;arg2] ->
+        env, Transform__Vector4_Matrix4x4__Vector4 (arg1, arg2) |> SpirvIntrinsicCall
+
+    | SpecificCall <@ (*) @> (_, tyArgs, _), [arg1;arg2] ->
+        match tyArgs with
+        | _ when tyArgs = [typeof<Matrix4x4>;typeof<Matrix4x4>;typeof<Matrix4x4>] ->
+            env, Multiply__Matrix4x4_Matrix4x4__Matrix4x4 (arg1, arg2) |> SpirvIntrinsicCall
+        | _ ->
+            failwithf "Call not supported: %A" expr
+
+    | _ ->
+        failwithf "Call not supported: %A" expr
 
 and CheckExprs (env: env) exprs =
     ((env, []), exprs)

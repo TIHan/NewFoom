@@ -95,6 +95,7 @@ let getTypePointerInstruction cenv id =
     
 let isAggregateType ty =
     match ty with
+    | SpirvTypeStruct _
     | SpirvTypeArray _ -> true
     | _ -> false
 
@@ -103,7 +104,7 @@ let isCompositeType ty =
     | SpirvTypeVector2
     | SpirvTypeVector3
     | SpirvTypeVector4 -> true
-    | _ -> false
+    | _ -> isAggregateType ty
 
 let tryAddCompositeExtractInstructions cenv ty composite =
     if isCompositeType ty then
@@ -212,6 +213,7 @@ let rec emitType cenv ty =
     | SpirvTypeVector4 -> emitTypeVector4 cenv
     | SpirvTypeMatrix4x4 -> emitTypeMatrix4x4 cenv
     | SpirvTypeArray (elementTy, length) -> emitArrayType cenv elementTy length
+    | SpirvTypeStruct _ -> failwithf "Struct type not supported yet: %A" ty
 
 and emitArrayType cenv elementTy length =
     match elementTy with

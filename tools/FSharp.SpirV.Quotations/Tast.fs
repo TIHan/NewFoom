@@ -18,6 +18,7 @@ type SpirvType =
     | SpirvTypeVector4
     | SpirvTypeMatrix4x4
     | SpirvTypeArray of SpirvType * length: int
+    | SpirvTypeStruct of name: string * fields: SpirvField list
 
     member x.Name =
         match x with
@@ -28,8 +29,10 @@ type SpirvType =
         | SpirvTypeVector3 -> "Vector3"
         | SpirvTypeVector4 -> "Vector4"
         | SpirvTypeMatrix4x4 -> "Matrix4x4"
-        | SpirvTypeArray (elementTy, length) -> 
-            elementTy.Name + "[" + string length + "]" 
+        | SpirvTypeArray (elementTy, length) -> elementTy.Name + "[" + string length + "]"
+        | SpirvTypeStruct (name=name) -> name
+
+and SpirvField = SpirvField of name: string * fieldType: SpirvType * Decorations
 
 type SpirvVar = 
     {
