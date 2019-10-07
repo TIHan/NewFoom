@@ -486,288 +486,286 @@ let mkRenderPass device format =
     vkCreateRenderPass(device, &&createInfo, vkNullPtr, &&renderPass) |> checkResult
     renderPass
 
-module Pipeline =
+let mkShaderStageInfo stage pName shaderModule =
+    VkPipelineShaderStageCreateInfo (
+        sType = VkStructureType.VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+        stage = stage,
+        modul = shaderModule,
+        pName = pName
+    )
 
-    let mkShaderStageInfo stage pName shaderModule =
-        VkPipelineShaderStageCreateInfo (
-            sType = VkStructureType.VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-            stage = stage,
-            modul = shaderModule,
-            pName = pName
+let mkInputAssemblyCreateInfo () =
+    VkPipelineInputAssemblyStateCreateInfo (
+        sType = VkStructureType.VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
+        topology = VkPrimitiveTopology.VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+        primitiveRestartEnable = VK_FALSE
+    )
+
+let mkViewport (extent: VkExtent2D) =
+    VkViewport (
+        x = 0.f,
+        y = 0.f,
+        width = float32 extent.width,
+        height = float32 extent.height,
+        minDepth = 0.f,
+        maxDepth = 1.f
+    )
+
+let mkScissor (extent: VkExtent2D) =
+    VkRect2D (
+        offset = VkOffset2D (x = 0, y = 0),
+        extent = extent
+    )
+
+let mkViewportStateCreateInfo pViewport pScissor =
+    VkPipelineViewportStateCreateInfo (
+        sType = VkStructureType.VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
+        viewportCount = 1u,
+        pViewports = pViewport,
+        scissorCount = 1u,
+        pScissors = pScissor
+    )
+
+let mkRasterizerCreateInfo () =     
+    VkPipelineRasterizationStateCreateInfo (
+        sType = VkStructureType.VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
+        depthClampEnable = VK_FALSE,
+        rasterizerDiscardEnable = VK_FALSE,
+        polygonMode = VkPolygonMode.VK_POLYGON_MODE_FILL,
+        lineWidth = 1.0f,
+        cullMode = VkCullModeFlags.VK_CULL_MODE_BACK_BIT,
+        frontFace = VkFrontFace.VK_FRONT_FACE_CLOCKWISE,
+        depthBiasEnable = VK_FALSE,
+        depthBiasConstantFactor = 0.f, // Optional
+        depthBiasClamp = 0.f, // Optional
+        depthBiasSlopeFactor = 0.f // Optional
+    )
+
+let mkMultisampleCreateInfo () =
+    VkPipelineMultisampleStateCreateInfo (
+        sType = VkStructureType.VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
+        sampleShadingEnable = VK_FALSE,
+        rasterizationSamples = VkSampleCountFlags.VK_SAMPLE_COUNT_1_BIT,
+        minSampleShading = 1.f, // Optional
+        pSampleMask = vkNullPtr, // Optional
+        alphaToCoverageEnable = VK_FALSE, // Optional
+        alphaToOneEnable = VK_FALSE // Optional
+    )
+
+let mkDepthStencilCreateInfo () =
+    VkPipelineDepthStencilStateCreateInfo ()
+
+    //colorBlendAttachment.blendEnable = VK_TRUE;
+    //colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+    //colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+    //colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
+    //colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+    //colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+    //colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
+let mkColorBlendAttachment () =
+    VkPipelineColorBlendAttachmentState (
+        colorWriteMask = (VkColorComponentFlags.VK_COLOR_COMPONENT_R_BIT |||
+                            VkColorComponentFlags.VK_COLOR_COMPONENT_G_BIT |||
+                            VkColorComponentFlags.VK_COLOR_COMPONENT_B_BIT |||
+                            VkColorComponentFlags.VK_COLOR_COMPONENT_A_BIT),
+        blendEnable = VK_FALSE,
+        srcColorBlendFactor = VkBlendFactor.VK_BLEND_FACTOR_ONE, // Optional
+        dstColorBlendFactor = VkBlendFactor.VK_BLEND_FACTOR_ZERO, // Optional
+        colorBlendOp = VkBlendOp.VK_BLEND_OP_ADD, // Optional
+        srcAlphaBlendFactor = VkBlendFactor.VK_BLEND_FACTOR_ONE, // Optional
+        dstAlphaBlendFactor = VkBlendFactor.VK_BLEND_FACTOR_ZERO, // Optional
+        alphaBlendOp = VkBlendOp.VK_BLEND_OP_ADD
+    )
+
+let mkColorBlendCreateInfo pAttachments attachmentCount =
+    VkPipelineColorBlendStateCreateInfo (
+        sType = VkStructureType.VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
+        logicOpEnable = VK_FALSE,
+        logicOp = VkLogicOp.VK_LOGIC_OP_COPY, // Optional
+        attachmentCount = attachmentCount,
+        pAttachments = pAttachments,
+        blendConstants = 
+            (let mutable x = VkFixedArray_float32_4 ()
+             x.[0] <- 0.f // Optional
+             x.[1] <- 0.f // Optional
+             x.[2] <- 0.f // Optional
+             x.[3] <- 0.f // Optional
+             x)
+    )
+
+let defaultDynamicStates =
+    [|
+        VkDynamicState.VK_DYNAMIC_STATE_VIEWPORT
+        VkDynamicState.VK_DYNAMIC_STATE_LINE_WIDTH  
+    |]
+
+let mkDynamicStateCreateInfo pDynamicStates dynamicStateCount =
+    VkPipelineDynamicStateCreateInfo (
+        sType = VkStructureType.VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+        dynamicStateCount = dynamicStateCount,
+        pDynamicStates = pDynamicStates
+    )
+
+let mkPipelineLayout device =
+    let createInfo =
+        VkPipelineLayoutCreateInfo (
+            sType = VkStructureType.VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+            setLayoutCount = 0u, // Optional
+            pSetLayouts = vkNullPtr, // Optional
+            pushConstantRangeCount = 0u, // Optional
+            pPushConstantRanges = vkNullPtr // Optional
         )
 
-    let mkInputAssemblyCreateInfo () =
-        VkPipelineInputAssemblyStateCreateInfo (
-            sType = VkStructureType.VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
-            topology = VkPrimitiveTopology.VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
-            primitiveRestartEnable = VK_FALSE
-        )
+    let pipelineLayout = VkPipelineLayout ()
+    vkCreatePipelineLayout(device, &&createInfo, vkNullPtr, &&pipelineLayout) |> checkResult
+    pipelineLayout
 
-    let mkViewport (extent: VkExtent2D) =
-        VkViewport (
-            x = 0.f,
-            y = 0.f,
-            width = float32 extent.width,
-            height = float32 extent.height,
-            minDepth = 0.f,
-            maxDepth = 1.f
-        )
+type ShaderGroup =
+    {
+        vertexBindings: VkVertexInputBindingDescription []
+        vertexAttributes: VkVertexInputAttributeDescription []
 
-    let mkScissor (extent: VkExtent2D) =
-        VkRect2D (
-            offset = VkOffset2D (x = 0, y = 0),
-            extent = extent
-        )
+        vertex: VkShaderModule
+        fragment: VkShaderModule
+    }
 
-    let mkViewportStateCreateInfo pViewport pScissor =
-        VkPipelineViewportStateCreateInfo (
-            sType = VkStructureType.VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
-            viewportCount = 1u,
-            pViewports = pViewport,
-            scissorCount = 1u,
-            pScissors = pScissor
-        )
+let mkShaderGroup device vertexBindings vertexAttributes vert vertSize frag fragSize =
+    let vertShaderModule = mkShaderModule device vert vertSize
+    let fragShaderModule = mkShaderModule device frag fragSize
+    {
+        vertexBindings = vertexBindings
+        vertexAttributes = vertexAttributes
+        vertex = vertShaderModule
+        fragment = fragShaderModule
+    }
 
-    let mkRasterizerCreateInfo () =     
-        VkPipelineRasterizationStateCreateInfo (
-            sType = VkStructureType.VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
-            depthClampEnable = VK_FALSE,
-            rasterizerDiscardEnable = VK_FALSE,
-            polygonMode = VkPolygonMode.VK_POLYGON_MODE_FILL,
-            lineWidth = 1.0f,
-            cullMode = VkCullModeFlags.VK_CULL_MODE_BACK_BIT,
-            frontFace = VkFrontFace.VK_FRONT_FACE_CLOCKWISE,
-            depthBiasEnable = VK_FALSE,
-            depthBiasConstantFactor = 0.f, // Optional
-            depthBiasClamp = 0.f, // Optional
-            depthBiasSlopeFactor = 0.f // Optional
-        )
+let destroyShaderGroup device group =
+    vkDestroyShaderModule(device, group.vertex, vkNullPtr)
+    vkDestroyShaderModule(device, group.fragment, vkNullPtr)
 
-    let mkMultisampleCreateInfo () =
-        VkPipelineMultisampleStateCreateInfo (
-            sType = VkStructureType.VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
-            sampleShadingEnable = VK_FALSE,
-            rasterizationSamples = VkSampleCountFlags.VK_SAMPLE_COUNT_1_BIT,
-            minSampleShading = 1.f, // Optional
-            pSampleMask = vkNullPtr, // Optional
-            alphaToCoverageEnable = VK_FALSE, // Optional
-            alphaToOneEnable = VK_FALSE // Optional
-        )
+[<RequiresExplicitTypeArguments>]
+let mkVertexInputBinding<'T when 'T : unmanaged> binding inputRate =
+    VkVertexInputBindingDescription (
+        binding = binding,
+        stride = uint32 sizeof<'T>,
+        inputRate = inputRate
+    )
+    
+let mkVertexAttributeDescription binding location format offset =
+    VkVertexInputAttributeDescription (
+        binding = binding,
+        location = location,
+        format = format,
+        offset = offset
+    )
+    
+[<RequiresExplicitTypeArguments>]
+let mkVertexAttributeDescriptions<'T when 'T : unmanaged> locationOffset binding =
+    let rec mk (ty: Type) location offset = 
+        match ty with
+        | _ when ty = typeof<single> -> 
+            [|mkVertexAttributeDescription binding location VkFormat.VK_FORMAT_R32_SFLOAT offset|]
+    
+        | _ when ty = typeof<int> ->
+            [|mkVertexAttributeDescription binding location VkFormat.VK_FORMAT_R32_SINT offset|]
+    
+        | _ when ty = typeof<Numerics.Vector2> ->
+            [|mkVertexAttributeDescription binding location VkFormat.VK_FORMAT_R32G32_SFLOAT offset|]
+    
+        | _ when ty = typeof<Numerics.Vector3> ->
+            [|mkVertexAttributeDescription binding location VkFormat.VK_FORMAT_R32G32B32_SFLOAT offset|]
+    
+        | _ when ty = typeof<Numerics.Vector4> ->
+            [|mkVertexAttributeDescription binding location VkFormat.VK_FORMAT_R32G32B32A32_SFLOAT offset|]
+    
+        | _ when ty = typeof<Numerics.Matrix3x2> ->
+            failwith "Matrix3x2 not supported yet."
+    
+        | _ when ty = typeof<Numerics.Matrix4x4> ->
+            [|
+                mkVertexAttributeDescription binding location VkFormat.VK_FORMAT_R32G32B32A32_SFLOAT offset
+                mkVertexAttributeDescription binding location VkFormat.VK_FORMAT_R32G32B32A32_SFLOAT (offset + uint32 sizeof<Numerics.Vector4>)
+                mkVertexAttributeDescription binding location VkFormat.VK_FORMAT_R32G32B32A32_SFLOAT (offset + uint32 (sizeof<Numerics.Vector4> * 2))
+                mkVertexAttributeDescription binding location VkFormat.VK_FORMAT_R32G32B32A32_SFLOAT (offset + uint32 (sizeof<Numerics.Vector4> * 3))
+            |]
+    
+        | _ when ty.IsPrimitive ->
+            failwithf "Primitive type not supported: %A" ty
+    
+        | _ when ty.IsValueType ->
+            ty.GetFields(Reflection.BindingFlags.NonPublic ||| Reflection.BindingFlags.Public ||| Reflection.BindingFlags.Instance)
+            |> Array.mapi (fun i field ->
+                mk field.FieldType (locationOffset + uint32 i) (Marshal.OffsetOf(field.FieldType, field.Name) |> uint32)
+            )
+            |> Array.concat
+    
+        | _ ->
+            failwithf "Type not supported: %A" ty
+    
+    mk typeof<'T> locationOffset 0u
 
-    let mkDepthStencilCreateInfo () =
-        VkPipelineDepthStencilStateCreateInfo ()
+let mkGraphicsPipeline device extent pipelineLayout renderPass group =
+    use pNameMain = fixed vkBytesOfString "main"
 
-        //colorBlendAttachment.blendEnable = VK_TRUE;
-        //colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-        //colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-        //colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
-        //colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-        //colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-        //colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
-    let mkColorBlendAttachment () =
-        VkPipelineColorBlendAttachmentState (
-            colorWriteMask = (VkColorComponentFlags.VK_COLOR_COMPONENT_R_BIT |||
-                              VkColorComponentFlags.VK_COLOR_COMPONENT_G_BIT |||
-                              VkColorComponentFlags.VK_COLOR_COMPONENT_B_BIT |||
-                              VkColorComponentFlags.VK_COLOR_COMPONENT_A_BIT),
-            blendEnable = VK_FALSE,
-            srcColorBlendFactor = VkBlendFactor.VK_BLEND_FACTOR_ONE, // Optional
-            dstColorBlendFactor = VkBlendFactor.VK_BLEND_FACTOR_ZERO, // Optional
-            colorBlendOp = VkBlendOp.VK_BLEND_OP_ADD, // Optional
-            srcAlphaBlendFactor = VkBlendFactor.VK_BLEND_FACTOR_ONE, // Optional
-            dstAlphaBlendFactor = VkBlendFactor.VK_BLEND_FACTOR_ZERO, // Optional
-            alphaBlendOp = VkBlendOp.VK_BLEND_OP_ADD
-        )
-
-    let mkColorBlendCreateInfo pAttachments attachmentCount =
-        VkPipelineColorBlendStateCreateInfo (
-            sType = VkStructureType.VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
-            logicOpEnable = VK_FALSE,
-            logicOp = VkLogicOp.VK_LOGIC_OP_COPY, // Optional
-            attachmentCount = attachmentCount,
-            pAttachments = pAttachments,
-            blendConstants = 
-                (let mutable x = VkFixedArray_float32_4 ()
-                 x.[0] <- 0.f // Optional
-                 x.[1] <- 0.f // Optional
-                 x.[2] <- 0.f // Optional
-                 x.[3] <- 0.f // Optional
-                 x)
-        )
-
-    let defaultDynamicStates =
+    let stages =
         [|
-            VkDynamicState.VK_DYNAMIC_STATE_VIEWPORT
-            VkDynamicState.VK_DYNAMIC_STATE_LINE_WIDTH  
+            mkShaderStageInfo VkShaderStageFlags.VK_SHADER_STAGE_VERTEX_BIT pNameMain group.vertex
+            mkShaderStageInfo VkShaderStageFlags.VK_SHADER_STAGE_FRAGMENT_BIT pNameMain group.fragment
         |]
 
-    let mkDynamicStateCreateInfo pDynamicStates dynamicStateCount =
-        VkPipelineDynamicStateCreateInfo (
-            sType = VkStructureType.VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
-            dynamicStateCount = dynamicStateCount,
-            pDynamicStates = pDynamicStates
-        )
-
-    let mkPipelineLayout device =
-        let createInfo =
-            VkPipelineLayoutCreateInfo (
-                sType = VkStructureType.VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-                setLayoutCount = 0u, // Optional
-                pSetLayouts = vkNullPtr, // Optional
-                pushConstantRangeCount = 0u, // Optional
-                pPushConstantRanges = vkNullPtr // Optional
-            )
-
-        let pipelineLayout = VkPipelineLayout ()
-        vkCreatePipelineLayout(device, &&createInfo, vkNullPtr, &&pipelineLayout) |> checkResult
-        pipelineLayout
-
-    type ShaderGroup =
-        {
-            vertexBindings: VkVertexInputBindingDescription []
-            vertexAttributes: VkVertexInputAttributeDescription []
-
-            vertex: VkShaderModule
-            fragment: VkShaderModule
-        }
-
-    let createShaderGroup device vertexBindings vertexAttributes vert vertSize frag fragSize =
-        let vertShaderModule = mkShaderModule device vert vertSize
-        let fragShaderModule = mkShaderModule device frag fragSize
-        {
-            vertexBindings = vertexBindings
-            vertexAttributes = vertexAttributes
-            vertex = vertShaderModule
-            fragment = fragShaderModule
-        }
-
-    let destroyShaderGroup device group =
-        vkDestroyShaderModule(device, group.vertex, vkNullPtr)
-        vkDestroyShaderModule(device, group.fragment, vkNullPtr)
-
-    [<RequiresExplicitTypeArguments>]
-    let mkVertexInputBinding<'T when 'T : unmanaged> binding inputRate =
-        VkVertexInputBindingDescription (
-            binding = binding,
-            stride = uint32 sizeof<'T>,
-            inputRate = inputRate
-        )
-    
-    let mkVertexAttributeDescription binding location format offset =
-        VkVertexInputAttributeDescription (
-            binding = binding,
-            location = location,
-            format = format,
-            offset = offset
-        )
-    
-    [<RequiresExplicitTypeArguments>]
-    let mkVertexAttributeDescriptions<'T when 'T : unmanaged> locationOffset binding =
-        let rec mk (ty: Type) location offset = 
-            match ty with
-            | _ when ty = typeof<single> -> 
-                [|mkVertexAttributeDescription binding location VkFormat.VK_FORMAT_R32_SFLOAT offset|]
-    
-            | _ when ty = typeof<int> ->
-                [|mkVertexAttributeDescription binding location VkFormat.VK_FORMAT_R32_SINT offset|]
-    
-            | _ when ty = typeof<Numerics.Vector2> ->
-                [|mkVertexAttributeDescription binding location VkFormat.VK_FORMAT_R32G32_SFLOAT offset|]
-    
-            | _ when ty = typeof<Numerics.Vector3> ->
-                [|mkVertexAttributeDescription binding location VkFormat.VK_FORMAT_R32G32B32_SFLOAT offset|]
-    
-            | _ when ty = typeof<Numerics.Vector4> ->
-                [|mkVertexAttributeDescription binding location VkFormat.VK_FORMAT_R32G32B32A32_SFLOAT offset|]
-    
-            | _ when ty = typeof<Numerics.Matrix3x2> ->
-                failwith "Matrix3x2 not supported yet."
-    
-            | _ when ty = typeof<Numerics.Matrix4x4> ->
-                [|
-                    mkVertexAttributeDescription binding location VkFormat.VK_FORMAT_R32G32B32A32_SFLOAT offset
-                    mkVertexAttributeDescription binding location VkFormat.VK_FORMAT_R32G32B32A32_SFLOAT (offset + uint32 sizeof<Numerics.Vector4>)
-                    mkVertexAttributeDescription binding location VkFormat.VK_FORMAT_R32G32B32A32_SFLOAT (offset + uint32 (sizeof<Numerics.Vector4> * 2))
-                    mkVertexAttributeDescription binding location VkFormat.VK_FORMAT_R32G32B32A32_SFLOAT (offset + uint32 (sizeof<Numerics.Vector4> * 3))
-                |]
-    
-            | _ when ty.IsPrimitive ->
-                failwithf "Primitive type not supported: %A" ty
-    
-            | _ when ty.IsValueType ->
-                ty.GetFields(Reflection.BindingFlags.NonPublic ||| Reflection.BindingFlags.Public ||| Reflection.BindingFlags.Instance)
-                |> Array.mapi (fun i field ->
-                    mk field.FieldType (locationOffset + uint32 i) (Marshal.OffsetOf(field.FieldType, field.Name) |> uint32)
-                )
-                |> Array.concat
-    
-            | _ ->
-                failwithf "Type not supported: %A" ty
-    
-        mk typeof<'T> locationOffset 0u
-
-    let mkGraphicsPipeline device extent pipelineLayout renderPass group =
-        use pNameMain = fixed vkBytesOfString "main"
-
-        let stages =
-            [|
-                mkShaderStageInfo VkShaderStageFlags.VK_SHADER_STAGE_VERTEX_BIT pNameMain group.vertex
-                mkShaderStageInfo VkShaderStageFlags.VK_SHADER_STAGE_FRAGMENT_BIT pNameMain group.fragment
-            |]
-
-        use pVertexBindingDescriptions = fixed group.vertexBindings
-        use pVertexAttributeDescriptions = fixed group.vertexAttributes
+    use pVertexBindingDescriptions = fixed group.vertexBindings
+    use pVertexAttributeDescriptions = fixed group.vertexAttributes
         
-        let vertexInputCreateInfo =
-            VkPipelineVertexInputStateCreateInfo (
-                sType = VkStructureType.VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
-                vertexBindingDescriptionCount = uint32 group.vertexBindings.Length,
-                pVertexBindingDescriptions = pVertexBindingDescriptions,
-                vertexAttributeDescriptionCount = uint32 group.vertexAttributes.Length,
-                pVertexAttributeDescriptions = pVertexAttributeDescriptions
-            )
+    let vertexInputCreateInfo =
+        VkPipelineVertexInputStateCreateInfo (
+            sType = VkStructureType.VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
+            vertexBindingDescriptionCount = uint32 group.vertexBindings.Length,
+            pVertexBindingDescriptions = pVertexBindingDescriptions,
+            vertexAttributeDescriptionCount = uint32 group.vertexAttributes.Length,
+            pVertexAttributeDescriptions = pVertexAttributeDescriptions
+        )
 
-        let inputAssemblyCreateInfo = mkInputAssemblyCreateInfo ()
+    let inputAssemblyCreateInfo = mkInputAssemblyCreateInfo ()
 
-        let viewport = mkViewport extent
-        let scissor = mkScissor extent
-        let viewportStateCreateInfo = mkViewportStateCreateInfo &&viewport &&scissor
+    let viewport = mkViewport extent
+    let scissor = mkScissor extent
+    let viewportStateCreateInfo = mkViewportStateCreateInfo &&viewport &&scissor
 
-        let rasterizerCreateInfo = mkRasterizerCreateInfo ()
-        let multisampleCreateInfo = mkMultisampleCreateInfo ()
-        // TODO: depth stencil state
+    let rasterizerCreateInfo = mkRasterizerCreateInfo ()
+    let multisampleCreateInfo = mkMultisampleCreateInfo ()
+    // TODO: depth stencil state
 
-        let colorBlendAttachment = mkColorBlendAttachment ()
-        let colorBlendCreateInfo = mkColorBlendCreateInfo &&colorBlendAttachment 1u
+    let colorBlendAttachment = mkColorBlendAttachment ()
+    let colorBlendCreateInfo = mkColorBlendCreateInfo &&colorBlendAttachment 1u
 
-        // TODO: dynamic state
+    // TODO: dynamic state
 
-        use pStages = fixed stages
-        let createInfo =
-            VkGraphicsPipelineCreateInfo (
-                sType = VkStructureType.VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
-                stageCount = uint32 stages.Length,
-                pStages = pStages,
+    use pStages = fixed stages
+    let createInfo =
+        VkGraphicsPipelineCreateInfo (
+            sType = VkStructureType.VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
+            stageCount = uint32 stages.Length,
+            pStages = pStages,
                 
-                pVertexInputState = &&vertexInputCreateInfo,
-                pInputAssemblyState = &&inputAssemblyCreateInfo,
-                pViewportState = &&viewportStateCreateInfo,
-                pRasterizationState = &&rasterizerCreateInfo,
-                pMultisampleState = &&multisampleCreateInfo,
-                pDepthStencilState = vkNullPtr, // Optional
-                pColorBlendState = &&colorBlendCreateInfo,
-                pDynamicState = vkNullPtr, // Optional
-                layout = pipelineLayout,
-                renderPass = renderPass,
-                subpass = 0u,
+            pVertexInputState = &&vertexInputCreateInfo,
+            pInputAssemblyState = &&inputAssemblyCreateInfo,
+            pViewportState = &&viewportStateCreateInfo,
+            pRasterizationState = &&rasterizerCreateInfo,
+            pMultisampleState = &&multisampleCreateInfo,
+            pDepthStencilState = vkNullPtr, // Optional
+            pColorBlendState = &&colorBlendCreateInfo,
+            pDynamicState = vkNullPtr, // Optional
+            layout = pipelineLayout,
+            renderPass = renderPass,
+            subpass = 0u,
 
-                basePipelineHandle = VK_NULL_HANDLE, // Optional
-                basePipelineIndex = -1 // Optional
-            )
+            basePipelineHandle = VK_NULL_HANDLE, // Optional
+            basePipelineIndex = -1 // Optional
+        )
 
-        let graphicsPipeline = VkPipeline ()
-        vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1u, &&createInfo, vkNullPtr, &&graphicsPipeline) |> checkResult
-        graphicsPipeline
+    let graphicsPipeline = VkPipeline ()
+    vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1u, &&createInfo, vkNullPtr, &&graphicsPipeline) |> checkResult
+    graphicsPipeline
 
 let mkFramebuffers device renderPass (extent: VkExtent2D) imageViews =
     imageViews
@@ -1044,7 +1042,7 @@ type private SwapChain (physicalDevice, device, surface, indices, commandPool) =
     let addPipeline group =
         match state with
         | Some state ->
-            let pipeline = Pipeline.mkGraphicsPipeline device state.extent state.pipelineLayout state.renderPass group
+            let pipeline = mkGraphicsPipeline device state.extent state.pipelineLayout state.renderPass group
 
             Cmd.recordDraw state.extent state.framebuffers state.commandBuffers state.renderPass pipeline
 
@@ -1071,7 +1069,7 @@ type private SwapChain (physicalDevice, device, surface, indices, commandPool) =
             let swapChain, surfaceFormat, extent, images = mkSwapChain physicalDevice device surface indices
             let imageViews = mkImageViews device surfaceFormat.format images
             let renderPass = mkRenderPass device surfaceFormat.format
-            let pipelineLayout = Pipeline.mkPipelineLayout device
+            let pipelineLayout = mkPipelineLayout device
             let framebuffers = mkFramebuffers device renderPass extent imageViews
             let commandBuffers = mkCommandBuffers device commandPool framebuffers
 
@@ -1104,7 +1102,7 @@ type private SwapChain (physicalDevice, device, surface, indices, commandPool) =
         use pFragmentBytes = fixed fragmentBytes
 
         let group = 
-            Pipeline.createShaderGroup device 
+            mkShaderGroup device 
                 [||] [||]
                 pVertexBytes (uint32 vertexBytes.Length) 
                 pFragmentBytes (uint32 fragmentBytes.Length)
@@ -1137,7 +1135,7 @@ type private SwapChain (physicalDevice, device, surface, indices, commandPool) =
                     shaderGroups
                     |> Seq.rev
                     |> Seq.iter (fun group -> 
-                        Pipeline.destroyShaderGroup device group
+                        destroyShaderGroup device group
                     )
 
                     destroy ()
