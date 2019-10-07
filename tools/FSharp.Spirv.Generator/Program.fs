@@ -20,9 +20,7 @@ let genKind (kind: SpirvSpec.OperandKind) =
         let tyName =
             match kind.Kind with
             | "LiteralString" -> "string"
-            | "LiteralExtInstInteger" -> "uint32"
-            | "LiteralSpecConstantOpInteger" -> "uint32"
-            | _ -> "uint32 list"
+            | _ -> "uint32"
         "type " + kind.Kind + " = " + tyName + "\n"
     | "ValueEnum" ->
         "type " + kind.Kind + " =\n" +
@@ -34,13 +32,13 @@ let genKind (kind: SpirvSpec.OperandKind) =
                 | "2D" -> "Two"
                 | "3D" -> "Three"
                 | _ -> case.Enumerant
-            "   | " + name + " = " + if case.Value.Number.IsSome then string case.Value.Number.Value else case.Value.String.Value)
+            "   | " + name + " = " + (if case.Value.Number.IsSome then string case.Value.Number.Value else case.Value.String.Value) + "u")
             |> Array.reduce (fun case1 case2 -> case1 + "\n" + case2)) + "\n"
     | "BitEnum" ->
         "type " + kind.Kind + " =\n" +
         (kind.Enumerants
             |> Array.map (fun case ->
-            "   | " + case.Enumerant + " = " + case.Value.String.Value)
+            "   | " + case.Enumerant + " = " + case.Value.String.Value + "u")
             |> Array.reduce (fun case1 case2 -> case1 + "\n" + case2)) + "\n"
     | "Composite" ->
         "type " + kind.Kind + " = " + kind.Kind + " of " + (kind.Bases |> Array.reduce (fun x y -> x + " * " + y)) + "\n"
@@ -54,7 +52,17 @@ let genKinds () =
     |> Array.reduce (fun x y -> x + "\n" + y)
 
 let genOperand (operand: SpirvSpec.Operand) =
-    operand.Kind
+    let name =
+        match operand.Name with
+        | Some name ->
+            let results = name.Split(''')
+            if results.Length >= 2 then
+                results.[1].Replace(" ", "").Replace("~", "").Replace(",","").Replace(".","").Replace(">","") + ": "
+            else
+                String.Empty
+        | _ ->
+            String.Empty
+    name + operand.Kind + (match operand.Quantifier with Some "?" -> " option" | Some "*" -> " list" | _ -> String.Empty)
 
 let genInstruction (instr: SpirvSpec.Instruction) =
     "   | " + instr.Opname +
@@ -81,13 +89,29 @@ let genInstructionMemberOpcodeMember () =
      |> Array.map genInstructionMemberOpcodeCase
      |> Array.reduce (fun x y -> x + "\n" + y))
 
+let genInstructionMemberVersionCase (instr: SpirvSpec.Instruction) =
+    let underscore () =
+        if Array.isEmpty instr.Operands then
+            String.Empty
+        else
+            " _"
+    "       | " + instr.Opname + underscore () + " -> " + (match instr.Version.Number with None -> "1.0m" | Some version -> string version + "m")
+
+let genInstructionMemberVersionMember () =
+    "   member x.Version =
+       match x with\n" +
+    (spec.Instructions
+     |> Array.map genInstructionMemberVersionCase
+     |> Array.reduce (fun x y -> x + "\n" + y))
+
 let genInstructions () =
     """type Instruction =
 """ +
     (spec.Instructions
      |> Array.map genInstruction
      |> Array.reduce (fun x y -> x + "\n" + y)) + "\n\n" +
-    genInstructionMemberOpcodeMember ()
+    genInstructionMemberOpcodeMember () + "\n\n" +
+    genInstructionMemberVersionMember ()
 
 let genSource () =
     """// File is generated. Do not modify.

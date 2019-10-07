@@ -4,701 +4,701 @@ module FSharp.Spirv.GeneratedSpec
 open System
 
 type ImageOperands =
-   | None = 0x0000
-   | Bias = 0x0001
-   | Lod = 0x0002
-   | Grad = 0x0004
-   | ConstOffset = 0x0008
-   | Offset = 0x0010
-   | ConstOffsets = 0x0020
-   | Sample = 0x0040
-   | MinLod = 0x0080
-   | MakeTexelAvailable = 0x0100
-   | MakeTexelAvailableKHR = 0x0100
-   | MakeTexelVisible = 0x0200
-   | MakeTexelVisibleKHR = 0x0200
-   | NonPrivateTexel = 0x0400
-   | NonPrivateTexelKHR = 0x0400
-   | VolatileTexel = 0x0800
-   | VolatileTexelKHR = 0x0800
-   | SignExtend = 0x1000
-   | ZeroExtend = 0x2000
+   | None = 0x0000u
+   | Bias = 0x0001u
+   | Lod = 0x0002u
+   | Grad = 0x0004u
+   | ConstOffset = 0x0008u
+   | Offset = 0x0010u
+   | ConstOffsets = 0x0020u
+   | Sample = 0x0040u
+   | MinLod = 0x0080u
+   | MakeTexelAvailable = 0x0100u
+   | MakeTexelAvailableKHR = 0x0100u
+   | MakeTexelVisible = 0x0200u
+   | MakeTexelVisibleKHR = 0x0200u
+   | NonPrivateTexel = 0x0400u
+   | NonPrivateTexelKHR = 0x0400u
+   | VolatileTexel = 0x0800u
+   | VolatileTexelKHR = 0x0800u
+   | SignExtend = 0x1000u
+   | ZeroExtend = 0x2000u
 
 type FPFastMathMode =
-   | None = 0x0000
-   | NotNaN = 0x0001
-   | NotInf = 0x0002
-   | NSZ = 0x0004
-   | AllowRecip = 0x0008
-   | Fast = 0x0010
+   | None = 0x0000u
+   | NotNaN = 0x0001u
+   | NotInf = 0x0002u
+   | NSZ = 0x0004u
+   | AllowRecip = 0x0008u
+   | Fast = 0x0010u
 
 type SelectionControl =
-   | None = 0x0000
-   | Flatten = 0x0001
-   | DontFlatten = 0x0002
+   | None = 0x0000u
+   | Flatten = 0x0001u
+   | DontFlatten = 0x0002u
 
 type LoopControl =
-   | None = 0x0000
-   | Unroll = 0x0001
-   | DontUnroll = 0x0002
-   | DependencyInfinite = 0x0004
-   | DependencyLength = 0x0008
-   | MinIterations = 0x0010
-   | MaxIterations = 0x0020
-   | IterationMultiple = 0x0040
-   | PeelCount = 0x0080
-   | PartialCount = 0x0100
+   | None = 0x0000u
+   | Unroll = 0x0001u
+   | DontUnroll = 0x0002u
+   | DependencyInfinite = 0x0004u
+   | DependencyLength = 0x0008u
+   | MinIterations = 0x0010u
+   | MaxIterations = 0x0020u
+   | IterationMultiple = 0x0040u
+   | PeelCount = 0x0080u
+   | PartialCount = 0x0100u
 
 type FunctionControl =
-   | None = 0x0000
-   | Inline = 0x0001
-   | DontInline = 0x0002
-   | Pure = 0x0004
-   | Const = 0x0008
+   | None = 0x0000u
+   | Inline = 0x0001u
+   | DontInline = 0x0002u
+   | Pure = 0x0004u
+   | Const = 0x0008u
 
 type MemorySemantics =
-   | Relaxed = 0x0000
-   | None = 0x0000
-   | Acquire = 0x0002
-   | Release = 0x0004
-   | AcquireRelease = 0x0008
-   | SequentiallyConsistent = 0x0010
-   | UniformMemory = 0x0040
-   | SubgroupMemory = 0x0080
-   | WorkgroupMemory = 0x0100
-   | CrossWorkgroupMemory = 0x0200
-   | AtomicCounterMemory = 0x0400
-   | ImageMemory = 0x0800
-   | OutputMemory = 0x1000
-   | OutputMemoryKHR = 0x1000
-   | MakeAvailable = 0x2000
-   | MakeAvailableKHR = 0x2000
-   | MakeVisible = 0x4000
-   | MakeVisibleKHR = 0x4000
-   | Volatile = 0x8000
+   | Relaxed = 0x0000u
+   | None = 0x0000u
+   | Acquire = 0x0002u
+   | Release = 0x0004u
+   | AcquireRelease = 0x0008u
+   | SequentiallyConsistent = 0x0010u
+   | UniformMemory = 0x0040u
+   | SubgroupMemory = 0x0080u
+   | WorkgroupMemory = 0x0100u
+   | CrossWorkgroupMemory = 0x0200u
+   | AtomicCounterMemory = 0x0400u
+   | ImageMemory = 0x0800u
+   | OutputMemory = 0x1000u
+   | OutputMemoryKHR = 0x1000u
+   | MakeAvailable = 0x2000u
+   | MakeAvailableKHR = 0x2000u
+   | MakeVisible = 0x4000u
+   | MakeVisibleKHR = 0x4000u
+   | Volatile = 0x8000u
 
 type MemoryAccess =
-   | None = 0x0000
-   | Volatile = 0x0001
-   | Aligned = 0x0002
-   | Nontemporal = 0x0004
-   | MakePointerAvailable = 0x0008
-   | MakePointerAvailableKHR = 0x0008
-   | MakePointerVisible = 0x0010
-   | MakePointerVisibleKHR = 0x0010
-   | NonPrivatePointer = 0x0020
-   | NonPrivatePointerKHR = 0x0020
+   | None = 0x0000u
+   | Volatile = 0x0001u
+   | Aligned = 0x0002u
+   | Nontemporal = 0x0004u
+   | MakePointerAvailable = 0x0008u
+   | MakePointerAvailableKHR = 0x0008u
+   | MakePointerVisible = 0x0010u
+   | MakePointerVisibleKHR = 0x0010u
+   | NonPrivatePointer = 0x0020u
+   | NonPrivatePointerKHR = 0x0020u
 
 type KernelProfilingInfo =
-   | None = 0x0000
-   | CmdExecTime = 0x0001
+   | None = 0x0000u
+   | CmdExecTime = 0x0001u
 
 type SourceLanguage =
-   | Unknown = 0
-   | ESSL = 1
-   | GLSL = 2
-   | OpenCL_C = 3
-   | OpenCL_CPP = 4
-   | HLSL = 5
+   | Unknown = 0u
+   | ESSL = 1u
+   | GLSL = 2u
+   | OpenCL_C = 3u
+   | OpenCL_CPP = 4u
+   | HLSL = 5u
 
 type ExecutionModel =
-   | Vertex = 0
-   | TessellationControl = 1
-   | TessellationEvaluation = 2
-   | Geometry = 3
-   | Fragment = 4
-   | GLCompute = 5
-   | Kernel = 6
-   | TaskNV = 5267
-   | MeshNV = 5268
-   | RayGenerationNV = 5313
-   | IntersectionNV = 5314
-   | AnyHitNV = 5315
-   | ClosestHitNV = 5316
-   | MissNV = 5317
-   | CallableNV = 5318
+   | Vertex = 0u
+   | TessellationControl = 1u
+   | TessellationEvaluation = 2u
+   | Geometry = 3u
+   | Fragment = 4u
+   | GLCompute = 5u
+   | Kernel = 6u
+   | TaskNV = 5267u
+   | MeshNV = 5268u
+   | RayGenerationNV = 5313u
+   | IntersectionNV = 5314u
+   | AnyHitNV = 5315u
+   | ClosestHitNV = 5316u
+   | MissNV = 5317u
+   | CallableNV = 5318u
 
 type AddressingModel =
-   | Logical = 0
-   | Physical32 = 1
-   | Physical64 = 2
-   | PhysicalStorageBuffer64 = 5348
-   | PhysicalStorageBuffer64EXT = 5348
+   | Logical = 0u
+   | Physical32 = 1u
+   | Physical64 = 2u
+   | PhysicalStorageBuffer64 = 5348u
+   | PhysicalStorageBuffer64EXT = 5348u
 
 type MemoryModel =
-   | Simple = 0
-   | GLSL450 = 1
-   | OpenCL = 2
-   | Vulkan = 3
-   | VulkanKHR = 3
+   | Simple = 0u
+   | GLSL450 = 1u
+   | OpenCL = 2u
+   | Vulkan = 3u
+   | VulkanKHR = 3u
 
 type ExecutionMode =
-   | Invocations = 0
-   | SpacingEqual = 1
-   | SpacingFractionalEven = 2
-   | SpacingFractionalOdd = 3
-   | VertexOrderCw = 4
-   | VertexOrderCcw = 5
-   | PixelCenterInteger = 6
-   | OriginUpperLeft = 7
-   | OriginLowerLeft = 8
-   | EarlyFragmentTests = 9
-   | PointMode = 10
-   | Xfb = 11
-   | DepthReplacing = 12
-   | DepthGreater = 14
-   | DepthLess = 15
-   | DepthUnchanged = 16
-   | LocalSize = 17
-   | LocalSizeHint = 18
-   | InputPoints = 19
-   | InputLines = 20
-   | InputLinesAdjacency = 21
-   | Triangles = 22
-   | InputTrianglesAdjacency = 23
-   | Quads = 24
-   | Isolines = 25
-   | OutputVertices = 26
-   | OutputPoints = 27
-   | OutputLineStrip = 28
-   | OutputTriangleStrip = 29
-   | VecTypeHint = 30
-   | ContractionOff = 31
-   | Initializer = 33
-   | Finalizer = 34
-   | SubgroupSize = 35
-   | SubgroupsPerWorkgroup = 36
-   | SubgroupsPerWorkgroupId = 37
-   | LocalSizeId = 38
-   | LocalSizeHintId = 39
-   | PostDepthCoverage = 4446
-   | DenormPreserve = 4459
-   | DenormFlushToZero = 4460
-   | SignedZeroInfNanPreserve = 4461
-   | RoundingModeRTE = 4462
-   | RoundingModeRTZ = 4463
-   | StencilRefReplacingEXT = 5027
-   | OutputLinesNV = 5269
-   | OutputPrimitivesNV = 5270
-   | DerivativeGroupQuadsNV = 5289
-   | DerivativeGroupLinearNV = 5290
-   | OutputTrianglesNV = 5298
-   | PixelInterlockOrderedEXT = 5366
-   | PixelInterlockUnorderedEXT = 5367
-   | SampleInterlockOrderedEXT = 5368
-   | SampleInterlockUnorderedEXT = 5369
-   | ShadingRateInterlockOrderedEXT = 5370
-   | ShadingRateInterlockUnorderedEXT = 5371
+   | Invocations = 0u
+   | SpacingEqual = 1u
+   | SpacingFractionalEven = 2u
+   | SpacingFractionalOdd = 3u
+   | VertexOrderCw = 4u
+   | VertexOrderCcw = 5u
+   | PixelCenterInteger = 6u
+   | OriginUpperLeft = 7u
+   | OriginLowerLeft = 8u
+   | EarlyFragmentTests = 9u
+   | PointMode = 10u
+   | Xfb = 11u
+   | DepthReplacing = 12u
+   | DepthGreater = 14u
+   | DepthLess = 15u
+   | DepthUnchanged = 16u
+   | LocalSize = 17u
+   | LocalSizeHint = 18u
+   | InputPoints = 19u
+   | InputLines = 20u
+   | InputLinesAdjacency = 21u
+   | Triangles = 22u
+   | InputTrianglesAdjacency = 23u
+   | Quads = 24u
+   | Isolines = 25u
+   | OutputVertices = 26u
+   | OutputPoints = 27u
+   | OutputLineStrip = 28u
+   | OutputTriangleStrip = 29u
+   | VecTypeHint = 30u
+   | ContractionOff = 31u
+   | Initializer = 33u
+   | Finalizer = 34u
+   | SubgroupSize = 35u
+   | SubgroupsPerWorkgroup = 36u
+   | SubgroupsPerWorkgroupId = 37u
+   | LocalSizeId = 38u
+   | LocalSizeHintId = 39u
+   | PostDepthCoverage = 4446u
+   | DenormPreserve = 4459u
+   | DenormFlushToZero = 4460u
+   | SignedZeroInfNanPreserve = 4461u
+   | RoundingModeRTE = 4462u
+   | RoundingModeRTZ = 4463u
+   | StencilRefReplacingEXT = 5027u
+   | OutputLinesNV = 5269u
+   | OutputPrimitivesNV = 5270u
+   | DerivativeGroupQuadsNV = 5289u
+   | DerivativeGroupLinearNV = 5290u
+   | OutputTrianglesNV = 5298u
+   | PixelInterlockOrderedEXT = 5366u
+   | PixelInterlockUnorderedEXT = 5367u
+   | SampleInterlockOrderedEXT = 5368u
+   | SampleInterlockUnorderedEXT = 5369u
+   | ShadingRateInterlockOrderedEXT = 5370u
+   | ShadingRateInterlockUnorderedEXT = 5371u
 
 type StorageClass =
-   | UniformConstant = 0
-   | Input = 1
-   | Uniform = 2
-   | Output = 3
-   | Workgroup = 4
-   | CrossWorkgroup = 5
-   | Private = 6
-   | Function = 7
-   | Generic = 8
-   | PushConstant = 9
-   | AtomicCounter = 10
-   | Image = 11
-   | StorageBuffer = 12
-   | CallableDataNV = 5328
-   | IncomingCallableDataNV = 5329
-   | RayPayloadNV = 5338
-   | HitAttributeNV = 5339
-   | IncomingRayPayloadNV = 5342
-   | ShaderRecordBufferNV = 5343
-   | PhysicalStorageBuffer = 5349
-   | PhysicalStorageBufferEXT = 5349
+   | UniformConstant = 0u
+   | Input = 1u
+   | Uniform = 2u
+   | Output = 3u
+   | Workgroup = 4u
+   | CrossWorkgroup = 5u
+   | Private = 6u
+   | Function = 7u
+   | Generic = 8u
+   | PushConstant = 9u
+   | AtomicCounter = 10u
+   | Image = 11u
+   | StorageBuffer = 12u
+   | CallableDataNV = 5328u
+   | IncomingCallableDataNV = 5329u
+   | RayPayloadNV = 5338u
+   | HitAttributeNV = 5339u
+   | IncomingRayPayloadNV = 5342u
+   | ShaderRecordBufferNV = 5343u
+   | PhysicalStorageBuffer = 5349u
+   | PhysicalStorageBufferEXT = 5349u
 
 type Dim =
-   | One = 0
-   | Two = 1
-   | Three = 2
-   | Cube = 3
-   | Rect = 4
-   | Buffer = 5
-   | SubpassData = 6
+   | One = 0u
+   | Two = 1u
+   | Three = 2u
+   | Cube = 3u
+   | Rect = 4u
+   | Buffer = 5u
+   | SubpassData = 6u
 
 type SamplerAddressingMode =
-   | None = 0
-   | ClampToEdge = 1
-   | Clamp = 2
-   | Repeat = 3
-   | RepeatMirrored = 4
+   | None = 0u
+   | ClampToEdge = 1u
+   | Clamp = 2u
+   | Repeat = 3u
+   | RepeatMirrored = 4u
 
 type SamplerFilterMode =
-   | Nearest = 0
-   | Linear = 1
+   | Nearest = 0u
+   | Linear = 1u
 
 type ImageFormat =
-   | Unknown = 0
-   | Rgba32f = 1
-   | Rgba16f = 2
-   | R32f = 3
-   | Rgba8 = 4
-   | Rgba8Snorm = 5
-   | Rg32f = 6
-   | Rg16f = 7
-   | R11fG11fB10f = 8
-   | R16f = 9
-   | Rgba16 = 10
-   | Rgb10A2 = 11
-   | Rg16 = 12
-   | Rg8 = 13
-   | R16 = 14
-   | R8 = 15
-   | Rgba16Snorm = 16
-   | Rg16Snorm = 17
-   | Rg8Snorm = 18
-   | R16Snorm = 19
-   | R8Snorm = 20
-   | Rgba32i = 21
-   | Rgba16i = 22
-   | Rgba8i = 23
-   | R32i = 24
-   | Rg32i = 25
-   | Rg16i = 26
-   | Rg8i = 27
-   | R16i = 28
-   | R8i = 29
-   | Rgba32ui = 30
-   | Rgba16ui = 31
-   | Rgba8ui = 32
-   | R32ui = 33
-   | Rgb10a2ui = 34
-   | Rg32ui = 35
-   | Rg16ui = 36
-   | Rg8ui = 37
-   | R16ui = 38
-   | R8ui = 39
+   | Unknown = 0u
+   | Rgba32f = 1u
+   | Rgba16f = 2u
+   | R32f = 3u
+   | Rgba8 = 4u
+   | Rgba8Snorm = 5u
+   | Rg32f = 6u
+   | Rg16f = 7u
+   | R11fG11fB10f = 8u
+   | R16f = 9u
+   | Rgba16 = 10u
+   | Rgb10A2 = 11u
+   | Rg16 = 12u
+   | Rg8 = 13u
+   | R16 = 14u
+   | R8 = 15u
+   | Rgba16Snorm = 16u
+   | Rg16Snorm = 17u
+   | Rg8Snorm = 18u
+   | R16Snorm = 19u
+   | R8Snorm = 20u
+   | Rgba32i = 21u
+   | Rgba16i = 22u
+   | Rgba8i = 23u
+   | R32i = 24u
+   | Rg32i = 25u
+   | Rg16i = 26u
+   | Rg8i = 27u
+   | R16i = 28u
+   | R8i = 29u
+   | Rgba32ui = 30u
+   | Rgba16ui = 31u
+   | Rgba8ui = 32u
+   | R32ui = 33u
+   | Rgb10a2ui = 34u
+   | Rg32ui = 35u
+   | Rg16ui = 36u
+   | Rg8ui = 37u
+   | R16ui = 38u
+   | R8ui = 39u
 
 type ImageChannelOrder =
-   | R = 0
-   | A = 1
-   | RG = 2
-   | RA = 3
-   | RGB = 4
-   | RGBA = 5
-   | BGRA = 6
-   | ARGB = 7
-   | Intensity = 8
-   | Luminance = 9
-   | Rx = 10
-   | RGx = 11
-   | RGBx = 12
-   | Depth = 13
-   | DepthStencil = 14
-   | sRGB = 15
-   | sRGBx = 16
-   | sRGBA = 17
-   | sBGRA = 18
-   | ABGR = 19
+   | R = 0u
+   | A = 1u
+   | RG = 2u
+   | RA = 3u
+   | RGB = 4u
+   | RGBA = 5u
+   | BGRA = 6u
+   | ARGB = 7u
+   | Intensity = 8u
+   | Luminance = 9u
+   | Rx = 10u
+   | RGx = 11u
+   | RGBx = 12u
+   | Depth = 13u
+   | DepthStencil = 14u
+   | sRGB = 15u
+   | sRGBx = 16u
+   | sRGBA = 17u
+   | sBGRA = 18u
+   | ABGR = 19u
 
 type ImageChannelDataType =
-   | SnormInt8 = 0
-   | SnormInt16 = 1
-   | UnormInt8 = 2
-   | UnormInt16 = 3
-   | UnormShort565 = 4
-   | UnormShort555 = 5
-   | UnormInt101010 = 6
-   | SignedInt8 = 7
-   | SignedInt16 = 8
-   | SignedInt32 = 9
-   | UnsignedInt8 = 10
-   | UnsignedInt16 = 11
-   | UnsignedInt32 = 12
-   | HalfFloat = 13
-   | Float = 14
-   | UnormInt24 = 15
-   | UnormInt101010_2 = 16
+   | SnormInt8 = 0u
+   | SnormInt16 = 1u
+   | UnormInt8 = 2u
+   | UnormInt16 = 3u
+   | UnormShort565 = 4u
+   | UnormShort555 = 5u
+   | UnormInt101010 = 6u
+   | SignedInt8 = 7u
+   | SignedInt16 = 8u
+   | SignedInt32 = 9u
+   | UnsignedInt8 = 10u
+   | UnsignedInt16 = 11u
+   | UnsignedInt32 = 12u
+   | HalfFloat = 13u
+   | Float = 14u
+   | UnormInt24 = 15u
+   | UnormInt101010_2 = 16u
 
 type FPRoundingMode =
-   | RTE = 0
-   | RTZ = 1
-   | RTP = 2
-   | RTN = 3
+   | RTE = 0u
+   | RTZ = 1u
+   | RTP = 2u
+   | RTN = 3u
 
 type LinkageType =
-   | Export = 0
-   | Import = 1
+   | Export = 0u
+   | Import = 1u
 
 type AccessQualifier =
-   | ReadOnly = 0
-   | WriteOnly = 1
-   | ReadWrite = 2
+   | ReadOnly = 0u
+   | WriteOnly = 1u
+   | ReadWrite = 2u
 
 type FunctionParameterAttribute =
-   | Zext = 0
-   | Sext = 1
-   | ByVal = 2
-   | Sret = 3
-   | NoAlias = 4
-   | NoCapture = 5
-   | NoWrite = 6
-   | NoReadWrite = 7
+   | Zext = 0u
+   | Sext = 1u
+   | ByVal = 2u
+   | Sret = 3u
+   | NoAlias = 4u
+   | NoCapture = 5u
+   | NoWrite = 6u
+   | NoReadWrite = 7u
 
 type Decoration =
-   | RelaxedPrecision = 0
-   | SpecId = 1
-   | Block = 2
-   | BufferBlock = 3
-   | RowMajor = 4
-   | ColMajor = 5
-   | ArrayStride = 6
-   | MatrixStride = 7
-   | GLSLShared = 8
-   | GLSLPacked = 9
-   | CPacked = 10
-   | BuiltIn = 11
-   | NoPerspective = 13
-   | Flat = 14
-   | Patch = 15
-   | Centroid = 16
-   | Sample = 17
-   | Invariant = 18
-   | Restrict = 19
-   | Aliased = 20
-   | Volatile = 21
-   | Constant = 22
-   | Coherent = 23
-   | NonWritable = 24
-   | NonReadable = 25
-   | Uniform = 26
-   | UniformId = 27
-   | SaturatedConversion = 28
-   | Stream = 29
-   | Location = 30
-   | Component = 31
-   | Index = 32
-   | Binding = 33
-   | DescriptorSet = 34
-   | Offset = 35
-   | XfbBuffer = 36
-   | XfbStride = 37
-   | FuncParamAttr = 38
-   | FPRoundingMode = 39
-   | FPFastMathMode = 40
-   | LinkageAttributes = 41
-   | NoContraction = 42
-   | InputAttachmentIndex = 43
-   | Alignment = 44
-   | MaxByteOffset = 45
-   | AlignmentId = 46
-   | MaxByteOffsetId = 47
-   | NoSignedWrap = 4469
-   | NoUnsignedWrap = 4470
-   | ExplicitInterpAMD = 4999
-   | OverrideCoverageNV = 5248
-   | PassthroughNV = 5250
-   | ViewportRelativeNV = 5252
-   | SecondaryViewportRelativeNV = 5256
-   | PerPrimitiveNV = 5271
-   | PerViewNV = 5272
-   | PerTaskNV = 5273
-   | PerVertexNV = 5285
-   | NonUniform = 5300
-   | NonUniformEXT = 5300
-   | RestrictPointer = 5355
-   | RestrictPointerEXT = 5355
-   | AliasedPointer = 5356
-   | AliasedPointerEXT = 5356
-   | CounterBuffer = 5634
-   | HlslCounterBufferGOOGLE = 5634
-   | UserSemantic = 5635
-   | HlslSemanticGOOGLE = 5635
-   | UserTypeGOOGLE = 5636
+   | RelaxedPrecision = 0u
+   | SpecId = 1u
+   | Block = 2u
+   | BufferBlock = 3u
+   | RowMajor = 4u
+   | ColMajor = 5u
+   | ArrayStride = 6u
+   | MatrixStride = 7u
+   | GLSLShared = 8u
+   | GLSLPacked = 9u
+   | CPacked = 10u
+   | BuiltIn = 11u
+   | NoPerspective = 13u
+   | Flat = 14u
+   | Patch = 15u
+   | Centroid = 16u
+   | Sample = 17u
+   | Invariant = 18u
+   | Restrict = 19u
+   | Aliased = 20u
+   | Volatile = 21u
+   | Constant = 22u
+   | Coherent = 23u
+   | NonWritable = 24u
+   | NonReadable = 25u
+   | Uniform = 26u
+   | UniformId = 27u
+   | SaturatedConversion = 28u
+   | Stream = 29u
+   | Location = 30u
+   | Component = 31u
+   | Index = 32u
+   | Binding = 33u
+   | DescriptorSet = 34u
+   | Offset = 35u
+   | XfbBuffer = 36u
+   | XfbStride = 37u
+   | FuncParamAttr = 38u
+   | FPRoundingMode = 39u
+   | FPFastMathMode = 40u
+   | LinkageAttributes = 41u
+   | NoContraction = 42u
+   | InputAttachmentIndex = 43u
+   | Alignment = 44u
+   | MaxByteOffset = 45u
+   | AlignmentId = 46u
+   | MaxByteOffsetId = 47u
+   | NoSignedWrap = 4469u
+   | NoUnsignedWrap = 4470u
+   | ExplicitInterpAMD = 4999u
+   | OverrideCoverageNV = 5248u
+   | PassthroughNV = 5250u
+   | ViewportRelativeNV = 5252u
+   | SecondaryViewportRelativeNV = 5256u
+   | PerPrimitiveNV = 5271u
+   | PerViewNV = 5272u
+   | PerTaskNV = 5273u
+   | PerVertexNV = 5285u
+   | NonUniform = 5300u
+   | NonUniformEXT = 5300u
+   | RestrictPointer = 5355u
+   | RestrictPointerEXT = 5355u
+   | AliasedPointer = 5356u
+   | AliasedPointerEXT = 5356u
+   | CounterBuffer = 5634u
+   | HlslCounterBufferGOOGLE = 5634u
+   | UserSemantic = 5635u
+   | HlslSemanticGOOGLE = 5635u
+   | UserTypeGOOGLE = 5636u
 
 type BuiltIn =
-   | Position = 0
-   | PointSize = 1
-   | ClipDistance = 3
-   | CullDistance = 4
-   | VertexId = 5
-   | InstanceId = 6
-   | PrimitiveId = 7
-   | InvocationId = 8
-   | Layer = 9
-   | ViewportIndex = 10
-   | TessLevelOuter = 11
-   | TessLevelInner = 12
-   | TessCoord = 13
-   | PatchVertices = 14
-   | FragCoord = 15
-   | PointCoord = 16
-   | FrontFacing = 17
-   | SampleId = 18
-   | SamplePosition = 19
-   | SampleMask = 20
-   | FragDepth = 22
-   | HelperInvocation = 23
-   | NumWorkgroups = 24
-   | WorkgroupSize = 25
-   | WorkgroupId = 26
-   | LocalInvocationId = 27
-   | GlobalInvocationId = 28
-   | LocalInvocationIndex = 29
-   | WorkDim = 30
-   | GlobalSize = 31
-   | EnqueuedWorkgroupSize = 32
-   | GlobalOffset = 33
-   | GlobalLinearId = 34
-   | SubgroupSize = 36
-   | SubgroupMaxSize = 37
-   | NumSubgroups = 38
-   | NumEnqueuedSubgroups = 39
-   | SubgroupId = 40
-   | SubgroupLocalInvocationId = 41
-   | VertexIndex = 42
-   | InstanceIndex = 43
-   | SubgroupEqMask = 4416
-   | SubgroupGeMask = 4417
-   | SubgroupGtMask = 4418
-   | SubgroupLeMask = 4419
-   | SubgroupLtMask = 4420
-   | SubgroupEqMaskKHR = 4416
-   | SubgroupGeMaskKHR = 4417
-   | SubgroupGtMaskKHR = 4418
-   | SubgroupLeMaskKHR = 4419
-   | SubgroupLtMaskKHR = 4420
-   | BaseVertex = 4424
-   | BaseInstance = 4425
-   | DrawIndex = 4426
-   | DeviceIndex = 4438
-   | ViewIndex = 4440
-   | BaryCoordNoPerspAMD = 4992
-   | BaryCoordNoPerspCentroidAMD = 4993
-   | BaryCoordNoPerspSampleAMD = 4994
-   | BaryCoordSmoothAMD = 4995
-   | BaryCoordSmoothCentroidAMD = 4996
-   | BaryCoordSmoothSampleAMD = 4997
-   | BaryCoordPullModelAMD = 4998
-   | FragStencilRefEXT = 5014
-   | ViewportMaskNV = 5253
-   | SecondaryPositionNV = 5257
-   | SecondaryViewportMaskNV = 5258
-   | PositionPerViewNV = 5261
-   | ViewportMaskPerViewNV = 5262
-   | FullyCoveredEXT = 5264
-   | TaskCountNV = 5274
-   | PrimitiveCountNV = 5275
-   | PrimitiveIndicesNV = 5276
-   | ClipDistancePerViewNV = 5277
-   | CullDistancePerViewNV = 5278
-   | LayerPerViewNV = 5279
-   | MeshViewCountNV = 5280
-   | MeshViewIndicesNV = 5281
-   | BaryCoordNV = 5286
-   | BaryCoordNoPerspNV = 5287
-   | FragSizeEXT = 5292
-   | FragmentSizeNV = 5292
-   | FragInvocationCountEXT = 5293
-   | InvocationsPerPixelNV = 5293
-   | LaunchIdNV = 5319
-   | LaunchSizeNV = 5320
-   | WorldRayOriginNV = 5321
-   | WorldRayDirectionNV = 5322
-   | ObjectRayOriginNV = 5323
-   | ObjectRayDirectionNV = 5324
-   | RayTminNV = 5325
-   | RayTmaxNV = 5326
-   | InstanceCustomIndexNV = 5327
-   | ObjectToWorldNV = 5330
-   | WorldToObjectNV = 5331
-   | HitTNV = 5332
-   | HitKindNV = 5333
-   | IncomingRayFlagsNV = 5351
-   | WarpsPerSMNV = 5374
-   | SMCountNV = 5375
-   | WarpIDNV = 5376
-   | SMIDNV = 5377
+   | Position = 0u
+   | PointSize = 1u
+   | ClipDistance = 3u
+   | CullDistance = 4u
+   | VertexId = 5u
+   | InstanceId = 6u
+   | PrimitiveId = 7u
+   | InvocationId = 8u
+   | Layer = 9u
+   | ViewportIndex = 10u
+   | TessLevelOuter = 11u
+   | TessLevelInner = 12u
+   | TessCoord = 13u
+   | PatchVertices = 14u
+   | FragCoord = 15u
+   | PointCoord = 16u
+   | FrontFacing = 17u
+   | SampleId = 18u
+   | SamplePosition = 19u
+   | SampleMask = 20u
+   | FragDepth = 22u
+   | HelperInvocation = 23u
+   | NumWorkgroups = 24u
+   | WorkgroupSize = 25u
+   | WorkgroupId = 26u
+   | LocalInvocationId = 27u
+   | GlobalInvocationId = 28u
+   | LocalInvocationIndex = 29u
+   | WorkDim = 30u
+   | GlobalSize = 31u
+   | EnqueuedWorkgroupSize = 32u
+   | GlobalOffset = 33u
+   | GlobalLinearId = 34u
+   | SubgroupSize = 36u
+   | SubgroupMaxSize = 37u
+   | NumSubgroups = 38u
+   | NumEnqueuedSubgroups = 39u
+   | SubgroupId = 40u
+   | SubgroupLocalInvocationId = 41u
+   | VertexIndex = 42u
+   | InstanceIndex = 43u
+   | SubgroupEqMask = 4416u
+   | SubgroupGeMask = 4417u
+   | SubgroupGtMask = 4418u
+   | SubgroupLeMask = 4419u
+   | SubgroupLtMask = 4420u
+   | SubgroupEqMaskKHR = 4416u
+   | SubgroupGeMaskKHR = 4417u
+   | SubgroupGtMaskKHR = 4418u
+   | SubgroupLeMaskKHR = 4419u
+   | SubgroupLtMaskKHR = 4420u
+   | BaseVertex = 4424u
+   | BaseInstance = 4425u
+   | DrawIndex = 4426u
+   | DeviceIndex = 4438u
+   | ViewIndex = 4440u
+   | BaryCoordNoPerspAMD = 4992u
+   | BaryCoordNoPerspCentroidAMD = 4993u
+   | BaryCoordNoPerspSampleAMD = 4994u
+   | BaryCoordSmoothAMD = 4995u
+   | BaryCoordSmoothCentroidAMD = 4996u
+   | BaryCoordSmoothSampleAMD = 4997u
+   | BaryCoordPullModelAMD = 4998u
+   | FragStencilRefEXT = 5014u
+   | ViewportMaskNV = 5253u
+   | SecondaryPositionNV = 5257u
+   | SecondaryViewportMaskNV = 5258u
+   | PositionPerViewNV = 5261u
+   | ViewportMaskPerViewNV = 5262u
+   | FullyCoveredEXT = 5264u
+   | TaskCountNV = 5274u
+   | PrimitiveCountNV = 5275u
+   | PrimitiveIndicesNV = 5276u
+   | ClipDistancePerViewNV = 5277u
+   | CullDistancePerViewNV = 5278u
+   | LayerPerViewNV = 5279u
+   | MeshViewCountNV = 5280u
+   | MeshViewIndicesNV = 5281u
+   | BaryCoordNV = 5286u
+   | BaryCoordNoPerspNV = 5287u
+   | FragSizeEXT = 5292u
+   | FragmentSizeNV = 5292u
+   | FragInvocationCountEXT = 5293u
+   | InvocationsPerPixelNV = 5293u
+   | LaunchIdNV = 5319u
+   | LaunchSizeNV = 5320u
+   | WorldRayOriginNV = 5321u
+   | WorldRayDirectionNV = 5322u
+   | ObjectRayOriginNV = 5323u
+   | ObjectRayDirectionNV = 5324u
+   | RayTminNV = 5325u
+   | RayTmaxNV = 5326u
+   | InstanceCustomIndexNV = 5327u
+   | ObjectToWorldNV = 5330u
+   | WorldToObjectNV = 5331u
+   | HitTNV = 5332u
+   | HitKindNV = 5333u
+   | IncomingRayFlagsNV = 5351u
+   | WarpsPerSMNV = 5374u
+   | SMCountNV = 5375u
+   | WarpIDNV = 5376u
+   | SMIDNV = 5377u
 
 type Scope =
-   | CrossDevice = 0
-   | Device = 1
-   | Workgroup = 2
-   | Subgroup = 3
-   | Invocation = 4
-   | QueueFamily = 5
-   | QueueFamilyKHR = 5
+   | CrossDevice = 0u
+   | Device = 1u
+   | Workgroup = 2u
+   | Subgroup = 3u
+   | Invocation = 4u
+   | QueueFamily = 5u
+   | QueueFamilyKHR = 5u
 
 type GroupOperation =
-   | Reduce = 0
-   | InclusiveScan = 1
-   | ExclusiveScan = 2
-   | ClusteredReduce = 3
-   | PartitionedReduceNV = 6
-   | PartitionedInclusiveScanNV = 7
-   | PartitionedExclusiveScanNV = 8
+   | Reduce = 0u
+   | InclusiveScan = 1u
+   | ExclusiveScan = 2u
+   | ClusteredReduce = 3u
+   | PartitionedReduceNV = 6u
+   | PartitionedInclusiveScanNV = 7u
+   | PartitionedExclusiveScanNV = 8u
 
 type KernelEnqueueFlags =
-   | NoWait = 0
-   | WaitKernel = 1
-   | WaitWorkGroup = 2
+   | NoWait = 0u
+   | WaitKernel = 1u
+   | WaitWorkGroup = 2u
 
 type Capability =
-   | Matrix = 0
-   | Shader = 1
-   | Geometry = 2
-   | Tessellation = 3
-   | Addresses = 4
-   | Linkage = 5
-   | Kernel = 6
-   | Vector16 = 7
-   | Float16Buffer = 8
-   | Float16 = 9
-   | Float64 = 10
-   | Int64 = 11
-   | Int64Atomics = 12
-   | ImageBasic = 13
-   | ImageReadWrite = 14
-   | ImageMipmap = 15
-   | Pipes = 17
-   | Groups = 18
-   | DeviceEnqueue = 19
-   | LiteralSampler = 20
-   | AtomicStorage = 21
-   | Int16 = 22
-   | TessellationPointSize = 23
-   | GeometryPointSize = 24
-   | ImageGatherExtended = 25
-   | StorageImageMultisample = 27
-   | UniformBufferArrayDynamicIndexing = 28
-   | SampledImageArrayDynamicIndexing = 29
-   | StorageBufferArrayDynamicIndexing = 30
-   | StorageImageArrayDynamicIndexing = 31
-   | ClipDistance = 32
-   | CullDistance = 33
-   | ImageCubeArray = 34
-   | SampleRateShading = 35
-   | ImageRect = 36
-   | SampledRect = 37
-   | GenericPointer = 38
-   | Int8 = 39
-   | InputAttachment = 40
-   | SparseResidency = 41
-   | MinLod = 42
-   | Sampled1D = 43
-   | Image1D = 44
-   | SampledCubeArray = 45
-   | SampledBuffer = 46
-   | ImageBuffer = 47
-   | ImageMSArray = 48
-   | StorageImageExtendedFormats = 49
-   | ImageQuery = 50
-   | DerivativeControl = 51
-   | InterpolationFunction = 52
-   | TransformFeedback = 53
-   | GeometryStreams = 54
-   | StorageImageReadWithoutFormat = 55
-   | StorageImageWriteWithoutFormat = 56
-   | MultiViewport = 57
-   | SubgroupDispatch = 58
-   | NamedBarrier = 59
-   | PipeStorage = 60
-   | GroupNonUniform = 61
-   | GroupNonUniformVote = 62
-   | GroupNonUniformArithmetic = 63
-   | GroupNonUniformBallot = 64
-   | GroupNonUniformShuffle = 65
-   | GroupNonUniformShuffleRelative = 66
-   | GroupNonUniformClustered = 67
-   | GroupNonUniformQuad = 68
-   | ShaderLayer = 69
-   | ShaderViewportIndex = 70
-   | SubgroupBallotKHR = 4423
-   | DrawParameters = 4427
-   | SubgroupVoteKHR = 4431
-   | StorageBuffer16BitAccess = 4433
-   | StorageUniformBufferBlock16 = 4433
-   | UniformAndStorageBuffer16BitAccess = 4434
-   | StorageUniform16 = 4434
-   | StoragePushConstant16 = 4435
-   | StorageInputOutput16 = 4436
-   | DeviceGroup = 4437
-   | MultiView = 4439
-   | VariablePointersStorageBuffer = 4441
-   | VariablePointers = 4442
-   | AtomicStorageOps = 4445
-   | SampleMaskPostDepthCoverage = 4447
-   | StorageBuffer8BitAccess = 4448
-   | UniformAndStorageBuffer8BitAccess = 4449
-   | StoragePushConstant8 = 4450
-   | DenormPreserve = 4464
-   | DenormFlushToZero = 4465
-   | SignedZeroInfNanPreserve = 4466
-   | RoundingModeRTE = 4467
-   | RoundingModeRTZ = 4468
-   | Float16ImageAMD = 5008
-   | ImageGatherBiasLodAMD = 5009
-   | FragmentMaskAMD = 5010
-   | StencilExportEXT = 5013
-   | ImageReadWriteLodAMD = 5015
-   | ShaderClockKHR = 5055
-   | SampleMaskOverrideCoverageNV = 5249
-   | GeometryShaderPassthroughNV = 5251
-   | ShaderViewportIndexLayerEXT = 5254
-   | ShaderViewportIndexLayerNV = 5254
-   | ShaderViewportMaskNV = 5255
-   | ShaderStereoViewNV = 5259
-   | PerViewAttributesNV = 5260
-   | FragmentFullyCoveredEXT = 5265
-   | MeshShadingNV = 5266
-   | ImageFootprintNV = 5282
-   | FragmentBarycentricNV = 5284
-   | ComputeDerivativeGroupQuadsNV = 5288
-   | FragmentDensityEXT = 5291
-   | ShadingRateNV = 5291
-   | GroupNonUniformPartitionedNV = 5297
-   | ShaderNonUniform = 5301
-   | ShaderNonUniformEXT = 5301
-   | RuntimeDescriptorArray = 5302
-   | RuntimeDescriptorArrayEXT = 5302
-   | InputAttachmentArrayDynamicIndexing = 5303
-   | InputAttachmentArrayDynamicIndexingEXT = 5303
-   | UniformTexelBufferArrayDynamicIndexing = 5304
-   | UniformTexelBufferArrayDynamicIndexingEXT = 5304
-   | StorageTexelBufferArrayDynamicIndexing = 5305
-   | StorageTexelBufferArrayDynamicIndexingEXT = 5305
-   | UniformBufferArrayNonUniformIndexing = 5306
-   | UniformBufferArrayNonUniformIndexingEXT = 5306
-   | SampledImageArrayNonUniformIndexing = 5307
-   | SampledImageArrayNonUniformIndexingEXT = 5307
-   | StorageBufferArrayNonUniformIndexing = 5308
-   | StorageBufferArrayNonUniformIndexingEXT = 5308
-   | StorageImageArrayNonUniformIndexing = 5309
-   | StorageImageArrayNonUniformIndexingEXT = 5309
-   | InputAttachmentArrayNonUniformIndexing = 5310
-   | InputAttachmentArrayNonUniformIndexingEXT = 5310
-   | UniformTexelBufferArrayNonUniformIndexing = 5311
-   | UniformTexelBufferArrayNonUniformIndexingEXT = 5311
-   | StorageTexelBufferArrayNonUniformIndexing = 5312
-   | StorageTexelBufferArrayNonUniformIndexingEXT = 5312
-   | RayTracingNV = 5340
-   | VulkanMemoryModel = 5345
-   | VulkanMemoryModelKHR = 5345
-   | VulkanMemoryModelDeviceScope = 5346
-   | VulkanMemoryModelDeviceScopeKHR = 5346
-   | PhysicalStorageBufferAddresses = 5347
-   | PhysicalStorageBufferAddressesEXT = 5347
-   | ComputeDerivativeGroupLinearNV = 5350
-   | CooperativeMatrixNV = 5357
-   | FragmentShaderSampleInterlockEXT = 5363
-   | FragmentShaderShadingRateInterlockEXT = 5372
-   | ShaderSMBuiltinsNV = 5373
-   | FragmentShaderPixelInterlockEXT = 5378
-   | DemoteToHelperInvocationEXT = 5379
-   | SubgroupShuffleINTEL = 5568
-   | SubgroupBufferBlockIOINTEL = 5569
-   | SubgroupImageBlockIOINTEL = 5570
-   | SubgroupImageMediaBlockIOINTEL = 5579
-   | IntegerFunctions2INTEL = 5584
-   | SubgroupAvcMotionEstimationINTEL = 5696
-   | SubgroupAvcMotionEstimationIntraINTEL = 5697
-   | SubgroupAvcMotionEstimationChromaINTEL = 5698
+   | Matrix = 0u
+   | Shader = 1u
+   | Geometry = 2u
+   | Tessellation = 3u
+   | Addresses = 4u
+   | Linkage = 5u
+   | Kernel = 6u
+   | Vector16 = 7u
+   | Float16Buffer = 8u
+   | Float16 = 9u
+   | Float64 = 10u
+   | Int64 = 11u
+   | Int64Atomics = 12u
+   | ImageBasic = 13u
+   | ImageReadWrite = 14u
+   | ImageMipmap = 15u
+   | Pipes = 17u
+   | Groups = 18u
+   | DeviceEnqueue = 19u
+   | LiteralSampler = 20u
+   | AtomicStorage = 21u
+   | Int16 = 22u
+   | TessellationPointSize = 23u
+   | GeometryPointSize = 24u
+   | ImageGatherExtended = 25u
+   | StorageImageMultisample = 27u
+   | UniformBufferArrayDynamicIndexing = 28u
+   | SampledImageArrayDynamicIndexing = 29u
+   | StorageBufferArrayDynamicIndexing = 30u
+   | StorageImageArrayDynamicIndexing = 31u
+   | ClipDistance = 32u
+   | CullDistance = 33u
+   | ImageCubeArray = 34u
+   | SampleRateShading = 35u
+   | ImageRect = 36u
+   | SampledRect = 37u
+   | GenericPointer = 38u
+   | Int8 = 39u
+   | InputAttachment = 40u
+   | SparseResidency = 41u
+   | MinLod = 42u
+   | Sampled1D = 43u
+   | Image1D = 44u
+   | SampledCubeArray = 45u
+   | SampledBuffer = 46u
+   | ImageBuffer = 47u
+   | ImageMSArray = 48u
+   | StorageImageExtendedFormats = 49u
+   | ImageQuery = 50u
+   | DerivativeControl = 51u
+   | InterpolationFunction = 52u
+   | TransformFeedback = 53u
+   | GeometryStreams = 54u
+   | StorageImageReadWithoutFormat = 55u
+   | StorageImageWriteWithoutFormat = 56u
+   | MultiViewport = 57u
+   | SubgroupDispatch = 58u
+   | NamedBarrier = 59u
+   | PipeStorage = 60u
+   | GroupNonUniform = 61u
+   | GroupNonUniformVote = 62u
+   | GroupNonUniformArithmetic = 63u
+   | GroupNonUniformBallot = 64u
+   | GroupNonUniformShuffle = 65u
+   | GroupNonUniformShuffleRelative = 66u
+   | GroupNonUniformClustered = 67u
+   | GroupNonUniformQuad = 68u
+   | ShaderLayer = 69u
+   | ShaderViewportIndex = 70u
+   | SubgroupBallotKHR = 4423u
+   | DrawParameters = 4427u
+   | SubgroupVoteKHR = 4431u
+   | StorageBuffer16BitAccess = 4433u
+   | StorageUniformBufferBlock16 = 4433u
+   | UniformAndStorageBuffer16BitAccess = 4434u
+   | StorageUniform16 = 4434u
+   | StoragePushConstant16 = 4435u
+   | StorageInputOutput16 = 4436u
+   | DeviceGroup = 4437u
+   | MultiView = 4439u
+   | VariablePointersStorageBuffer = 4441u
+   | VariablePointers = 4442u
+   | AtomicStorageOps = 4445u
+   | SampleMaskPostDepthCoverage = 4447u
+   | StorageBuffer8BitAccess = 4448u
+   | UniformAndStorageBuffer8BitAccess = 4449u
+   | StoragePushConstant8 = 4450u
+   | DenormPreserve = 4464u
+   | DenormFlushToZero = 4465u
+   | SignedZeroInfNanPreserve = 4466u
+   | RoundingModeRTE = 4467u
+   | RoundingModeRTZ = 4468u
+   | Float16ImageAMD = 5008u
+   | ImageGatherBiasLodAMD = 5009u
+   | FragmentMaskAMD = 5010u
+   | StencilExportEXT = 5013u
+   | ImageReadWriteLodAMD = 5015u
+   | ShaderClockKHR = 5055u
+   | SampleMaskOverrideCoverageNV = 5249u
+   | GeometryShaderPassthroughNV = 5251u
+   | ShaderViewportIndexLayerEXT = 5254u
+   | ShaderViewportIndexLayerNV = 5254u
+   | ShaderViewportMaskNV = 5255u
+   | ShaderStereoViewNV = 5259u
+   | PerViewAttributesNV = 5260u
+   | FragmentFullyCoveredEXT = 5265u
+   | MeshShadingNV = 5266u
+   | ImageFootprintNV = 5282u
+   | FragmentBarycentricNV = 5284u
+   | ComputeDerivativeGroupQuadsNV = 5288u
+   | FragmentDensityEXT = 5291u
+   | ShadingRateNV = 5291u
+   | GroupNonUniformPartitionedNV = 5297u
+   | ShaderNonUniform = 5301u
+   | ShaderNonUniformEXT = 5301u
+   | RuntimeDescriptorArray = 5302u
+   | RuntimeDescriptorArrayEXT = 5302u
+   | InputAttachmentArrayDynamicIndexing = 5303u
+   | InputAttachmentArrayDynamicIndexingEXT = 5303u
+   | UniformTexelBufferArrayDynamicIndexing = 5304u
+   | UniformTexelBufferArrayDynamicIndexingEXT = 5304u
+   | StorageTexelBufferArrayDynamicIndexing = 5305u
+   | StorageTexelBufferArrayDynamicIndexingEXT = 5305u
+   | UniformBufferArrayNonUniformIndexing = 5306u
+   | UniformBufferArrayNonUniformIndexingEXT = 5306u
+   | SampledImageArrayNonUniformIndexing = 5307u
+   | SampledImageArrayNonUniformIndexingEXT = 5307u
+   | StorageBufferArrayNonUniformIndexing = 5308u
+   | StorageBufferArrayNonUniformIndexingEXT = 5308u
+   | StorageImageArrayNonUniformIndexing = 5309u
+   | StorageImageArrayNonUniformIndexingEXT = 5309u
+   | InputAttachmentArrayNonUniformIndexing = 5310u
+   | InputAttachmentArrayNonUniformIndexingEXT = 5310u
+   | UniformTexelBufferArrayNonUniformIndexing = 5311u
+   | UniformTexelBufferArrayNonUniformIndexingEXT = 5311u
+   | StorageTexelBufferArrayNonUniformIndexing = 5312u
+   | StorageTexelBufferArrayNonUniformIndexingEXT = 5312u
+   | RayTracingNV = 5340u
+   | VulkanMemoryModel = 5345u
+   | VulkanMemoryModelKHR = 5345u
+   | VulkanMemoryModelDeviceScope = 5346u
+   | VulkanMemoryModelDeviceScopeKHR = 5346u
+   | PhysicalStorageBufferAddresses = 5347u
+   | PhysicalStorageBufferAddressesEXT = 5347u
+   | ComputeDerivativeGroupLinearNV = 5350u
+   | CooperativeMatrixNV = 5357u
+   | FragmentShaderSampleInterlockEXT = 5363u
+   | FragmentShaderShadingRateInterlockEXT = 5372u
+   | ShaderSMBuiltinsNV = 5373u
+   | FragmentShaderPixelInterlockEXT = 5378u
+   | DemoteToHelperInvocationEXT = 5379u
+   | SubgroupShuffleINTEL = 5568u
+   | SubgroupBufferBlockIOINTEL = 5569u
+   | SubgroupImageBlockIOINTEL = 5570u
+   | SubgroupImageMediaBlockIOINTEL = 5579u
+   | IntegerFunctions2INTEL = 5584u
+   | SubgroupAvcMotionEstimationINTEL = 5696u
+   | SubgroupAvcMotionEstimationIntraINTEL = 5697u
+   | SubgroupAvcMotionEstimationChromaINTEL = 5698u
 
 /// Reference to an <id> representing the result's type of the enclosing instruction
 type IdResultType = uint32
@@ -716,13 +716,13 @@ type IdScope = uint32
 type IdRef = uint32
 
 /// An integer consuming one or more words
-type LiteralInteger = uint32 list
+type LiteralInteger = uint32
 
 /// A null-terminated stream of characters consuming an integral number of words
 type LiteralString = string
 
 /// A literal number whose size and format are determined by a previous operand in the enclosing instruction
-type LiteralContextDependentNumber = uint32 list
+type LiteralContextDependentNumber = uint32
 
 /// A 32-bit unsigned integer indicating which instruction to use and determining the layout of following operands (for OpExtInst)
 type LiteralExtInstInteger = uint32
@@ -739,413 +739,413 @@ type PairIdRefIdRef = PairIdRefIdRef of IdRef * IdRef
 type Instruction =
    | OpNop
    | OpUndef of IdResultType * IdResult
-   | OpSourceContinued of LiteralString
-   | OpSource of SourceLanguage * LiteralInteger * IdRef * LiteralString
-   | OpSourceExtension of LiteralString
-   | OpName of IdRef * LiteralString
-   | OpMemberName of IdRef * LiteralInteger * LiteralString
-   | OpString of IdResult * LiteralString
-   | OpLine of IdRef * LiteralInteger * LiteralInteger
-   | OpExtension of LiteralString
-   | OpExtInstImport of IdResult * LiteralString
-   | OpExtInst of IdResultType * IdResult * IdRef * LiteralExtInstInteger * IdRef
+   | OpSourceContinued of ContinuedSource: LiteralString
+   | OpSource of SourceLanguage * Version: LiteralInteger * File: IdRef option * Source: LiteralString option
+   | OpSourceExtension of Extension: LiteralString
+   | OpName of Target: IdRef * Name: LiteralString
+   | OpMemberName of Type: IdRef * Member: LiteralInteger * Name: LiteralString
+   | OpString of IdResult * String: LiteralString
+   | OpLine of File: IdRef * Line: LiteralInteger * Column: LiteralInteger
+   | OpExtension of Name: LiteralString
+   | OpExtInstImport of IdResult * Name: LiteralString
+   | OpExtInst of IdResultType * IdResult * Set: IdRef * Instruction: LiteralExtInstInteger * Operand1: IdRef list
    | OpMemoryModel of AddressingModel * MemoryModel
-   | OpEntryPoint of ExecutionModel * IdRef * LiteralString * IdRef
-   | OpExecutionMode of IdRef * ExecutionMode
-   | OpCapability of Capability
+   | OpEntryPoint of ExecutionModel * EntryPoint: IdRef * Name: LiteralString * Interface: IdRef list
+   | OpExecutionMode of EntryPoint: IdRef * Mode: ExecutionMode
+   | OpCapability of Capability: Capability
    | OpTypeVoid of IdResult
    | OpTypeBool of IdResult
-   | OpTypeInt of IdResult * LiteralInteger * LiteralInteger
-   | OpTypeFloat of IdResult * LiteralInteger
-   | OpTypeVector of IdResult * IdRef * LiteralInteger
-   | OpTypeMatrix of IdResult * IdRef * LiteralInteger
-   | OpTypeImage of IdResult * IdRef * Dim * LiteralInteger * LiteralInteger * LiteralInteger * LiteralInteger * ImageFormat * AccessQualifier
+   | OpTypeInt of IdResult * Width: LiteralInteger * Signedness: LiteralInteger
+   | OpTypeFloat of IdResult * Width: LiteralInteger
+   | OpTypeVector of IdResult * ComponentType: IdRef * ComponentCount: LiteralInteger
+   | OpTypeMatrix of IdResult * ColumnType: IdRef * ColumnCount: LiteralInteger
+   | OpTypeImage of IdResult * SampledType: IdRef * Dim * Depth: LiteralInteger * Arrayed: LiteralInteger * MS: LiteralInteger * Sampled: LiteralInteger * ImageFormat * AccessQualifier option
    | OpTypeSampler of IdResult
-   | OpTypeSampledImage of IdResult * IdRef
-   | OpTypeArray of IdResult * IdRef * IdRef
-   | OpTypeRuntimeArray of IdResult * IdRef
-   | OpTypeStruct of IdResult * IdRef
+   | OpTypeSampledImage of IdResult * ImageType: IdRef
+   | OpTypeArray of IdResult * ElementType: IdRef * Length: IdRef
+   | OpTypeRuntimeArray of IdResult * ElementType: IdRef
+   | OpTypeStruct of IdResult * Member0type: IdRef list
    | OpTypeOpaque of IdResult * LiteralString
-   | OpTypePointer of IdResult * StorageClass * IdRef
-   | OpTypeFunction of IdResult * IdRef * IdRef
+   | OpTypePointer of IdResult * StorageClass * Type: IdRef
+   | OpTypeFunction of IdResult * ReturnType: IdRef * Parameter0Type: IdRef list
    | OpTypeEvent of IdResult
    | OpTypeDeviceEvent of IdResult
    | OpTypeReserveId of IdResult
    | OpTypeQueue of IdResult
-   | OpTypePipe of IdResult * AccessQualifier
-   | OpTypeForwardPointer of IdRef * StorageClass
+   | OpTypePipe of IdResult * Qualifier: AccessQualifier
+   | OpTypeForwardPointer of PointerType: IdRef * StorageClass
    | OpConstantTrue of IdResultType * IdResult
    | OpConstantFalse of IdResultType * IdResult
-   | OpConstant of IdResultType * IdResult * LiteralContextDependentNumber
-   | OpConstantComposite of IdResultType * IdResult * IdRef
-   | OpConstantSampler of IdResultType * IdResult * SamplerAddressingMode * LiteralInteger * SamplerFilterMode
+   | OpConstant of IdResultType * IdResult * Value: LiteralContextDependentNumber
+   | OpConstantComposite of IdResultType * IdResult * Constituents: IdRef list
+   | OpConstantSampler of IdResultType * IdResult * SamplerAddressingMode * Param: LiteralInteger * SamplerFilterMode
    | OpConstantNull of IdResultType * IdResult
    | OpSpecConstantTrue of IdResultType * IdResult
    | OpSpecConstantFalse of IdResultType * IdResult
-   | OpSpecConstant of IdResultType * IdResult * LiteralContextDependentNumber
-   | OpSpecConstantComposite of IdResultType * IdResult * IdRef
-   | OpSpecConstantOp of IdResultType * IdResult * LiteralSpecConstantOpInteger
-   | OpFunction of IdResultType * IdResult * FunctionControl * IdRef
+   | OpSpecConstant of IdResultType * IdResult * Value: LiteralContextDependentNumber
+   | OpSpecConstantComposite of IdResultType * IdResult * Constituents: IdRef list
+   | OpSpecConstantOp of IdResultType * IdResult * Opcode: LiteralSpecConstantOpInteger
+   | OpFunction of IdResultType * IdResult * FunctionControl * FunctionType: IdRef
    | OpFunctionParameter of IdResultType * IdResult
    | OpFunctionEnd
-   | OpFunctionCall of IdResultType * IdResult * IdRef * IdRef
-   | OpVariable of IdResultType * IdResult * StorageClass * IdRef
-   | OpImageTexelPointer of IdResultType * IdResult * IdRef * IdRef * IdRef
-   | OpLoad of IdResultType * IdResult * IdRef * MemoryAccess
-   | OpStore of IdRef * IdRef * MemoryAccess
-   | OpCopyMemory of IdRef * IdRef * MemoryAccess * MemoryAccess
-   | OpCopyMemorySized of IdRef * IdRef * IdRef * MemoryAccess * MemoryAccess
-   | OpAccessChain of IdResultType * IdResult * IdRef * IdRef
-   | OpInBoundsAccessChain of IdResultType * IdResult * IdRef * IdRef
-   | OpPtrAccessChain of IdResultType * IdResult * IdRef * IdRef * IdRef
-   | OpArrayLength of IdResultType * IdResult * IdRef * LiteralInteger
-   | OpGenericPtrMemSemantics of IdResultType * IdResult * IdRef
-   | OpInBoundsPtrAccessChain of IdResultType * IdResult * IdRef * IdRef * IdRef
-   | OpDecorate of IdRef * Decoration
-   | OpMemberDecorate of IdRef * LiteralInteger * Decoration
+   | OpFunctionCall of IdResultType * IdResult * Function: IdRef * Argument0: IdRef list
+   | OpVariable of IdResultType * IdResult * StorageClass * Initializer: IdRef option
+   | OpImageTexelPointer of IdResultType * IdResult * Image: IdRef * Coordinate: IdRef * Sample: IdRef
+   | OpLoad of IdResultType * IdResult * Pointer: IdRef * MemoryAccess option
+   | OpStore of Pointer: IdRef * Object: IdRef * MemoryAccess option
+   | OpCopyMemory of Target: IdRef * Source: IdRef * MemoryAccess option * MemoryAccess option
+   | OpCopyMemorySized of Target: IdRef * Source: IdRef * Size: IdRef * MemoryAccess option * MemoryAccess option
+   | OpAccessChain of IdResultType * IdResult * Base: IdRef * Indexes: IdRef list
+   | OpInBoundsAccessChain of IdResultType * IdResult * Base: IdRef * Indexes: IdRef list
+   | OpPtrAccessChain of IdResultType * IdResult * Base: IdRef * Element: IdRef * Indexes: IdRef list
+   | OpArrayLength of IdResultType * IdResult * Structure: IdRef * Arraymember: LiteralInteger
+   | OpGenericPtrMemSemantics of IdResultType * IdResult * Pointer: IdRef
+   | OpInBoundsPtrAccessChain of IdResultType * IdResult * Base: IdRef * Element: IdRef * Indexes: IdRef list
+   | OpDecorate of Target: IdRef * Decoration
+   | OpMemberDecorate of StructureType: IdRef * Member: LiteralInteger * Decoration
    | OpDecorationGroup of IdResult
-   | OpGroupDecorate of IdRef * IdRef
-   | OpGroupMemberDecorate of IdRef * PairIdRefLiteralInteger
-   | OpVectorExtractDynamic of IdResultType * IdResult * IdRef * IdRef
-   | OpVectorInsertDynamic of IdResultType * IdResult * IdRef * IdRef * IdRef
-   | OpVectorShuffle of IdResultType * IdResult * IdRef * IdRef * LiteralInteger
-   | OpCompositeConstruct of IdResultType * IdResult * IdRef
-   | OpCompositeExtract of IdResultType * IdResult * IdRef * LiteralInteger
-   | OpCompositeInsert of IdResultType * IdResult * IdRef * IdRef * LiteralInteger
-   | OpCopyObject of IdResultType * IdResult * IdRef
-   | OpTranspose of IdResultType * IdResult * IdRef
-   | OpSampledImage of IdResultType * IdResult * IdRef * IdRef
-   | OpImageSampleImplicitLod of IdResultType * IdResult * IdRef * IdRef * ImageOperands
-   | OpImageSampleExplicitLod of IdResultType * IdResult * IdRef * IdRef * ImageOperands
-   | OpImageSampleDrefImplicitLod of IdResultType * IdResult * IdRef * IdRef * IdRef * ImageOperands
-   | OpImageSampleDrefExplicitLod of IdResultType * IdResult * IdRef * IdRef * IdRef * ImageOperands
-   | OpImageSampleProjImplicitLod of IdResultType * IdResult * IdRef * IdRef * ImageOperands
-   | OpImageSampleProjExplicitLod of IdResultType * IdResult * IdRef * IdRef * ImageOperands
-   | OpImageSampleProjDrefImplicitLod of IdResultType * IdResult * IdRef * IdRef * IdRef * ImageOperands
-   | OpImageSampleProjDrefExplicitLod of IdResultType * IdResult * IdRef * IdRef * IdRef * ImageOperands
-   | OpImageFetch of IdResultType * IdResult * IdRef * IdRef * ImageOperands
-   | OpImageGather of IdResultType * IdResult * IdRef * IdRef * IdRef * ImageOperands
-   | OpImageDrefGather of IdResultType * IdResult * IdRef * IdRef * IdRef * ImageOperands
-   | OpImageRead of IdResultType * IdResult * IdRef * IdRef * ImageOperands
-   | OpImageWrite of IdRef * IdRef * IdRef * ImageOperands
-   | OpImage of IdResultType * IdResult * IdRef
-   | OpImageQueryFormat of IdResultType * IdResult * IdRef
-   | OpImageQueryOrder of IdResultType * IdResult * IdRef
-   | OpImageQuerySizeLod of IdResultType * IdResult * IdRef * IdRef
-   | OpImageQuerySize of IdResultType * IdResult * IdRef
-   | OpImageQueryLod of IdResultType * IdResult * IdRef * IdRef
-   | OpImageQueryLevels of IdResultType * IdResult * IdRef
-   | OpImageQuerySamples of IdResultType * IdResult * IdRef
-   | OpConvertFToU of IdResultType * IdResult * IdRef
-   | OpConvertFToS of IdResultType * IdResult * IdRef
-   | OpConvertSToF of IdResultType * IdResult * IdRef
-   | OpConvertUToF of IdResultType * IdResult * IdRef
-   | OpUConvert of IdResultType * IdResult * IdRef
-   | OpSConvert of IdResultType * IdResult * IdRef
-   | OpFConvert of IdResultType * IdResult * IdRef
-   | OpQuantizeToF16 of IdResultType * IdResult * IdRef
-   | OpConvertPtrToU of IdResultType * IdResult * IdRef
-   | OpSatConvertSToU of IdResultType * IdResult * IdRef
-   | OpSatConvertUToS of IdResultType * IdResult * IdRef
-   | OpConvertUToPtr of IdResultType * IdResult * IdRef
-   | OpPtrCastToGeneric of IdResultType * IdResult * IdRef
-   | OpGenericCastToPtr of IdResultType * IdResult * IdRef
-   | OpGenericCastToPtrExplicit of IdResultType * IdResult * IdRef * StorageClass
-   | OpBitcast of IdResultType * IdResult * IdRef
-   | OpSNegate of IdResultType * IdResult * IdRef
-   | OpFNegate of IdResultType * IdResult * IdRef
-   | OpIAdd of IdResultType * IdResult * IdRef * IdRef
-   | OpFAdd of IdResultType * IdResult * IdRef * IdRef
-   | OpISub of IdResultType * IdResult * IdRef * IdRef
-   | OpFSub of IdResultType * IdResult * IdRef * IdRef
-   | OpIMul of IdResultType * IdResult * IdRef * IdRef
-   | OpFMul of IdResultType * IdResult * IdRef * IdRef
-   | OpUDiv of IdResultType * IdResult * IdRef * IdRef
-   | OpSDiv of IdResultType * IdResult * IdRef * IdRef
-   | OpFDiv of IdResultType * IdResult * IdRef * IdRef
-   | OpUMod of IdResultType * IdResult * IdRef * IdRef
-   | OpSRem of IdResultType * IdResult * IdRef * IdRef
-   | OpSMod of IdResultType * IdResult * IdRef * IdRef
-   | OpFRem of IdResultType * IdResult * IdRef * IdRef
-   | OpFMod of IdResultType * IdResult * IdRef * IdRef
-   | OpVectorTimesScalar of IdResultType * IdResult * IdRef * IdRef
-   | OpMatrixTimesScalar of IdResultType * IdResult * IdRef * IdRef
-   | OpVectorTimesMatrix of IdResultType * IdResult * IdRef * IdRef
-   | OpMatrixTimesVector of IdResultType * IdResult * IdRef * IdRef
-   | OpMatrixTimesMatrix of IdResultType * IdResult * IdRef * IdRef
-   | OpOuterProduct of IdResultType * IdResult * IdRef * IdRef
-   | OpDot of IdResultType * IdResult * IdRef * IdRef
-   | OpIAddCarry of IdResultType * IdResult * IdRef * IdRef
-   | OpISubBorrow of IdResultType * IdResult * IdRef * IdRef
-   | OpUMulExtended of IdResultType * IdResult * IdRef * IdRef
-   | OpSMulExtended of IdResultType * IdResult * IdRef * IdRef
-   | OpAny of IdResultType * IdResult * IdRef
-   | OpAll of IdResultType * IdResult * IdRef
-   | OpIsNan of IdResultType * IdResult * IdRef
-   | OpIsInf of IdResultType * IdResult * IdRef
-   | OpIsFinite of IdResultType * IdResult * IdRef
-   | OpIsNormal of IdResultType * IdResult * IdRef
-   | OpSignBitSet of IdResultType * IdResult * IdRef
-   | OpLessOrGreater of IdResultType * IdResult * IdRef * IdRef
-   | OpOrdered of IdResultType * IdResult * IdRef * IdRef
-   | OpUnordered of IdResultType * IdResult * IdRef * IdRef
-   | OpLogicalEqual of IdResultType * IdResult * IdRef * IdRef
-   | OpLogicalNotEqual of IdResultType * IdResult * IdRef * IdRef
-   | OpLogicalOr of IdResultType * IdResult * IdRef * IdRef
-   | OpLogicalAnd of IdResultType * IdResult * IdRef * IdRef
-   | OpLogicalNot of IdResultType * IdResult * IdRef
-   | OpSelect of IdResultType * IdResult * IdRef * IdRef * IdRef
-   | OpIEqual of IdResultType * IdResult * IdRef * IdRef
-   | OpINotEqual of IdResultType * IdResult * IdRef * IdRef
-   | OpUGreaterThan of IdResultType * IdResult * IdRef * IdRef
-   | OpSGreaterThan of IdResultType * IdResult * IdRef * IdRef
-   | OpUGreaterThanEqual of IdResultType * IdResult * IdRef * IdRef
-   | OpSGreaterThanEqual of IdResultType * IdResult * IdRef * IdRef
-   | OpULessThan of IdResultType * IdResult * IdRef * IdRef
-   | OpSLessThan of IdResultType * IdResult * IdRef * IdRef
-   | OpULessThanEqual of IdResultType * IdResult * IdRef * IdRef
-   | OpSLessThanEqual of IdResultType * IdResult * IdRef * IdRef
-   | OpFOrdEqual of IdResultType * IdResult * IdRef * IdRef
-   | OpFUnordEqual of IdResultType * IdResult * IdRef * IdRef
-   | OpFOrdNotEqual of IdResultType * IdResult * IdRef * IdRef
-   | OpFUnordNotEqual of IdResultType * IdResult * IdRef * IdRef
-   | OpFOrdLessThan of IdResultType * IdResult * IdRef * IdRef
-   | OpFUnordLessThan of IdResultType * IdResult * IdRef * IdRef
-   | OpFOrdGreaterThan of IdResultType * IdResult * IdRef * IdRef
-   | OpFUnordGreaterThan of IdResultType * IdResult * IdRef * IdRef
-   | OpFOrdLessThanEqual of IdResultType * IdResult * IdRef * IdRef
-   | OpFUnordLessThanEqual of IdResultType * IdResult * IdRef * IdRef
-   | OpFOrdGreaterThanEqual of IdResultType * IdResult * IdRef * IdRef
-   | OpFUnordGreaterThanEqual of IdResultType * IdResult * IdRef * IdRef
-   | OpShiftRightLogical of IdResultType * IdResult * IdRef * IdRef
-   | OpShiftRightArithmetic of IdResultType * IdResult * IdRef * IdRef
-   | OpShiftLeftLogical of IdResultType * IdResult * IdRef * IdRef
-   | OpBitwiseOr of IdResultType * IdResult * IdRef * IdRef
-   | OpBitwiseXor of IdResultType * IdResult * IdRef * IdRef
-   | OpBitwiseAnd of IdResultType * IdResult * IdRef * IdRef
-   | OpNot of IdResultType * IdResult * IdRef
-   | OpBitFieldInsert of IdResultType * IdResult * IdRef * IdRef * IdRef * IdRef
-   | OpBitFieldSExtract of IdResultType * IdResult * IdRef * IdRef * IdRef
-   | OpBitFieldUExtract of IdResultType * IdResult * IdRef * IdRef * IdRef
-   | OpBitReverse of IdResultType * IdResult * IdRef
-   | OpBitCount of IdResultType * IdResult * IdRef
-   | OpDPdx of IdResultType * IdResult * IdRef
-   | OpDPdy of IdResultType * IdResult * IdRef
-   | OpFwidth of IdResultType * IdResult * IdRef
-   | OpDPdxFine of IdResultType * IdResult * IdRef
-   | OpDPdyFine of IdResultType * IdResult * IdRef
-   | OpFwidthFine of IdResultType * IdResult * IdRef
-   | OpDPdxCoarse of IdResultType * IdResult * IdRef
-   | OpDPdyCoarse of IdResultType * IdResult * IdRef
-   | OpFwidthCoarse of IdResultType * IdResult * IdRef
+   | OpGroupDecorate of DecorationGroup: IdRef * Targets: IdRef list
+   | OpGroupMemberDecorate of DecorationGroup: IdRef * Targets: PairIdRefLiteralInteger list
+   | OpVectorExtractDynamic of IdResultType * IdResult * Vector: IdRef * Index: IdRef
+   | OpVectorInsertDynamic of IdResultType * IdResult * Vector: IdRef * Component: IdRef * Index: IdRef
+   | OpVectorShuffle of IdResultType * IdResult * Vector1: IdRef * Vector2: IdRef * Components: LiteralInteger list
+   | OpCompositeConstruct of IdResultType * IdResult * Constituents: IdRef list
+   | OpCompositeExtract of IdResultType * IdResult * Composite: IdRef * Indexes: LiteralInteger list
+   | OpCompositeInsert of IdResultType * IdResult * Object: IdRef * Composite: IdRef * Indexes: LiteralInteger list
+   | OpCopyObject of IdResultType * IdResult * Operand: IdRef
+   | OpTranspose of IdResultType * IdResult * Matrix: IdRef
+   | OpSampledImage of IdResultType * IdResult * Image: IdRef * Sampler: IdRef
+   | OpImageSampleImplicitLod of IdResultType * IdResult * SampledImage: IdRef * Coordinate: IdRef * ImageOperands option
+   | OpImageSampleExplicitLod of IdResultType * IdResult * SampledImage: IdRef * Coordinate: IdRef * ImageOperands
+   | OpImageSampleDrefImplicitLod of IdResultType * IdResult * SampledImage: IdRef * Coordinate: IdRef * Dref: IdRef * ImageOperands option
+   | OpImageSampleDrefExplicitLod of IdResultType * IdResult * SampledImage: IdRef * Coordinate: IdRef * Dref: IdRef * ImageOperands
+   | OpImageSampleProjImplicitLod of IdResultType * IdResult * SampledImage: IdRef * Coordinate: IdRef * ImageOperands option
+   | OpImageSampleProjExplicitLod of IdResultType * IdResult * SampledImage: IdRef * Coordinate: IdRef * ImageOperands
+   | OpImageSampleProjDrefImplicitLod of IdResultType * IdResult * SampledImage: IdRef * Coordinate: IdRef * Dref: IdRef * ImageOperands option
+   | OpImageSampleProjDrefExplicitLod of IdResultType * IdResult * SampledImage: IdRef * Coordinate: IdRef * Dref: IdRef * ImageOperands
+   | OpImageFetch of IdResultType * IdResult * Image: IdRef * Coordinate: IdRef * ImageOperands option
+   | OpImageGather of IdResultType * IdResult * SampledImage: IdRef * Coordinate: IdRef * Component: IdRef * ImageOperands option
+   | OpImageDrefGather of IdResultType * IdResult * SampledImage: IdRef * Coordinate: IdRef * Dref: IdRef * ImageOperands option
+   | OpImageRead of IdResultType * IdResult * Image: IdRef * Coordinate: IdRef * ImageOperands option
+   | OpImageWrite of Image: IdRef * Coordinate: IdRef * Texel: IdRef * ImageOperands option
+   | OpImage of IdResultType * IdResult * SampledImage: IdRef
+   | OpImageQueryFormat of IdResultType * IdResult * Image: IdRef
+   | OpImageQueryOrder of IdResultType * IdResult * Image: IdRef
+   | OpImageQuerySizeLod of IdResultType * IdResult * Image: IdRef * LevelofDetail: IdRef
+   | OpImageQuerySize of IdResultType * IdResult * Image: IdRef
+   | OpImageQueryLod of IdResultType * IdResult * SampledImage: IdRef * Coordinate: IdRef
+   | OpImageQueryLevels of IdResultType * IdResult * Image: IdRef
+   | OpImageQuerySamples of IdResultType * IdResult * Image: IdRef
+   | OpConvertFToU of IdResultType * IdResult * FloatValue: IdRef
+   | OpConvertFToS of IdResultType * IdResult * FloatValue: IdRef
+   | OpConvertSToF of IdResultType * IdResult * SignedValue: IdRef
+   | OpConvertUToF of IdResultType * IdResult * UnsignedValue: IdRef
+   | OpUConvert of IdResultType * IdResult * UnsignedValue: IdRef
+   | OpSConvert of IdResultType * IdResult * SignedValue: IdRef
+   | OpFConvert of IdResultType * IdResult * FloatValue: IdRef
+   | OpQuantizeToF16 of IdResultType * IdResult * Value: IdRef
+   | OpConvertPtrToU of IdResultType * IdResult * Pointer: IdRef
+   | OpSatConvertSToU of IdResultType * IdResult * SignedValue: IdRef
+   | OpSatConvertUToS of IdResultType * IdResult * UnsignedValue: IdRef
+   | OpConvertUToPtr of IdResultType * IdResult * IntegerValue: IdRef
+   | OpPtrCastToGeneric of IdResultType * IdResult * Pointer: IdRef
+   | OpGenericCastToPtr of IdResultType * IdResult * Pointer: IdRef
+   | OpGenericCastToPtrExplicit of IdResultType * IdResult * Pointer: IdRef * Storage: StorageClass
+   | OpBitcast of IdResultType * IdResult * Operand: IdRef
+   | OpSNegate of IdResultType * IdResult * Operand: IdRef
+   | OpFNegate of IdResultType * IdResult * Operand: IdRef
+   | OpIAdd of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpFAdd of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpISub of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpFSub of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpIMul of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpFMul of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpUDiv of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpSDiv of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpFDiv of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpUMod of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpSRem of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpSMod of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpFRem of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpFMod of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpVectorTimesScalar of IdResultType * IdResult * Vector: IdRef * Scalar: IdRef
+   | OpMatrixTimesScalar of IdResultType * IdResult * Matrix: IdRef * Scalar: IdRef
+   | OpVectorTimesMatrix of IdResultType * IdResult * Vector: IdRef * Matrix: IdRef
+   | OpMatrixTimesVector of IdResultType * IdResult * Matrix: IdRef * Vector: IdRef
+   | OpMatrixTimesMatrix of IdResultType * IdResult * LeftMatrix: IdRef * RightMatrix: IdRef
+   | OpOuterProduct of IdResultType * IdResult * Vector1: IdRef * Vector2: IdRef
+   | OpDot of IdResultType * IdResult * Vector1: IdRef * Vector2: IdRef
+   | OpIAddCarry of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpISubBorrow of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpUMulExtended of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpSMulExtended of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpAny of IdResultType * IdResult * Vector: IdRef
+   | OpAll of IdResultType * IdResult * Vector: IdRef
+   | OpIsNan of IdResultType * IdResult * x: IdRef
+   | OpIsInf of IdResultType * IdResult * x: IdRef
+   | OpIsFinite of IdResultType * IdResult * x: IdRef
+   | OpIsNormal of IdResultType * IdResult * x: IdRef
+   | OpSignBitSet of IdResultType * IdResult * x: IdRef
+   | OpLessOrGreater of IdResultType * IdResult * x: IdRef * y: IdRef
+   | OpOrdered of IdResultType * IdResult * x: IdRef * y: IdRef
+   | OpUnordered of IdResultType * IdResult * x: IdRef * y: IdRef
+   | OpLogicalEqual of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpLogicalNotEqual of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpLogicalOr of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpLogicalAnd of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpLogicalNot of IdResultType * IdResult * Operand: IdRef
+   | OpSelect of IdResultType * IdResult * Condition: IdRef * Object1: IdRef * Object2: IdRef
+   | OpIEqual of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpINotEqual of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpUGreaterThan of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpSGreaterThan of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpUGreaterThanEqual of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpSGreaterThanEqual of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpULessThan of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpSLessThan of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpULessThanEqual of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpSLessThanEqual of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpFOrdEqual of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpFUnordEqual of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpFOrdNotEqual of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpFUnordNotEqual of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpFOrdLessThan of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpFUnordLessThan of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpFOrdGreaterThan of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpFUnordGreaterThan of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpFOrdLessThanEqual of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpFUnordLessThanEqual of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpFOrdGreaterThanEqual of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpFUnordGreaterThanEqual of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpShiftRightLogical of IdResultType * IdResult * Base: IdRef * Shift: IdRef
+   | OpShiftRightArithmetic of IdResultType * IdResult * Base: IdRef * Shift: IdRef
+   | OpShiftLeftLogical of IdResultType * IdResult * Base: IdRef * Shift: IdRef
+   | OpBitwiseOr of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpBitwiseXor of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpBitwiseAnd of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpNot of IdResultType * IdResult * Operand: IdRef
+   | OpBitFieldInsert of IdResultType * IdResult * Base: IdRef * Insert: IdRef * Offset: IdRef * Count: IdRef
+   | OpBitFieldSExtract of IdResultType * IdResult * Base: IdRef * Offset: IdRef * Count: IdRef
+   | OpBitFieldUExtract of IdResultType * IdResult * Base: IdRef * Offset: IdRef * Count: IdRef
+   | OpBitReverse of IdResultType * IdResult * Base: IdRef
+   | OpBitCount of IdResultType * IdResult * Base: IdRef
+   | OpDPdx of IdResultType * IdResult * P: IdRef
+   | OpDPdy of IdResultType * IdResult * P: IdRef
+   | OpFwidth of IdResultType * IdResult * P: IdRef
+   | OpDPdxFine of IdResultType * IdResult * P: IdRef
+   | OpDPdyFine of IdResultType * IdResult * P: IdRef
+   | OpFwidthFine of IdResultType * IdResult * P: IdRef
+   | OpDPdxCoarse of IdResultType * IdResult * P: IdRef
+   | OpDPdyCoarse of IdResultType * IdResult * P: IdRef
+   | OpFwidthCoarse of IdResultType * IdResult * P: IdRef
    | OpEmitVertex
    | OpEndPrimitive
-   | OpEmitStreamVertex of IdRef
-   | OpEndStreamPrimitive of IdRef
-   | OpControlBarrier of IdScope * IdScope * IdMemorySemantics
-   | OpMemoryBarrier of IdScope * IdMemorySemantics
-   | OpAtomicLoad of IdResultType * IdResult * IdRef * IdScope * IdMemorySemantics
-   | OpAtomicStore of IdRef * IdScope * IdMemorySemantics * IdRef
-   | OpAtomicExchange of IdResultType * IdResult * IdRef * IdScope * IdMemorySemantics * IdRef
-   | OpAtomicCompareExchange of IdResultType * IdResult * IdRef * IdScope * IdMemorySemantics * IdMemorySemantics * IdRef * IdRef
-   | OpAtomicCompareExchangeWeak of IdResultType * IdResult * IdRef * IdScope * IdMemorySemantics * IdMemorySemantics * IdRef * IdRef
-   | OpAtomicIIncrement of IdResultType * IdResult * IdRef * IdScope * IdMemorySemantics
-   | OpAtomicIDecrement of IdResultType * IdResult * IdRef * IdScope * IdMemorySemantics
-   | OpAtomicIAdd of IdResultType * IdResult * IdRef * IdScope * IdMemorySemantics * IdRef
-   | OpAtomicISub of IdResultType * IdResult * IdRef * IdScope * IdMemorySemantics * IdRef
-   | OpAtomicSMin of IdResultType * IdResult * IdRef * IdScope * IdMemorySemantics * IdRef
-   | OpAtomicUMin of IdResultType * IdResult * IdRef * IdScope * IdMemorySemantics * IdRef
-   | OpAtomicSMax of IdResultType * IdResult * IdRef * IdScope * IdMemorySemantics * IdRef
-   | OpAtomicUMax of IdResultType * IdResult * IdRef * IdScope * IdMemorySemantics * IdRef
-   | OpAtomicAnd of IdResultType * IdResult * IdRef * IdScope * IdMemorySemantics * IdRef
-   | OpAtomicOr of IdResultType * IdResult * IdRef * IdScope * IdMemorySemantics * IdRef
-   | OpAtomicXor of IdResultType * IdResult * IdRef * IdScope * IdMemorySemantics * IdRef
-   | OpPhi of IdResultType * IdResult * PairIdRefIdRef
-   | OpLoopMerge of IdRef * IdRef * LoopControl
-   | OpSelectionMerge of IdRef * SelectionControl
+   | OpEmitStreamVertex of Stream: IdRef
+   | OpEndStreamPrimitive of Stream: IdRef
+   | OpControlBarrier of Execution: IdScope * Memory: IdScope * Semantics: IdMemorySemantics
+   | OpMemoryBarrier of Memory: IdScope * Semantics: IdMemorySemantics
+   | OpAtomicLoad of IdResultType * IdResult * Pointer: IdRef * Memory: IdScope * Semantics: IdMemorySemantics
+   | OpAtomicStore of Pointer: IdRef * Memory: IdScope * Semantics: IdMemorySemantics * Value: IdRef
+   | OpAtomicExchange of IdResultType * IdResult * Pointer: IdRef * Memory: IdScope * Semantics: IdMemorySemantics * Value: IdRef
+   | OpAtomicCompareExchange of IdResultType * IdResult * Pointer: IdRef * Memory: IdScope * Equal: IdMemorySemantics * Unequal: IdMemorySemantics * Value: IdRef * Comparator: IdRef
+   | OpAtomicCompareExchangeWeak of IdResultType * IdResult * Pointer: IdRef * Memory: IdScope * Equal: IdMemorySemantics * Unequal: IdMemorySemantics * Value: IdRef * Comparator: IdRef
+   | OpAtomicIIncrement of IdResultType * IdResult * Pointer: IdRef * Memory: IdScope * Semantics: IdMemorySemantics
+   | OpAtomicIDecrement of IdResultType * IdResult * Pointer: IdRef * Memory: IdScope * Semantics: IdMemorySemantics
+   | OpAtomicIAdd of IdResultType * IdResult * Pointer: IdRef * Memory: IdScope * Semantics: IdMemorySemantics * Value: IdRef
+   | OpAtomicISub of IdResultType * IdResult * Pointer: IdRef * Memory: IdScope * Semantics: IdMemorySemantics * Value: IdRef
+   | OpAtomicSMin of IdResultType * IdResult * Pointer: IdRef * Memory: IdScope * Semantics: IdMemorySemantics * Value: IdRef
+   | OpAtomicUMin of IdResultType * IdResult * Pointer: IdRef * Memory: IdScope * Semantics: IdMemorySemantics * Value: IdRef
+   | OpAtomicSMax of IdResultType * IdResult * Pointer: IdRef * Memory: IdScope * Semantics: IdMemorySemantics * Value: IdRef
+   | OpAtomicUMax of IdResultType * IdResult * Pointer: IdRef * Memory: IdScope * Semantics: IdMemorySemantics * Value: IdRef
+   | OpAtomicAnd of IdResultType * IdResult * Pointer: IdRef * Memory: IdScope * Semantics: IdMemorySemantics * Value: IdRef
+   | OpAtomicOr of IdResultType * IdResult * Pointer: IdRef * Memory: IdScope * Semantics: IdMemorySemantics * Value: IdRef
+   | OpAtomicXor of IdResultType * IdResult * Pointer: IdRef * Memory: IdScope * Semantics: IdMemorySemantics * Value: IdRef
+   | OpPhi of IdResultType * IdResult * VariableParent: PairIdRefIdRef list
+   | OpLoopMerge of MergeBlock: IdRef * ContinueTarget: IdRef * LoopControl
+   | OpSelectionMerge of MergeBlock: IdRef * SelectionControl
    | OpLabel of IdResult
-   | OpBranch of IdRef
-   | OpBranchConditional of IdRef * IdRef * IdRef * LiteralInteger
-   | OpSwitch of IdRef * IdRef * PairLiteralIntegerIdRef
+   | OpBranch of TargetLabel: IdRef
+   | OpBranchConditional of Condition: IdRef * TrueLabel: IdRef * FalseLabel: IdRef * Branchweights: LiteralInteger list
+   | OpSwitch of Selector: IdRef * Default: IdRef * Target: PairLiteralIntegerIdRef list
    | OpKill
    | OpReturn
-   | OpReturnValue of IdRef
+   | OpReturnValue of Value: IdRef
    | OpUnreachable
-   | OpLifetimeStart of IdRef * LiteralInteger
-   | OpLifetimeStop of IdRef * LiteralInteger
-   | OpGroupAsyncCopy of IdResultType * IdResult * IdScope * IdRef * IdRef * IdRef * IdRef * IdRef
-   | OpGroupWaitEvents of IdScope * IdRef * IdRef
-   | OpGroupAll of IdResultType * IdResult * IdScope * IdRef
-   | OpGroupAny of IdResultType * IdResult * IdScope * IdRef
-   | OpGroupBroadcast of IdResultType * IdResult * IdScope * IdRef * IdRef
-   | OpGroupIAdd of IdResultType * IdResult * IdScope * GroupOperation * IdRef
-   | OpGroupFAdd of IdResultType * IdResult * IdScope * GroupOperation * IdRef
-   | OpGroupFMin of IdResultType * IdResult * IdScope * GroupOperation * IdRef
-   | OpGroupUMin of IdResultType * IdResult * IdScope * GroupOperation * IdRef
-   | OpGroupSMin of IdResultType * IdResult * IdScope * GroupOperation * IdRef
-   | OpGroupFMax of IdResultType * IdResult * IdScope * GroupOperation * IdRef
-   | OpGroupUMax of IdResultType * IdResult * IdScope * GroupOperation * IdRef
-   | OpGroupSMax of IdResultType * IdResult * IdScope * GroupOperation * IdRef
-   | OpReadPipe of IdResultType * IdResult * IdRef * IdRef * IdRef * IdRef
-   | OpWritePipe of IdResultType * IdResult * IdRef * IdRef * IdRef * IdRef
-   | OpReservedReadPipe of IdResultType * IdResult * IdRef * IdRef * IdRef * IdRef * IdRef * IdRef
-   | OpReservedWritePipe of IdResultType * IdResult * IdRef * IdRef * IdRef * IdRef * IdRef * IdRef
-   | OpReserveReadPipePackets of IdResultType * IdResult * IdRef * IdRef * IdRef * IdRef
-   | OpReserveWritePipePackets of IdResultType * IdResult * IdRef * IdRef * IdRef * IdRef
-   | OpCommitReadPipe of IdRef * IdRef * IdRef * IdRef
-   | OpCommitWritePipe of IdRef * IdRef * IdRef * IdRef
-   | OpIsValidReserveId of IdResultType * IdResult * IdRef
-   | OpGetNumPipePackets of IdResultType * IdResult * IdRef * IdRef * IdRef
-   | OpGetMaxPipePackets of IdResultType * IdResult * IdRef * IdRef * IdRef
-   | OpGroupReserveReadPipePackets of IdResultType * IdResult * IdScope * IdRef * IdRef * IdRef * IdRef
-   | OpGroupReserveWritePipePackets of IdResultType * IdResult * IdScope * IdRef * IdRef * IdRef * IdRef
-   | OpGroupCommitReadPipe of IdScope * IdRef * IdRef * IdRef * IdRef
-   | OpGroupCommitWritePipe of IdScope * IdRef * IdRef * IdRef * IdRef
-   | OpEnqueueMarker of IdResultType * IdResult * IdRef * IdRef * IdRef * IdRef
-   | OpEnqueueKernel of IdResultType * IdResult * IdRef * IdRef * IdRef * IdRef * IdRef * IdRef * IdRef * IdRef * IdRef * IdRef * IdRef
-   | OpGetKernelNDrangeSubGroupCount of IdResultType * IdResult * IdRef * IdRef * IdRef * IdRef * IdRef
-   | OpGetKernelNDrangeMaxSubGroupSize of IdResultType * IdResult * IdRef * IdRef * IdRef * IdRef * IdRef
-   | OpGetKernelWorkGroupSize of IdResultType * IdResult * IdRef * IdRef * IdRef * IdRef
-   | OpGetKernelPreferredWorkGroupSizeMultiple of IdResultType * IdResult * IdRef * IdRef * IdRef * IdRef
-   | OpRetainEvent of IdRef
-   | OpReleaseEvent of IdRef
+   | OpLifetimeStart of Pointer: IdRef * Size: LiteralInteger
+   | OpLifetimeStop of Pointer: IdRef * Size: LiteralInteger
+   | OpGroupAsyncCopy of IdResultType * IdResult * Execution: IdScope * Destination: IdRef * Source: IdRef * NumElements: IdRef * Stride: IdRef * Event: IdRef
+   | OpGroupWaitEvents of Execution: IdScope * NumEvents: IdRef * EventsList: IdRef
+   | OpGroupAll of IdResultType * IdResult * Execution: IdScope * Predicate: IdRef
+   | OpGroupAny of IdResultType * IdResult * Execution: IdScope * Predicate: IdRef
+   | OpGroupBroadcast of IdResultType * IdResult * Execution: IdScope * Value: IdRef * LocalId: IdRef
+   | OpGroupIAdd of IdResultType * IdResult * Execution: IdScope * Operation: GroupOperation * X: IdRef
+   | OpGroupFAdd of IdResultType * IdResult * Execution: IdScope * Operation: GroupOperation * X: IdRef
+   | OpGroupFMin of IdResultType * IdResult * Execution: IdScope * Operation: GroupOperation * X: IdRef
+   | OpGroupUMin of IdResultType * IdResult * Execution: IdScope * Operation: GroupOperation * X: IdRef
+   | OpGroupSMin of IdResultType * IdResult * Execution: IdScope * Operation: GroupOperation * X: IdRef
+   | OpGroupFMax of IdResultType * IdResult * Execution: IdScope * Operation: GroupOperation * X: IdRef
+   | OpGroupUMax of IdResultType * IdResult * Execution: IdScope * Operation: GroupOperation * X: IdRef
+   | OpGroupSMax of IdResultType * IdResult * Execution: IdScope * Operation: GroupOperation * X: IdRef
+   | OpReadPipe of IdResultType * IdResult * Pipe: IdRef * Pointer: IdRef * PacketSize: IdRef * PacketAlignment: IdRef
+   | OpWritePipe of IdResultType * IdResult * Pipe: IdRef * Pointer: IdRef * PacketSize: IdRef * PacketAlignment: IdRef
+   | OpReservedReadPipe of IdResultType * IdResult * Pipe: IdRef * ReserveId: IdRef * Index: IdRef * Pointer: IdRef * PacketSize: IdRef * PacketAlignment: IdRef
+   | OpReservedWritePipe of IdResultType * IdResult * Pipe: IdRef * ReserveId: IdRef * Index: IdRef * Pointer: IdRef * PacketSize: IdRef * PacketAlignment: IdRef
+   | OpReserveReadPipePackets of IdResultType * IdResult * Pipe: IdRef * NumPackets: IdRef * PacketSize: IdRef * PacketAlignment: IdRef
+   | OpReserveWritePipePackets of IdResultType * IdResult * Pipe: IdRef * NumPackets: IdRef * PacketSize: IdRef * PacketAlignment: IdRef
+   | OpCommitReadPipe of Pipe: IdRef * ReserveId: IdRef * PacketSize: IdRef * PacketAlignment: IdRef
+   | OpCommitWritePipe of Pipe: IdRef * ReserveId: IdRef * PacketSize: IdRef * PacketAlignment: IdRef
+   | OpIsValidReserveId of IdResultType * IdResult * ReserveId: IdRef
+   | OpGetNumPipePackets of IdResultType * IdResult * Pipe: IdRef * PacketSize: IdRef * PacketAlignment: IdRef
+   | OpGetMaxPipePackets of IdResultType * IdResult * Pipe: IdRef * PacketSize: IdRef * PacketAlignment: IdRef
+   | OpGroupReserveReadPipePackets of IdResultType * IdResult * Execution: IdScope * Pipe: IdRef * NumPackets: IdRef * PacketSize: IdRef * PacketAlignment: IdRef
+   | OpGroupReserveWritePipePackets of IdResultType * IdResult * Execution: IdScope * Pipe: IdRef * NumPackets: IdRef * PacketSize: IdRef * PacketAlignment: IdRef
+   | OpGroupCommitReadPipe of Execution: IdScope * Pipe: IdRef * ReserveId: IdRef * PacketSize: IdRef * PacketAlignment: IdRef
+   | OpGroupCommitWritePipe of Execution: IdScope * Pipe: IdRef * ReserveId: IdRef * PacketSize: IdRef * PacketAlignment: IdRef
+   | OpEnqueueMarker of IdResultType * IdResult * Queue: IdRef * NumEvents: IdRef * WaitEvents: IdRef * RetEvent: IdRef
+   | OpEnqueueKernel of IdResultType * IdResult * Queue: IdRef * Flags: IdRef * NDRange: IdRef * NumEvents: IdRef * WaitEvents: IdRef * RetEvent: IdRef * Invoke: IdRef * Param: IdRef * ParamSize: IdRef * ParamAlign: IdRef * LocalSize: IdRef list
+   | OpGetKernelNDrangeSubGroupCount of IdResultType * IdResult * NDRange: IdRef * Invoke: IdRef * Param: IdRef * ParamSize: IdRef * ParamAlign: IdRef
+   | OpGetKernelNDrangeMaxSubGroupSize of IdResultType * IdResult * NDRange: IdRef * Invoke: IdRef * Param: IdRef * ParamSize: IdRef * ParamAlign: IdRef
+   | OpGetKernelWorkGroupSize of IdResultType * IdResult * Invoke: IdRef * Param: IdRef * ParamSize: IdRef * ParamAlign: IdRef
+   | OpGetKernelPreferredWorkGroupSizeMultiple of IdResultType * IdResult * Invoke: IdRef * Param: IdRef * ParamSize: IdRef * ParamAlign: IdRef
+   | OpRetainEvent of Event: IdRef
+   | OpReleaseEvent of Event: IdRef
    | OpCreateUserEvent of IdResultType * IdResult
-   | OpIsValidEvent of IdResultType * IdResult * IdRef
-   | OpSetUserEventStatus of IdRef * IdRef
-   | OpCaptureEventProfilingInfo of IdRef * IdRef * IdRef
+   | OpIsValidEvent of IdResultType * IdResult * Event: IdRef
+   | OpSetUserEventStatus of Event: IdRef * Status: IdRef
+   | OpCaptureEventProfilingInfo of Event: IdRef * ProfilingInfo: IdRef * Value: IdRef
    | OpGetDefaultQueue of IdResultType * IdResult
-   | OpBuildNDRange of IdResultType * IdResult * IdRef * IdRef * IdRef
-   | OpImageSparseSampleImplicitLod of IdResultType * IdResult * IdRef * IdRef * ImageOperands
-   | OpImageSparseSampleExplicitLod of IdResultType * IdResult * IdRef * IdRef * ImageOperands
-   | OpImageSparseSampleDrefImplicitLod of IdResultType * IdResult * IdRef * IdRef * IdRef * ImageOperands
-   | OpImageSparseSampleDrefExplicitLod of IdResultType * IdResult * IdRef * IdRef * IdRef * ImageOperands
-   | OpImageSparseSampleProjImplicitLod of IdResultType * IdResult * IdRef * IdRef * ImageOperands
-   | OpImageSparseSampleProjExplicitLod of IdResultType * IdResult * IdRef * IdRef * ImageOperands
-   | OpImageSparseSampleProjDrefImplicitLod of IdResultType * IdResult * IdRef * IdRef * IdRef * ImageOperands
-   | OpImageSparseSampleProjDrefExplicitLod of IdResultType * IdResult * IdRef * IdRef * IdRef * ImageOperands
-   | OpImageSparseFetch of IdResultType * IdResult * IdRef * IdRef * ImageOperands
-   | OpImageSparseGather of IdResultType * IdResult * IdRef * IdRef * IdRef * ImageOperands
-   | OpImageSparseDrefGather of IdResultType * IdResult * IdRef * IdRef * IdRef * ImageOperands
-   | OpImageSparseTexelsResident of IdResultType * IdResult * IdRef
+   | OpBuildNDRange of IdResultType * IdResult * GlobalWorkSize: IdRef * LocalWorkSize: IdRef * GlobalWorkOffset: IdRef
+   | OpImageSparseSampleImplicitLod of IdResultType * IdResult * SampledImage: IdRef * Coordinate: IdRef * ImageOperands option
+   | OpImageSparseSampleExplicitLod of IdResultType * IdResult * SampledImage: IdRef * Coordinate: IdRef * ImageOperands
+   | OpImageSparseSampleDrefImplicitLod of IdResultType * IdResult * SampledImage: IdRef * Coordinate: IdRef * Dref: IdRef * ImageOperands option
+   | OpImageSparseSampleDrefExplicitLod of IdResultType * IdResult * SampledImage: IdRef * Coordinate: IdRef * Dref: IdRef * ImageOperands
+   | OpImageSparseSampleProjImplicitLod of IdResultType * IdResult * SampledImage: IdRef * Coordinate: IdRef * ImageOperands option
+   | OpImageSparseSampleProjExplicitLod of IdResultType * IdResult * SampledImage: IdRef * Coordinate: IdRef * ImageOperands
+   | OpImageSparseSampleProjDrefImplicitLod of IdResultType * IdResult * SampledImage: IdRef * Coordinate: IdRef * Dref: IdRef * ImageOperands option
+   | OpImageSparseSampleProjDrefExplicitLod of IdResultType * IdResult * SampledImage: IdRef * Coordinate: IdRef * Dref: IdRef * ImageOperands
+   | OpImageSparseFetch of IdResultType * IdResult * Image: IdRef * Coordinate: IdRef * ImageOperands option
+   | OpImageSparseGather of IdResultType * IdResult * SampledImage: IdRef * Coordinate: IdRef * Component: IdRef * ImageOperands option
+   | OpImageSparseDrefGather of IdResultType * IdResult * SampledImage: IdRef * Coordinate: IdRef * Dref: IdRef * ImageOperands option
+   | OpImageSparseTexelsResident of IdResultType * IdResult * ResidentCode: IdRef
    | OpNoLine
-   | OpAtomicFlagTestAndSet of IdResultType * IdResult * IdRef * IdScope * IdMemorySemantics
-   | OpAtomicFlagClear of IdRef * IdScope * IdMemorySemantics
-   | OpImageSparseRead of IdResultType * IdResult * IdRef * IdRef * ImageOperands
-   | OpSizeOf of IdResultType * IdResult * IdRef
+   | OpAtomicFlagTestAndSet of IdResultType * IdResult * Pointer: IdRef * Memory: IdScope * Semantics: IdMemorySemantics
+   | OpAtomicFlagClear of Pointer: IdRef * Memory: IdScope * Semantics: IdMemorySemantics
+   | OpImageSparseRead of IdResultType * IdResult * Image: IdRef * Coordinate: IdRef * ImageOperands option
+   | OpSizeOf of IdResultType * IdResult * Pointer: IdRef
    | OpTypePipeStorage of IdResult
-   | OpConstantPipeStorage of IdResultType * IdResult * LiteralInteger * LiteralInteger * LiteralInteger
-   | OpCreatePipeFromPipeStorage of IdResultType * IdResult * IdRef
-   | OpGetKernelLocalSizeForSubgroupCount of IdResultType * IdResult * IdRef * IdRef * IdRef * IdRef * IdRef
-   | OpGetKernelMaxNumSubgroups of IdResultType * IdResult * IdRef * IdRef * IdRef * IdRef
+   | OpConstantPipeStorage of IdResultType * IdResult * PacketSize: LiteralInteger * PacketAlignment: LiteralInteger * Capacity: LiteralInteger
+   | OpCreatePipeFromPipeStorage of IdResultType * IdResult * PipeStorage: IdRef
+   | OpGetKernelLocalSizeForSubgroupCount of IdResultType * IdResult * SubgroupCount: IdRef * Invoke: IdRef * Param: IdRef * ParamSize: IdRef * ParamAlign: IdRef
+   | OpGetKernelMaxNumSubgroups of IdResultType * IdResult * Invoke: IdRef * Param: IdRef * ParamSize: IdRef * ParamAlign: IdRef
    | OpTypeNamedBarrier of IdResult
-   | OpNamedBarrierInitialize of IdResultType * IdResult * IdRef
-   | OpMemoryNamedBarrier of IdRef * IdScope * IdMemorySemantics
-   | OpModuleProcessed of LiteralString
-   | OpExecutionModeId of IdRef * ExecutionMode
-   | OpDecorateId of IdRef * Decoration
-   | OpGroupNonUniformElect of IdResultType * IdResult * IdScope
-   | OpGroupNonUniformAll of IdResultType * IdResult * IdScope * IdRef
-   | OpGroupNonUniformAny of IdResultType * IdResult * IdScope * IdRef
-   | OpGroupNonUniformAllEqual of IdResultType * IdResult * IdScope * IdRef
-   | OpGroupNonUniformBroadcast of IdResultType * IdResult * IdScope * IdRef * IdRef
-   | OpGroupNonUniformBroadcastFirst of IdResultType * IdResult * IdScope * IdRef
-   | OpGroupNonUniformBallot of IdResultType * IdResult * IdScope * IdRef
-   | OpGroupNonUniformInverseBallot of IdResultType * IdResult * IdScope * IdRef
-   | OpGroupNonUniformBallotBitExtract of IdResultType * IdResult * IdScope * IdRef * IdRef
-   | OpGroupNonUniformBallotBitCount of IdResultType * IdResult * IdScope * GroupOperation * IdRef
-   | OpGroupNonUniformBallotFindLSB of IdResultType * IdResult * IdScope * IdRef
-   | OpGroupNonUniformBallotFindMSB of IdResultType * IdResult * IdScope * IdRef
-   | OpGroupNonUniformShuffle of IdResultType * IdResult * IdScope * IdRef * IdRef
-   | OpGroupNonUniformShuffleXor of IdResultType * IdResult * IdScope * IdRef * IdRef
-   | OpGroupNonUniformShuffleUp of IdResultType * IdResult * IdScope * IdRef * IdRef
-   | OpGroupNonUniformShuffleDown of IdResultType * IdResult * IdScope * IdRef * IdRef
-   | OpGroupNonUniformIAdd of IdResultType * IdResult * IdScope * GroupOperation * IdRef * IdRef
-   | OpGroupNonUniformFAdd of IdResultType * IdResult * IdScope * GroupOperation * IdRef * IdRef
-   | OpGroupNonUniformIMul of IdResultType * IdResult * IdScope * GroupOperation * IdRef * IdRef
-   | OpGroupNonUniformFMul of IdResultType * IdResult * IdScope * GroupOperation * IdRef * IdRef
-   | OpGroupNonUniformSMin of IdResultType * IdResult * IdScope * GroupOperation * IdRef * IdRef
-   | OpGroupNonUniformUMin of IdResultType * IdResult * IdScope * GroupOperation * IdRef * IdRef
-   | OpGroupNonUniformFMin of IdResultType * IdResult * IdScope * GroupOperation * IdRef * IdRef
-   | OpGroupNonUniformSMax of IdResultType * IdResult * IdScope * GroupOperation * IdRef * IdRef
-   | OpGroupNonUniformUMax of IdResultType * IdResult * IdScope * GroupOperation * IdRef * IdRef
-   | OpGroupNonUniformFMax of IdResultType * IdResult * IdScope * GroupOperation * IdRef * IdRef
-   | OpGroupNonUniformBitwiseAnd of IdResultType * IdResult * IdScope * GroupOperation * IdRef * IdRef
-   | OpGroupNonUniformBitwiseOr of IdResultType * IdResult * IdScope * GroupOperation * IdRef * IdRef
-   | OpGroupNonUniformBitwiseXor of IdResultType * IdResult * IdScope * GroupOperation * IdRef * IdRef
-   | OpGroupNonUniformLogicalAnd of IdResultType * IdResult * IdScope * GroupOperation * IdRef * IdRef
-   | OpGroupNonUniformLogicalOr of IdResultType * IdResult * IdScope * GroupOperation * IdRef * IdRef
-   | OpGroupNonUniformLogicalXor of IdResultType * IdResult * IdScope * GroupOperation * IdRef * IdRef
-   | OpGroupNonUniformQuadBroadcast of IdResultType * IdResult * IdScope * IdRef * IdRef
-   | OpGroupNonUniformQuadSwap of IdResultType * IdResult * IdScope * IdRef * IdRef
-   | OpCopyLogical of IdResultType * IdResult * IdRef
-   | OpPtrEqual of IdResultType * IdResult * IdRef * IdRef
-   | OpPtrNotEqual of IdResultType * IdResult * IdRef * IdRef
-   | OpPtrDiff of IdResultType * IdResult * IdRef * IdRef
-   | OpSubgroupBallotKHR of IdResultType * IdResult * IdRef
-   | OpSubgroupFirstInvocationKHR of IdResultType * IdResult * IdRef
-   | OpSubgroupAllKHR of IdResultType * IdResult * IdRef
-   | OpSubgroupAnyKHR of IdResultType * IdResult * IdRef
-   | OpSubgroupAllEqualKHR of IdResultType * IdResult * IdRef
-   | OpSubgroupReadInvocationKHR of IdResultType * IdResult * IdRef * IdRef
-   | OpGroupIAddNonUniformAMD of IdResultType * IdResult * IdScope * GroupOperation * IdRef
-   | OpGroupFAddNonUniformAMD of IdResultType * IdResult * IdScope * GroupOperation * IdRef
-   | OpGroupFMinNonUniformAMD of IdResultType * IdResult * IdScope * GroupOperation * IdRef
-   | OpGroupUMinNonUniformAMD of IdResultType * IdResult * IdScope * GroupOperation * IdRef
-   | OpGroupSMinNonUniformAMD of IdResultType * IdResult * IdScope * GroupOperation * IdRef
-   | OpGroupFMaxNonUniformAMD of IdResultType * IdResult * IdScope * GroupOperation * IdRef
-   | OpGroupUMaxNonUniformAMD of IdResultType * IdResult * IdScope * GroupOperation * IdRef
-   | OpGroupSMaxNonUniformAMD of IdResultType * IdResult * IdScope * GroupOperation * IdRef
-   | OpFragmentMaskFetchAMD of IdResultType * IdResult * IdRef * IdRef
-   | OpFragmentFetchAMD of IdResultType * IdResult * IdRef * IdRef * IdRef
-   | OpReadClockKHR of IdResultType * IdResult * IdScope
-   | OpImageSampleFootprintNV of IdResultType * IdResult * IdRef * IdRef * IdRef * IdRef * ImageOperands
-   | OpGroupNonUniformPartitionNV of IdResultType * IdResult * IdRef
-   | OpWritePackedPrimitiveIndices4x8NV of IdRef * IdRef
-   | OpReportIntersectionNV of IdResultType * IdResult * IdRef * IdRef
+   | OpNamedBarrierInitialize of IdResultType * IdResult * SubgroupCount: IdRef
+   | OpMemoryNamedBarrier of NamedBarrier: IdRef * Memory: IdScope * Semantics: IdMemorySemantics
+   | OpModuleProcessed of Process: LiteralString
+   | OpExecutionModeId of EntryPoint: IdRef * Mode: ExecutionMode
+   | OpDecorateId of Target: IdRef * Decoration
+   | OpGroupNonUniformElect of IdResultType * IdResult * Execution: IdScope
+   | OpGroupNonUniformAll of IdResultType * IdResult * Execution: IdScope * Predicate: IdRef
+   | OpGroupNonUniformAny of IdResultType * IdResult * Execution: IdScope * Predicate: IdRef
+   | OpGroupNonUniformAllEqual of IdResultType * IdResult * Execution: IdScope * Value: IdRef
+   | OpGroupNonUniformBroadcast of IdResultType * IdResult * Execution: IdScope * Value: IdRef * Id: IdRef
+   | OpGroupNonUniformBroadcastFirst of IdResultType * IdResult * Execution: IdScope * Value: IdRef
+   | OpGroupNonUniformBallot of IdResultType * IdResult * Execution: IdScope * Predicate: IdRef
+   | OpGroupNonUniformInverseBallot of IdResultType * IdResult * Execution: IdScope * Value: IdRef
+   | OpGroupNonUniformBallotBitExtract of IdResultType * IdResult * Execution: IdScope * Value: IdRef * Index: IdRef
+   | OpGroupNonUniformBallotBitCount of IdResultType * IdResult * Execution: IdScope * Operation: GroupOperation * Value: IdRef
+   | OpGroupNonUniformBallotFindLSB of IdResultType * IdResult * Execution: IdScope * Value: IdRef
+   | OpGroupNonUniformBallotFindMSB of IdResultType * IdResult * Execution: IdScope * Value: IdRef
+   | OpGroupNonUniformShuffle of IdResultType * IdResult * Execution: IdScope * Value: IdRef * Id: IdRef
+   | OpGroupNonUniformShuffleXor of IdResultType * IdResult * Execution: IdScope * Value: IdRef * Mask: IdRef
+   | OpGroupNonUniformShuffleUp of IdResultType * IdResult * Execution: IdScope * Value: IdRef * Delta: IdRef
+   | OpGroupNonUniformShuffleDown of IdResultType * IdResult * Execution: IdScope * Value: IdRef * Delta: IdRef
+   | OpGroupNonUniformIAdd of IdResultType * IdResult * Execution: IdScope * Operation: GroupOperation * Value: IdRef * ClusterSize: IdRef option
+   | OpGroupNonUniformFAdd of IdResultType * IdResult * Execution: IdScope * Operation: GroupOperation * Value: IdRef * ClusterSize: IdRef option
+   | OpGroupNonUniformIMul of IdResultType * IdResult * Execution: IdScope * Operation: GroupOperation * Value: IdRef * ClusterSize: IdRef option
+   | OpGroupNonUniformFMul of IdResultType * IdResult * Execution: IdScope * Operation: GroupOperation * Value: IdRef * ClusterSize: IdRef option
+   | OpGroupNonUniformSMin of IdResultType * IdResult * Execution: IdScope * Operation: GroupOperation * Value: IdRef * ClusterSize: IdRef option
+   | OpGroupNonUniformUMin of IdResultType * IdResult * Execution: IdScope * Operation: GroupOperation * Value: IdRef * ClusterSize: IdRef option
+   | OpGroupNonUniformFMin of IdResultType * IdResult * Execution: IdScope * Operation: GroupOperation * Value: IdRef * ClusterSize: IdRef option
+   | OpGroupNonUniformSMax of IdResultType * IdResult * Execution: IdScope * Operation: GroupOperation * Value: IdRef * ClusterSize: IdRef option
+   | OpGroupNonUniformUMax of IdResultType * IdResult * Execution: IdScope * Operation: GroupOperation * Value: IdRef * ClusterSize: IdRef option
+   | OpGroupNonUniformFMax of IdResultType * IdResult * Execution: IdScope * Operation: GroupOperation * Value: IdRef * ClusterSize: IdRef option
+   | OpGroupNonUniformBitwiseAnd of IdResultType * IdResult * Execution: IdScope * Operation: GroupOperation * Value: IdRef * ClusterSize: IdRef option
+   | OpGroupNonUniformBitwiseOr of IdResultType * IdResult * Execution: IdScope * Operation: GroupOperation * Value: IdRef * ClusterSize: IdRef option
+   | OpGroupNonUniformBitwiseXor of IdResultType * IdResult * Execution: IdScope * Operation: GroupOperation * Value: IdRef * ClusterSize: IdRef option
+   | OpGroupNonUniformLogicalAnd of IdResultType * IdResult * Execution: IdScope * Operation: GroupOperation * Value: IdRef * ClusterSize: IdRef option
+   | OpGroupNonUniformLogicalOr of IdResultType * IdResult * Execution: IdScope * Operation: GroupOperation * Value: IdRef * ClusterSize: IdRef option
+   | OpGroupNonUniformLogicalXor of IdResultType * IdResult * Execution: IdScope * Operation: GroupOperation * Value: IdRef * ClusterSize: IdRef option
+   | OpGroupNonUniformQuadBroadcast of IdResultType * IdResult * Execution: IdScope * Value: IdRef * Index: IdRef
+   | OpGroupNonUniformQuadSwap of IdResultType * IdResult * Execution: IdScope * Value: IdRef * Direction: IdRef
+   | OpCopyLogical of IdResultType * IdResult * Operand: IdRef
+   | OpPtrEqual of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpPtrNotEqual of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpPtrDiff of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpSubgroupBallotKHR of IdResultType * IdResult * Predicate: IdRef
+   | OpSubgroupFirstInvocationKHR of IdResultType * IdResult * Value: IdRef
+   | OpSubgroupAllKHR of IdResultType * IdResult * Predicate: IdRef
+   | OpSubgroupAnyKHR of IdResultType * IdResult * Predicate: IdRef
+   | OpSubgroupAllEqualKHR of IdResultType * IdResult * Predicate: IdRef
+   | OpSubgroupReadInvocationKHR of IdResultType * IdResult * Value: IdRef * Index: IdRef
+   | OpGroupIAddNonUniformAMD of IdResultType * IdResult * Execution: IdScope * Operation: GroupOperation * X: IdRef
+   | OpGroupFAddNonUniformAMD of IdResultType * IdResult * Execution: IdScope * Operation: GroupOperation * X: IdRef
+   | OpGroupFMinNonUniformAMD of IdResultType * IdResult * Execution: IdScope * Operation: GroupOperation * X: IdRef
+   | OpGroupUMinNonUniformAMD of IdResultType * IdResult * Execution: IdScope * Operation: GroupOperation * X: IdRef
+   | OpGroupSMinNonUniformAMD of IdResultType * IdResult * Execution: IdScope * Operation: GroupOperation * X: IdRef
+   | OpGroupFMaxNonUniformAMD of IdResultType * IdResult * Execution: IdScope * Operation: GroupOperation * X: IdRef
+   | OpGroupUMaxNonUniformAMD of IdResultType * IdResult * Execution: IdScope * Operation: GroupOperation * X: IdRef
+   | OpGroupSMaxNonUniformAMD of IdResultType * IdResult * Execution: IdScope * Operation: GroupOperation * X: IdRef
+   | OpFragmentMaskFetchAMD of IdResultType * IdResult * Image: IdRef * Coordinate: IdRef
+   | OpFragmentFetchAMD of IdResultType * IdResult * Image: IdRef * Coordinate: IdRef * FragmentIndex: IdRef
+   | OpReadClockKHR of IdResultType * IdResult * Execution: IdScope
+   | OpImageSampleFootprintNV of IdResultType * IdResult * SampledImage: IdRef * Coordinate: IdRef * Granularity: IdRef * Coarse: IdRef * ImageOperands option
+   | OpGroupNonUniformPartitionNV of IdResultType * IdResult * Value: IdRef
+   | OpWritePackedPrimitiveIndices4x8NV of IndexOffset: IdRef * PackedIndices: IdRef
+   | OpReportIntersectionNV of IdResultType * IdResult * Hit: IdRef * HitKind: IdRef
    | OpIgnoreIntersectionNV
    | OpTerminateRayNV
-   | OpTraceNV of IdRef * IdRef * IdRef * IdRef * IdRef * IdRef * IdRef * IdRef * IdRef * IdRef * IdRef
+   | OpTraceNV of Accel: IdRef * RayFlags: IdRef * CullMask: IdRef * SBTOffset: IdRef * SBTStride: IdRef * MissIndex: IdRef * RayOrigin: IdRef * RayTmin: IdRef * RayDirection: IdRef * RayTmax: IdRef * PayloadId: IdRef
    | OpTypeAccelerationStructureNV of IdResult
-   | OpExecuteCallableNV of IdRef * IdRef
-   | OpTypeCooperativeMatrixNV of IdResult * IdRef * IdScope * IdRef * IdRef
-   | OpCooperativeMatrixLoadNV of IdResultType * IdResult * IdRef * IdRef * IdRef * MemoryAccess
-   | OpCooperativeMatrixStoreNV of IdRef * IdRef * IdRef * IdRef * MemoryAccess
-   | OpCooperativeMatrixMulAddNV of IdResultType * IdResult * IdRef * IdRef * IdRef
-   | OpCooperativeMatrixLengthNV of IdResultType * IdResult * IdRef
+   | OpExecuteCallableNV of SBTIndex: IdRef * CallableDataId: IdRef
+   | OpTypeCooperativeMatrixNV of IdResult * ComponentType: IdRef * Execution: IdScope * Rows: IdRef * Columns: IdRef
+   | OpCooperativeMatrixLoadNV of IdResultType * IdResult * Pointer: IdRef * Stride: IdRef * ColumnMajor: IdRef * MemoryAccess option
+   | OpCooperativeMatrixStoreNV of Pointer: IdRef * Object: IdRef * Stride: IdRef * ColumnMajor: IdRef * MemoryAccess option
+   | OpCooperativeMatrixMulAddNV of IdResultType * IdResult * A: IdRef * B: IdRef * C: IdRef
+   | OpCooperativeMatrixLengthNV of IdResultType * IdResult * Type: IdRef
    | OpBeginInvocationInterlockEXT
    | OpEndInvocationInterlockEXT
    | OpDemoteToHelperInvocationEXT
    | OpIsHelperInvocationEXT of IdResultType * IdResult
-   | OpSubgroupShuffleINTEL of IdResultType * IdResult * IdRef * IdRef
-   | OpSubgroupShuffleDownINTEL of IdResultType * IdResult * IdRef * IdRef * IdRef
-   | OpSubgroupShuffleUpINTEL of IdResultType * IdResult * IdRef * IdRef * IdRef
-   | OpSubgroupShuffleXorINTEL of IdResultType * IdResult * IdRef * IdRef
-   | OpSubgroupBlockReadINTEL of IdResultType * IdResult * IdRef
-   | OpSubgroupBlockWriteINTEL of IdRef * IdRef
-   | OpSubgroupImageBlockReadINTEL of IdResultType * IdResult * IdRef * IdRef
-   | OpSubgroupImageBlockWriteINTEL of IdRef * IdRef * IdRef
-   | OpSubgroupImageMediaBlockReadINTEL of IdResultType * IdResult * IdRef * IdRef * IdRef * IdRef
-   | OpSubgroupImageMediaBlockWriteINTEL of IdRef * IdRef * IdRef * IdRef * IdRef
-   | OpUCountLeadingZerosINTEL of IdResultType * IdResult * IdRef
-   | OpUCountTrailingZerosINTEL of IdResultType * IdResult * IdRef
-   | OpAbsISubINTEL of IdResultType * IdResult * IdRef * IdRef
-   | OpAbsUSubINTEL of IdResultType * IdResult * IdRef * IdRef
-   | OpIAddSatINTEL of IdResultType * IdResult * IdRef * IdRef
-   | OpUAddSatINTEL of IdResultType * IdResult * IdRef * IdRef
-   | OpIAverageINTEL of IdResultType * IdResult * IdRef * IdRef
-   | OpUAverageINTEL of IdResultType * IdResult * IdRef * IdRef
-   | OpIAverageRoundedINTEL of IdResultType * IdResult * IdRef * IdRef
-   | OpUAverageRoundedINTEL of IdResultType * IdResult * IdRef * IdRef
-   | OpISubSatINTEL of IdResultType * IdResult * IdRef * IdRef
-   | OpUSubSatINTEL of IdResultType * IdResult * IdRef * IdRef
-   | OpIMul32x16INTEL of IdResultType * IdResult * IdRef * IdRef
-   | OpUMul32x16INTEL of IdResultType * IdResult * IdRef * IdRef
-   | OpDecorateString of IdRef * Decoration
-   | OpDecorateStringGOOGLE of IdRef * Decoration
-   | OpMemberDecorateString of IdRef * LiteralInteger * Decoration
-   | OpMemberDecorateStringGOOGLE of IdRef * LiteralInteger * Decoration
-   | OpVmeImageINTEL of IdResultType * IdResult * IdRef * IdRef
-   | OpTypeVmeImageINTEL of IdResult * IdRef
+   | OpSubgroupShuffleINTEL of IdResultType * IdResult * Data: IdRef * InvocationId: IdRef
+   | OpSubgroupShuffleDownINTEL of IdResultType * IdResult * Current: IdRef * Next: IdRef * Delta: IdRef
+   | OpSubgroupShuffleUpINTEL of IdResultType * IdResult * Previous: IdRef * Current: IdRef * Delta: IdRef
+   | OpSubgroupShuffleXorINTEL of IdResultType * IdResult * Data: IdRef * Value: IdRef
+   | OpSubgroupBlockReadINTEL of IdResultType * IdResult * Ptr: IdRef
+   | OpSubgroupBlockWriteINTEL of Ptr: IdRef * Data: IdRef
+   | OpSubgroupImageBlockReadINTEL of IdResultType * IdResult * Image: IdRef * Coordinate: IdRef
+   | OpSubgroupImageBlockWriteINTEL of Image: IdRef * Coordinate: IdRef * Data: IdRef
+   | OpSubgroupImageMediaBlockReadINTEL of IdResultType * IdResult * Image: IdRef * Coordinate: IdRef * Width: IdRef * Height: IdRef
+   | OpSubgroupImageMediaBlockWriteINTEL of Image: IdRef * Coordinate: IdRef * Width: IdRef * Height: IdRef * Data: IdRef
+   | OpUCountLeadingZerosINTEL of IdResultType * IdResult * Operand: IdRef
+   | OpUCountTrailingZerosINTEL of IdResultType * IdResult * Operand: IdRef
+   | OpAbsISubINTEL of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpAbsUSubINTEL of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpIAddSatINTEL of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpUAddSatINTEL of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpIAverageINTEL of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpUAverageINTEL of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpIAverageRoundedINTEL of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpUAverageRoundedINTEL of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpISubSatINTEL of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpUSubSatINTEL of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpIMul32x16INTEL of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpUMul32x16INTEL of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpDecorateString of Target: IdRef * Decoration
+   | OpDecorateStringGOOGLE of Target: IdRef * Decoration
+   | OpMemberDecorateString of StructType: IdRef * Member: LiteralInteger * Decoration
+   | OpMemberDecorateStringGOOGLE of StructType: IdRef * Member: LiteralInteger * Decoration
+   | OpVmeImageINTEL of IdResultType * IdResult * ImageType: IdRef * Sampler: IdRef
+   | OpTypeVmeImageINTEL of IdResult * ImageType: IdRef
    | OpTypeAvcImePayloadINTEL of IdResult
    | OpTypeAvcRefPayloadINTEL of IdResult
    | OpTypeAvcSicPayloadINTEL of IdResult
@@ -1158,110 +1158,110 @@ type Instruction =
    | OpTypeAvcImeDualReferenceStreaminINTEL of IdResult
    | OpTypeAvcRefResultINTEL of IdResult
    | OpTypeAvcSicResultINTEL of IdResult
-   | OpSubgroupAvcMceGetDefaultInterBaseMultiReferencePenaltyINTEL of IdResultType * IdResult * IdRef * IdRef
-   | OpSubgroupAvcMceSetInterBaseMultiReferencePenaltyINTEL of IdResultType * IdResult * IdRef * IdRef
-   | OpSubgroupAvcMceGetDefaultInterShapePenaltyINTEL of IdResultType * IdResult * IdRef * IdRef
-   | OpSubgroupAvcMceSetInterShapePenaltyINTEL of IdResultType * IdResult * IdRef * IdRef
-   | OpSubgroupAvcMceGetDefaultInterDirectionPenaltyINTEL of IdResultType * IdResult * IdRef * IdRef
-   | OpSubgroupAvcMceSetInterDirectionPenaltyINTEL of IdResultType * IdResult * IdRef * IdRef
-   | OpSubgroupAvcMceGetDefaultIntraLumaShapePenaltyINTEL of IdResultType * IdResult * IdRef * IdRef
-   | OpSubgroupAvcMceGetDefaultInterMotionVectorCostTableINTEL of IdResultType * IdResult * IdRef * IdRef
+   | OpSubgroupAvcMceGetDefaultInterBaseMultiReferencePenaltyINTEL of IdResultType * IdResult * SliceType: IdRef * Qp: IdRef
+   | OpSubgroupAvcMceSetInterBaseMultiReferencePenaltyINTEL of IdResultType * IdResult * ReferenceBasePenalty: IdRef * Payload: IdRef
+   | OpSubgroupAvcMceGetDefaultInterShapePenaltyINTEL of IdResultType * IdResult * SliceType: IdRef * Qp: IdRef
+   | OpSubgroupAvcMceSetInterShapePenaltyINTEL of IdResultType * IdResult * PackedShapePenalty: IdRef * Payload: IdRef
+   | OpSubgroupAvcMceGetDefaultInterDirectionPenaltyINTEL of IdResultType * IdResult * SliceType: IdRef * Qp: IdRef
+   | OpSubgroupAvcMceSetInterDirectionPenaltyINTEL of IdResultType * IdResult * DirectionCost: IdRef * Payload: IdRef
+   | OpSubgroupAvcMceGetDefaultIntraLumaShapePenaltyINTEL of IdResultType * IdResult * SliceType: IdRef * Qp: IdRef
+   | OpSubgroupAvcMceGetDefaultInterMotionVectorCostTableINTEL of IdResultType * IdResult * SliceType: IdRef * Qp: IdRef
    | OpSubgroupAvcMceGetDefaultHighPenaltyCostTableINTEL of IdResultType * IdResult
    | OpSubgroupAvcMceGetDefaultMediumPenaltyCostTableINTEL of IdResultType * IdResult
    | OpSubgroupAvcMceGetDefaultLowPenaltyCostTableINTEL of IdResultType * IdResult
-   | OpSubgroupAvcMceSetMotionVectorCostFunctionINTEL of IdResultType * IdResult * IdRef * IdRef * IdRef * IdRef
-   | OpSubgroupAvcMceGetDefaultIntraLumaModePenaltyINTEL of IdResultType * IdResult * IdRef * IdRef
+   | OpSubgroupAvcMceSetMotionVectorCostFunctionINTEL of IdResultType * IdResult * PackedCostCenterDelta: IdRef * PackedCostTable: IdRef * CostPrecision: IdRef * Payload: IdRef
+   | OpSubgroupAvcMceGetDefaultIntraLumaModePenaltyINTEL of IdResultType * IdResult * SliceType: IdRef * Qp: IdRef
    | OpSubgroupAvcMceGetDefaultNonDcLumaIntraPenaltyINTEL of IdResultType * IdResult
    | OpSubgroupAvcMceGetDefaultIntraChromaModeBasePenaltyINTEL of IdResultType * IdResult
-   | OpSubgroupAvcMceSetAcOnlyHaarINTEL of IdResultType * IdResult * IdRef
-   | OpSubgroupAvcMceSetSourceInterlacedFieldPolarityINTEL of IdResultType * IdResult * IdRef * IdRef
-   | OpSubgroupAvcMceSetSingleReferenceInterlacedFieldPolarityINTEL of IdResultType * IdResult * IdRef * IdRef
-   | OpSubgroupAvcMceSetDualReferenceInterlacedFieldPolaritiesINTEL of IdResultType * IdResult * IdRef * IdRef * IdRef
-   | OpSubgroupAvcMceConvertToImePayloadINTEL of IdResultType * IdResult * IdRef
-   | OpSubgroupAvcMceConvertToImeResultINTEL of IdResultType * IdResult * IdRef
-   | OpSubgroupAvcMceConvertToRefPayloadINTEL of IdResultType * IdResult * IdRef
-   | OpSubgroupAvcMceConvertToRefResultINTEL of IdResultType * IdResult * IdRef
-   | OpSubgroupAvcMceConvertToSicPayloadINTEL of IdResultType * IdResult * IdRef
-   | OpSubgroupAvcMceConvertToSicResultINTEL of IdResultType * IdResult * IdRef
-   | OpSubgroupAvcMceGetMotionVectorsINTEL of IdResultType * IdResult * IdRef
-   | OpSubgroupAvcMceGetInterDistortionsINTEL of IdResultType * IdResult * IdRef
-   | OpSubgroupAvcMceGetBestInterDistortionsINTEL of IdResultType * IdResult * IdRef
-   | OpSubgroupAvcMceGetInterMajorShapeINTEL of IdResultType * IdResult * IdRef
-   | OpSubgroupAvcMceGetInterMinorShapeINTEL of IdResultType * IdResult * IdRef
-   | OpSubgroupAvcMceGetInterDirectionsINTEL of IdResultType * IdResult * IdRef
-   | OpSubgroupAvcMceGetInterMotionVectorCountINTEL of IdResultType * IdResult * IdRef
-   | OpSubgroupAvcMceGetInterReferenceIdsINTEL of IdResultType * IdResult * IdRef
-   | OpSubgroupAvcMceGetInterReferenceInterlacedFieldPolaritiesINTEL of IdResultType * IdResult * IdRef * IdRef * IdRef
-   | OpSubgroupAvcImeInitializeINTEL of IdResultType * IdResult * IdRef * IdRef * IdRef
-   | OpSubgroupAvcImeSetSingleReferenceINTEL of IdResultType * IdResult * IdRef * IdRef * IdRef
-   | OpSubgroupAvcImeSetDualReferenceINTEL of IdResultType * IdResult * IdRef * IdRef * IdRef * IdRef
-   | OpSubgroupAvcImeRefWindowSizeINTEL of IdResultType * IdResult * IdRef * IdRef
-   | OpSubgroupAvcImeAdjustRefOffsetINTEL of IdResultType * IdResult * IdRef * IdRef * IdRef * IdRef
-   | OpSubgroupAvcImeConvertToMcePayloadINTEL of IdResultType * IdResult * IdRef
-   | OpSubgroupAvcImeSetMaxMotionVectorCountINTEL of IdResultType * IdResult * IdRef * IdRef
-   | OpSubgroupAvcImeSetUnidirectionalMixDisableINTEL of IdResultType * IdResult * IdRef
-   | OpSubgroupAvcImeSetEarlySearchTerminationThresholdINTEL of IdResultType * IdResult * IdRef * IdRef
-   | OpSubgroupAvcImeSetWeightedSadINTEL of IdResultType * IdResult * IdRef * IdRef
-   | OpSubgroupAvcImeEvaluateWithSingleReferenceINTEL of IdResultType * IdResult * IdRef * IdRef * IdRef
-   | OpSubgroupAvcImeEvaluateWithDualReferenceINTEL of IdResultType * IdResult * IdRef * IdRef * IdRef * IdRef
-   | OpSubgroupAvcImeEvaluateWithSingleReferenceStreaminINTEL of IdResultType * IdResult * IdRef * IdRef * IdRef * IdRef
-   | OpSubgroupAvcImeEvaluateWithDualReferenceStreaminINTEL of IdResultType * IdResult * IdRef * IdRef * IdRef * IdRef * IdRef
-   | OpSubgroupAvcImeEvaluateWithSingleReferenceStreamoutINTEL of IdResultType * IdResult * IdRef * IdRef * IdRef
-   | OpSubgroupAvcImeEvaluateWithDualReferenceStreamoutINTEL of IdResultType * IdResult * IdRef * IdRef * IdRef * IdRef
-   | OpSubgroupAvcImeEvaluateWithSingleReferenceStreaminoutINTEL of IdResultType * IdResult * IdRef * IdRef * IdRef * IdRef
-   | OpSubgroupAvcImeEvaluateWithDualReferenceStreaminoutINTEL of IdResultType * IdResult * IdRef * IdRef * IdRef * IdRef * IdRef
-   | OpSubgroupAvcImeConvertToMceResultINTEL of IdResultType * IdResult * IdRef
-   | OpSubgroupAvcImeGetSingleReferenceStreaminINTEL of IdResultType * IdResult * IdRef
-   | OpSubgroupAvcImeGetDualReferenceStreaminINTEL of IdResultType * IdResult * IdRef
-   | OpSubgroupAvcImeStripSingleReferenceStreamoutINTEL of IdResultType * IdResult * IdRef
-   | OpSubgroupAvcImeStripDualReferenceStreamoutINTEL of IdResultType * IdResult * IdRef
-   | OpSubgroupAvcImeGetStreamoutSingleReferenceMajorShapeMotionVectorsINTEL of IdResultType * IdResult * IdRef * IdRef
-   | OpSubgroupAvcImeGetStreamoutSingleReferenceMajorShapeDistortionsINTEL of IdResultType * IdResult * IdRef * IdRef
-   | OpSubgroupAvcImeGetStreamoutSingleReferenceMajorShapeReferenceIdsINTEL of IdResultType * IdResult * IdRef * IdRef
-   | OpSubgroupAvcImeGetStreamoutDualReferenceMajorShapeMotionVectorsINTEL of IdResultType * IdResult * IdRef * IdRef * IdRef
-   | OpSubgroupAvcImeGetStreamoutDualReferenceMajorShapeDistortionsINTEL of IdResultType * IdResult * IdRef * IdRef * IdRef
-   | OpSubgroupAvcImeGetStreamoutDualReferenceMajorShapeReferenceIdsINTEL of IdResultType * IdResult * IdRef * IdRef * IdRef
-   | OpSubgroupAvcImeGetBorderReachedINTEL of IdResultType * IdResult * IdRef * IdRef
-   | OpSubgroupAvcImeGetTruncatedSearchIndicationINTEL of IdResultType * IdResult * IdRef
-   | OpSubgroupAvcImeGetUnidirectionalEarlySearchTerminationINTEL of IdResultType * IdResult * IdRef
-   | OpSubgroupAvcImeGetWeightingPatternMinimumMotionVectorINTEL of IdResultType * IdResult * IdRef
-   | OpSubgroupAvcImeGetWeightingPatternMinimumDistortionINTEL of IdResultType * IdResult * IdRef
-   | OpSubgroupAvcFmeInitializeINTEL of IdResultType * IdResult * IdRef * IdRef * IdRef * IdRef * IdRef * IdRef * IdRef
-   | OpSubgroupAvcBmeInitializeINTEL of IdResultType * IdResult * IdRef * IdRef * IdRef * IdRef * IdRef * IdRef * IdRef * IdRef
-   | OpSubgroupAvcRefConvertToMcePayloadINTEL of IdResultType * IdResult * IdRef
-   | OpSubgroupAvcRefSetBidirectionalMixDisableINTEL of IdResultType * IdResult * IdRef
-   | OpSubgroupAvcRefSetBilinearFilterEnableINTEL of IdResultType * IdResult * IdRef
-   | OpSubgroupAvcRefEvaluateWithSingleReferenceINTEL of IdResultType * IdResult * IdRef * IdRef * IdRef
-   | OpSubgroupAvcRefEvaluateWithDualReferenceINTEL of IdResultType * IdResult * IdRef * IdRef * IdRef * IdRef
-   | OpSubgroupAvcRefEvaluateWithMultiReferenceINTEL of IdResultType * IdResult * IdRef * IdRef * IdRef
-   | OpSubgroupAvcRefEvaluateWithMultiReferenceInterlacedINTEL of IdResultType * IdResult * IdRef * IdRef * IdRef * IdRef
-   | OpSubgroupAvcRefConvertToMceResultINTEL of IdResultType * IdResult * IdRef
-   | OpSubgroupAvcSicInitializeINTEL of IdResultType * IdResult * IdRef
-   | OpSubgroupAvcSicConfigureSkcINTEL of IdResultType * IdResult * IdRef * IdRef * IdRef * IdRef * IdRef * IdRef
-   | OpSubgroupAvcSicConfigureIpeLumaINTEL of IdResultType * IdResult * IdRef * IdRef * IdRef * IdRef * IdRef * IdRef * IdRef * IdRef
-   | OpSubgroupAvcSicConfigureIpeLumaChromaINTEL of IdResultType * IdResult * IdRef * IdRef * IdRef * IdRef * IdRef * IdRef * IdRef * IdRef * IdRef * IdRef * IdRef
-   | OpSubgroupAvcSicGetMotionVectorMaskINTEL of IdResultType * IdResult * IdRef * IdRef
-   | OpSubgroupAvcSicConvertToMcePayloadINTEL of IdResultType * IdResult * IdRef
-   | OpSubgroupAvcSicSetIntraLumaShapePenaltyINTEL of IdResultType * IdResult * IdRef * IdRef
-   | OpSubgroupAvcSicSetIntraLumaModeCostFunctionINTEL of IdResultType * IdResult * IdRef * IdRef * IdRef * IdRef
-   | OpSubgroupAvcSicSetIntraChromaModeCostFunctionINTEL of IdResultType * IdResult * IdRef * IdRef
-   | OpSubgroupAvcSicSetBilinearFilterEnableINTEL of IdResultType * IdResult * IdRef
-   | OpSubgroupAvcSicSetSkcForwardTransformEnableINTEL of IdResultType * IdResult * IdRef * IdRef
-   | OpSubgroupAvcSicSetBlockBasedRawSkipSadINTEL of IdResultType * IdResult * IdRef * IdRef
-   | OpSubgroupAvcSicEvaluateIpeINTEL of IdResultType * IdResult * IdRef * IdRef
-   | OpSubgroupAvcSicEvaluateWithSingleReferenceINTEL of IdResultType * IdResult * IdRef * IdRef * IdRef
-   | OpSubgroupAvcSicEvaluateWithDualReferenceINTEL of IdResultType * IdResult * IdRef * IdRef * IdRef * IdRef
-   | OpSubgroupAvcSicEvaluateWithMultiReferenceINTEL of IdResultType * IdResult * IdRef * IdRef * IdRef
-   | OpSubgroupAvcSicEvaluateWithMultiReferenceInterlacedINTEL of IdResultType * IdResult * IdRef * IdRef * IdRef * IdRef
-   | OpSubgroupAvcSicConvertToMceResultINTEL of IdResultType * IdResult * IdRef
-   | OpSubgroupAvcSicGetIpeLumaShapeINTEL of IdResultType * IdResult * IdRef
-   | OpSubgroupAvcSicGetBestIpeLumaDistortionINTEL of IdResultType * IdResult * IdRef
-   | OpSubgroupAvcSicGetBestIpeChromaDistortionINTEL of IdResultType * IdResult * IdRef
-   | OpSubgroupAvcSicGetPackedIpeLumaModesINTEL of IdResultType * IdResult * IdRef
-   | OpSubgroupAvcSicGetIpeChromaModeINTEL of IdResultType * IdResult * IdRef
-   | OpSubgroupAvcSicGetPackedSkcLumaCountThresholdINTEL of IdResultType * IdResult * IdRef
-   | OpSubgroupAvcSicGetPackedSkcLumaSumThresholdINTEL of IdResultType * IdResult * IdRef
-   | OpSubgroupAvcSicGetInterRawSadsINTEL of IdResultType * IdResult * IdRef
+   | OpSubgroupAvcMceSetAcOnlyHaarINTEL of IdResultType * IdResult * Payload: IdRef
+   | OpSubgroupAvcMceSetSourceInterlacedFieldPolarityINTEL of IdResultType * IdResult * SourceFieldPolarity: IdRef * Payload: IdRef
+   | OpSubgroupAvcMceSetSingleReferenceInterlacedFieldPolarityINTEL of IdResultType * IdResult * ReferenceFieldPolarity: IdRef * Payload: IdRef
+   | OpSubgroupAvcMceSetDualReferenceInterlacedFieldPolaritiesINTEL of IdResultType * IdResult * ForwardReferenceFieldPolarity: IdRef * BackwardReferenceFieldPolarity: IdRef * Payload: IdRef
+   | OpSubgroupAvcMceConvertToImePayloadINTEL of IdResultType * IdResult * Payload: IdRef
+   | OpSubgroupAvcMceConvertToImeResultINTEL of IdResultType * IdResult * Payload: IdRef
+   | OpSubgroupAvcMceConvertToRefPayloadINTEL of IdResultType * IdResult * Payload: IdRef
+   | OpSubgroupAvcMceConvertToRefResultINTEL of IdResultType * IdResult * Payload: IdRef
+   | OpSubgroupAvcMceConvertToSicPayloadINTEL of IdResultType * IdResult * Payload: IdRef
+   | OpSubgroupAvcMceConvertToSicResultINTEL of IdResultType * IdResult * Payload: IdRef
+   | OpSubgroupAvcMceGetMotionVectorsINTEL of IdResultType * IdResult * Payload: IdRef
+   | OpSubgroupAvcMceGetInterDistortionsINTEL of IdResultType * IdResult * Payload: IdRef
+   | OpSubgroupAvcMceGetBestInterDistortionsINTEL of IdResultType * IdResult * Payload: IdRef
+   | OpSubgroupAvcMceGetInterMajorShapeINTEL of IdResultType * IdResult * Payload: IdRef
+   | OpSubgroupAvcMceGetInterMinorShapeINTEL of IdResultType * IdResult * Payload: IdRef
+   | OpSubgroupAvcMceGetInterDirectionsINTEL of IdResultType * IdResult * Payload: IdRef
+   | OpSubgroupAvcMceGetInterMotionVectorCountINTEL of IdResultType * IdResult * Payload: IdRef
+   | OpSubgroupAvcMceGetInterReferenceIdsINTEL of IdResultType * IdResult * Payload: IdRef
+   | OpSubgroupAvcMceGetInterReferenceInterlacedFieldPolaritiesINTEL of IdResultType * IdResult * PackedReferenceIds: IdRef * PackedReferenceParameterFieldPolarities: IdRef * Payload: IdRef
+   | OpSubgroupAvcImeInitializeINTEL of IdResultType * IdResult * SrcCoord: IdRef * PartitionMask: IdRef * SADAdjustment: IdRef
+   | OpSubgroupAvcImeSetSingleReferenceINTEL of IdResultType * IdResult * RefOffset: IdRef * SearchWindowConfig: IdRef * Payload: IdRef
+   | OpSubgroupAvcImeSetDualReferenceINTEL of IdResultType * IdResult * FwdRefOffset: IdRef * BwdRefOffset: IdRef * idSearchWindowConfig: IdRef * Payload: IdRef
+   | OpSubgroupAvcImeRefWindowSizeINTEL of IdResultType * IdResult * SearchWindowConfig: IdRef * DualRef: IdRef
+   | OpSubgroupAvcImeAdjustRefOffsetINTEL of IdResultType * IdResult * RefOffset: IdRef * SrcCoord: IdRef * RefWindowSize: IdRef * ImageSize: IdRef
+   | OpSubgroupAvcImeConvertToMcePayloadINTEL of IdResultType * IdResult * Payload: IdRef
+   | OpSubgroupAvcImeSetMaxMotionVectorCountINTEL of IdResultType * IdResult * MaxMotionVectorCount: IdRef * Payload: IdRef
+   | OpSubgroupAvcImeSetUnidirectionalMixDisableINTEL of IdResultType * IdResult * Payload: IdRef
+   | OpSubgroupAvcImeSetEarlySearchTerminationThresholdINTEL of IdResultType * IdResult * Threshold: IdRef * Payload: IdRef
+   | OpSubgroupAvcImeSetWeightedSadINTEL of IdResultType * IdResult * PackedSadWeights: IdRef * Payload: IdRef
+   | OpSubgroupAvcImeEvaluateWithSingleReferenceINTEL of IdResultType * IdResult * SrcImage: IdRef * RefImage: IdRef * Payload: IdRef
+   | OpSubgroupAvcImeEvaluateWithDualReferenceINTEL of IdResultType * IdResult * SrcImage: IdRef * FwdRefImage: IdRef * BwdRefImage: IdRef * Payload: IdRef
+   | OpSubgroupAvcImeEvaluateWithSingleReferenceStreaminINTEL of IdResultType * IdResult * SrcImage: IdRef * RefImage: IdRef * Payload: IdRef * StreaminComponents: IdRef
+   | OpSubgroupAvcImeEvaluateWithDualReferenceStreaminINTEL of IdResultType * IdResult * SrcImage: IdRef * FwdRefImage: IdRef * BwdRefImage: IdRef * Payload: IdRef * StreaminComponents: IdRef
+   | OpSubgroupAvcImeEvaluateWithSingleReferenceStreamoutINTEL of IdResultType * IdResult * SrcImage: IdRef * RefImage: IdRef * Payload: IdRef
+   | OpSubgroupAvcImeEvaluateWithDualReferenceStreamoutINTEL of IdResultType * IdResult * SrcImage: IdRef * FwdRefImage: IdRef * BwdRefImage: IdRef * Payload: IdRef
+   | OpSubgroupAvcImeEvaluateWithSingleReferenceStreaminoutINTEL of IdResultType * IdResult * SrcImage: IdRef * RefImage: IdRef * Payload: IdRef * StreaminComponents: IdRef
+   | OpSubgroupAvcImeEvaluateWithDualReferenceStreaminoutINTEL of IdResultType * IdResult * SrcImage: IdRef * FwdRefImage: IdRef * BwdRefImage: IdRef * Payload: IdRef * StreaminComponents: IdRef
+   | OpSubgroupAvcImeConvertToMceResultINTEL of IdResultType * IdResult * Payload: IdRef
+   | OpSubgroupAvcImeGetSingleReferenceStreaminINTEL of IdResultType * IdResult * Payload: IdRef
+   | OpSubgroupAvcImeGetDualReferenceStreaminINTEL of IdResultType * IdResult * Payload: IdRef
+   | OpSubgroupAvcImeStripSingleReferenceStreamoutINTEL of IdResultType * IdResult * Payload: IdRef
+   | OpSubgroupAvcImeStripDualReferenceStreamoutINTEL of IdResultType * IdResult * Payload: IdRef
+   | OpSubgroupAvcImeGetStreamoutSingleReferenceMajorShapeMotionVectorsINTEL of IdResultType * IdResult * Payload: IdRef * MajorShape: IdRef
+   | OpSubgroupAvcImeGetStreamoutSingleReferenceMajorShapeDistortionsINTEL of IdResultType * IdResult * Payload: IdRef * MajorShape: IdRef
+   | OpSubgroupAvcImeGetStreamoutSingleReferenceMajorShapeReferenceIdsINTEL of IdResultType * IdResult * Payload: IdRef * MajorShape: IdRef
+   | OpSubgroupAvcImeGetStreamoutDualReferenceMajorShapeMotionVectorsINTEL of IdResultType * IdResult * Payload: IdRef * MajorShape: IdRef * Direction: IdRef
+   | OpSubgroupAvcImeGetStreamoutDualReferenceMajorShapeDistortionsINTEL of IdResultType * IdResult * Payload: IdRef * MajorShape: IdRef * Direction: IdRef
+   | OpSubgroupAvcImeGetStreamoutDualReferenceMajorShapeReferenceIdsINTEL of IdResultType * IdResult * Payload: IdRef * MajorShape: IdRef * Direction: IdRef
+   | OpSubgroupAvcImeGetBorderReachedINTEL of IdResultType * IdResult * ImageSelect: IdRef * Payload: IdRef
+   | OpSubgroupAvcImeGetTruncatedSearchIndicationINTEL of IdResultType * IdResult * Payload: IdRef
+   | OpSubgroupAvcImeGetUnidirectionalEarlySearchTerminationINTEL of IdResultType * IdResult * Payload: IdRef
+   | OpSubgroupAvcImeGetWeightingPatternMinimumMotionVectorINTEL of IdResultType * IdResult * Payload: IdRef
+   | OpSubgroupAvcImeGetWeightingPatternMinimumDistortionINTEL of IdResultType * IdResult * Payload: IdRef
+   | OpSubgroupAvcFmeInitializeINTEL of IdResultType * IdResult * SrcCoord: IdRef * MotionVectors: IdRef * MajorShapes: IdRef * MinorShapes: IdRef * Direction: IdRef * PixelResolution: IdRef * SadAdjustment: IdRef
+   | OpSubgroupAvcBmeInitializeINTEL of IdResultType * IdResult * SrcCoord: IdRef * MotionVectors: IdRef * MajorShapes: IdRef * MinorShapes: IdRef * Direction: IdRef * PixelResolution: IdRef * BidirectionalWeight: IdRef * SadAdjustment: IdRef
+   | OpSubgroupAvcRefConvertToMcePayloadINTEL of IdResultType * IdResult * Payload: IdRef
+   | OpSubgroupAvcRefSetBidirectionalMixDisableINTEL of IdResultType * IdResult * Payload: IdRef
+   | OpSubgroupAvcRefSetBilinearFilterEnableINTEL of IdResultType * IdResult * Payload: IdRef
+   | OpSubgroupAvcRefEvaluateWithSingleReferenceINTEL of IdResultType * IdResult * SrcImage: IdRef * RefImage: IdRef * Payload: IdRef
+   | OpSubgroupAvcRefEvaluateWithDualReferenceINTEL of IdResultType * IdResult * SrcImage: IdRef * FwdRefImage: IdRef * BwdRefImage: IdRef * Payload: IdRef
+   | OpSubgroupAvcRefEvaluateWithMultiReferenceINTEL of IdResultType * IdResult * SrcImage: IdRef * PackedReferenceIds: IdRef * Payload: IdRef
+   | OpSubgroupAvcRefEvaluateWithMultiReferenceInterlacedINTEL of IdResultType * IdResult * SrcImage: IdRef * PackedReferenceIds: IdRef * PackedReferenceFieldPolarities: IdRef * Payload: IdRef
+   | OpSubgroupAvcRefConvertToMceResultINTEL of IdResultType * IdResult * Payload: IdRef
+   | OpSubgroupAvcSicInitializeINTEL of IdResultType * IdResult * SrcCoord: IdRef
+   | OpSubgroupAvcSicConfigureSkcINTEL of IdResultType * IdResult * SkipBlockPartitionType: IdRef * SkipMotionVectorMask: IdRef * MotionVectors: IdRef * BidirectionalWeight: IdRef * SadAdjustment: IdRef * Payload: IdRef
+   | OpSubgroupAvcSicConfigureIpeLumaINTEL of IdResultType * IdResult * LumaIntraPartitionMask: IdRef * IntraNeighbourAvailabilty: IdRef * LeftEdgeLumaPixels: IdRef * UpperLeftCornerLumaPixel: IdRef * UpperEdgeLumaPixels: IdRef * UpperRightEdgeLumaPixels: IdRef * SadAdjustment: IdRef * Payload: IdRef
+   | OpSubgroupAvcSicConfigureIpeLumaChromaINTEL of IdResultType * IdResult * LumaIntraPartitionMask: IdRef * IntraNeighbourAvailabilty: IdRef * LeftEdgeLumaPixels: IdRef * UpperLeftCornerLumaPixel: IdRef * UpperEdgeLumaPixels: IdRef * UpperRightEdgeLumaPixels: IdRef * LeftEdgeChromaPixels: IdRef * UpperLeftCornerChromaPixel: IdRef * UpperEdgeChromaPixels: IdRef * SadAdjustment: IdRef * Payload: IdRef
+   | OpSubgroupAvcSicGetMotionVectorMaskINTEL of IdResultType * IdResult * SkipBlockPartitionType: IdRef * Direction: IdRef
+   | OpSubgroupAvcSicConvertToMcePayloadINTEL of IdResultType * IdResult * Payload: IdRef
+   | OpSubgroupAvcSicSetIntraLumaShapePenaltyINTEL of IdResultType * IdResult * PackedShapePenalty: IdRef * Payload: IdRef
+   | OpSubgroupAvcSicSetIntraLumaModeCostFunctionINTEL of IdResultType * IdResult * LumaModePenalty: IdRef * LumaPackedNeighborModes: IdRef * LumaPackedNonDcPenalty: IdRef * Payload: IdRef
+   | OpSubgroupAvcSicSetIntraChromaModeCostFunctionINTEL of IdResultType * IdResult * ChromaModeBasePenalty: IdRef * Payload: IdRef
+   | OpSubgroupAvcSicSetBilinearFilterEnableINTEL of IdResultType * IdResult * Payload: IdRef
+   | OpSubgroupAvcSicSetSkcForwardTransformEnableINTEL of IdResultType * IdResult * PackedSadCoefficients: IdRef * Payload: IdRef
+   | OpSubgroupAvcSicSetBlockBasedRawSkipSadINTEL of IdResultType * IdResult * BlockBasedSkipType: IdRef * Payload: IdRef
+   | OpSubgroupAvcSicEvaluateIpeINTEL of IdResultType * IdResult * SrcImage: IdRef * Payload: IdRef
+   | OpSubgroupAvcSicEvaluateWithSingleReferenceINTEL of IdResultType * IdResult * SrcImage: IdRef * RefImage: IdRef * Payload: IdRef
+   | OpSubgroupAvcSicEvaluateWithDualReferenceINTEL of IdResultType * IdResult * SrcImage: IdRef * FwdRefImage: IdRef * BwdRefImage: IdRef * Payload: IdRef
+   | OpSubgroupAvcSicEvaluateWithMultiReferenceINTEL of IdResultType * IdResult * SrcImage: IdRef * PackedReferenceIds: IdRef * Payload: IdRef
+   | OpSubgroupAvcSicEvaluateWithMultiReferenceInterlacedINTEL of IdResultType * IdResult * SrcImage: IdRef * PackedReferenceIds: IdRef * PackedReferenceFieldPolarities: IdRef * Payload: IdRef
+   | OpSubgroupAvcSicConvertToMceResultINTEL of IdResultType * IdResult * Payload: IdRef
+   | OpSubgroupAvcSicGetIpeLumaShapeINTEL of IdResultType * IdResult * Payload: IdRef
+   | OpSubgroupAvcSicGetBestIpeLumaDistortionINTEL of IdResultType * IdResult * Payload: IdRef
+   | OpSubgroupAvcSicGetBestIpeChromaDistortionINTEL of IdResultType * IdResult * Payload: IdRef
+   | OpSubgroupAvcSicGetPackedIpeLumaModesINTEL of IdResultType * IdResult * Payload: IdRef
+   | OpSubgroupAvcSicGetIpeChromaModeINTEL of IdResultType * IdResult * Payload: IdRef
+   | OpSubgroupAvcSicGetPackedSkcLumaCountThresholdINTEL of IdResultType * IdResult * Payload: IdRef
+   | OpSubgroupAvcSicGetPackedSkcLumaSumThresholdINTEL of IdResultType * IdResult * Payload: IdRef
+   | OpSubgroupAvcSicGetInterRawSadsINTEL of IdResultType * IdResult * Payload: IdRef
 
    member x.Opcode =
        match x with
@@ -1790,3 +1790,531 @@ type Instruction =
        | OpSubgroupAvcSicGetPackedSkcLumaCountThresholdINTEL _ -> 5814u
        | OpSubgroupAvcSicGetPackedSkcLumaSumThresholdINTEL _ -> 5815u
        | OpSubgroupAvcSicGetInterRawSadsINTEL _ -> 5816u
+
+   member x.Version =
+       match x with
+       | OpNop -> 1.0m
+       | OpUndef _ -> 1.0m
+       | OpSourceContinued _ -> 1.0m
+       | OpSource _ -> 1.0m
+       | OpSourceExtension _ -> 1.0m
+       | OpName _ -> 1.0m
+       | OpMemberName _ -> 1.0m
+       | OpString _ -> 1.0m
+       | OpLine _ -> 1.0m
+       | OpExtension _ -> 1.0m
+       | OpExtInstImport _ -> 1.0m
+       | OpExtInst _ -> 1.0m
+       | OpMemoryModel _ -> 1.0m
+       | OpEntryPoint _ -> 1.0m
+       | OpExecutionMode _ -> 1.0m
+       | OpCapability _ -> 1.0m
+       | OpTypeVoid _ -> 1.0m
+       | OpTypeBool _ -> 1.0m
+       | OpTypeInt _ -> 1.0m
+       | OpTypeFloat _ -> 1.0m
+       | OpTypeVector _ -> 1.0m
+       | OpTypeMatrix _ -> 1.0m
+       | OpTypeImage _ -> 1.0m
+       | OpTypeSampler _ -> 1.0m
+       | OpTypeSampledImage _ -> 1.0m
+       | OpTypeArray _ -> 1.0m
+       | OpTypeRuntimeArray _ -> 1.0m
+       | OpTypeStruct _ -> 1.0m
+       | OpTypeOpaque _ -> 1.0m
+       | OpTypePointer _ -> 1.0m
+       | OpTypeFunction _ -> 1.0m
+       | OpTypeEvent _ -> 1.0m
+       | OpTypeDeviceEvent _ -> 1.0m
+       | OpTypeReserveId _ -> 1.0m
+       | OpTypeQueue _ -> 1.0m
+       | OpTypePipe _ -> 1.0m
+       | OpTypeForwardPointer _ -> 1.0m
+       | OpConstantTrue _ -> 1.0m
+       | OpConstantFalse _ -> 1.0m
+       | OpConstant _ -> 1.0m
+       | OpConstantComposite _ -> 1.0m
+       | OpConstantSampler _ -> 1.0m
+       | OpConstantNull _ -> 1.0m
+       | OpSpecConstantTrue _ -> 1.0m
+       | OpSpecConstantFalse _ -> 1.0m
+       | OpSpecConstant _ -> 1.0m
+       | OpSpecConstantComposite _ -> 1.0m
+       | OpSpecConstantOp _ -> 1.0m
+       | OpFunction _ -> 1.0m
+       | OpFunctionParameter _ -> 1.0m
+       | OpFunctionEnd -> 1.0m
+       | OpFunctionCall _ -> 1.0m
+       | OpVariable _ -> 1.0m
+       | OpImageTexelPointer _ -> 1.0m
+       | OpLoad _ -> 1.0m
+       | OpStore _ -> 1.0m
+       | OpCopyMemory _ -> 1.0m
+       | OpCopyMemorySized _ -> 1.0m
+       | OpAccessChain _ -> 1.0m
+       | OpInBoundsAccessChain _ -> 1.0m
+       | OpPtrAccessChain _ -> 1.0m
+       | OpArrayLength _ -> 1.0m
+       | OpGenericPtrMemSemantics _ -> 1.0m
+       | OpInBoundsPtrAccessChain _ -> 1.0m
+       | OpDecorate _ -> 1.0m
+       | OpMemberDecorate _ -> 1.0m
+       | OpDecorationGroup _ -> 1.0m
+       | OpGroupDecorate _ -> 1.0m
+       | OpGroupMemberDecorate _ -> 1.0m
+       | OpVectorExtractDynamic _ -> 1.0m
+       | OpVectorInsertDynamic _ -> 1.0m
+       | OpVectorShuffle _ -> 1.0m
+       | OpCompositeConstruct _ -> 1.0m
+       | OpCompositeExtract _ -> 1.0m
+       | OpCompositeInsert _ -> 1.0m
+       | OpCopyObject _ -> 1.0m
+       | OpTranspose _ -> 1.0m
+       | OpSampledImage _ -> 1.0m
+       | OpImageSampleImplicitLod _ -> 1.0m
+       | OpImageSampleExplicitLod _ -> 1.0m
+       | OpImageSampleDrefImplicitLod _ -> 1.0m
+       | OpImageSampleDrefExplicitLod _ -> 1.0m
+       | OpImageSampleProjImplicitLod _ -> 1.0m
+       | OpImageSampleProjExplicitLod _ -> 1.0m
+       | OpImageSampleProjDrefImplicitLod _ -> 1.0m
+       | OpImageSampleProjDrefExplicitLod _ -> 1.0m
+       | OpImageFetch _ -> 1.0m
+       | OpImageGather _ -> 1.0m
+       | OpImageDrefGather _ -> 1.0m
+       | OpImageRead _ -> 1.0m
+       | OpImageWrite _ -> 1.0m
+       | OpImage _ -> 1.0m
+       | OpImageQueryFormat _ -> 1.0m
+       | OpImageQueryOrder _ -> 1.0m
+       | OpImageQuerySizeLod _ -> 1.0m
+       | OpImageQuerySize _ -> 1.0m
+       | OpImageQueryLod _ -> 1.0m
+       | OpImageQueryLevels _ -> 1.0m
+       | OpImageQuerySamples _ -> 1.0m
+       | OpConvertFToU _ -> 1.0m
+       | OpConvertFToS _ -> 1.0m
+       | OpConvertSToF _ -> 1.0m
+       | OpConvertUToF _ -> 1.0m
+       | OpUConvert _ -> 1.0m
+       | OpSConvert _ -> 1.0m
+       | OpFConvert _ -> 1.0m
+       | OpQuantizeToF16 _ -> 1.0m
+       | OpConvertPtrToU _ -> 1.0m
+       | OpSatConvertSToU _ -> 1.0m
+       | OpSatConvertUToS _ -> 1.0m
+       | OpConvertUToPtr _ -> 1.0m
+       | OpPtrCastToGeneric _ -> 1.0m
+       | OpGenericCastToPtr _ -> 1.0m
+       | OpGenericCastToPtrExplicit _ -> 1.0m
+       | OpBitcast _ -> 1.0m
+       | OpSNegate _ -> 1.0m
+       | OpFNegate _ -> 1.0m
+       | OpIAdd _ -> 1.0m
+       | OpFAdd _ -> 1.0m
+       | OpISub _ -> 1.0m
+       | OpFSub _ -> 1.0m
+       | OpIMul _ -> 1.0m
+       | OpFMul _ -> 1.0m
+       | OpUDiv _ -> 1.0m
+       | OpSDiv _ -> 1.0m
+       | OpFDiv _ -> 1.0m
+       | OpUMod _ -> 1.0m
+       | OpSRem _ -> 1.0m
+       | OpSMod _ -> 1.0m
+       | OpFRem _ -> 1.0m
+       | OpFMod _ -> 1.0m
+       | OpVectorTimesScalar _ -> 1.0m
+       | OpMatrixTimesScalar _ -> 1.0m
+       | OpVectorTimesMatrix _ -> 1.0m
+       | OpMatrixTimesVector _ -> 1.0m
+       | OpMatrixTimesMatrix _ -> 1.0m
+       | OpOuterProduct _ -> 1.0m
+       | OpDot _ -> 1.0m
+       | OpIAddCarry _ -> 1.0m
+       | OpISubBorrow _ -> 1.0m
+       | OpUMulExtended _ -> 1.0m
+       | OpSMulExtended _ -> 1.0m
+       | OpAny _ -> 1.0m
+       | OpAll _ -> 1.0m
+       | OpIsNan _ -> 1.0m
+       | OpIsInf _ -> 1.0m
+       | OpIsFinite _ -> 1.0m
+       | OpIsNormal _ -> 1.0m
+       | OpSignBitSet _ -> 1.0m
+       | OpLessOrGreater _ -> 1.0m
+       | OpOrdered _ -> 1.0m
+       | OpUnordered _ -> 1.0m
+       | OpLogicalEqual _ -> 1.0m
+       | OpLogicalNotEqual _ -> 1.0m
+       | OpLogicalOr _ -> 1.0m
+       | OpLogicalAnd _ -> 1.0m
+       | OpLogicalNot _ -> 1.0m
+       | OpSelect _ -> 1.0m
+       | OpIEqual _ -> 1.0m
+       | OpINotEqual _ -> 1.0m
+       | OpUGreaterThan _ -> 1.0m
+       | OpSGreaterThan _ -> 1.0m
+       | OpUGreaterThanEqual _ -> 1.0m
+       | OpSGreaterThanEqual _ -> 1.0m
+       | OpULessThan _ -> 1.0m
+       | OpSLessThan _ -> 1.0m
+       | OpULessThanEqual _ -> 1.0m
+       | OpSLessThanEqual _ -> 1.0m
+       | OpFOrdEqual _ -> 1.0m
+       | OpFUnordEqual _ -> 1.0m
+       | OpFOrdNotEqual _ -> 1.0m
+       | OpFUnordNotEqual _ -> 1.0m
+       | OpFOrdLessThan _ -> 1.0m
+       | OpFUnordLessThan _ -> 1.0m
+       | OpFOrdGreaterThan _ -> 1.0m
+       | OpFUnordGreaterThan _ -> 1.0m
+       | OpFOrdLessThanEqual _ -> 1.0m
+       | OpFUnordLessThanEqual _ -> 1.0m
+       | OpFOrdGreaterThanEqual _ -> 1.0m
+       | OpFUnordGreaterThanEqual _ -> 1.0m
+       | OpShiftRightLogical _ -> 1.0m
+       | OpShiftRightArithmetic _ -> 1.0m
+       | OpShiftLeftLogical _ -> 1.0m
+       | OpBitwiseOr _ -> 1.0m
+       | OpBitwiseXor _ -> 1.0m
+       | OpBitwiseAnd _ -> 1.0m
+       | OpNot _ -> 1.0m
+       | OpBitFieldInsert _ -> 1.0m
+       | OpBitFieldSExtract _ -> 1.0m
+       | OpBitFieldUExtract _ -> 1.0m
+       | OpBitReverse _ -> 1.0m
+       | OpBitCount _ -> 1.0m
+       | OpDPdx _ -> 1.0m
+       | OpDPdy _ -> 1.0m
+       | OpFwidth _ -> 1.0m
+       | OpDPdxFine _ -> 1.0m
+       | OpDPdyFine _ -> 1.0m
+       | OpFwidthFine _ -> 1.0m
+       | OpDPdxCoarse _ -> 1.0m
+       | OpDPdyCoarse _ -> 1.0m
+       | OpFwidthCoarse _ -> 1.0m
+       | OpEmitVertex -> 1.0m
+       | OpEndPrimitive -> 1.0m
+       | OpEmitStreamVertex _ -> 1.0m
+       | OpEndStreamPrimitive _ -> 1.0m
+       | OpControlBarrier _ -> 1.0m
+       | OpMemoryBarrier _ -> 1.0m
+       | OpAtomicLoad _ -> 1.0m
+       | OpAtomicStore _ -> 1.0m
+       | OpAtomicExchange _ -> 1.0m
+       | OpAtomicCompareExchange _ -> 1.0m
+       | OpAtomicCompareExchangeWeak _ -> 1.0m
+       | OpAtomicIIncrement _ -> 1.0m
+       | OpAtomicIDecrement _ -> 1.0m
+       | OpAtomicIAdd _ -> 1.0m
+       | OpAtomicISub _ -> 1.0m
+       | OpAtomicSMin _ -> 1.0m
+       | OpAtomicUMin _ -> 1.0m
+       | OpAtomicSMax _ -> 1.0m
+       | OpAtomicUMax _ -> 1.0m
+       | OpAtomicAnd _ -> 1.0m
+       | OpAtomicOr _ -> 1.0m
+       | OpAtomicXor _ -> 1.0m
+       | OpPhi _ -> 1.0m
+       | OpLoopMerge _ -> 1.0m
+       | OpSelectionMerge _ -> 1.0m
+       | OpLabel _ -> 1.0m
+       | OpBranch _ -> 1.0m
+       | OpBranchConditional _ -> 1.0m
+       | OpSwitch _ -> 1.0m
+       | OpKill -> 1.0m
+       | OpReturn -> 1.0m
+       | OpReturnValue _ -> 1.0m
+       | OpUnreachable -> 1.0m
+       | OpLifetimeStart _ -> 1.0m
+       | OpLifetimeStop _ -> 1.0m
+       | OpGroupAsyncCopy _ -> 1.0m
+       | OpGroupWaitEvents _ -> 1.0m
+       | OpGroupAll _ -> 1.0m
+       | OpGroupAny _ -> 1.0m
+       | OpGroupBroadcast _ -> 1.0m
+       | OpGroupIAdd _ -> 1.0m
+       | OpGroupFAdd _ -> 1.0m
+       | OpGroupFMin _ -> 1.0m
+       | OpGroupUMin _ -> 1.0m
+       | OpGroupSMin _ -> 1.0m
+       | OpGroupFMax _ -> 1.0m
+       | OpGroupUMax _ -> 1.0m
+       | OpGroupSMax _ -> 1.0m
+       | OpReadPipe _ -> 1.0m
+       | OpWritePipe _ -> 1.0m
+       | OpReservedReadPipe _ -> 1.0m
+       | OpReservedWritePipe _ -> 1.0m
+       | OpReserveReadPipePackets _ -> 1.0m
+       | OpReserveWritePipePackets _ -> 1.0m
+       | OpCommitReadPipe _ -> 1.0m
+       | OpCommitWritePipe _ -> 1.0m
+       | OpIsValidReserveId _ -> 1.0m
+       | OpGetNumPipePackets _ -> 1.0m
+       | OpGetMaxPipePackets _ -> 1.0m
+       | OpGroupReserveReadPipePackets _ -> 1.0m
+       | OpGroupReserveWritePipePackets _ -> 1.0m
+       | OpGroupCommitReadPipe _ -> 1.0m
+       | OpGroupCommitWritePipe _ -> 1.0m
+       | OpEnqueueMarker _ -> 1.0m
+       | OpEnqueueKernel _ -> 1.0m
+       | OpGetKernelNDrangeSubGroupCount _ -> 1.0m
+       | OpGetKernelNDrangeMaxSubGroupSize _ -> 1.0m
+       | OpGetKernelWorkGroupSize _ -> 1.0m
+       | OpGetKernelPreferredWorkGroupSizeMultiple _ -> 1.0m
+       | OpRetainEvent _ -> 1.0m
+       | OpReleaseEvent _ -> 1.0m
+       | OpCreateUserEvent _ -> 1.0m
+       | OpIsValidEvent _ -> 1.0m
+       | OpSetUserEventStatus _ -> 1.0m
+       | OpCaptureEventProfilingInfo _ -> 1.0m
+       | OpGetDefaultQueue _ -> 1.0m
+       | OpBuildNDRange _ -> 1.0m
+       | OpImageSparseSampleImplicitLod _ -> 1.0m
+       | OpImageSparseSampleExplicitLod _ -> 1.0m
+       | OpImageSparseSampleDrefImplicitLod _ -> 1.0m
+       | OpImageSparseSampleDrefExplicitLod _ -> 1.0m
+       | OpImageSparseSampleProjImplicitLod _ -> 1.0m
+       | OpImageSparseSampleProjExplicitLod _ -> 1.0m
+       | OpImageSparseSampleProjDrefImplicitLod _ -> 1.0m
+       | OpImageSparseSampleProjDrefExplicitLod _ -> 1.0m
+       | OpImageSparseFetch _ -> 1.0m
+       | OpImageSparseGather _ -> 1.0m
+       | OpImageSparseDrefGather _ -> 1.0m
+       | OpImageSparseTexelsResident _ -> 1.0m
+       | OpNoLine -> 1.0m
+       | OpAtomicFlagTestAndSet _ -> 1.0m
+       | OpAtomicFlagClear _ -> 1.0m
+       | OpImageSparseRead _ -> 1.0m
+       | OpSizeOf _ -> 1.1m
+       | OpTypePipeStorage _ -> 1.1m
+       | OpConstantPipeStorage _ -> 1.1m
+       | OpCreatePipeFromPipeStorage _ -> 1.1m
+       | OpGetKernelLocalSizeForSubgroupCount _ -> 1.1m
+       | OpGetKernelMaxNumSubgroups _ -> 1.1m
+       | OpTypeNamedBarrier _ -> 1.1m
+       | OpNamedBarrierInitialize _ -> 1.1m
+       | OpMemoryNamedBarrier _ -> 1.1m
+       | OpModuleProcessed _ -> 1.1m
+       | OpExecutionModeId _ -> 1.2m
+       | OpDecorateId _ -> 1.2m
+       | OpGroupNonUniformElect _ -> 1.3m
+       | OpGroupNonUniformAll _ -> 1.3m
+       | OpGroupNonUniformAny _ -> 1.3m
+       | OpGroupNonUniformAllEqual _ -> 1.3m
+       | OpGroupNonUniformBroadcast _ -> 1.3m
+       | OpGroupNonUniformBroadcastFirst _ -> 1.3m
+       | OpGroupNonUniformBallot _ -> 1.3m
+       | OpGroupNonUniformInverseBallot _ -> 1.3m
+       | OpGroupNonUniformBallotBitExtract _ -> 1.3m
+       | OpGroupNonUniformBallotBitCount _ -> 1.3m
+       | OpGroupNonUniformBallotFindLSB _ -> 1.3m
+       | OpGroupNonUniformBallotFindMSB _ -> 1.3m
+       | OpGroupNonUniformShuffle _ -> 1.3m
+       | OpGroupNonUniformShuffleXor _ -> 1.3m
+       | OpGroupNonUniformShuffleUp _ -> 1.3m
+       | OpGroupNonUniformShuffleDown _ -> 1.3m
+       | OpGroupNonUniformIAdd _ -> 1.3m
+       | OpGroupNonUniformFAdd _ -> 1.3m
+       | OpGroupNonUniformIMul _ -> 1.3m
+       | OpGroupNonUniformFMul _ -> 1.3m
+       | OpGroupNonUniformSMin _ -> 1.3m
+       | OpGroupNonUniformUMin _ -> 1.3m
+       | OpGroupNonUniformFMin _ -> 1.3m
+       | OpGroupNonUniformSMax _ -> 1.3m
+       | OpGroupNonUniformUMax _ -> 1.3m
+       | OpGroupNonUniformFMax _ -> 1.3m
+       | OpGroupNonUniformBitwiseAnd _ -> 1.3m
+       | OpGroupNonUniformBitwiseOr _ -> 1.3m
+       | OpGroupNonUniformBitwiseXor _ -> 1.3m
+       | OpGroupNonUniformLogicalAnd _ -> 1.3m
+       | OpGroupNonUniformLogicalOr _ -> 1.3m
+       | OpGroupNonUniformLogicalXor _ -> 1.3m
+       | OpGroupNonUniformQuadBroadcast _ -> 1.3m
+       | OpGroupNonUniformQuadSwap _ -> 1.3m
+       | OpCopyLogical _ -> 1.4m
+       | OpPtrEqual _ -> 1.4m
+       | OpPtrNotEqual _ -> 1.4m
+       | OpPtrDiff _ -> 1.4m
+       | OpSubgroupBallotKHR _ -> 1.0m
+       | OpSubgroupFirstInvocationKHR _ -> 1.0m
+       | OpSubgroupAllKHR _ -> 1.0m
+       | OpSubgroupAnyKHR _ -> 1.0m
+       | OpSubgroupAllEqualKHR _ -> 1.0m
+       | OpSubgroupReadInvocationKHR _ -> 1.0m
+       | OpGroupIAddNonUniformAMD _ -> 1.0m
+       | OpGroupFAddNonUniformAMD _ -> 1.0m
+       | OpGroupFMinNonUniformAMD _ -> 1.0m
+       | OpGroupUMinNonUniformAMD _ -> 1.0m
+       | OpGroupSMinNonUniformAMD _ -> 1.0m
+       | OpGroupFMaxNonUniformAMD _ -> 1.0m
+       | OpGroupUMaxNonUniformAMD _ -> 1.0m
+       | OpGroupSMaxNonUniformAMD _ -> 1.0m
+       | OpFragmentMaskFetchAMD _ -> 1.0m
+       | OpFragmentFetchAMD _ -> 1.0m
+       | OpReadClockKHR _ -> 1.0m
+       | OpImageSampleFootprintNV _ -> 1.0m
+       | OpGroupNonUniformPartitionNV _ -> 1.0m
+       | OpWritePackedPrimitiveIndices4x8NV _ -> 1.0m
+       | OpReportIntersectionNV _ -> 1.0m
+       | OpIgnoreIntersectionNV -> 1.0m
+       | OpTerminateRayNV -> 1.0m
+       | OpTraceNV _ -> 1.0m
+       | OpTypeAccelerationStructureNV _ -> 1.0m
+       | OpExecuteCallableNV _ -> 1.0m
+       | OpTypeCooperativeMatrixNV _ -> 1.0m
+       | OpCooperativeMatrixLoadNV _ -> 1.0m
+       | OpCooperativeMatrixStoreNV _ -> 1.0m
+       | OpCooperativeMatrixMulAddNV _ -> 1.0m
+       | OpCooperativeMatrixLengthNV _ -> 1.0m
+       | OpBeginInvocationInterlockEXT -> 1.0m
+       | OpEndInvocationInterlockEXT -> 1.0m
+       | OpDemoteToHelperInvocationEXT -> 1.0m
+       | OpIsHelperInvocationEXT _ -> 1.0m
+       | OpSubgroupShuffleINTEL _ -> 1.0m
+       | OpSubgroupShuffleDownINTEL _ -> 1.0m
+       | OpSubgroupShuffleUpINTEL _ -> 1.0m
+       | OpSubgroupShuffleXorINTEL _ -> 1.0m
+       | OpSubgroupBlockReadINTEL _ -> 1.0m
+       | OpSubgroupBlockWriteINTEL _ -> 1.0m
+       | OpSubgroupImageBlockReadINTEL _ -> 1.0m
+       | OpSubgroupImageBlockWriteINTEL _ -> 1.0m
+       | OpSubgroupImageMediaBlockReadINTEL _ -> 1.0m
+       | OpSubgroupImageMediaBlockWriteINTEL _ -> 1.0m
+       | OpUCountLeadingZerosINTEL _ -> 1.0m
+       | OpUCountTrailingZerosINTEL _ -> 1.0m
+       | OpAbsISubINTEL _ -> 1.0m
+       | OpAbsUSubINTEL _ -> 1.0m
+       | OpIAddSatINTEL _ -> 1.0m
+       | OpUAddSatINTEL _ -> 1.0m
+       | OpIAverageINTEL _ -> 1.0m
+       | OpUAverageINTEL _ -> 1.0m
+       | OpIAverageRoundedINTEL _ -> 1.0m
+       | OpUAverageRoundedINTEL _ -> 1.0m
+       | OpISubSatINTEL _ -> 1.0m
+       | OpUSubSatINTEL _ -> 1.0m
+       | OpIMul32x16INTEL _ -> 1.0m
+       | OpUMul32x16INTEL _ -> 1.0m
+       | OpDecorateString _ -> 1.4m
+       | OpDecorateStringGOOGLE _ -> 1.4m
+       | OpMemberDecorateString _ -> 1.4m
+       | OpMemberDecorateStringGOOGLE _ -> 1.4m
+       | OpVmeImageINTEL _ -> 1.0m
+       | OpTypeVmeImageINTEL _ -> 1.0m
+       | OpTypeAvcImePayloadINTEL _ -> 1.0m
+       | OpTypeAvcRefPayloadINTEL _ -> 1.0m
+       | OpTypeAvcSicPayloadINTEL _ -> 1.0m
+       | OpTypeAvcMcePayloadINTEL _ -> 1.0m
+       | OpTypeAvcMceResultINTEL _ -> 1.0m
+       | OpTypeAvcImeResultINTEL _ -> 1.0m
+       | OpTypeAvcImeResultSingleReferenceStreamoutINTEL _ -> 1.0m
+       | OpTypeAvcImeResultDualReferenceStreamoutINTEL _ -> 1.0m
+       | OpTypeAvcImeSingleReferenceStreaminINTEL _ -> 1.0m
+       | OpTypeAvcImeDualReferenceStreaminINTEL _ -> 1.0m
+       | OpTypeAvcRefResultINTEL _ -> 1.0m
+       | OpTypeAvcSicResultINTEL _ -> 1.0m
+       | OpSubgroupAvcMceGetDefaultInterBaseMultiReferencePenaltyINTEL _ -> 1.0m
+       | OpSubgroupAvcMceSetInterBaseMultiReferencePenaltyINTEL _ -> 1.0m
+       | OpSubgroupAvcMceGetDefaultInterShapePenaltyINTEL _ -> 1.0m
+       | OpSubgroupAvcMceSetInterShapePenaltyINTEL _ -> 1.0m
+       | OpSubgroupAvcMceGetDefaultInterDirectionPenaltyINTEL _ -> 1.0m
+       | OpSubgroupAvcMceSetInterDirectionPenaltyINTEL _ -> 1.0m
+       | OpSubgroupAvcMceGetDefaultIntraLumaShapePenaltyINTEL _ -> 1.0m
+       | OpSubgroupAvcMceGetDefaultInterMotionVectorCostTableINTEL _ -> 1.0m
+       | OpSubgroupAvcMceGetDefaultHighPenaltyCostTableINTEL _ -> 1.0m
+       | OpSubgroupAvcMceGetDefaultMediumPenaltyCostTableINTEL _ -> 1.0m
+       | OpSubgroupAvcMceGetDefaultLowPenaltyCostTableINTEL _ -> 1.0m
+       | OpSubgroupAvcMceSetMotionVectorCostFunctionINTEL _ -> 1.0m
+       | OpSubgroupAvcMceGetDefaultIntraLumaModePenaltyINTEL _ -> 1.0m
+       | OpSubgroupAvcMceGetDefaultNonDcLumaIntraPenaltyINTEL _ -> 1.0m
+       | OpSubgroupAvcMceGetDefaultIntraChromaModeBasePenaltyINTEL _ -> 1.0m
+       | OpSubgroupAvcMceSetAcOnlyHaarINTEL _ -> 1.0m
+       | OpSubgroupAvcMceSetSourceInterlacedFieldPolarityINTEL _ -> 1.0m
+       | OpSubgroupAvcMceSetSingleReferenceInterlacedFieldPolarityINTEL _ -> 1.0m
+       | OpSubgroupAvcMceSetDualReferenceInterlacedFieldPolaritiesINTEL _ -> 1.0m
+       | OpSubgroupAvcMceConvertToImePayloadINTEL _ -> 1.0m
+       | OpSubgroupAvcMceConvertToImeResultINTEL _ -> 1.0m
+       | OpSubgroupAvcMceConvertToRefPayloadINTEL _ -> 1.0m
+       | OpSubgroupAvcMceConvertToRefResultINTEL _ -> 1.0m
+       | OpSubgroupAvcMceConvertToSicPayloadINTEL _ -> 1.0m
+       | OpSubgroupAvcMceConvertToSicResultINTEL _ -> 1.0m
+       | OpSubgroupAvcMceGetMotionVectorsINTEL _ -> 1.0m
+       | OpSubgroupAvcMceGetInterDistortionsINTEL _ -> 1.0m
+       | OpSubgroupAvcMceGetBestInterDistortionsINTEL _ -> 1.0m
+       | OpSubgroupAvcMceGetInterMajorShapeINTEL _ -> 1.0m
+       | OpSubgroupAvcMceGetInterMinorShapeINTEL _ -> 1.0m
+       | OpSubgroupAvcMceGetInterDirectionsINTEL _ -> 1.0m
+       | OpSubgroupAvcMceGetInterMotionVectorCountINTEL _ -> 1.0m
+       | OpSubgroupAvcMceGetInterReferenceIdsINTEL _ -> 1.0m
+       | OpSubgroupAvcMceGetInterReferenceInterlacedFieldPolaritiesINTEL _ -> 1.0m
+       | OpSubgroupAvcImeInitializeINTEL _ -> 1.0m
+       | OpSubgroupAvcImeSetSingleReferenceINTEL _ -> 1.0m
+       | OpSubgroupAvcImeSetDualReferenceINTEL _ -> 1.0m
+       | OpSubgroupAvcImeRefWindowSizeINTEL _ -> 1.0m
+       | OpSubgroupAvcImeAdjustRefOffsetINTEL _ -> 1.0m
+       | OpSubgroupAvcImeConvertToMcePayloadINTEL _ -> 1.0m
+       | OpSubgroupAvcImeSetMaxMotionVectorCountINTEL _ -> 1.0m
+       | OpSubgroupAvcImeSetUnidirectionalMixDisableINTEL _ -> 1.0m
+       | OpSubgroupAvcImeSetEarlySearchTerminationThresholdINTEL _ -> 1.0m
+       | OpSubgroupAvcImeSetWeightedSadINTEL _ -> 1.0m
+       | OpSubgroupAvcImeEvaluateWithSingleReferenceINTEL _ -> 1.0m
+       | OpSubgroupAvcImeEvaluateWithDualReferenceINTEL _ -> 1.0m
+       | OpSubgroupAvcImeEvaluateWithSingleReferenceStreaminINTEL _ -> 1.0m
+       | OpSubgroupAvcImeEvaluateWithDualReferenceStreaminINTEL _ -> 1.0m
+       | OpSubgroupAvcImeEvaluateWithSingleReferenceStreamoutINTEL _ -> 1.0m
+       | OpSubgroupAvcImeEvaluateWithDualReferenceStreamoutINTEL _ -> 1.0m
+       | OpSubgroupAvcImeEvaluateWithSingleReferenceStreaminoutINTEL _ -> 1.0m
+       | OpSubgroupAvcImeEvaluateWithDualReferenceStreaminoutINTEL _ -> 1.0m
+       | OpSubgroupAvcImeConvertToMceResultINTEL _ -> 1.0m
+       | OpSubgroupAvcImeGetSingleReferenceStreaminINTEL _ -> 1.0m
+       | OpSubgroupAvcImeGetDualReferenceStreaminINTEL _ -> 1.0m
+       | OpSubgroupAvcImeStripSingleReferenceStreamoutINTEL _ -> 1.0m
+       | OpSubgroupAvcImeStripDualReferenceStreamoutINTEL _ -> 1.0m
+       | OpSubgroupAvcImeGetStreamoutSingleReferenceMajorShapeMotionVectorsINTEL _ -> 1.0m
+       | OpSubgroupAvcImeGetStreamoutSingleReferenceMajorShapeDistortionsINTEL _ -> 1.0m
+       | OpSubgroupAvcImeGetStreamoutSingleReferenceMajorShapeReferenceIdsINTEL _ -> 1.0m
+       | OpSubgroupAvcImeGetStreamoutDualReferenceMajorShapeMotionVectorsINTEL _ -> 1.0m
+       | OpSubgroupAvcImeGetStreamoutDualReferenceMajorShapeDistortionsINTEL _ -> 1.0m
+       | OpSubgroupAvcImeGetStreamoutDualReferenceMajorShapeReferenceIdsINTEL _ -> 1.0m
+       | OpSubgroupAvcImeGetBorderReachedINTEL _ -> 1.0m
+       | OpSubgroupAvcImeGetTruncatedSearchIndicationINTEL _ -> 1.0m
+       | OpSubgroupAvcImeGetUnidirectionalEarlySearchTerminationINTEL _ -> 1.0m
+       | OpSubgroupAvcImeGetWeightingPatternMinimumMotionVectorINTEL _ -> 1.0m
+       | OpSubgroupAvcImeGetWeightingPatternMinimumDistortionINTEL _ -> 1.0m
+       | OpSubgroupAvcFmeInitializeINTEL _ -> 1.0m
+       | OpSubgroupAvcBmeInitializeINTEL _ -> 1.0m
+       | OpSubgroupAvcRefConvertToMcePayloadINTEL _ -> 1.0m
+       | OpSubgroupAvcRefSetBidirectionalMixDisableINTEL _ -> 1.0m
+       | OpSubgroupAvcRefSetBilinearFilterEnableINTEL _ -> 1.0m
+       | OpSubgroupAvcRefEvaluateWithSingleReferenceINTEL _ -> 1.0m
+       | OpSubgroupAvcRefEvaluateWithDualReferenceINTEL _ -> 1.0m
+       | OpSubgroupAvcRefEvaluateWithMultiReferenceINTEL _ -> 1.0m
+       | OpSubgroupAvcRefEvaluateWithMultiReferenceInterlacedINTEL _ -> 1.0m
+       | OpSubgroupAvcRefConvertToMceResultINTEL _ -> 1.0m
+       | OpSubgroupAvcSicInitializeINTEL _ -> 1.0m
+       | OpSubgroupAvcSicConfigureSkcINTEL _ -> 1.0m
+       | OpSubgroupAvcSicConfigureIpeLumaINTEL _ -> 1.0m
+       | OpSubgroupAvcSicConfigureIpeLumaChromaINTEL _ -> 1.0m
+       | OpSubgroupAvcSicGetMotionVectorMaskINTEL _ -> 1.0m
+       | OpSubgroupAvcSicConvertToMcePayloadINTEL _ -> 1.0m
+       | OpSubgroupAvcSicSetIntraLumaShapePenaltyINTEL _ -> 1.0m
+       | OpSubgroupAvcSicSetIntraLumaModeCostFunctionINTEL _ -> 1.0m
+       | OpSubgroupAvcSicSetIntraChromaModeCostFunctionINTEL _ -> 1.0m
+       | OpSubgroupAvcSicSetBilinearFilterEnableINTEL _ -> 1.0m
+       | OpSubgroupAvcSicSetSkcForwardTransformEnableINTEL _ -> 1.0m
+       | OpSubgroupAvcSicSetBlockBasedRawSkipSadINTEL _ -> 1.0m
+       | OpSubgroupAvcSicEvaluateIpeINTEL _ -> 1.0m
+       | OpSubgroupAvcSicEvaluateWithSingleReferenceINTEL _ -> 1.0m
+       | OpSubgroupAvcSicEvaluateWithDualReferenceINTEL _ -> 1.0m
+       | OpSubgroupAvcSicEvaluateWithMultiReferenceINTEL _ -> 1.0m
+       | OpSubgroupAvcSicEvaluateWithMultiReferenceInterlacedINTEL _ -> 1.0m
+       | OpSubgroupAvcSicConvertToMceResultINTEL _ -> 1.0m
+       | OpSubgroupAvcSicGetIpeLumaShapeINTEL _ -> 1.0m
+       | OpSubgroupAvcSicGetBestIpeLumaDistortionINTEL _ -> 1.0m
+       | OpSubgroupAvcSicGetBestIpeChromaDistortionINTEL _ -> 1.0m
+       | OpSubgroupAvcSicGetPackedIpeLumaModesINTEL _ -> 1.0m
+       | OpSubgroupAvcSicGetIpeChromaModeINTEL _ -> 1.0m
+       | OpSubgroupAvcSicGetPackedSkcLumaCountThresholdINTEL _ -> 1.0m
+       | OpSubgroupAvcSicGetPackedSkcLumaSumThresholdINTEL _ -> 1.0m
+       | OpSubgroupAvcSicGetInterRawSadsINTEL _ -> 1.0m

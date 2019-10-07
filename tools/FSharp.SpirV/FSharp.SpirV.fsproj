@@ -6,9 +6,9 @@
 
   <ItemGroup>
     <Compile Include="Specification.fs" />
-    <Compile Include="SpirvGen.fs" />
     <Compile Include="Types.fs" />
     <Compile Include="Pickle.fs" />
+    <Compile Include="SpirvGen.fs" />
     <Compile Include="Spirv.fs" />
   </ItemGroup>
 
