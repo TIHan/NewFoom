@@ -54,14 +54,19 @@ let main argv =
 
     let window = Window (title, 30., width, height, windowEvents, windowState)
 
+    let positions =
+        [|
+            Vector2 (0.f, -0.5f)
+            Vector2 (0.5f, 0.5f)
+            Vector2 (-0.5f, 0.5f)
+        |]
+    let positionsBindings = [|mkVertexInputBinding<Vector2> 0u VkVertexInputRate.VK_VERTEX_INPUT_RATE_VERTEX|]
+    let positionsAttributes = mkVertexAttributeDescriptions<Vector2> 0u 0u
+    let positionsBuffer = instance.CreateVertexBuffer<Vector2> positions.Length
+    let positionsMemory = instance.AllocateMemory positionsBuffer
+    instance.CopyToMemory(ReadOnlySpan positions, positionsMemory)
     let vertex =
         <@
-            let positions =
-                [|
-                    Vector2 (0.f, -0.5f)
-                    Vector2 (0.5f, 0.5f)
-                    Vector2 (-0.5f, 0.5f)
-                |]
             let colors =
                 [|
                     Vector3 (1.f, 0.f, 0.f)
@@ -69,14 +74,12 @@ let main argv =
                     Vector3 (0.f, 0.f, 1.f)
                 |]
 
-            fun (gl_VertexIndex: int) ->              
+            fun (gl_VertexIndex: int) (position: Vector2) ->              
                 {| 
-                    gl_Position = Vector4(positions.[gl_VertexIndex], 0.f, 1.f)
+                    gl_Position = Vector4(position, 0.f, 1.f)
                     fragColor = colors.[gl_VertexIndex]
                 |}
         @>
-
-
     let spvVertexInfo = SpirvGenInfo.Create(AddressingModel.Logical, MemoryModel.GLSL450, ExecutionModel.Vertex, [Capability.Shader], ["GLSL.std.450"])
     let spvVertex =
         Checker.Check vertex
@@ -105,7 +108,8 @@ let main argv =
         bytes
    // let fragmentBytes = System.IO.File.ReadAllBytes("triangle_fragment.spv")
 
-    instance.AddShader([||], [||], [||], ReadOnlySpan vertexBytes, ReadOnlySpan fragmentBytes)
+    let pipelineIndex = instance.AddShader(positionsBindings, positionsAttributes, ReadOnlySpan vertexBytes, ReadOnlySpan fragmentBytes)
+    instance.RecordDraw(pipelineIndex, [|positionsBuffer|], positions.Length, 1)
 
     window.Start ()
 

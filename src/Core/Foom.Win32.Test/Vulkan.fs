@@ -621,28 +621,27 @@ let mkPipelineLayout device =
     vkCreatePipelineLayout(device, &&createInfo, vkNullPtr, &&pipelineLayout) |> checkResult
     pipelineLayout
 
-type ShaderGroup =
+[<NoEquality;NoComparison>]
+type private Shader =
     {
         vertexBindings: VkVertexInputBindingDescription []
         vertexAttributes: VkVertexInputAttributeDescription []
-        vertexBuffers: VkBuffer []
 
         vertex: VkShaderModule
         fragment: VkShaderModule
     }
 
-let mkShaderGroup device vertexBindings vertexAttributes vertexBuffers vert vertSize frag fragSize =
+let private mkShader device vertexBindings vertexAttributes vert vertSize frag fragSize =
     let vertShaderModule = mkShaderModule device vert vertSize
     let fragShaderModule = mkShaderModule device frag fragSize
     {
         vertexBindings = vertexBindings
         vertexAttributes = vertexAttributes
-        vertexBuffers = vertexBuffers
         vertex = vertShaderModule
         fragment = fragShaderModule
     }
 
-let destroyShaderGroup device group =
+let private destroyShaderGroup device group =
     vkDestroyShaderModule(device, group.vertex, vkNullPtr)
     vkDestroyShaderModule(device, group.fragment, vkNullPtr)
 
@@ -754,7 +753,7 @@ let allocateMemory physicalDevice device (memRequirements: VkMemoryRequirements)
     vkAllocateMemory(device, &&allocInfo, vkNullPtr, &&bufferMemory) |> checkResult
     bufferMemory
 
-let mkGraphicsPipeline device extent pipelineLayout renderPass group =
+let private mkGraphicsPipeline device extent pipelineLayout renderPass group =
     use pNameMain = fixed vkBytesOfString "main"
 
     let stages =
@@ -864,7 +863,7 @@ let private mkCommandBuffers device commandPool (framebuffers: VkFramebuffer [])
 
 module Cmd =
 
-    let recordDraw extent (framebuffers: VkFramebuffer []) (commandBuffers: VkCommandBuffer []) renderPass graphicsPipeline (vertexBuffers: VkBuffer []) =
+    let recordDraw extent (framebuffers: VkFramebuffer []) (commandBuffers: VkCommandBuffer []) renderPass graphicsPipeline (vertexBuffers: VkBuffer []) vertexCount instanceCount =
         (framebuffers, commandBuffers)
         ||> Array.iter2 (fun framebuffer commandBuffer ->
 
@@ -911,7 +910,7 @@ module Cmd =
 
             // Draw
 
-            vkCmdDraw(commandBuffer, 3u, 1u, 0u, 0u)
+            vkCmdDraw(commandBuffer, vertexCount, instanceCount, 0u, 0u)
 
             // End render pass
 
@@ -1033,6 +1032,14 @@ type private SwapChainState =
         commandBuffers: VkCommandBuffer []
     }
 
+type private DrawRecording =
+    {
+        pipelineIndex: int
+        vertexBuffers: VkBuffer []
+        vertexCount: uint32
+        instanceCount: uint32
+    }
+
 [<Sealed>]
 type private SwapChain (physicalDevice, device, surface, indices, commandPool) =
 
@@ -1041,7 +1048,8 @@ type private SwapChain (physicalDevice, device, surface, indices, commandPool) =
     let mutable currentFrame = 0
     let mutable isDisposed = 0
 
-    let shaderGroups = ResizeArray ()
+    let recordings = Collections.Concurrent.ConcurrentDictionary<int, DrawRecording>()
+    let shaders = ResizeArray ()
     let pipelines = ResizeArray ()
 
     let checkDispose () =       
@@ -1100,12 +1108,15 @@ type private SwapChain (physicalDevice, device, surface, indices, commandPool) =
         match state with
         | Some state ->
             let pipeline = mkGraphicsPipeline device state.extent state.pipelineLayout state.renderPass group
-
-            Cmd.recordDraw state.extent state.framebuffers state.commandBuffers state.renderPass pipeline group.vertexBuffers
-
             pipelines.Add pipeline
         | _ ->
-            ()
+            failwith "should not happen"
+
+    let record recording =
+        let state = state.Value
+        Cmd.recordDraw 
+            state.extent state.framebuffers state.commandBuffers state.renderPass 
+            pipelines.[recording.pipelineIndex] recording.vertexBuffers recording.vertexCount recording.instanceCount
 
     member _.SwapChain = 
         check ()
@@ -1142,15 +1153,18 @@ type private SwapChain (physicalDevice, device, surface, indices, commandPool) =
                 }
                 |> Some
 
-            shaderGroups
-            |> Seq.iter (fun group ->
-                addPipeline group
+            shaders
+            |> Seq.iter (fun shader ->
+                addPipeline shader
             )
+
+            recordings.Values
+            |> Seq.iter record
 
         finally
             Monitor.Exit gate
 
-    member x.AddShader (vertexBindings, vertexAttributes, vertexBuffers, vertexBytes: ReadOnlySpan<byte>, fragmentBytes: ReadOnlySpan<byte>) =
+    member x.AddShader (vertexBindings, vertexAttributes, vertexBytes: ReadOnlySpan<byte>, fragmentBytes: ReadOnlySpan<byte>) =
         if not (Monitor.IsEntered gate) then
             Monitor.Enter gate
 
@@ -1160,17 +1174,36 @@ type private SwapChain (physicalDevice, device, surface, indices, commandPool) =
             let pVertexBytes = Unsafe.AsPointer(&Unsafe.AsRef(&vertexBytes.GetPinnableReference())) |> NativePtr.ofVoidPtr
             let pFragmentBytes = Unsafe.AsPointer(&Unsafe.AsRef(&fragmentBytes.GetPinnableReference())) |> NativePtr.ofVoidPtr
 
-            let group = 
-                mkShaderGroup device 
-                    vertexBindings vertexAttributes vertexBuffers
+            let shader = 
+                mkShader device 
+                    vertexBindings vertexAttributes
                     pVertexBytes (uint32 vertexBytes.Length) 
                     pFragmentBytes (uint32 fragmentBytes.Length)
 
-            shaderGroups.Add group
-            addPipeline group
-
+            let pipelineIndex = shaders.Count
+            shaders.Add shader
+            addPipeline shader
+            pipelineIndex
         finally
             Monitor.Exit gate
+
+    member x.RecordDraw(pipelineIndex, vertexBuffers, vertexCount, instanceCount) =
+        lock gate |> fun _ ->
+
+        check ()
+
+        if pipelineIndex >= 0 && pipelineIndex < pipelines.Count then
+            let recording =
+                {
+                    pipelineIndex = pipelineIndex
+                    vertexBuffers = vertexBuffers
+                    vertexCount = vertexCount
+                    instanceCount = instanceCount
+                }
+            recordings.[pipelineIndex] <- recording
+            record recording
+        else
+            failwith "Pipeline index is invalid."
 
     member x.DrawFrame (sync, graphicsQueue, presentQueue) =
         lock gate |> fun _ ->
@@ -1194,7 +1227,7 @@ type private SwapChain (physicalDevice, device, surface, indices, commandPool) =
             else
                 GC.SuppressFinalize x
                 lock gate (fun () ->
-                    shaderGroups
+                    shaders
                     |> Seq.rev
                     |> Seq.iter (fun group -> 
                         destroyShaderGroup device group
@@ -1202,6 +1235,8 @@ type private SwapChain (physicalDevice, device, surface, indices, commandPool) =
 
                     destroy ()
                 )
+
+type PipelineIndex = int
 
 [<Sealed>]
 type VulkanInstance 
@@ -1238,9 +1273,13 @@ type VulkanInstance
         checkDispose ()
         debugMessenger
 
-    member __.AddShader (vertexBindings, vertexAttributes, vertexBuffers, vertexBytes, fragmentBytes) =
+    member __.AddShader (vertexBindings, vertexAttributes, vertexBytes, fragmentBytes) : PipelineIndex =
         checkDispose ()
-        swapChain.AddShader (vertexBindings, vertexAttributes, vertexBuffers, vertexBytes, fragmentBytes)
+        swapChain.AddShader (vertexBindings, vertexAttributes, vertexBytes, fragmentBytes)
+
+    member _.RecordDraw (pipelineIndex, vertexBuffers, vertexCount, instanceCount) =
+        checkDispose ()
+        swapChain.RecordDraw (pipelineIndex, vertexBuffers, uint32 vertexCount, uint32 instanceCount)
 
     member __.DrawFrame () =
         checkDispose ()
@@ -1280,13 +1319,12 @@ type VulkanInstance
     member _.CopyToMemory<'T when 'T : unmanaged> (data: ReadOnlySpan<'T>, memory: VkDeviceMemory) =
         checkDispose ()
 
-        let size = sizeof<'T> * data.Length
         let deviceData = nativeint 0
         let pDeviceData = &&deviceData |> NativePtr.toNativeInt
-        let deviceData = Span<'T>(deviceData |> NativePtr.ofNativeInt<'T> |> NativePtr.toVoidPtr, size)
+        let deviceDataSpan = Span<'T>(pDeviceData |> NativePtr.ofNativeInt<'T> |> NativePtr.toVoidPtr, data.Length)
 
         vkMapMemory(device, memory, 0UL, uint64 (sizeof<'T> * data.Length), VkMemoryMapFlags.MinValue, pDeviceData) |> checkResult
-        data.CopyTo deviceData
+        data.CopyTo deviceDataSpan
         vkUnmapMemory(device, memory)
 
     member _.DestroyBuffer (buffer: VkBuffer) =
