@@ -704,6 +704,19 @@ let mkVertexAttributeDescriptions<'T when 'T : unmanaged> locationOffset binding
     
     mk typeof<'T> locationOffset 0u
 
+let mkVertexBuffer<'T when 'T : unmanaged> device (data: 'T []) =
+    let bufferInfo =
+        VkBufferCreateInfo (
+            sType = VkStructureType.VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+            size = uint64 (sizeof<'T> * data.Length),
+            usage = VkBufferUsageFlags.VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+            sharingMode = VkSharingMode.VK_SHARING_MODE_EXCLUSIVE
+        )
+
+    let vertexBuffer = VkBuffer ()
+    vkCreateBuffer(device, &&bufferInfo, vkNullPtr, &&vertexBuffer) |> checkResult
+    vertexBuffer
+
 let mkGraphicsPipeline device extent pipelineLayout renderPass group =
     use pNameMain = fixed vkBytesOfString "main"
 
@@ -1153,22 +1166,39 @@ type VulkanInstance
      graphicsQueue: VkQueue, presentQueue: VkQueue, handles: GCHandle[],
      swapChain: SwapChain) =
 
+    let vertexBuffers = Collections.Generic.HashSet ()
     let mutable isDisposed = 0
 
-    member __.Instance = instance
+    let checkDispose () =
+        if isDisposed <> 0 then
+            failwith "Vulkan instance is disposed."
 
-    member __.DebugMessenger = debugMessenger
+    member __.Instance = 
+        checkDispose ()
+        instance
+
+    member __.DebugMessenger =
+        checkDispose ()
+        debugMessenger
 
     member __.AddShader (vertexBytes, fragmentBytes) =
+        checkDispose ()
         swapChain.AddShader (vertexBytes, fragmentBytes)
 
     member __.DrawFrame () =
+        checkDispose ()
         swapChain.DrawFrame(sync, graphicsQueue, presentQueue)
 
     member __.WaitIdle () =
+        checkDispose ()
         vkQueueWaitIdle(presentQueue) |> checkResult
         vkQueueWaitIdle(graphicsQueue) |> checkResult
         vkDeviceWaitIdle(device) |> checkResult
+
+    [<RequiresExplicitTypeArguments>]
+    member _.CreateVertexBuffer<'T when 'T : unmanaged> data =
+        checkDispose ()
+        mkVertexBuffer<'T> device data
 
     interface IDisposable with
         member x.Dispose () =
@@ -1178,6 +1208,9 @@ type VulkanInstance
                 GC.SuppressFinalize x
 
                 (swapChain :> IDisposable).Dispose ()
+
+                vertexBuffers
+                |> Seq.iter (fun buffer -> vkDestroyBuffer(device, buffer, vkNullPtr))
 
                 sync.inFlightFences
                 |> Array.rev
