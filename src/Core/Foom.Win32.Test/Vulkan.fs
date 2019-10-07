@@ -1256,7 +1256,7 @@ type VulkanInstance
         buffers.[buffer] <- vulkanBuffer
         vulkanBuffer
 
-    member _.PrepareBuffer<'T when 'T : unmanaged> (vulkanBuffer: VulkanBuffer, data: ReadOnlySpan<'T>) =
+    member _.FillBuffer<'T when 'T : unmanaged> (vulkanBuffer: VulkanBuffer, data: ReadOnlySpan<'T>) =
         checkDispose ()
 
         let size = sizeof<'T> * data.Length
