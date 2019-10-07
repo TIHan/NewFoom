@@ -1154,19 +1154,23 @@ type private SwapChain (physicalDevice, device, surface, indices, commandPool) =
         if not (Monitor.IsEntered gate) then
             Monitor.Enter gate
 
-        check ()
+        try
+            check ()
 
-        let pVertexBytes = Unsafe.AsPointer(&Unsafe.AsRef(&vertexBytes.GetPinnableReference())) |> NativePtr.ofVoidPtr
-        let pFragmentBytes = Unsafe.AsPointer(&Unsafe.AsRef(&fragmentBytes.GetPinnableReference())) |> NativePtr.ofVoidPtr
+            let pVertexBytes = Unsafe.AsPointer(&Unsafe.AsRef(&vertexBytes.GetPinnableReference())) |> NativePtr.ofVoidPtr
+            let pFragmentBytes = Unsafe.AsPointer(&Unsafe.AsRef(&fragmentBytes.GetPinnableReference())) |> NativePtr.ofVoidPtr
 
-        let group = 
-            mkShaderGroup device 
-                vertexBindings vertexAttributes vertexBuffers
-                pVertexBytes (uint32 vertexBytes.Length) 
-                pFragmentBytes (uint32 fragmentBytes.Length)
+            let group = 
+                mkShaderGroup device 
+                    vertexBindings vertexAttributes vertexBuffers
+                    pVertexBytes (uint32 vertexBytes.Length) 
+                    pFragmentBytes (uint32 fragmentBytes.Length)
 
-        shaderGroups.Add group
-        addPipeline group
+            shaderGroups.Add group
+            addPipeline group
+
+        finally
+            Monitor.Exit gate
 
     member x.DrawFrame (sync, graphicsQueue, presentQueue) =
         lock gate |> fun _ ->
