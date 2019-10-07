@@ -496,15 +496,6 @@ module Pipeline =
             pName = pName
         )
 
-    let mkVertexInputCreateInfo () =
-        VkPipelineVertexInputStateCreateInfo (
-            sType = VkStructureType.VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
-            vertexBindingDescriptionCount = 0u,
-            pVertexBindingDescriptions = vkNullPtr, // optional
-            vertexAttributeDescriptionCount = 0u,
-            pVertexAttributeDescriptions = vkNullPtr // optional
-        )
-
     let mkInputAssemblyCreateInfo () =
         VkPipelineInputAssemblyStateCreateInfo (
             sType = VkStructureType.VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
@@ -633,14 +624,19 @@ module Pipeline =
 
     type ShaderGroup =
         {
+            vertexBindings: VkVertexInputBindingDescription []
+            vertexAttributes: VkVertexInputAttributeDescription []
+
             vertex: VkShaderModule
             fragment: VkShaderModule
         }
 
-    let createShaderGroup device vert vertSize frag fragSize =
+    let createShaderGroup device vertexBindings vertexAttributes vert vertSize frag fragSize =
         let vertShaderModule = mkShaderModule device vert vertSize
         let fragShaderModule = mkShaderModule device frag fragSize
         {
+            vertexBindings = vertexBindings
+            vertexAttributes = vertexAttributes
             vertex = vertShaderModule
             fragment = fragShaderModule
         }
@@ -648,6 +644,67 @@ module Pipeline =
     let destroyShaderGroup device group =
         vkDestroyShaderModule(device, group.vertex, vkNullPtr)
         vkDestroyShaderModule(device, group.fragment, vkNullPtr)
+
+    [<RequiresExplicitTypeArguments>]
+    let mkVertexInputBinding<'T when 'T : unmanaged> binding inputRate =
+        VkVertexInputBindingDescription (
+            binding = binding,
+            stride = uint32 sizeof<'T>,
+            inputRate = inputRate
+        )
+    
+    let mkVertexAttributeDescription binding location format offset =
+        VkVertexInputAttributeDescription (
+            binding = binding,
+            location = location,
+            format = format,
+            offset = offset
+        )
+    
+    [<RequiresExplicitTypeArguments>]
+    let mkVertexAttributeDescriptions<'T when 'T : unmanaged> locationOffset binding =
+        let rec mk (ty: Type) location offset = 
+            match ty with
+            | _ when ty = typeof<single> -> 
+                [|mkVertexAttributeDescription binding location VkFormat.VK_FORMAT_R32_SFLOAT offset|]
+    
+            | _ when ty = typeof<int> ->
+                [|mkVertexAttributeDescription binding location VkFormat.VK_FORMAT_R32_SINT offset|]
+    
+            | _ when ty = typeof<Numerics.Vector2> ->
+                [|mkVertexAttributeDescription binding location VkFormat.VK_FORMAT_R32G32_SFLOAT offset|]
+    
+            | _ when ty = typeof<Numerics.Vector3> ->
+                [|mkVertexAttributeDescription binding location VkFormat.VK_FORMAT_R32G32B32_SFLOAT offset|]
+    
+            | _ when ty = typeof<Numerics.Vector4> ->
+                [|mkVertexAttributeDescription binding location VkFormat.VK_FORMAT_R32G32B32A32_SFLOAT offset|]
+    
+            | _ when ty = typeof<Numerics.Matrix3x2> ->
+                failwith "Matrix3x2 not supported yet."
+    
+            | _ when ty = typeof<Numerics.Matrix4x4> ->
+                [|
+                    mkVertexAttributeDescription binding location VkFormat.VK_FORMAT_R32G32B32A32_SFLOAT offset
+                    mkVertexAttributeDescription binding location VkFormat.VK_FORMAT_R32G32B32A32_SFLOAT (offset + uint32 sizeof<Numerics.Vector4>)
+                    mkVertexAttributeDescription binding location VkFormat.VK_FORMAT_R32G32B32A32_SFLOAT (offset + uint32 (sizeof<Numerics.Vector4> * 2))
+                    mkVertexAttributeDescription binding location VkFormat.VK_FORMAT_R32G32B32A32_SFLOAT (offset + uint32 (sizeof<Numerics.Vector4> * 3))
+                |]
+    
+            | _ when ty.IsPrimitive ->
+                failwithf "Primitive type not supported: %A" ty
+    
+            | _ when ty.IsValueType ->
+                ty.GetFields(Reflection.BindingFlags.NonPublic ||| Reflection.BindingFlags.Public ||| Reflection.BindingFlags.Instance)
+                |> Array.mapi (fun i field ->
+                    mk field.FieldType (locationOffset + uint32 i) (Marshal.OffsetOf(field.FieldType, field.Name) |> uint32)
+                )
+                |> Array.concat
+    
+            | _ ->
+                failwithf "Type not supported: %A" ty
+    
+        mk typeof<'T> locationOffset 0u
 
     let mkGraphicsPipeline device extent pipelineLayout renderPass group =
         use pNameMain = fixed vkBytesOfString "main"
@@ -658,7 +715,18 @@ module Pipeline =
                 mkShaderStageInfo VkShaderStageFlags.VK_SHADER_STAGE_FRAGMENT_BIT pNameMain group.fragment
             |]
 
-        let vertexInputCreateInfo = mkVertexInputCreateInfo ()
+        use pVertexBindingDescriptions = fixed group.vertexBindings
+        use pVertexAttributeDescriptions = fixed group.vertexAttributes
+        
+        let vertexInputCreateInfo =
+            VkPipelineVertexInputStateCreateInfo (
+                sType = VkStructureType.VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
+                vertexBindingDescriptionCount = uint32 group.vertexBindings.Length,
+                pVertexBindingDescriptions = pVertexBindingDescriptions,
+                vertexAttributeDescriptionCount = uint32 group.vertexAttributes.Length,
+                pVertexAttributeDescriptions = pVertexAttributeDescriptions
+            )
+
         let inputAssemblyCreateInfo = mkInputAssemblyCreateInfo ()
 
         let viewport = mkViewport extent
@@ -899,67 +967,6 @@ let drawFrame device swapChain sync (commandBuffers: VkCommandBuffer []) graphic
 
     (currentFrame + 1) % MaxFramesInFlight, res
 
-[<RequiresExplicitTypeArguments>]
-let mkVertexInputBinding<'T when 'T : unmanaged> inputRate binding =
-    VkVertexInputBindingDescription (
-        binding = binding,
-        stride = uint32 sizeof<'T>,
-        inputRate = inputRate
-    )
-
-let mkVertexAttributeDescription binding location format offset =
-    VkVertexInputAttributeDescription (
-        binding = binding,
-        location = location,
-        format = format,
-        offset = offset
-    )
-
-[<RequiresExplicitTypeArguments>]
-let mkVertexAttributeDescriptions<'T when 'T : unmanaged> locationOffset binding =
-    let rec mk (ty: Type) location offset = 
-        match ty with
-        | _ when ty = typeof<single> -> 
-            [|mkVertexAttributeDescription binding location VkFormat.VK_FORMAT_R32_SFLOAT offset|]
-
-        | _ when ty = typeof<int> ->
-            [|mkVertexAttributeDescription binding location VkFormat.VK_FORMAT_R32_SINT offset|]
-
-        | _ when ty = typeof<Numerics.Vector2> ->
-            [|mkVertexAttributeDescription binding location VkFormat.VK_FORMAT_R32G32_SFLOAT offset|]
-
-        | _ when ty = typeof<Numerics.Vector3> ->
-            [|mkVertexAttributeDescription binding location VkFormat.VK_FORMAT_R32G32B32_SFLOAT offset|]
-
-        | _ when ty = typeof<Numerics.Vector4> ->
-            [|mkVertexAttributeDescription binding location VkFormat.VK_FORMAT_R32G32B32A32_SFLOAT offset|]
-
-        | _ when ty = typeof<Numerics.Matrix3x2> ->
-            failwith "Matrix3x2 not supported yet."
-
-        | _ when ty = typeof<Numerics.Matrix4x4> ->
-            [|
-                mkVertexAttributeDescription binding location VkFormat.VK_FORMAT_R32G32B32A32_SFLOAT offset
-                mkVertexAttributeDescription binding location VkFormat.VK_FORMAT_R32G32B32A32_SFLOAT (offset + uint32 sizeof<Numerics.Vector4>)
-                mkVertexAttributeDescription binding location VkFormat.VK_FORMAT_R32G32B32A32_SFLOAT (offset + uint32 (sizeof<Numerics.Vector4> * 2))
-                mkVertexAttributeDescription binding location VkFormat.VK_FORMAT_R32G32B32A32_SFLOAT (offset + uint32 (sizeof<Numerics.Vector4> * 3))
-            |]
-
-        | _ when ty.IsPrimitive ->
-            failwithf "Primitive type not supported: %A" ty
-
-        | _ when ty.IsValueType ->
-            ty.GetFields(Reflection.BindingFlags.NonPublic ||| Reflection.BindingFlags.Public ||| Reflection.BindingFlags.Instance)
-            |> Array.mapi (fun i field ->
-                mk field.FieldType (locationOffset + uint32 i) (Marshal.OffsetOf(field.FieldType, field.Name) |> uint32)
-            )
-            |> Array.concat
-
-        | _ ->
-            failwithf "Type not supported: %A" ty
-
-    mk typeof<'T> locationOffset 0u
-
 type private SwapChainState =
     {
         extent: VkExtent2D
@@ -1098,6 +1105,7 @@ type private SwapChain (physicalDevice, device, surface, indices, commandPool) =
 
         let group = 
             Pipeline.createShaderGroup device 
+                [||] [||]
                 pVertexBytes (uint32 vertexBytes.Length) 
                 pFragmentBytes (uint32 fragmentBytes.Length)
 
