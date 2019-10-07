@@ -1321,10 +1321,12 @@ type VulkanInstance
 
         let deviceData = nativeint 0
         let pDeviceData = &&deviceData |> NativePtr.toNativeInt
-        let deviceDataSpan = Span<'T>(pDeviceData |> NativePtr.ofNativeInt<'T> |> NativePtr.toVoidPtr, data.Length)
 
         vkMapMemory(device, memory, 0UL, uint64 (sizeof<'T> * data.Length), VkMemoryMapFlags.MinValue, pDeviceData) |> checkResult
+
+        let deviceDataSpan = Span<'T>(deviceData |> NativePtr.ofNativeInt<'T> |> NativePtr.toVoidPtr, data.Length)
         data.CopyTo deviceDataSpan
+
         vkUnmapMemory(device, memory)
 
     member _.DestroyBuffer (buffer: VkBuffer) =

@@ -67,12 +67,21 @@ let main argv =
     instance.CopyToMemory(ReadOnlySpan positions, positionsMemory)
     let vertex =
         <@
+            //let positions =
+            //    [|
+            //        Vector2 (0.f, -0.5f)
+            //        Vector2 (0.5f, 0.5f)
+            //        Vector2 (-0.5f, 0.5f)
+            //    |]
+
             let colors =
                 [|
                     Vector3 (1.f, 0.f, 0.f)
                     Vector3 (0.f, 1.f, 0.f)
                     Vector3 (0.f, 0.f, 1.f)
                 |]
+
+            
 
             fun (gl_VertexIndex: int) (position: Vector2) ->              
                 {| 
