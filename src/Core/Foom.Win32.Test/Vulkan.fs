@@ -625,17 +625,19 @@ type ShaderGroup =
     {
         vertexBindings: VkVertexInputBindingDescription []
         vertexAttributes: VkVertexInputAttributeDescription []
+        vertexBuffers: VkBuffer []
 
         vertex: VkShaderModule
         fragment: VkShaderModule
     }
 
-let mkShaderGroup device vertexBindings vertexAttributes vert vertSize frag fragSize =
+let mkShaderGroup device vertexBindings vertexAttributes vertexBuffers vert vertSize frag fragSize =
     let vertShaderModule = mkShaderModule device vert vertSize
     let fragShaderModule = mkShaderModule device frag fragSize
     {
         vertexBindings = vertexBindings
         vertexAttributes = vertexAttributes
+        vertexBuffers = vertexBuffers
         vertex = vertShaderModule
         fragment = fragShaderModule
     }
@@ -862,7 +864,7 @@ let private mkCommandBuffers device commandPool (framebuffers: VkFramebuffer [])
 
 module Cmd =
 
-    let recordDraw extent (framebuffers: VkFramebuffer []) (commandBuffers: VkCommandBuffer []) renderPass graphicsPipeline =
+    let recordDraw extent (framebuffers: VkFramebuffer []) (commandBuffers: VkCommandBuffer []) renderPass graphicsPipeline (vertexBuffers: VkBuffer []) =
         (framebuffers, commandBuffers)
         ||> Array.iter2 (fun framebuffer commandBuffer ->
 
@@ -899,6 +901,13 @@ module Cmd =
             // Bind graphics pipeline
 
             vkCmdBindPipeline(commandBuffer, VkPipelineBindPoint.VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline)
+
+            // Bind vertex buffers
+
+            if vertexBuffers |> Array.isEmpty |> not then          
+                let offsets = 0UL
+                use pVertexBuffers = fixed vertexBuffers
+                vkCmdBindVertexBuffers(commandBuffer, 0u, uint32 vertexBuffers.Length, pVertexBuffers, &&offsets)
 
             // Draw
 
@@ -1092,7 +1101,7 @@ type private SwapChain (physicalDevice, device, surface, indices, commandPool) =
         | Some state ->
             let pipeline = mkGraphicsPipeline device state.extent state.pipelineLayout state.renderPass group
 
-            Cmd.recordDraw state.extent state.framebuffers state.commandBuffers state.renderPass pipeline
+            Cmd.recordDraw state.extent state.framebuffers state.commandBuffers state.renderPass pipeline group.vertexBuffers
 
             pipelines.Add pipeline
         | _ ->
@@ -1141,7 +1150,7 @@ type private SwapChain (physicalDevice, device, surface, indices, commandPool) =
         finally
             Monitor.Exit gate
 
-    member x.AddShader (vertexBindings, vertexAttributes, vertexBytes: ReadOnlySpan<byte>, fragmentBytes: ReadOnlySpan<byte>) =
+    member x.AddShader (vertexBindings, vertexAttributes, vertexBuffers, vertexBytes: ReadOnlySpan<byte>, fragmentBytes: ReadOnlySpan<byte>) =
         if not (Monitor.IsEntered gate) then
             Monitor.Enter gate
 
@@ -1152,7 +1161,7 @@ type private SwapChain (physicalDevice, device, surface, indices, commandPool) =
 
         let group = 
             mkShaderGroup device 
-                vertexBindings vertexAttributes
+                vertexBindings vertexAttributes vertexBuffers
                 pVertexBytes (uint32 vertexBytes.Length) 
                 pFragmentBytes (uint32 fragmentBytes.Length)
 
@@ -1190,13 +1199,6 @@ type private SwapChain (physicalDevice, device, surface, indices, commandPool) =
                     destroy ()
                 )
 
-[<Struct>]
-type VulkanBuffer (buffer: VkBuffer, bufferMemory: VkDeviceMemory) =
-
-    member _.Buffer = buffer
-
-    member _.BufferMemory = bufferMemory
-
 [<Sealed>]
 type VulkanInstance 
     private
@@ -1211,12 +1213,18 @@ type VulkanInstance
      swapChain: SwapChain) =
 
     let gate = obj ()
-    let buffers = Collections.Generic.Dictionary<VkBuffer, VulkanBuffer>()
+    let buffers = Collections.Generic.Dictionary<VkBuffer, VkDeviceMemory voption>()
     let mutable isDisposed = 0
 
     let checkDispose () =
         if isDisposed <> 0 then
             failwith "Vulkan instance is disposed."
+
+    let destroyBuffer buffer memoryOpt =
+        vkDestroyBuffer(device, buffer, vkNullPtr)
+        match memoryOpt with
+        | ValueSome memory -> vkFreeMemory(device, memory, vkNullPtr)
+        | _ -> ()
 
     member __.Instance = 
         checkDispose ()
@@ -1226,9 +1234,9 @@ type VulkanInstance
         checkDispose ()
         debugMessenger
 
-    member __.AddShader (vertexBindings, vertexAttributes, vertexBytes, fragmentBytes) =
+    member __.AddShader (vertexBindings, vertexAttributes, vertexBuffers, vertexBytes, fragmentBytes) =
         checkDispose ()
-        swapChain.AddShader (vertexBindings, vertexAttributes, vertexBytes, fragmentBytes)
+        swapChain.AddShader (vertexBindings, vertexAttributes, vertexBuffers, vertexBytes, fragmentBytes)
 
     member __.DrawFrame () =
         checkDispose ()
@@ -1247,16 +1255,25 @@ type VulkanInstance
         checkDispose ()
 
         let buffer = mkVertexBuffer<'T> device count
-        let memRequirements = getMemoryRequirements device buffer
-        let bufferMemory = allocateMemory physicalDevice device memRequirements
+        buffers.[buffer] <- ValueNone
+        buffer
 
-        vkBindBufferMemory(device, buffer, bufferMemory, 0UL) |> checkResult
+    member _.AllocateMemory buffer =
+        lock gate <| fun _ ->
 
-        let vulkanBuffer = VulkanBuffer(buffer, bufferMemory)
-        buffers.[buffer] <- vulkanBuffer
-        vulkanBuffer
+        match buffers.TryGetValue buffer with
+        | true, ValueNone ->
+            let memRequirements = getMemoryRequirements device buffer
+            let bufferMemory = allocateMemory physicalDevice device memRequirements
+            vkBindBufferMemory(device, buffer, bufferMemory, 0UL) |> checkResult
+            buffers.[buffer] <- ValueSome bufferMemory
+            bufferMemory
+        | true, _ -> 
+            failwith "Buffer already has memory allocated to it."
+        | _ ->
+            failwith "Buffer does not exist within this vulkan instance."
 
-    member _.FillBuffer<'T when 'T : unmanaged> (vulkanBuffer: VulkanBuffer, data: ReadOnlySpan<'T>) =
+    member _.CopyToMemory<'T when 'T : unmanaged> (data: ReadOnlySpan<'T>, memory: VkDeviceMemory) =
         checkDispose ()
 
         let size = sizeof<'T> * data.Length
@@ -1264,18 +1281,17 @@ type VulkanInstance
         let pDeviceData = &&deviceData |> NativePtr.toNativeInt
         let deviceData = Span<'T>(deviceData |> NativePtr.ofNativeInt<'T> |> NativePtr.toVoidPtr, size)
 
-        vkMapMemory(device, vulkanBuffer.BufferMemory, 0UL, uint64 (sizeof<'T> * data.Length), VkMemoryMapFlags.MinValue, pDeviceData) |> checkResult
+        vkMapMemory(device, memory, 0UL, uint64 (sizeof<'T> * data.Length), VkMemoryMapFlags.MinValue, pDeviceData) |> checkResult
         data.CopyTo deviceData
-        vkUnmapMemory(device, vulkanBuffer.BufferMemory)
+        vkUnmapMemory(device, memory)
 
-    member _.DestroyBuffer (vulkanBuffer: VulkanBuffer) =
+    member _.DestroyBuffer (buffer: VkBuffer) =
         lock gate <| fun _ ->
 
         checkDispose ()
-        match buffers.Remove vulkanBuffer.Buffer with
-        | true -> 
-            vkDestroyBuffer(device, vulkanBuffer.Buffer, vkNullPtr)
-            vkFreeMemory(device, vulkanBuffer.BufferMemory, vkNullPtr)
+        match buffers.Remove buffer : bool * VkDeviceMemory voption with
+        | true, memoryOpt -> 
+            destroyBuffer buffer memoryOpt
         | _ ->
             failwith "Buffer is not in the vulkan instance."
 
@@ -1289,10 +1305,9 @@ type VulkanInstance
                 (swapChain :> IDisposable).Dispose ()
 
                 lock gate (fun () ->
-                    buffers.Values
-                    |> Seq.iter (fun vulkanBuffer -> 
-                        vkDestroyBuffer(device, vulkanBuffer.Buffer, vkNullPtr)
-                        vkFreeMemory(device, vulkanBuffer.BufferMemory, vkNullPtr)
+                    buffers
+                    |> Seq.iter (fun pair ->
+                        destroyBuffer pair.Key pair.Value
                     )
 
                     buffers.Clear()

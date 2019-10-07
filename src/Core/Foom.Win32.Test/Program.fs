@@ -105,7 +105,7 @@ let main argv =
         bytes
    // let fragmentBytes = System.IO.File.ReadAllBytes("triangle_fragment.spv")
 
-    instance.AddShader([||], [||], ReadOnlySpan vertexBytes, ReadOnlySpan fragmentBytes)
+    instance.AddShader([||], [||], [||], ReadOnlySpan vertexBytes, ReadOnlySpan fragmentBytes)
 
     window.Start ()
 
