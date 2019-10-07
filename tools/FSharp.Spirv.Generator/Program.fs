@@ -1,16 +1,57 @@
 ﻿open System
 open System.IO
 open System.Reflection
+open System.Collections.Generic
 open FSharp.Data
 
 type SpirvSpec = JsonProvider<"spirv.core.grammar.json">
 let spec = SpirvSpec.Load "spirv.core.grammar.json"
+
+[<RequireQualifiedAccess>]
+type OperandType =
+    | UInt32
+    | String
+    | Composite of name: string * OperandType list
+    | Enum of name: string
+    | Option of OperandType
+    | List of OperandType
+
+    member x.Name =
+        match x with
+        | UInt32 -> "uint32"
+        | String -> "string"
+        | Composite (name, _) -> name
+        | Enum name -> name
+        | Option ty -> ty.Name + " option"
+        | List ty -> ty.Name + " list"
+
+let typeLookup = Dictionary<string, OperandType>()
+
+let rec getType (name: string) (category: string) (bases: string []) =
+    match category with
+    | "Id" -> OperandType.UInt32
+    | "Literal" ->
+        match name with
+        | "LiteralString" ->
+            OperandType.String
+        | _ ->
+            OperandType.UInt32
+    | "ValueEnum" ->
+        OperandType.Enum name
+    | "BitEnum" ->
+        OperandType.Enum name
+    | "Composite" ->
+        OperandType.Composite (name, bases |> List.ofArray |> List.map (fun x -> getType String.Empty x [||]))
+    | _ ->
+        OperandType.UInt32
 
 let genKind (kind: SpirvSpec.OperandKind) =
     let comment =
         match kind.Doc with
         | Some doc -> """/// """ + doc + "\n"
         | _ -> String.Empty
+
+    typeLookup.[kind.Kind] <- getType kind.Kind kind.Category kind.Bases
 
     comment +
     match kind.Category with
@@ -19,8 +60,10 @@ let genKind (kind: SpirvSpec.OperandKind) =
     | "Literal" ->
         let tyName =
             match kind.Kind with
-            | "LiteralString" -> "string"
-            | _ -> "uint32"
+            | "LiteralString" -> 
+                "string"
+            | _ -> 
+                "uint32"
         "type " + kind.Kind + " = " + tyName + "\n"
     | "ValueEnum" ->
         "type " + kind.Kind + " =\n" +
@@ -51,13 +94,12 @@ let genKinds () =
     |> Array.filter (fun x -> not (String.IsNullOrWhiteSpace x))
     |> Array.reduce (fun x y -> x + "\n" + y)
 
-[<RequireQualifiedAccess>]
-type OperandType =
-    | UInt32
-    | String
-    | Enum of name: string
-    | Option of OperandType
-    | List of OperandType
+let getOperandType (operand: SpirvSpec.Operand) =
+    let ty = typeLookup.[operand.Kind]
+    match operand.Quantifier with
+    | Some "?" -> OperandType.Option ty
+    | Some "*" -> OperandType.List ty
+    | _ -> ty
 
 let genOperand (operand: SpirvSpec.Operand) =
     let name =
@@ -70,7 +112,7 @@ let genOperand (operand: SpirvSpec.Operand) =
                 String.Empty
         | _ ->
             String.Empty
-    name + operand.Kind + (match operand.Quantifier with Some "?" -> " option" | Some "*" -> " list" | _ -> String.Empty)
+    name + (getOperandType operand).Name
 
 let genInstruction (instr: SpirvSpec.Instruction) =
     "   | " + instr.Opname +
@@ -91,7 +133,7 @@ let genInstructionMemberOpcodeCase (instr: SpirvSpec.Instruction) =
     "       | " + instr.Opname + underscore () + " -> " + string instr.Opcode + "u"
 
 let genInstructionMemberOpcodeMember () =
-    "   member x.Opcode =
+    "    member x.Opcode =
        match x with\n" +
     (spec.Instructions
      |> Array.map genInstructionMemberOpcodeCase
@@ -106,11 +148,49 @@ let genInstructionMemberVersionCase (instr: SpirvSpec.Instruction) =
     "       | " + instr.Opname + underscore () + " -> " + (match instr.Version.Number with None -> "1.0m" | Some version -> string version + "m")
 
 let genInstructionMemberVersionMember () =
-    "   member x.Version =
+    "    member x.Version =
        match x with\n" +
     (spec.Instructions
      |> Array.map genInstructionMemberVersionCase
      |> Array.reduce (fun x y -> x + "\n" + y))
+
+let rec genSerailizeType arg (ty: OperandType) =
+    match ty with
+    | OperandType.UInt32 -> "stream.WriteUInt32(" + arg + ")"
+    | OperandType.String -> "stream.WriteString(" + arg + ")"
+    | OperandType.Enum _ -> "stream.WriteEnum(" + arg + ")"
+    | OperandType.Composite (_, bases) -> "()" // TODO:
+        //bases
+        //|> List.mapi (fun i x -> 
+        //    "   " + genSerailizeType (arg + "_c_" + string i) x
+        //)
+        //|> List.reduce (+)
+    | OperandType.Option ty ->
+        "stream.WriteOption(" + arg + ", fun v -> " + genSerailizeType "v" ty + ")"
+    | OperandType.List ty ->
+        "stream.WriteList(" + arg + ", fun v -> " + genSerailizeType "v" ty + ")" 
+
+let genSerializeInstruction (instr: SpirvSpec.Instruction) =
+    "    | " + instr.Opname + 
+    (match instr.Operands with [||] -> String.Empty | operands -> "(" + (operands |> Array.mapi (fun i _ -> "arg" + string i) |> Array.reduce (fun x y -> x + ", " + y)) + ")") +
+    " ->\n" +
+
+    match instr.Operands with
+    | [||] -> "            ()"
+    | operands ->
+        operands
+        |> Array.mapi (fun i x -> "            " + genSerailizeType ("arg" + string i) (getOperandType x))
+        |> Array.reduce (fun x y -> x + "\n" + y)
+
+let genSerializeInstructions () =
+    "    static member Serialize(instr: Instruction, stream: SpirvStream) =
+        stream.WriteUInt32(instr.Opcode)
+        match instr with\n" +
+        (spec.Instructions
+         |> Array.map (fun x ->
+         "    " + genSerializeInstruction x
+         )
+         |> Array.reduce (fun x y -> x + "\n" + y))
 
 let genInstructions () =
     """type Instruction =
@@ -119,13 +199,32 @@ let genInstructions () =
      |> Array.map genInstruction
      |> Array.reduce (fun x y -> x + "\n" + y)) + "\n\n" +
     genInstructionMemberOpcodeMember () + "\n\n" +
-    genInstructionMemberVersionMember ()
+    genInstructionMemberVersionMember () + "\n\n" +
+    genSerializeInstructions ()
 
 let genSource () =
     """// File is generated. Do not modify.
 module FSharp.Spirv.GeneratedSpec
 
 open System
+open System.IO
+
+type SpirvStream =
+    {
+        stream: Stream
+        mutable remaining: int
+        buffer128: byte []
+    }
+
+    member x.WriteUInt32 (v: uint32) = ()
+
+    member x.WriteString (v: string) = ()
+
+    member x.WriteEnum<'T when 'T : enum<uint32>> (v: 'T) = ()
+
+    member x.WriteOption (v: 'T option, f: 'T -> unit) = ()
+
+    member x.WriteList (v: 'T list, f: 'T -> unit) = ()
 """ + "\n" + 
     genKinds () + "\n" +
     genInstructions ()
