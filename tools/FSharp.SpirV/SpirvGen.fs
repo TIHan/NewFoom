@@ -2593,7 +2593,7 @@ type Instruction =
             stream.WriteList(arg1, fun v -> stream.WriteUInt32(v))
         | OpGroupMemberDecorate(arg0, arg1) ->
             stream.WriteUInt32(arg0)
-            stream.WriteList(arg1, fun v -> ())
+            stream.WriteList(arg1, fun v -> match v with PairIdRefLiteralInteger(v_0, v_1) -> stream.WriteUInt32(v_0);stream.WriteUInt32(v_1))
         | OpVectorExtractDynamic(arg0, arg1, arg2, arg3) ->
             stream.WriteUInt32(arg0)
             stream.WriteUInt32(arg1)
@@ -3363,7 +3363,7 @@ type Instruction =
         | OpPhi(arg0, arg1, arg2) ->
             stream.WriteUInt32(arg0)
             stream.WriteUInt32(arg1)
-            stream.WriteList(arg2, fun v -> ())
+            stream.WriteList(arg2, fun v -> match v with PairIdRefIdRef(v_0, v_1) -> stream.WriteUInt32(v_0);stream.WriteUInt32(v_1))
         | OpLoopMerge(arg0, arg1, arg2) ->
             stream.WriteUInt32(arg0)
             stream.WriteUInt32(arg1)
@@ -3383,7 +3383,7 @@ type Instruction =
         | OpSwitch(arg0, arg1, arg2) ->
             stream.WriteUInt32(arg0)
             stream.WriteUInt32(arg1)
-            stream.WriteList(arg2, fun v -> ())
+            stream.WriteList(arg2, fun v -> match v with PairLiteralIntegerIdRef(v_0, v_1) -> stream.WriteUInt32(v_0);stream.WriteUInt32(v_1))
         | OpKill ->
             ()
         | OpReturn ->

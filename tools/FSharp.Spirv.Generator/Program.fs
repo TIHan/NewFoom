@@ -154,17 +154,17 @@ let genInstructionMemberVersionMember () =
      |> Array.map genInstructionMemberVersionCase
      |> Array.reduce (fun x y -> x + "\n" + y))
 
+let genCaseArgsMatch argName count =
+    "(" + (Array.init count (fun i -> argName + string i) |> Array.reduce (fun x y -> x + ", " + y)) + ")"
+
 let rec genSerailizeType arg (ty: OperandType) =
     match ty with
     | OperandType.UInt32 -> "stream.WriteUInt32(" + arg + ")"
     | OperandType.String -> "stream.WriteString(" + arg + ")"
     | OperandType.Enum _ -> "stream.WriteEnum(" + arg + ")"
-    | OperandType.Composite (_, bases) -> "()" // TODO:
-        //bases
-        //|> List.mapi (fun i x -> 
-        //    "   " + genSerailizeType (arg + "_c_" + string i) x
-        //)
-        //|> List.reduce (+)
+    | OperandType.Composite (name, bases) ->
+        "match " + arg + " with " + name + genCaseArgsMatch (arg + "_") bases.Length + " -> " +
+        (bases |> List.mapi (fun i x -> genSerailizeType (arg + "_" + string i) x) |> List.reduce (fun x y -> x + ";" + y))
     | OperandType.Option ty ->
         "stream.WriteOption(" + arg + ", fun v -> " + genSerailizeType "v" ty + ")"
     | OperandType.List ty ->
@@ -172,7 +172,7 @@ let rec genSerailizeType arg (ty: OperandType) =
 
 let genSerializeInstruction (instr: SpirvSpec.Instruction) =
     "    | " + instr.Opname + 
-    (match instr.Operands with [||] -> String.Empty | operands -> "(" + (operands |> Array.mapi (fun i _ -> "arg" + string i) |> Array.reduce (fun x y -> x + ", " + y)) + ")") +
+    (match instr.Operands with [||] -> String.Empty | operands -> genCaseArgsMatch "arg" operands.Length) +
     " ->\n" +
 
     match instr.Operands with
