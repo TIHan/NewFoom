@@ -52,6 +52,13 @@ module private LittleEndian =
         ((uint64 data.[offset + 6]) <<< 48) |||
         ((uint64 data.[offset + 7]) <<< 56)
 
+let private wordRemainder n =
+    let remainder = n % sizeof<Word>
+    if remainder = 0 then
+        sizeof<Word>
+    else
+        sizeof<Word> - remainder
+
 [<NoEquality;NoComparison>]
 type SpirvStream =
     {
@@ -60,26 +67,96 @@ type SpirvStream =
         buffer128: byte []
     }
 
-    member x.WriteUInt16 (v: uint16) = ()
+    member inline x.ReadOnlyBuffer len = ReadOnlySpan(x.buffer128, 0, len)
 
-    member x.WriteUInt32 (v: uint32) = ()
+    member inline x.Buffer len = Span(x.buffer128, 0, len)
 
-    member x.WriteString (v: string) = ()
+    member inline x.Position = int x.stream.Position
 
-    member x.WriteEnum<'T when 'T : enum<uint32>> (v: 'T) = ()
+    member inline x.Seek (offset, origin) = x.stream.Seek (int64 offset, origin) |> ignore
 
-    member x.WriteOption (v: 'T option, f: 'T -> unit) = ()
+    member x.WriteUInt16 (v: uint16) =
+        let buf = x.Buffer 2
+        LittleEndian.write16 buf 0 v
+        x.stream.Write (Span.op_Implicit buf)
 
-    member x.WriteList (v: 'T list, f: 'T -> unit) = ()
+    member x.WriteUInt32 (v: uint32) =
+        let buf = x.Buffer 4
+        LittleEndian.write32 buf 0 v
+        x.stream.Write (Span.op_Implicit buf)
 
-    member x.ReadUInt16 () = Unchecked.defaultof<uint16>
+    member x.WriteString (v: string) =
+        let bytes = Text.UTF8Encoding.UTF8.GetBytes v
+        let remainder = wordRemainder bytes.Length
 
-    member x.ReadUInt32 () = Unchecked.defaultof<uint32>
+        for i = 0 to remainder - 1 do
+            x.buffer128.[i] <- 0uy
 
-    member x.ReadString () = Unchecked.defaultof<string>
+        x.stream.Write(bytes, 0, bytes.Length)
+        x.stream.Write(x.buffer128, 0, remainder)
 
-    member x.ReadEnum<'T when 'T : enum<uint32>> () = Unchecked.defaultof<'T>
+    member x.WriteEnum<'T when 'T : enum<uint32>> (v: 'T) =
+        x.WriteUInt32 (LanguagePrimitives.EnumToValue v)
 
-    member x.ReadOption (f: unit -> 'T) = Unchecked.defaultof<'T option>
+    member x.WriteOption (v: 'T option, f: 'T -> unit) =
+        v |> Option.iter f
 
-    member x.ReadList (f: unit -> 'T) = Unchecked.defaultof<'T list>
+    member x.WriteList (v: 'T list, f: 'T -> unit) =
+        v |> List.iter f
+
+    member x.ReadUInt16 () =
+        let buf = x.Buffer 2
+        x.stream.Read buf |> ignore
+        let res = LittleEndian.read16 (Span.op_Implicit buf) 0
+        if x.remaining > 0 then
+            x.remaining <- x.remaining - 1
+        res
+
+    member x.ReadUInt32 () =
+        let buf = x.Buffer 4
+        x.stream.Read buf |> ignore
+        let res = LittleEndian.read32 (Span.op_Implicit buf) 0
+        if x.remaining > 0 then
+            x.remaining <- x.remaining - 1
+        res
+
+    member x.ReadString () =
+        let startPos = x.Position
+        let mutable length = 0
+
+        while not (x.stream.ReadByte() = 0) do
+            length <- length + 1
+
+        x.Seek(startPos, SeekOrigin.Begin)
+
+        let bytes = Array.zeroCreate length
+        x.stream.Read(bytes, 0, bytes.Length) |> ignore
+        let res = Text.UTF8Encoding.UTF8.GetString(bytes)
+
+        // Padding
+        let remainder = wordRemainder bytes.Length
+        x.Seek(remainder, SeekOrigin.Current)
+
+        let endPos = x.Position
+
+        let bytesRead = int (endPos - startPos)
+
+        if bytesRead % sizeof<Word> <> 0 then
+            failwithf "Not divisible by %i." sizeof<Word>
+
+        let wordCount = bytesRead / sizeof<Word>
+        if x.remaining > 0 then
+            x.remaining <- x.remaining - wordCount
+        res
+
+    member x.ReadEnum<'T when 'T : enum<uint32>> () : 'T =
+        LanguagePrimitives.EnumOfValue (x.ReadUInt32 ())
+
+    member x.ReadOption (f: unit -> 'T) =
+        if x.remaining > 0 then
+            Some (f ())
+        else
+            None
+
+    member x.ReadList (f: unit -> 'T) =
+        List.init x.remaining (fun _ -> f ())
