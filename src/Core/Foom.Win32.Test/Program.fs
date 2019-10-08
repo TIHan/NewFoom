@@ -35,27 +35,6 @@ type EmptyWindowEvents (instance: VulkanInstance) =
                     instance.DrawFrame ()
             )
 
-// The builder class.
-type Vertex<'T> = Vertex of 'T
-[<ReflectedDefinition>]
-type VertexBuilder() =
-    member x.Bind(comp, func) =
-        match comp with
-        | Vertex x -> Vertex (func x)
-    member x.Return(value) = Vertex value
-    member x.ReturnFrom(value) = value
-    member x.Quote(y: FSharp.Quotations.Expr<'T>) = y
-
-let vertex = VertexBuilder ()
-
-type IMarker = interface end
-let f x =
-    vertex {
-        return x
-    }
-
-let x = f 1
-
 [<EntryPoint>]
 let main argv =
     let title = "F# Vulkan"
