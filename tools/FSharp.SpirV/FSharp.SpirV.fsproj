@@ -8,6 +8,7 @@
     <Compile Include="Specification.fs" />
     <Compile Include="Types.fs" />
     <Compile Include="Pickle.fs" />
+    <Compile Include="InternalHelpers.fs" />
     <Compile Include="SpirvGen.fs" />
     <Compile Include="Spirv.fs" />
   </ItemGroup>
