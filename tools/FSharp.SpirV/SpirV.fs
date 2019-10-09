@@ -3,7 +3,7 @@ module FSharp.Spirv.Extensions
 
 open Pickle
 
-type SpirvModule with
+type SpirvModuleOld with
 
     static member Deserialize stream =
         let stream =

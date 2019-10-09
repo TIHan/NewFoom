@@ -141,10 +141,10 @@ type SpirvStream =
 
         let bytesRead = int (endPos - startPos)
 
-        if bytesRead % sizeof<Word> <> 0 then
-            failwithf "Not divisible by %i." sizeof<Word>
+        if bytesRead % sizeof<uint32> <> 0 then
+            failwithf "Not divisible by %i." sizeof<uint32>
 
-        let wordCount = bytesRead / sizeof<Word>
+        let wordCount = bytesRead / sizeof<uint32>
         if x.remaining > 0 then
             x.remaining <- x.remaining - wordCount
         res

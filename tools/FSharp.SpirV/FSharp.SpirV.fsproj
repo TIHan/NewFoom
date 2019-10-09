@@ -10,6 +10,7 @@
     <Compile Include="Pickle.fs" />
     <Compile Include="InternalHelpers.fs" />
     <Compile Include="SpirvGen.fs" />
+    <Compile Include="SpirvModule.fs" />
     <Compile Include="Spirv.fs" />
   </ItemGroup>
 

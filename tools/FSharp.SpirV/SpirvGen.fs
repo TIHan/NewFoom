@@ -5,6 +5,11 @@ open System
 open System.IO
 open InternalHelpers
 
+// https://github.com/KhronosGroup/SPIRV-Headers/blob/master/include/spirv/unified1/spirv.core.grammar.json
+
+[<Literal>] 
+let MagicNumber = 0x07230203u
+
 type ImageOperands =
    | None = 0x0000u
    | Bias = 0x0001u
@@ -1265,529 +1270,529 @@ type Instruction =
 
     member x.Opcode =
        match x with
-       | OpNop -> 0u
-       | OpUndef _ -> 1u
-       | OpSourceContinued _ -> 2u
-       | OpSource _ -> 3u
-       | OpSourceExtension _ -> 4u
-       | OpName _ -> 5u
-       | OpMemberName _ -> 6u
-       | OpString _ -> 7u
-       | OpLine _ -> 8u
-       | OpExtension _ -> 10u
-       | OpExtInstImport _ -> 11u
-       | OpExtInst _ -> 12u
-       | OpMemoryModel _ -> 14u
-       | OpEntryPoint _ -> 15u
-       | OpExecutionMode _ -> 16u
-       | OpCapability _ -> 17u
-       | OpTypeVoid _ -> 19u
-       | OpTypeBool _ -> 20u
-       | OpTypeInt _ -> 21u
-       | OpTypeFloat _ -> 22u
-       | OpTypeVector _ -> 23u
-       | OpTypeMatrix _ -> 24u
-       | OpTypeImage _ -> 25u
-       | OpTypeSampler _ -> 26u
-       | OpTypeSampledImage _ -> 27u
-       | OpTypeArray _ -> 28u
-       | OpTypeRuntimeArray _ -> 29u
-       | OpTypeStruct _ -> 30u
-       | OpTypeOpaque _ -> 31u
-       | OpTypePointer _ -> 32u
-       | OpTypeFunction _ -> 33u
-       | OpTypeEvent _ -> 34u
-       | OpTypeDeviceEvent _ -> 35u
-       | OpTypeReserveId _ -> 36u
-       | OpTypeQueue _ -> 37u
-       | OpTypePipe _ -> 38u
-       | OpTypeForwardPointer _ -> 39u
-       | OpConstantTrue _ -> 41u
-       | OpConstantFalse _ -> 42u
-       | OpConstant _ -> 43u
-       | OpConstantComposite _ -> 44u
-       | OpConstantSampler _ -> 45u
-       | OpConstantNull _ -> 46u
-       | OpSpecConstantTrue _ -> 48u
-       | OpSpecConstantFalse _ -> 49u
-       | OpSpecConstant _ -> 50u
-       | OpSpecConstantComposite _ -> 51u
-       | OpSpecConstantOp _ -> 52u
-       | OpFunction _ -> 54u
-       | OpFunctionParameter _ -> 55u
-       | OpFunctionEnd -> 56u
-       | OpFunctionCall _ -> 57u
-       | OpVariable _ -> 59u
-       | OpImageTexelPointer _ -> 60u
-       | OpLoad _ -> 61u
-       | OpStore _ -> 62u
-       | OpCopyMemory _ -> 63u
-       | OpCopyMemorySized _ -> 64u
-       | OpAccessChain _ -> 65u
-       | OpInBoundsAccessChain _ -> 66u
-       | OpPtrAccessChain _ -> 67u
-       | OpArrayLength _ -> 68u
-       | OpGenericPtrMemSemantics _ -> 69u
-       | OpInBoundsPtrAccessChain _ -> 70u
-       | OpDecorate _ -> 71u
-       | OpMemberDecorate _ -> 72u
-       | OpDecorationGroup _ -> 73u
-       | OpGroupDecorate _ -> 74u
-       | OpGroupMemberDecorate _ -> 75u
-       | OpVectorExtractDynamic _ -> 77u
-       | OpVectorInsertDynamic _ -> 78u
-       | OpVectorShuffle _ -> 79u
-       | OpCompositeConstruct _ -> 80u
-       | OpCompositeExtract _ -> 81u
-       | OpCompositeInsert _ -> 82u
-       | OpCopyObject _ -> 83u
-       | OpTranspose _ -> 84u
-       | OpSampledImage _ -> 86u
-       | OpImageSampleImplicitLod _ -> 87u
-       | OpImageSampleExplicitLod _ -> 88u
-       | OpImageSampleDrefImplicitLod _ -> 89u
-       | OpImageSampleDrefExplicitLod _ -> 90u
-       | OpImageSampleProjImplicitLod _ -> 91u
-       | OpImageSampleProjExplicitLod _ -> 92u
-       | OpImageSampleProjDrefImplicitLod _ -> 93u
-       | OpImageSampleProjDrefExplicitLod _ -> 94u
-       | OpImageFetch _ -> 95u
-       | OpImageGather _ -> 96u
-       | OpImageDrefGather _ -> 97u
-       | OpImageRead _ -> 98u
-       | OpImageWrite _ -> 99u
-       | OpImage _ -> 100u
-       | OpImageQueryFormat _ -> 101u
-       | OpImageQueryOrder _ -> 102u
-       | OpImageQuerySizeLod _ -> 103u
-       | OpImageQuerySize _ -> 104u
-       | OpImageQueryLod _ -> 105u
-       | OpImageQueryLevels _ -> 106u
-       | OpImageQuerySamples _ -> 107u
-       | OpConvertFToU _ -> 109u
-       | OpConvertFToS _ -> 110u
-       | OpConvertSToF _ -> 111u
-       | OpConvertUToF _ -> 112u
-       | OpUConvert _ -> 113u
-       | OpSConvert _ -> 114u
-       | OpFConvert _ -> 115u
-       | OpQuantizeToF16 _ -> 116u
-       | OpConvertPtrToU _ -> 117u
-       | OpSatConvertSToU _ -> 118u
-       | OpSatConvertUToS _ -> 119u
-       | OpConvertUToPtr _ -> 120u
-       | OpPtrCastToGeneric _ -> 121u
-       | OpGenericCastToPtr _ -> 122u
-       | OpGenericCastToPtrExplicit _ -> 123u
-       | OpBitcast _ -> 124u
-       | OpSNegate _ -> 126u
-       | OpFNegate _ -> 127u
-       | OpIAdd _ -> 128u
-       | OpFAdd _ -> 129u
-       | OpISub _ -> 130u
-       | OpFSub _ -> 131u
-       | OpIMul _ -> 132u
-       | OpFMul _ -> 133u
-       | OpUDiv _ -> 134u
-       | OpSDiv _ -> 135u
-       | OpFDiv _ -> 136u
-       | OpUMod _ -> 137u
-       | OpSRem _ -> 138u
-       | OpSMod _ -> 139u
-       | OpFRem _ -> 140u
-       | OpFMod _ -> 141u
-       | OpVectorTimesScalar _ -> 142u
-       | OpMatrixTimesScalar _ -> 143u
-       | OpVectorTimesMatrix _ -> 144u
-       | OpMatrixTimesVector _ -> 145u
-       | OpMatrixTimesMatrix _ -> 146u
-       | OpOuterProduct _ -> 147u
-       | OpDot _ -> 148u
-       | OpIAddCarry _ -> 149u
-       | OpISubBorrow _ -> 150u
-       | OpUMulExtended _ -> 151u
-       | OpSMulExtended _ -> 152u
-       | OpAny _ -> 154u
-       | OpAll _ -> 155u
-       | OpIsNan _ -> 156u
-       | OpIsInf _ -> 157u
-       | OpIsFinite _ -> 158u
-       | OpIsNormal _ -> 159u
-       | OpSignBitSet _ -> 160u
-       | OpLessOrGreater _ -> 161u
-       | OpOrdered _ -> 162u
-       | OpUnordered _ -> 163u
-       | OpLogicalEqual _ -> 164u
-       | OpLogicalNotEqual _ -> 165u
-       | OpLogicalOr _ -> 166u
-       | OpLogicalAnd _ -> 167u
-       | OpLogicalNot _ -> 168u
-       | OpSelect _ -> 169u
-       | OpIEqual _ -> 170u
-       | OpINotEqual _ -> 171u
-       | OpUGreaterThan _ -> 172u
-       | OpSGreaterThan _ -> 173u
-       | OpUGreaterThanEqual _ -> 174u
-       | OpSGreaterThanEqual _ -> 175u
-       | OpULessThan _ -> 176u
-       | OpSLessThan _ -> 177u
-       | OpULessThanEqual _ -> 178u
-       | OpSLessThanEqual _ -> 179u
-       | OpFOrdEqual _ -> 180u
-       | OpFUnordEqual _ -> 181u
-       | OpFOrdNotEqual _ -> 182u
-       | OpFUnordNotEqual _ -> 183u
-       | OpFOrdLessThan _ -> 184u
-       | OpFUnordLessThan _ -> 185u
-       | OpFOrdGreaterThan _ -> 186u
-       | OpFUnordGreaterThan _ -> 187u
-       | OpFOrdLessThanEqual _ -> 188u
-       | OpFUnordLessThanEqual _ -> 189u
-       | OpFOrdGreaterThanEqual _ -> 190u
-       | OpFUnordGreaterThanEqual _ -> 191u
-       | OpShiftRightLogical _ -> 194u
-       | OpShiftRightArithmetic _ -> 195u
-       | OpShiftLeftLogical _ -> 196u
-       | OpBitwiseOr _ -> 197u
-       | OpBitwiseXor _ -> 198u
-       | OpBitwiseAnd _ -> 199u
-       | OpNot _ -> 200u
-       | OpBitFieldInsert _ -> 201u
-       | OpBitFieldSExtract _ -> 202u
-       | OpBitFieldUExtract _ -> 203u
-       | OpBitReverse _ -> 204u
-       | OpBitCount _ -> 205u
-       | OpDPdx _ -> 207u
-       | OpDPdy _ -> 208u
-       | OpFwidth _ -> 209u
-       | OpDPdxFine _ -> 210u
-       | OpDPdyFine _ -> 211u
-       | OpFwidthFine _ -> 212u
-       | OpDPdxCoarse _ -> 213u
-       | OpDPdyCoarse _ -> 214u
-       | OpFwidthCoarse _ -> 215u
-       | OpEmitVertex -> 218u
-       | OpEndPrimitive -> 219u
-       | OpEmitStreamVertex _ -> 220u
-       | OpEndStreamPrimitive _ -> 221u
-       | OpControlBarrier _ -> 224u
-       | OpMemoryBarrier _ -> 225u
-       | OpAtomicLoad _ -> 227u
-       | OpAtomicStore _ -> 228u
-       | OpAtomicExchange _ -> 229u
-       | OpAtomicCompareExchange _ -> 230u
-       | OpAtomicCompareExchangeWeak _ -> 231u
-       | OpAtomicIIncrement _ -> 232u
-       | OpAtomicIDecrement _ -> 233u
-       | OpAtomicIAdd _ -> 234u
-       | OpAtomicISub _ -> 235u
-       | OpAtomicSMin _ -> 236u
-       | OpAtomicUMin _ -> 237u
-       | OpAtomicSMax _ -> 238u
-       | OpAtomicUMax _ -> 239u
-       | OpAtomicAnd _ -> 240u
-       | OpAtomicOr _ -> 241u
-       | OpAtomicXor _ -> 242u
-       | OpPhi _ -> 245u
-       | OpLoopMerge _ -> 246u
-       | OpSelectionMerge _ -> 247u
-       | OpLabel _ -> 248u
-       | OpBranch _ -> 249u
-       | OpBranchConditional _ -> 250u
-       | OpSwitch _ -> 251u
-       | OpKill -> 252u
-       | OpReturn -> 253u
-       | OpReturnValue _ -> 254u
-       | OpUnreachable -> 255u
-       | OpLifetimeStart _ -> 256u
-       | OpLifetimeStop _ -> 257u
-       | OpGroupAsyncCopy _ -> 259u
-       | OpGroupWaitEvents _ -> 260u
-       | OpGroupAll _ -> 261u
-       | OpGroupAny _ -> 262u
-       | OpGroupBroadcast _ -> 263u
-       | OpGroupIAdd _ -> 264u
-       | OpGroupFAdd _ -> 265u
-       | OpGroupFMin _ -> 266u
-       | OpGroupUMin _ -> 267u
-       | OpGroupSMin _ -> 268u
-       | OpGroupFMax _ -> 269u
-       | OpGroupUMax _ -> 270u
-       | OpGroupSMax _ -> 271u
-       | OpReadPipe _ -> 274u
-       | OpWritePipe _ -> 275u
-       | OpReservedReadPipe _ -> 276u
-       | OpReservedWritePipe _ -> 277u
-       | OpReserveReadPipePackets _ -> 278u
-       | OpReserveWritePipePackets _ -> 279u
-       | OpCommitReadPipe _ -> 280u
-       | OpCommitWritePipe _ -> 281u
-       | OpIsValidReserveId _ -> 282u
-       | OpGetNumPipePackets _ -> 283u
-       | OpGetMaxPipePackets _ -> 284u
-       | OpGroupReserveReadPipePackets _ -> 285u
-       | OpGroupReserveWritePipePackets _ -> 286u
-       | OpGroupCommitReadPipe _ -> 287u
-       | OpGroupCommitWritePipe _ -> 288u
-       | OpEnqueueMarker _ -> 291u
-       | OpEnqueueKernel _ -> 292u
-       | OpGetKernelNDrangeSubGroupCount _ -> 293u
-       | OpGetKernelNDrangeMaxSubGroupSize _ -> 294u
-       | OpGetKernelWorkGroupSize _ -> 295u
-       | OpGetKernelPreferredWorkGroupSizeMultiple _ -> 296u
-       | OpRetainEvent _ -> 297u
-       | OpReleaseEvent _ -> 298u
-       | OpCreateUserEvent _ -> 299u
-       | OpIsValidEvent _ -> 300u
-       | OpSetUserEventStatus _ -> 301u
-       | OpCaptureEventProfilingInfo _ -> 302u
-       | OpGetDefaultQueue _ -> 303u
-       | OpBuildNDRange _ -> 304u
-       | OpImageSparseSampleImplicitLod _ -> 305u
-       | OpImageSparseSampleExplicitLod _ -> 306u
-       | OpImageSparseSampleDrefImplicitLod _ -> 307u
-       | OpImageSparseSampleDrefExplicitLod _ -> 308u
-       | OpImageSparseSampleProjImplicitLod _ -> 309u
-       | OpImageSparseSampleProjExplicitLod _ -> 310u
-       | OpImageSparseSampleProjDrefImplicitLod _ -> 311u
-       | OpImageSparseSampleProjDrefExplicitLod _ -> 312u
-       | OpImageSparseFetch _ -> 313u
-       | OpImageSparseGather _ -> 314u
-       | OpImageSparseDrefGather _ -> 315u
-       | OpImageSparseTexelsResident _ -> 316u
-       | OpNoLine -> 317u
-       | OpAtomicFlagTestAndSet _ -> 318u
-       | OpAtomicFlagClear _ -> 319u
-       | OpImageSparseRead _ -> 320u
-       | OpSizeOf _ -> 321u
-       | OpTypePipeStorage _ -> 322u
-       | OpConstantPipeStorage _ -> 323u
-       | OpCreatePipeFromPipeStorage _ -> 324u
-       | OpGetKernelLocalSizeForSubgroupCount _ -> 325u
-       | OpGetKernelMaxNumSubgroups _ -> 326u
-       | OpTypeNamedBarrier _ -> 327u
-       | OpNamedBarrierInitialize _ -> 328u
-       | OpMemoryNamedBarrier _ -> 329u
-       | OpModuleProcessed _ -> 330u
-       | OpExecutionModeId _ -> 331u
-       | OpDecorateId _ -> 332u
-       | OpGroupNonUniformElect _ -> 333u
-       | OpGroupNonUniformAll _ -> 334u
-       | OpGroupNonUniformAny _ -> 335u
-       | OpGroupNonUniformAllEqual _ -> 336u
-       | OpGroupNonUniformBroadcast _ -> 337u
-       | OpGroupNonUniformBroadcastFirst _ -> 338u
-       | OpGroupNonUniformBallot _ -> 339u
-       | OpGroupNonUniformInverseBallot _ -> 340u
-       | OpGroupNonUniformBallotBitExtract _ -> 341u
-       | OpGroupNonUniformBallotBitCount _ -> 342u
-       | OpGroupNonUniformBallotFindLSB _ -> 343u
-       | OpGroupNonUniformBallotFindMSB _ -> 344u
-       | OpGroupNonUniformShuffle _ -> 345u
-       | OpGroupNonUniformShuffleXor _ -> 346u
-       | OpGroupNonUniformShuffleUp _ -> 347u
-       | OpGroupNonUniformShuffleDown _ -> 348u
-       | OpGroupNonUniformIAdd _ -> 349u
-       | OpGroupNonUniformFAdd _ -> 350u
-       | OpGroupNonUniformIMul _ -> 351u
-       | OpGroupNonUniformFMul _ -> 352u
-       | OpGroupNonUniformSMin _ -> 353u
-       | OpGroupNonUniformUMin _ -> 354u
-       | OpGroupNonUniformFMin _ -> 355u
-       | OpGroupNonUniformSMax _ -> 356u
-       | OpGroupNonUniformUMax _ -> 357u
-       | OpGroupNonUniformFMax _ -> 358u
-       | OpGroupNonUniformBitwiseAnd _ -> 359u
-       | OpGroupNonUniformBitwiseOr _ -> 360u
-       | OpGroupNonUniformBitwiseXor _ -> 361u
-       | OpGroupNonUniformLogicalAnd _ -> 362u
-       | OpGroupNonUniformLogicalOr _ -> 363u
-       | OpGroupNonUniformLogicalXor _ -> 364u
-       | OpGroupNonUniformQuadBroadcast _ -> 365u
-       | OpGroupNonUniformQuadSwap _ -> 366u
-       | OpCopyLogical _ -> 400u
-       | OpPtrEqual _ -> 401u
-       | OpPtrNotEqual _ -> 402u
-       | OpPtrDiff _ -> 403u
-       | OpSubgroupBallotKHR _ -> 4421u
-       | OpSubgroupFirstInvocationKHR _ -> 4422u
-       | OpSubgroupAllKHR _ -> 4428u
-       | OpSubgroupAnyKHR _ -> 4429u
-       | OpSubgroupAllEqualKHR _ -> 4430u
-       | OpSubgroupReadInvocationKHR _ -> 4432u
-       | OpGroupIAddNonUniformAMD _ -> 5000u
-       | OpGroupFAddNonUniformAMD _ -> 5001u
-       | OpGroupFMinNonUniformAMD _ -> 5002u
-       | OpGroupUMinNonUniformAMD _ -> 5003u
-       | OpGroupSMinNonUniformAMD _ -> 5004u
-       | OpGroupFMaxNonUniformAMD _ -> 5005u
-       | OpGroupUMaxNonUniformAMD _ -> 5006u
-       | OpGroupSMaxNonUniformAMD _ -> 5007u
-       | OpFragmentMaskFetchAMD _ -> 5011u
-       | OpFragmentFetchAMD _ -> 5012u
-       | OpReadClockKHR _ -> 5056u
-       | OpImageSampleFootprintNV _ -> 5283u
-       | OpGroupNonUniformPartitionNV _ -> 5296u
-       | OpWritePackedPrimitiveIndices4x8NV _ -> 5299u
-       | OpReportIntersectionNV _ -> 5334u
-       | OpIgnoreIntersectionNV -> 5335u
-       | OpTerminateRayNV -> 5336u
-       | OpTraceNV _ -> 5337u
-       | OpTypeAccelerationStructureNV _ -> 5341u
-       | OpExecuteCallableNV _ -> 5344u
-       | OpTypeCooperativeMatrixNV _ -> 5358u
-       | OpCooperativeMatrixLoadNV _ -> 5359u
-       | OpCooperativeMatrixStoreNV _ -> 5360u
-       | OpCooperativeMatrixMulAddNV _ -> 5361u
-       | OpCooperativeMatrixLengthNV _ -> 5362u
-       | OpBeginInvocationInterlockEXT -> 5364u
-       | OpEndInvocationInterlockEXT -> 5365u
-       | OpDemoteToHelperInvocationEXT -> 5380u
-       | OpIsHelperInvocationEXT _ -> 5381u
-       | OpSubgroupShuffleINTEL _ -> 5571u
-       | OpSubgroupShuffleDownINTEL _ -> 5572u
-       | OpSubgroupShuffleUpINTEL _ -> 5573u
-       | OpSubgroupShuffleXorINTEL _ -> 5574u
-       | OpSubgroupBlockReadINTEL _ -> 5575u
-       | OpSubgroupBlockWriteINTEL _ -> 5576u
-       | OpSubgroupImageBlockReadINTEL _ -> 5577u
-       | OpSubgroupImageBlockWriteINTEL _ -> 5578u
-       | OpSubgroupImageMediaBlockReadINTEL _ -> 5580u
-       | OpSubgroupImageMediaBlockWriteINTEL _ -> 5581u
-       | OpUCountLeadingZerosINTEL _ -> 5585u
-       | OpUCountTrailingZerosINTEL _ -> 5586u
-       | OpAbsISubINTEL _ -> 5587u
-       | OpAbsUSubINTEL _ -> 5588u
-       | OpIAddSatINTEL _ -> 5589u
-       | OpUAddSatINTEL _ -> 5590u
-       | OpIAverageINTEL _ -> 5591u
-       | OpUAverageINTEL _ -> 5592u
-       | OpIAverageRoundedINTEL _ -> 5593u
-       | OpUAverageRoundedINTEL _ -> 5594u
-       | OpISubSatINTEL _ -> 5595u
-       | OpUSubSatINTEL _ -> 5596u
-       | OpIMul32x16INTEL _ -> 5597u
-       | OpUMul32x16INTEL _ -> 5598u
-       | OpDecorateString _ -> 5632u
-       | OpMemberDecorateString _ -> 5633u
-       | OpVmeImageINTEL _ -> 5699u
-       | OpTypeVmeImageINTEL _ -> 5700u
-       | OpTypeAvcImePayloadINTEL _ -> 5701u
-       | OpTypeAvcRefPayloadINTEL _ -> 5702u
-       | OpTypeAvcSicPayloadINTEL _ -> 5703u
-       | OpTypeAvcMcePayloadINTEL _ -> 5704u
-       | OpTypeAvcMceResultINTEL _ -> 5705u
-       | OpTypeAvcImeResultINTEL _ -> 5706u
-       | OpTypeAvcImeResultSingleReferenceStreamoutINTEL _ -> 5707u
-       | OpTypeAvcImeResultDualReferenceStreamoutINTEL _ -> 5708u
-       | OpTypeAvcImeSingleReferenceStreaminINTEL _ -> 5709u
-       | OpTypeAvcImeDualReferenceStreaminINTEL _ -> 5710u
-       | OpTypeAvcRefResultINTEL _ -> 5711u
-       | OpTypeAvcSicResultINTEL _ -> 5712u
-       | OpSubgroupAvcMceGetDefaultInterBaseMultiReferencePenaltyINTEL _ -> 5713u
-       | OpSubgroupAvcMceSetInterBaseMultiReferencePenaltyINTEL _ -> 5714u
-       | OpSubgroupAvcMceGetDefaultInterShapePenaltyINTEL _ -> 5715u
-       | OpSubgroupAvcMceSetInterShapePenaltyINTEL _ -> 5716u
-       | OpSubgroupAvcMceGetDefaultInterDirectionPenaltyINTEL _ -> 5717u
-       | OpSubgroupAvcMceSetInterDirectionPenaltyINTEL _ -> 5718u
-       | OpSubgroupAvcMceGetDefaultIntraLumaShapePenaltyINTEL _ -> 5719u
-       | OpSubgroupAvcMceGetDefaultInterMotionVectorCostTableINTEL _ -> 5720u
-       | OpSubgroupAvcMceGetDefaultHighPenaltyCostTableINTEL _ -> 5721u
-       | OpSubgroupAvcMceGetDefaultMediumPenaltyCostTableINTEL _ -> 5722u
-       | OpSubgroupAvcMceGetDefaultLowPenaltyCostTableINTEL _ -> 5723u
-       | OpSubgroupAvcMceSetMotionVectorCostFunctionINTEL _ -> 5724u
-       | OpSubgroupAvcMceGetDefaultIntraLumaModePenaltyINTEL _ -> 5725u
-       | OpSubgroupAvcMceGetDefaultNonDcLumaIntraPenaltyINTEL _ -> 5726u
-       | OpSubgroupAvcMceGetDefaultIntraChromaModeBasePenaltyINTEL _ -> 5727u
-       | OpSubgroupAvcMceSetAcOnlyHaarINTEL _ -> 5728u
-       | OpSubgroupAvcMceSetSourceInterlacedFieldPolarityINTEL _ -> 5729u
-       | OpSubgroupAvcMceSetSingleReferenceInterlacedFieldPolarityINTEL _ -> 5730u
-       | OpSubgroupAvcMceSetDualReferenceInterlacedFieldPolaritiesINTEL _ -> 5731u
-       | OpSubgroupAvcMceConvertToImePayloadINTEL _ -> 5732u
-       | OpSubgroupAvcMceConvertToImeResultINTEL _ -> 5733u
-       | OpSubgroupAvcMceConvertToRefPayloadINTEL _ -> 5734u
-       | OpSubgroupAvcMceConvertToRefResultINTEL _ -> 5735u
-       | OpSubgroupAvcMceConvertToSicPayloadINTEL _ -> 5736u
-       | OpSubgroupAvcMceConvertToSicResultINTEL _ -> 5737u
-       | OpSubgroupAvcMceGetMotionVectorsINTEL _ -> 5738u
-       | OpSubgroupAvcMceGetInterDistortionsINTEL _ -> 5739u
-       | OpSubgroupAvcMceGetBestInterDistortionsINTEL _ -> 5740u
-       | OpSubgroupAvcMceGetInterMajorShapeINTEL _ -> 5741u
-       | OpSubgroupAvcMceGetInterMinorShapeINTEL _ -> 5742u
-       | OpSubgroupAvcMceGetInterDirectionsINTEL _ -> 5743u
-       | OpSubgroupAvcMceGetInterMotionVectorCountINTEL _ -> 5744u
-       | OpSubgroupAvcMceGetInterReferenceIdsINTEL _ -> 5745u
-       | OpSubgroupAvcMceGetInterReferenceInterlacedFieldPolaritiesINTEL _ -> 5746u
-       | OpSubgroupAvcImeInitializeINTEL _ -> 5747u
-       | OpSubgroupAvcImeSetSingleReferenceINTEL _ -> 5748u
-       | OpSubgroupAvcImeSetDualReferenceINTEL _ -> 5749u
-       | OpSubgroupAvcImeRefWindowSizeINTEL _ -> 5750u
-       | OpSubgroupAvcImeAdjustRefOffsetINTEL _ -> 5751u
-       | OpSubgroupAvcImeConvertToMcePayloadINTEL _ -> 5752u
-       | OpSubgroupAvcImeSetMaxMotionVectorCountINTEL _ -> 5753u
-       | OpSubgroupAvcImeSetUnidirectionalMixDisableINTEL _ -> 5754u
-       | OpSubgroupAvcImeSetEarlySearchTerminationThresholdINTEL _ -> 5755u
-       | OpSubgroupAvcImeSetWeightedSadINTEL _ -> 5756u
-       | OpSubgroupAvcImeEvaluateWithSingleReferenceINTEL _ -> 5757u
-       | OpSubgroupAvcImeEvaluateWithDualReferenceINTEL _ -> 5758u
-       | OpSubgroupAvcImeEvaluateWithSingleReferenceStreaminINTEL _ -> 5759u
-       | OpSubgroupAvcImeEvaluateWithDualReferenceStreaminINTEL _ -> 5760u
-       | OpSubgroupAvcImeEvaluateWithSingleReferenceStreamoutINTEL _ -> 5761u
-       | OpSubgroupAvcImeEvaluateWithDualReferenceStreamoutINTEL _ -> 5762u
-       | OpSubgroupAvcImeEvaluateWithSingleReferenceStreaminoutINTEL _ -> 5763u
-       | OpSubgroupAvcImeEvaluateWithDualReferenceStreaminoutINTEL _ -> 5764u
-       | OpSubgroupAvcImeConvertToMceResultINTEL _ -> 5765u
-       | OpSubgroupAvcImeGetSingleReferenceStreaminINTEL _ -> 5766u
-       | OpSubgroupAvcImeGetDualReferenceStreaminINTEL _ -> 5767u
-       | OpSubgroupAvcImeStripSingleReferenceStreamoutINTEL _ -> 5768u
-       | OpSubgroupAvcImeStripDualReferenceStreamoutINTEL _ -> 5769u
-       | OpSubgroupAvcImeGetStreamoutSingleReferenceMajorShapeMotionVectorsINTEL _ -> 5770u
-       | OpSubgroupAvcImeGetStreamoutSingleReferenceMajorShapeDistortionsINTEL _ -> 5771u
-       | OpSubgroupAvcImeGetStreamoutSingleReferenceMajorShapeReferenceIdsINTEL _ -> 5772u
-       | OpSubgroupAvcImeGetStreamoutDualReferenceMajorShapeMotionVectorsINTEL _ -> 5773u
-       | OpSubgroupAvcImeGetStreamoutDualReferenceMajorShapeDistortionsINTEL _ -> 5774u
-       | OpSubgroupAvcImeGetStreamoutDualReferenceMajorShapeReferenceIdsINTEL _ -> 5775u
-       | OpSubgroupAvcImeGetBorderReachedINTEL _ -> 5776u
-       | OpSubgroupAvcImeGetTruncatedSearchIndicationINTEL _ -> 5777u
-       | OpSubgroupAvcImeGetUnidirectionalEarlySearchTerminationINTEL _ -> 5778u
-       | OpSubgroupAvcImeGetWeightingPatternMinimumMotionVectorINTEL _ -> 5779u
-       | OpSubgroupAvcImeGetWeightingPatternMinimumDistortionINTEL _ -> 5780u
-       | OpSubgroupAvcFmeInitializeINTEL _ -> 5781u
-       | OpSubgroupAvcBmeInitializeINTEL _ -> 5782u
-       | OpSubgroupAvcRefConvertToMcePayloadINTEL _ -> 5783u
-       | OpSubgroupAvcRefSetBidirectionalMixDisableINTEL _ -> 5784u
-       | OpSubgroupAvcRefSetBilinearFilterEnableINTEL _ -> 5785u
-       | OpSubgroupAvcRefEvaluateWithSingleReferenceINTEL _ -> 5786u
-       | OpSubgroupAvcRefEvaluateWithDualReferenceINTEL _ -> 5787u
-       | OpSubgroupAvcRefEvaluateWithMultiReferenceINTEL _ -> 5788u
-       | OpSubgroupAvcRefEvaluateWithMultiReferenceInterlacedINTEL _ -> 5789u
-       | OpSubgroupAvcRefConvertToMceResultINTEL _ -> 5790u
-       | OpSubgroupAvcSicInitializeINTEL _ -> 5791u
-       | OpSubgroupAvcSicConfigureSkcINTEL _ -> 5792u
-       | OpSubgroupAvcSicConfigureIpeLumaINTEL _ -> 5793u
-       | OpSubgroupAvcSicConfigureIpeLumaChromaINTEL _ -> 5794u
-       | OpSubgroupAvcSicGetMotionVectorMaskINTEL _ -> 5795u
-       | OpSubgroupAvcSicConvertToMcePayloadINTEL _ -> 5796u
-       | OpSubgroupAvcSicSetIntraLumaShapePenaltyINTEL _ -> 5797u
-       | OpSubgroupAvcSicSetIntraLumaModeCostFunctionINTEL _ -> 5798u
-       | OpSubgroupAvcSicSetIntraChromaModeCostFunctionINTEL _ -> 5799u
-       | OpSubgroupAvcSicSetBilinearFilterEnableINTEL _ -> 5800u
-       | OpSubgroupAvcSicSetSkcForwardTransformEnableINTEL _ -> 5801u
-       | OpSubgroupAvcSicSetBlockBasedRawSkipSadINTEL _ -> 5802u
-       | OpSubgroupAvcSicEvaluateIpeINTEL _ -> 5803u
-       | OpSubgroupAvcSicEvaluateWithSingleReferenceINTEL _ -> 5804u
-       | OpSubgroupAvcSicEvaluateWithDualReferenceINTEL _ -> 5805u
-       | OpSubgroupAvcSicEvaluateWithMultiReferenceINTEL _ -> 5806u
-       | OpSubgroupAvcSicEvaluateWithMultiReferenceInterlacedINTEL _ -> 5807u
-       | OpSubgroupAvcSicConvertToMceResultINTEL _ -> 5808u
-       | OpSubgroupAvcSicGetIpeLumaShapeINTEL _ -> 5809u
-       | OpSubgroupAvcSicGetBestIpeLumaDistortionINTEL _ -> 5810u
-       | OpSubgroupAvcSicGetBestIpeChromaDistortionINTEL _ -> 5811u
-       | OpSubgroupAvcSicGetPackedIpeLumaModesINTEL _ -> 5812u
-       | OpSubgroupAvcSicGetIpeChromaModeINTEL _ -> 5813u
-       | OpSubgroupAvcSicGetPackedSkcLumaCountThresholdINTEL _ -> 5814u
-       | OpSubgroupAvcSicGetPackedSkcLumaSumThresholdINTEL _ -> 5815u
-       | OpSubgroupAvcSicGetInterRawSadsINTEL _ -> 5816u
+       | OpNop -> 0us
+       | OpUndef _ -> 1us
+       | OpSourceContinued _ -> 2us
+       | OpSource _ -> 3us
+       | OpSourceExtension _ -> 4us
+       | OpName _ -> 5us
+       | OpMemberName _ -> 6us
+       | OpString _ -> 7us
+       | OpLine _ -> 8us
+       | OpExtension _ -> 10us
+       | OpExtInstImport _ -> 11us
+       | OpExtInst _ -> 12us
+       | OpMemoryModel _ -> 14us
+       | OpEntryPoint _ -> 15us
+       | OpExecutionMode _ -> 16us
+       | OpCapability _ -> 17us
+       | OpTypeVoid _ -> 19us
+       | OpTypeBool _ -> 20us
+       | OpTypeInt _ -> 21us
+       | OpTypeFloat _ -> 22us
+       | OpTypeVector _ -> 23us
+       | OpTypeMatrix _ -> 24us
+       | OpTypeImage _ -> 25us
+       | OpTypeSampler _ -> 26us
+       | OpTypeSampledImage _ -> 27us
+       | OpTypeArray _ -> 28us
+       | OpTypeRuntimeArray _ -> 29us
+       | OpTypeStruct _ -> 30us
+       | OpTypeOpaque _ -> 31us
+       | OpTypePointer _ -> 32us
+       | OpTypeFunction _ -> 33us
+       | OpTypeEvent _ -> 34us
+       | OpTypeDeviceEvent _ -> 35us
+       | OpTypeReserveId _ -> 36us
+       | OpTypeQueue _ -> 37us
+       | OpTypePipe _ -> 38us
+       | OpTypeForwardPointer _ -> 39us
+       | OpConstantTrue _ -> 41us
+       | OpConstantFalse _ -> 42us
+       | OpConstant _ -> 43us
+       | OpConstantComposite _ -> 44us
+       | OpConstantSampler _ -> 45us
+       | OpConstantNull _ -> 46us
+       | OpSpecConstantTrue _ -> 48us
+       | OpSpecConstantFalse _ -> 49us
+       | OpSpecConstant _ -> 50us
+       | OpSpecConstantComposite _ -> 51us
+       | OpSpecConstantOp _ -> 52us
+       | OpFunction _ -> 54us
+       | OpFunctionParameter _ -> 55us
+       | OpFunctionEnd -> 56us
+       | OpFunctionCall _ -> 57us
+       | OpVariable _ -> 59us
+       | OpImageTexelPointer _ -> 60us
+       | OpLoad _ -> 61us
+       | OpStore _ -> 62us
+       | OpCopyMemory _ -> 63us
+       | OpCopyMemorySized _ -> 64us
+       | OpAccessChain _ -> 65us
+       | OpInBoundsAccessChain _ -> 66us
+       | OpPtrAccessChain _ -> 67us
+       | OpArrayLength _ -> 68us
+       | OpGenericPtrMemSemantics _ -> 69us
+       | OpInBoundsPtrAccessChain _ -> 70us
+       | OpDecorate _ -> 71us
+       | OpMemberDecorate _ -> 72us
+       | OpDecorationGroup _ -> 73us
+       | OpGroupDecorate _ -> 74us
+       | OpGroupMemberDecorate _ -> 75us
+       | OpVectorExtractDynamic _ -> 77us
+       | OpVectorInsertDynamic _ -> 78us
+       | OpVectorShuffle _ -> 79us
+       | OpCompositeConstruct _ -> 80us
+       | OpCompositeExtract _ -> 81us
+       | OpCompositeInsert _ -> 82us
+       | OpCopyObject _ -> 83us
+       | OpTranspose _ -> 84us
+       | OpSampledImage _ -> 86us
+       | OpImageSampleImplicitLod _ -> 87us
+       | OpImageSampleExplicitLod _ -> 88us
+       | OpImageSampleDrefImplicitLod _ -> 89us
+       | OpImageSampleDrefExplicitLod _ -> 90us
+       | OpImageSampleProjImplicitLod _ -> 91us
+       | OpImageSampleProjExplicitLod _ -> 92us
+       | OpImageSampleProjDrefImplicitLod _ -> 93us
+       | OpImageSampleProjDrefExplicitLod _ -> 94us
+       | OpImageFetch _ -> 95us
+       | OpImageGather _ -> 96us
+       | OpImageDrefGather _ -> 97us
+       | OpImageRead _ -> 98us
+       | OpImageWrite _ -> 99us
+       | OpImage _ -> 100us
+       | OpImageQueryFormat _ -> 101us
+       | OpImageQueryOrder _ -> 102us
+       | OpImageQuerySizeLod _ -> 103us
+       | OpImageQuerySize _ -> 104us
+       | OpImageQueryLod _ -> 105us
+       | OpImageQueryLevels _ -> 106us
+       | OpImageQuerySamples _ -> 107us
+       | OpConvertFToU _ -> 109us
+       | OpConvertFToS _ -> 110us
+       | OpConvertSToF _ -> 111us
+       | OpConvertUToF _ -> 112us
+       | OpUConvert _ -> 113us
+       | OpSConvert _ -> 114us
+       | OpFConvert _ -> 115us
+       | OpQuantizeToF16 _ -> 116us
+       | OpConvertPtrToU _ -> 117us
+       | OpSatConvertSToU _ -> 118us
+       | OpSatConvertUToS _ -> 119us
+       | OpConvertUToPtr _ -> 120us
+       | OpPtrCastToGeneric _ -> 121us
+       | OpGenericCastToPtr _ -> 122us
+       | OpGenericCastToPtrExplicit _ -> 123us
+       | OpBitcast _ -> 124us
+       | OpSNegate _ -> 126us
+       | OpFNegate _ -> 127us
+       | OpIAdd _ -> 128us
+       | OpFAdd _ -> 129us
+       | OpISub _ -> 130us
+       | OpFSub _ -> 131us
+       | OpIMul _ -> 132us
+       | OpFMul _ -> 133us
+       | OpUDiv _ -> 134us
+       | OpSDiv _ -> 135us
+       | OpFDiv _ -> 136us
+       | OpUMod _ -> 137us
+       | OpSRem _ -> 138us
+       | OpSMod _ -> 139us
+       | OpFRem _ -> 140us
+       | OpFMod _ -> 141us
+       | OpVectorTimesScalar _ -> 142us
+       | OpMatrixTimesScalar _ -> 143us
+       | OpVectorTimesMatrix _ -> 144us
+       | OpMatrixTimesVector _ -> 145us
+       | OpMatrixTimesMatrix _ -> 146us
+       | OpOuterProduct _ -> 147us
+       | OpDot _ -> 148us
+       | OpIAddCarry _ -> 149us
+       | OpISubBorrow _ -> 150us
+       | OpUMulExtended _ -> 151us
+       | OpSMulExtended _ -> 152us
+       | OpAny _ -> 154us
+       | OpAll _ -> 155us
+       | OpIsNan _ -> 156us
+       | OpIsInf _ -> 157us
+       | OpIsFinite _ -> 158us
+       | OpIsNormal _ -> 159us
+       | OpSignBitSet _ -> 160us
+       | OpLessOrGreater _ -> 161us
+       | OpOrdered _ -> 162us
+       | OpUnordered _ -> 163us
+       | OpLogicalEqual _ -> 164us
+       | OpLogicalNotEqual _ -> 165us
+       | OpLogicalOr _ -> 166us
+       | OpLogicalAnd _ -> 167us
+       | OpLogicalNot _ -> 168us
+       | OpSelect _ -> 169us
+       | OpIEqual _ -> 170us
+       | OpINotEqual _ -> 171us
+       | OpUGreaterThan _ -> 172us
+       | OpSGreaterThan _ -> 173us
+       | OpUGreaterThanEqual _ -> 174us
+       | OpSGreaterThanEqual _ -> 175us
+       | OpULessThan _ -> 176us
+       | OpSLessThan _ -> 177us
+       | OpULessThanEqual _ -> 178us
+       | OpSLessThanEqual _ -> 179us
+       | OpFOrdEqual _ -> 180us
+       | OpFUnordEqual _ -> 181us
+       | OpFOrdNotEqual _ -> 182us
+       | OpFUnordNotEqual _ -> 183us
+       | OpFOrdLessThan _ -> 184us
+       | OpFUnordLessThan _ -> 185us
+       | OpFOrdGreaterThan _ -> 186us
+       | OpFUnordGreaterThan _ -> 187us
+       | OpFOrdLessThanEqual _ -> 188us
+       | OpFUnordLessThanEqual _ -> 189us
+       | OpFOrdGreaterThanEqual _ -> 190us
+       | OpFUnordGreaterThanEqual _ -> 191us
+       | OpShiftRightLogical _ -> 194us
+       | OpShiftRightArithmetic _ -> 195us
+       | OpShiftLeftLogical _ -> 196us
+       | OpBitwiseOr _ -> 197us
+       | OpBitwiseXor _ -> 198us
+       | OpBitwiseAnd _ -> 199us
+       | OpNot _ -> 200us
+       | OpBitFieldInsert _ -> 201us
+       | OpBitFieldSExtract _ -> 202us
+       | OpBitFieldUExtract _ -> 203us
+       | OpBitReverse _ -> 204us
+       | OpBitCount _ -> 205us
+       | OpDPdx _ -> 207us
+       | OpDPdy _ -> 208us
+       | OpFwidth _ -> 209us
+       | OpDPdxFine _ -> 210us
+       | OpDPdyFine _ -> 211us
+       | OpFwidthFine _ -> 212us
+       | OpDPdxCoarse _ -> 213us
+       | OpDPdyCoarse _ -> 214us
+       | OpFwidthCoarse _ -> 215us
+       | OpEmitVertex -> 218us
+       | OpEndPrimitive -> 219us
+       | OpEmitStreamVertex _ -> 220us
+       | OpEndStreamPrimitive _ -> 221us
+       | OpControlBarrier _ -> 224us
+       | OpMemoryBarrier _ -> 225us
+       | OpAtomicLoad _ -> 227us
+       | OpAtomicStore _ -> 228us
+       | OpAtomicExchange _ -> 229us
+       | OpAtomicCompareExchange _ -> 230us
+       | OpAtomicCompareExchangeWeak _ -> 231us
+       | OpAtomicIIncrement _ -> 232us
+       | OpAtomicIDecrement _ -> 233us
+       | OpAtomicIAdd _ -> 234us
+       | OpAtomicISub _ -> 235us
+       | OpAtomicSMin _ -> 236us
+       | OpAtomicUMin _ -> 237us
+       | OpAtomicSMax _ -> 238us
+       | OpAtomicUMax _ -> 239us
+       | OpAtomicAnd _ -> 240us
+       | OpAtomicOr _ -> 241us
+       | OpAtomicXor _ -> 242us
+       | OpPhi _ -> 245us
+       | OpLoopMerge _ -> 246us
+       | OpSelectionMerge _ -> 247us
+       | OpLabel _ -> 248us
+       | OpBranch _ -> 249us
+       | OpBranchConditional _ -> 250us
+       | OpSwitch _ -> 251us
+       | OpKill -> 252us
+       | OpReturn -> 253us
+       | OpReturnValue _ -> 254us
+       | OpUnreachable -> 255us
+       | OpLifetimeStart _ -> 256us
+       | OpLifetimeStop _ -> 257us
+       | OpGroupAsyncCopy _ -> 259us
+       | OpGroupWaitEvents _ -> 260us
+       | OpGroupAll _ -> 261us
+       | OpGroupAny _ -> 262us
+       | OpGroupBroadcast _ -> 263us
+       | OpGroupIAdd _ -> 264us
+       | OpGroupFAdd _ -> 265us
+       | OpGroupFMin _ -> 266us
+       | OpGroupUMin _ -> 267us
+       | OpGroupSMin _ -> 268us
+       | OpGroupFMax _ -> 269us
+       | OpGroupUMax _ -> 270us
+       | OpGroupSMax _ -> 271us
+       | OpReadPipe _ -> 274us
+       | OpWritePipe _ -> 275us
+       | OpReservedReadPipe _ -> 276us
+       | OpReservedWritePipe _ -> 277us
+       | OpReserveReadPipePackets _ -> 278us
+       | OpReserveWritePipePackets _ -> 279us
+       | OpCommitReadPipe _ -> 280us
+       | OpCommitWritePipe _ -> 281us
+       | OpIsValidReserveId _ -> 282us
+       | OpGetNumPipePackets _ -> 283us
+       | OpGetMaxPipePackets _ -> 284us
+       | OpGroupReserveReadPipePackets _ -> 285us
+       | OpGroupReserveWritePipePackets _ -> 286us
+       | OpGroupCommitReadPipe _ -> 287us
+       | OpGroupCommitWritePipe _ -> 288us
+       | OpEnqueueMarker _ -> 291us
+       | OpEnqueueKernel _ -> 292us
+       | OpGetKernelNDrangeSubGroupCount _ -> 293us
+       | OpGetKernelNDrangeMaxSubGroupSize _ -> 294us
+       | OpGetKernelWorkGroupSize _ -> 295us
+       | OpGetKernelPreferredWorkGroupSizeMultiple _ -> 296us
+       | OpRetainEvent _ -> 297us
+       | OpReleaseEvent _ -> 298us
+       | OpCreateUserEvent _ -> 299us
+       | OpIsValidEvent _ -> 300us
+       | OpSetUserEventStatus _ -> 301us
+       | OpCaptureEventProfilingInfo _ -> 302us
+       | OpGetDefaultQueue _ -> 303us
+       | OpBuildNDRange _ -> 304us
+       | OpImageSparseSampleImplicitLod _ -> 305us
+       | OpImageSparseSampleExplicitLod _ -> 306us
+       | OpImageSparseSampleDrefImplicitLod _ -> 307us
+       | OpImageSparseSampleDrefExplicitLod _ -> 308us
+       | OpImageSparseSampleProjImplicitLod _ -> 309us
+       | OpImageSparseSampleProjExplicitLod _ -> 310us
+       | OpImageSparseSampleProjDrefImplicitLod _ -> 311us
+       | OpImageSparseSampleProjDrefExplicitLod _ -> 312us
+       | OpImageSparseFetch _ -> 313us
+       | OpImageSparseGather _ -> 314us
+       | OpImageSparseDrefGather _ -> 315us
+       | OpImageSparseTexelsResident _ -> 316us
+       | OpNoLine -> 317us
+       | OpAtomicFlagTestAndSet _ -> 318us
+       | OpAtomicFlagClear _ -> 319us
+       | OpImageSparseRead _ -> 320us
+       | OpSizeOf _ -> 321us
+       | OpTypePipeStorage _ -> 322us
+       | OpConstantPipeStorage _ -> 323us
+       | OpCreatePipeFromPipeStorage _ -> 324us
+       | OpGetKernelLocalSizeForSubgroupCount _ -> 325us
+       | OpGetKernelMaxNumSubgroups _ -> 326us
+       | OpTypeNamedBarrier _ -> 327us
+       | OpNamedBarrierInitialize _ -> 328us
+       | OpMemoryNamedBarrier _ -> 329us
+       | OpModuleProcessed _ -> 330us
+       | OpExecutionModeId _ -> 331us
+       | OpDecorateId _ -> 332us
+       | OpGroupNonUniformElect _ -> 333us
+       | OpGroupNonUniformAll _ -> 334us
+       | OpGroupNonUniformAny _ -> 335us
+       | OpGroupNonUniformAllEqual _ -> 336us
+       | OpGroupNonUniformBroadcast _ -> 337us
+       | OpGroupNonUniformBroadcastFirst _ -> 338us
+       | OpGroupNonUniformBallot _ -> 339us
+       | OpGroupNonUniformInverseBallot _ -> 340us
+       | OpGroupNonUniformBallotBitExtract _ -> 341us
+       | OpGroupNonUniformBallotBitCount _ -> 342us
+       | OpGroupNonUniformBallotFindLSB _ -> 343us
+       | OpGroupNonUniformBallotFindMSB _ -> 344us
+       | OpGroupNonUniformShuffle _ -> 345us
+       | OpGroupNonUniformShuffleXor _ -> 346us
+       | OpGroupNonUniformShuffleUp _ -> 347us
+       | OpGroupNonUniformShuffleDown _ -> 348us
+       | OpGroupNonUniformIAdd _ -> 349us
+       | OpGroupNonUniformFAdd _ -> 350us
+       | OpGroupNonUniformIMul _ -> 351us
+       | OpGroupNonUniformFMul _ -> 352us
+       | OpGroupNonUniformSMin _ -> 353us
+       | OpGroupNonUniformUMin _ -> 354us
+       | OpGroupNonUniformFMin _ -> 355us
+       | OpGroupNonUniformSMax _ -> 356us
+       | OpGroupNonUniformUMax _ -> 357us
+       | OpGroupNonUniformFMax _ -> 358us
+       | OpGroupNonUniformBitwiseAnd _ -> 359us
+       | OpGroupNonUniformBitwiseOr _ -> 360us
+       | OpGroupNonUniformBitwiseXor _ -> 361us
+       | OpGroupNonUniformLogicalAnd _ -> 362us
+       | OpGroupNonUniformLogicalOr _ -> 363us
+       | OpGroupNonUniformLogicalXor _ -> 364us
+       | OpGroupNonUniformQuadBroadcast _ -> 365us
+       | OpGroupNonUniformQuadSwap _ -> 366us
+       | OpCopyLogical _ -> 400us
+       | OpPtrEqual _ -> 401us
+       | OpPtrNotEqual _ -> 402us
+       | OpPtrDiff _ -> 403us
+       | OpSubgroupBallotKHR _ -> 4421us
+       | OpSubgroupFirstInvocationKHR _ -> 4422us
+       | OpSubgroupAllKHR _ -> 4428us
+       | OpSubgroupAnyKHR _ -> 4429us
+       | OpSubgroupAllEqualKHR _ -> 4430us
+       | OpSubgroupReadInvocationKHR _ -> 4432us
+       | OpGroupIAddNonUniformAMD _ -> 5000us
+       | OpGroupFAddNonUniformAMD _ -> 5001us
+       | OpGroupFMinNonUniformAMD _ -> 5002us
+       | OpGroupUMinNonUniformAMD _ -> 5003us
+       | OpGroupSMinNonUniformAMD _ -> 5004us
+       | OpGroupFMaxNonUniformAMD _ -> 5005us
+       | OpGroupUMaxNonUniformAMD _ -> 5006us
+       | OpGroupSMaxNonUniformAMD _ -> 5007us
+       | OpFragmentMaskFetchAMD _ -> 5011us
+       | OpFragmentFetchAMD _ -> 5012us
+       | OpReadClockKHR _ -> 5056us
+       | OpImageSampleFootprintNV _ -> 5283us
+       | OpGroupNonUniformPartitionNV _ -> 5296us
+       | OpWritePackedPrimitiveIndices4x8NV _ -> 5299us
+       | OpReportIntersectionNV _ -> 5334us
+       | OpIgnoreIntersectionNV -> 5335us
+       | OpTerminateRayNV -> 5336us
+       | OpTraceNV _ -> 5337us
+       | OpTypeAccelerationStructureNV _ -> 5341us
+       | OpExecuteCallableNV _ -> 5344us
+       | OpTypeCooperativeMatrixNV _ -> 5358us
+       | OpCooperativeMatrixLoadNV _ -> 5359us
+       | OpCooperativeMatrixStoreNV _ -> 5360us
+       | OpCooperativeMatrixMulAddNV _ -> 5361us
+       | OpCooperativeMatrixLengthNV _ -> 5362us
+       | OpBeginInvocationInterlockEXT -> 5364us
+       | OpEndInvocationInterlockEXT -> 5365us
+       | OpDemoteToHelperInvocationEXT -> 5380us
+       | OpIsHelperInvocationEXT _ -> 5381us
+       | OpSubgroupShuffleINTEL _ -> 5571us
+       | OpSubgroupShuffleDownINTEL _ -> 5572us
+       | OpSubgroupShuffleUpINTEL _ -> 5573us
+       | OpSubgroupShuffleXorINTEL _ -> 5574us
+       | OpSubgroupBlockReadINTEL _ -> 5575us
+       | OpSubgroupBlockWriteINTEL _ -> 5576us
+       | OpSubgroupImageBlockReadINTEL _ -> 5577us
+       | OpSubgroupImageBlockWriteINTEL _ -> 5578us
+       | OpSubgroupImageMediaBlockReadINTEL _ -> 5580us
+       | OpSubgroupImageMediaBlockWriteINTEL _ -> 5581us
+       | OpUCountLeadingZerosINTEL _ -> 5585us
+       | OpUCountTrailingZerosINTEL _ -> 5586us
+       | OpAbsISubINTEL _ -> 5587us
+       | OpAbsUSubINTEL _ -> 5588us
+       | OpIAddSatINTEL _ -> 5589us
+       | OpUAddSatINTEL _ -> 5590us
+       | OpIAverageINTEL _ -> 5591us
+       | OpUAverageINTEL _ -> 5592us
+       | OpIAverageRoundedINTEL _ -> 5593us
+       | OpUAverageRoundedINTEL _ -> 5594us
+       | OpISubSatINTEL _ -> 5595us
+       | OpUSubSatINTEL _ -> 5596us
+       | OpIMul32x16INTEL _ -> 5597us
+       | OpUMul32x16INTEL _ -> 5598us
+       | OpDecorateString _ -> 5632us
+       | OpMemberDecorateString _ -> 5633us
+       | OpVmeImageINTEL _ -> 5699us
+       | OpTypeVmeImageINTEL _ -> 5700us
+       | OpTypeAvcImePayloadINTEL _ -> 5701us
+       | OpTypeAvcRefPayloadINTEL _ -> 5702us
+       | OpTypeAvcSicPayloadINTEL _ -> 5703us
+       | OpTypeAvcMcePayloadINTEL _ -> 5704us
+       | OpTypeAvcMceResultINTEL _ -> 5705us
+       | OpTypeAvcImeResultINTEL _ -> 5706us
+       | OpTypeAvcImeResultSingleReferenceStreamoutINTEL _ -> 5707us
+       | OpTypeAvcImeResultDualReferenceStreamoutINTEL _ -> 5708us
+       | OpTypeAvcImeSingleReferenceStreaminINTEL _ -> 5709us
+       | OpTypeAvcImeDualReferenceStreaminINTEL _ -> 5710us
+       | OpTypeAvcRefResultINTEL _ -> 5711us
+       | OpTypeAvcSicResultINTEL _ -> 5712us
+       | OpSubgroupAvcMceGetDefaultInterBaseMultiReferencePenaltyINTEL _ -> 5713us
+       | OpSubgroupAvcMceSetInterBaseMultiReferencePenaltyINTEL _ -> 5714us
+       | OpSubgroupAvcMceGetDefaultInterShapePenaltyINTEL _ -> 5715us
+       | OpSubgroupAvcMceSetInterShapePenaltyINTEL _ -> 5716us
+       | OpSubgroupAvcMceGetDefaultInterDirectionPenaltyINTEL _ -> 5717us
+       | OpSubgroupAvcMceSetInterDirectionPenaltyINTEL _ -> 5718us
+       | OpSubgroupAvcMceGetDefaultIntraLumaShapePenaltyINTEL _ -> 5719us
+       | OpSubgroupAvcMceGetDefaultInterMotionVectorCostTableINTEL _ -> 5720us
+       | OpSubgroupAvcMceGetDefaultHighPenaltyCostTableINTEL _ -> 5721us
+       | OpSubgroupAvcMceGetDefaultMediumPenaltyCostTableINTEL _ -> 5722us
+       | OpSubgroupAvcMceGetDefaultLowPenaltyCostTableINTEL _ -> 5723us
+       | OpSubgroupAvcMceSetMotionVectorCostFunctionINTEL _ -> 5724us
+       | OpSubgroupAvcMceGetDefaultIntraLumaModePenaltyINTEL _ -> 5725us
+       | OpSubgroupAvcMceGetDefaultNonDcLumaIntraPenaltyINTEL _ -> 5726us
+       | OpSubgroupAvcMceGetDefaultIntraChromaModeBasePenaltyINTEL _ -> 5727us
+       | OpSubgroupAvcMceSetAcOnlyHaarINTEL _ -> 5728us
+       | OpSubgroupAvcMceSetSourceInterlacedFieldPolarityINTEL _ -> 5729us
+       | OpSubgroupAvcMceSetSingleReferenceInterlacedFieldPolarityINTEL _ -> 5730us
+       | OpSubgroupAvcMceSetDualReferenceInterlacedFieldPolaritiesINTEL _ -> 5731us
+       | OpSubgroupAvcMceConvertToImePayloadINTEL _ -> 5732us
+       | OpSubgroupAvcMceConvertToImeResultINTEL _ -> 5733us
+       | OpSubgroupAvcMceConvertToRefPayloadINTEL _ -> 5734us
+       | OpSubgroupAvcMceConvertToRefResultINTEL _ -> 5735us
+       | OpSubgroupAvcMceConvertToSicPayloadINTEL _ -> 5736us
+       | OpSubgroupAvcMceConvertToSicResultINTEL _ -> 5737us
+       | OpSubgroupAvcMceGetMotionVectorsINTEL _ -> 5738us
+       | OpSubgroupAvcMceGetInterDistortionsINTEL _ -> 5739us
+       | OpSubgroupAvcMceGetBestInterDistortionsINTEL _ -> 5740us
+       | OpSubgroupAvcMceGetInterMajorShapeINTEL _ -> 5741us
+       | OpSubgroupAvcMceGetInterMinorShapeINTEL _ -> 5742us
+       | OpSubgroupAvcMceGetInterDirectionsINTEL _ -> 5743us
+       | OpSubgroupAvcMceGetInterMotionVectorCountINTEL _ -> 5744us
+       | OpSubgroupAvcMceGetInterReferenceIdsINTEL _ -> 5745us
+       | OpSubgroupAvcMceGetInterReferenceInterlacedFieldPolaritiesINTEL _ -> 5746us
+       | OpSubgroupAvcImeInitializeINTEL _ -> 5747us
+       | OpSubgroupAvcImeSetSingleReferenceINTEL _ -> 5748us
+       | OpSubgroupAvcImeSetDualReferenceINTEL _ -> 5749us
+       | OpSubgroupAvcImeRefWindowSizeINTEL _ -> 5750us
+       | OpSubgroupAvcImeAdjustRefOffsetINTEL _ -> 5751us
+       | OpSubgroupAvcImeConvertToMcePayloadINTEL _ -> 5752us
+       | OpSubgroupAvcImeSetMaxMotionVectorCountINTEL _ -> 5753us
+       | OpSubgroupAvcImeSetUnidirectionalMixDisableINTEL _ -> 5754us
+       | OpSubgroupAvcImeSetEarlySearchTerminationThresholdINTEL _ -> 5755us
+       | OpSubgroupAvcImeSetWeightedSadINTEL _ -> 5756us
+       | OpSubgroupAvcImeEvaluateWithSingleReferenceINTEL _ -> 5757us
+       | OpSubgroupAvcImeEvaluateWithDualReferenceINTEL _ -> 5758us
+       | OpSubgroupAvcImeEvaluateWithSingleReferenceStreaminINTEL _ -> 5759us
+       | OpSubgroupAvcImeEvaluateWithDualReferenceStreaminINTEL _ -> 5760us
+       | OpSubgroupAvcImeEvaluateWithSingleReferenceStreamoutINTEL _ -> 5761us
+       | OpSubgroupAvcImeEvaluateWithDualReferenceStreamoutINTEL _ -> 5762us
+       | OpSubgroupAvcImeEvaluateWithSingleReferenceStreaminoutINTEL _ -> 5763us
+       | OpSubgroupAvcImeEvaluateWithDualReferenceStreaminoutINTEL _ -> 5764us
+       | OpSubgroupAvcImeConvertToMceResultINTEL _ -> 5765us
+       | OpSubgroupAvcImeGetSingleReferenceStreaminINTEL _ -> 5766us
+       | OpSubgroupAvcImeGetDualReferenceStreaminINTEL _ -> 5767us
+       | OpSubgroupAvcImeStripSingleReferenceStreamoutINTEL _ -> 5768us
+       | OpSubgroupAvcImeStripDualReferenceStreamoutINTEL _ -> 5769us
+       | OpSubgroupAvcImeGetStreamoutSingleReferenceMajorShapeMotionVectorsINTEL _ -> 5770us
+       | OpSubgroupAvcImeGetStreamoutSingleReferenceMajorShapeDistortionsINTEL _ -> 5771us
+       | OpSubgroupAvcImeGetStreamoutSingleReferenceMajorShapeReferenceIdsINTEL _ -> 5772us
+       | OpSubgroupAvcImeGetStreamoutDualReferenceMajorShapeMotionVectorsINTEL _ -> 5773us
+       | OpSubgroupAvcImeGetStreamoutDualReferenceMajorShapeDistortionsINTEL _ -> 5774us
+       | OpSubgroupAvcImeGetStreamoutDualReferenceMajorShapeReferenceIdsINTEL _ -> 5775us
+       | OpSubgroupAvcImeGetBorderReachedINTEL _ -> 5776us
+       | OpSubgroupAvcImeGetTruncatedSearchIndicationINTEL _ -> 5777us
+       | OpSubgroupAvcImeGetUnidirectionalEarlySearchTerminationINTEL _ -> 5778us
+       | OpSubgroupAvcImeGetWeightingPatternMinimumMotionVectorINTEL _ -> 5779us
+       | OpSubgroupAvcImeGetWeightingPatternMinimumDistortionINTEL _ -> 5780us
+       | OpSubgroupAvcFmeInitializeINTEL _ -> 5781us
+       | OpSubgroupAvcBmeInitializeINTEL _ -> 5782us
+       | OpSubgroupAvcRefConvertToMcePayloadINTEL _ -> 5783us
+       | OpSubgroupAvcRefSetBidirectionalMixDisableINTEL _ -> 5784us
+       | OpSubgroupAvcRefSetBilinearFilterEnableINTEL _ -> 5785us
+       | OpSubgroupAvcRefEvaluateWithSingleReferenceINTEL _ -> 5786us
+       | OpSubgroupAvcRefEvaluateWithDualReferenceINTEL _ -> 5787us
+       | OpSubgroupAvcRefEvaluateWithMultiReferenceINTEL _ -> 5788us
+       | OpSubgroupAvcRefEvaluateWithMultiReferenceInterlacedINTEL _ -> 5789us
+       | OpSubgroupAvcRefConvertToMceResultINTEL _ -> 5790us
+       | OpSubgroupAvcSicInitializeINTEL _ -> 5791us
+       | OpSubgroupAvcSicConfigureSkcINTEL _ -> 5792us
+       | OpSubgroupAvcSicConfigureIpeLumaINTEL _ -> 5793us
+       | OpSubgroupAvcSicConfigureIpeLumaChromaINTEL _ -> 5794us
+       | OpSubgroupAvcSicGetMotionVectorMaskINTEL _ -> 5795us
+       | OpSubgroupAvcSicConvertToMcePayloadINTEL _ -> 5796us
+       | OpSubgroupAvcSicSetIntraLumaShapePenaltyINTEL _ -> 5797us
+       | OpSubgroupAvcSicSetIntraLumaModeCostFunctionINTEL _ -> 5798us
+       | OpSubgroupAvcSicSetIntraChromaModeCostFunctionINTEL _ -> 5799us
+       | OpSubgroupAvcSicSetBilinearFilterEnableINTEL _ -> 5800us
+       | OpSubgroupAvcSicSetSkcForwardTransformEnableINTEL _ -> 5801us
+       | OpSubgroupAvcSicSetBlockBasedRawSkipSadINTEL _ -> 5802us
+       | OpSubgroupAvcSicEvaluateIpeINTEL _ -> 5803us
+       | OpSubgroupAvcSicEvaluateWithSingleReferenceINTEL _ -> 5804us
+       | OpSubgroupAvcSicEvaluateWithDualReferenceINTEL _ -> 5805us
+       | OpSubgroupAvcSicEvaluateWithMultiReferenceINTEL _ -> 5806us
+       | OpSubgroupAvcSicEvaluateWithMultiReferenceInterlacedINTEL _ -> 5807us
+       | OpSubgroupAvcSicConvertToMceResultINTEL _ -> 5808us
+       | OpSubgroupAvcSicGetIpeLumaShapeINTEL _ -> 5809us
+       | OpSubgroupAvcSicGetBestIpeLumaDistortionINTEL _ -> 5810us
+       | OpSubgroupAvcSicGetBestIpeChromaDistortionINTEL _ -> 5811us
+       | OpSubgroupAvcSicGetPackedIpeLumaModesINTEL _ -> 5812us
+       | OpSubgroupAvcSicGetIpeChromaModeINTEL _ -> 5813us
+       | OpSubgroupAvcSicGetPackedSkcLumaCountThresholdINTEL _ -> 5814us
+       | OpSubgroupAvcSicGetPackedSkcLumaSumThresholdINTEL _ -> 5815us
+       | OpSubgroupAvcSicGetInterRawSadsINTEL _ -> 5816us
 
     member x.Version =
        match x with
@@ -4869,1051 +4874,1051 @@ type Instruction =
             stream.WriteUInt32(arg1)
             stream.WriteUInt32(arg2)
 
-    static member internal Deserialize(opcode: uint32, stream: SpirvStream) =
+    static member internal Deserialize(opcode: uint16, stream: SpirvStream) =
         match opcode with
-        | 0u ->
+        | 0us ->
             OpNop
-        | 1u ->
+        | 1us ->
             OpUndef(stream.ReadUInt32(), stream.ReadUInt32())
-        | 2u ->
+        | 2us ->
             OpSourceContinued(stream.ReadString())
-        | 3u ->
+        | 3us ->
             OpSource(stream.ReadEnum(), stream.ReadUInt32(), stream.ReadOption(fun () -> stream.ReadUInt32()), stream.ReadOption(fun () -> stream.ReadString()))
-        | 4u ->
+        | 4us ->
             OpSourceExtension(stream.ReadString())
-        | 5u ->
+        | 5us ->
             OpName(stream.ReadUInt32(), stream.ReadString())
-        | 6u ->
+        | 6us ->
             OpMemberName(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadString())
-        | 7u ->
+        | 7us ->
             OpString(stream.ReadUInt32(), stream.ReadString())
-        | 8u ->
+        | 8us ->
             OpLine(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 10u ->
+        | 10us ->
             OpExtension(stream.ReadString())
-        | 11u ->
+        | 11us ->
             OpExtInstImport(stream.ReadUInt32(), stream.ReadString())
-        | 12u ->
+        | 12us ->
             OpExtInst(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadList(fun () -> stream.ReadUInt32()))
-        | 14u ->
+        | 14us ->
             OpMemoryModel(stream.ReadEnum(), stream.ReadEnum())
-        | 15u ->
+        | 15us ->
             OpEntryPoint(stream.ReadEnum(), stream.ReadUInt32(), stream.ReadString(), stream.ReadList(fun () -> stream.ReadUInt32()))
-        | 16u ->
+        | 16us ->
             OpExecutionMode(stream.ReadUInt32(), stream.ReadEnum())
-        | 17u ->
+        | 17us ->
             OpCapability(stream.ReadEnum())
-        | 19u ->
+        | 19us ->
             OpTypeVoid(stream.ReadUInt32())
-        | 20u ->
+        | 20us ->
             OpTypeBool(stream.ReadUInt32())
-        | 21u ->
+        | 21us ->
             OpTypeInt(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 22u ->
+        | 22us ->
             OpTypeFloat(stream.ReadUInt32(), stream.ReadUInt32())
-        | 23u ->
+        | 23us ->
             OpTypeVector(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 24u ->
+        | 24us ->
             OpTypeMatrix(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 25u ->
+        | 25us ->
             OpTypeImage(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadEnum(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadEnum(), stream.ReadOption(fun () -> stream.ReadEnum()))
-        | 26u ->
+        | 26us ->
             OpTypeSampler(stream.ReadUInt32())
-        | 27u ->
+        | 27us ->
             OpTypeSampledImage(stream.ReadUInt32(), stream.ReadUInt32())
-        | 28u ->
+        | 28us ->
             OpTypeArray(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 29u ->
+        | 29us ->
             OpTypeRuntimeArray(stream.ReadUInt32(), stream.ReadUInt32())
-        | 30u ->
+        | 30us ->
             OpTypeStruct(stream.ReadUInt32(), stream.ReadList(fun () -> stream.ReadUInt32()))
-        | 31u ->
+        | 31us ->
             OpTypeOpaque(stream.ReadUInt32(), stream.ReadString())
-        | 32u ->
+        | 32us ->
             OpTypePointer(stream.ReadUInt32(), stream.ReadEnum(), stream.ReadUInt32())
-        | 33u ->
+        | 33us ->
             OpTypeFunction(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadList(fun () -> stream.ReadUInt32()))
-        | 34u ->
+        | 34us ->
             OpTypeEvent(stream.ReadUInt32())
-        | 35u ->
+        | 35us ->
             OpTypeDeviceEvent(stream.ReadUInt32())
-        | 36u ->
+        | 36us ->
             OpTypeReserveId(stream.ReadUInt32())
-        | 37u ->
+        | 37us ->
             OpTypeQueue(stream.ReadUInt32())
-        | 38u ->
+        | 38us ->
             OpTypePipe(stream.ReadUInt32(), stream.ReadEnum())
-        | 39u ->
+        | 39us ->
             OpTypeForwardPointer(stream.ReadUInt32(), stream.ReadEnum())
-        | 41u ->
+        | 41us ->
             OpConstantTrue(stream.ReadUInt32(), stream.ReadUInt32())
-        | 42u ->
+        | 42us ->
             OpConstantFalse(stream.ReadUInt32(), stream.ReadUInt32())
-        | 43u ->
+        | 43us ->
             OpConstant(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 44u ->
+        | 44us ->
             OpConstantComposite(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadList(fun () -> stream.ReadUInt32()))
-        | 45u ->
+        | 45us ->
             OpConstantSampler(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadEnum(), stream.ReadUInt32(), stream.ReadEnum())
-        | 46u ->
+        | 46us ->
             OpConstantNull(stream.ReadUInt32(), stream.ReadUInt32())
-        | 48u ->
+        | 48us ->
             OpSpecConstantTrue(stream.ReadUInt32(), stream.ReadUInt32())
-        | 49u ->
+        | 49us ->
             OpSpecConstantFalse(stream.ReadUInt32(), stream.ReadUInt32())
-        | 50u ->
+        | 50us ->
             OpSpecConstant(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 51u ->
+        | 51us ->
             OpSpecConstantComposite(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadList(fun () -> stream.ReadUInt32()))
-        | 52u ->
+        | 52us ->
             OpSpecConstantOp(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 54u ->
+        | 54us ->
             OpFunction(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadEnum(), stream.ReadUInt32())
-        | 55u ->
+        | 55us ->
             OpFunctionParameter(stream.ReadUInt32(), stream.ReadUInt32())
-        | 56u ->
+        | 56us ->
             OpFunctionEnd
-        | 57u ->
+        | 57us ->
             OpFunctionCall(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadList(fun () -> stream.ReadUInt32()))
-        | 59u ->
+        | 59us ->
             OpVariable(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadEnum(), stream.ReadOption(fun () -> stream.ReadUInt32()))
-        | 60u ->
+        | 60us ->
             OpImageTexelPointer(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 61u ->
+        | 61us ->
             OpLoad(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadOption(fun () -> stream.ReadEnum()))
-        | 62u ->
+        | 62us ->
             OpStore(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadOption(fun () -> stream.ReadEnum()))
-        | 63u ->
+        | 63us ->
             OpCopyMemory(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadOption(fun () -> stream.ReadEnum()), stream.ReadOption(fun () -> stream.ReadEnum()))
-        | 64u ->
+        | 64us ->
             OpCopyMemorySized(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadOption(fun () -> stream.ReadEnum()), stream.ReadOption(fun () -> stream.ReadEnum()))
-        | 65u ->
+        | 65us ->
             OpAccessChain(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadList(fun () -> stream.ReadUInt32()))
-        | 66u ->
+        | 66us ->
             OpInBoundsAccessChain(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadList(fun () -> stream.ReadUInt32()))
-        | 67u ->
+        | 67us ->
             OpPtrAccessChain(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadList(fun () -> stream.ReadUInt32()))
-        | 68u ->
+        | 68us ->
             OpArrayLength(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 69u ->
+        | 69us ->
             OpGenericPtrMemSemantics(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 70u ->
+        | 70us ->
             OpInBoundsPtrAccessChain(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadList(fun () -> stream.ReadUInt32()))
-        | 71u ->
+        | 71us ->
             OpDecorate(stream.ReadUInt32(), stream.ReadEnum())
-        | 72u ->
+        | 72us ->
             OpMemberDecorate(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadEnum())
-        | 73u ->
+        | 73us ->
             OpDecorationGroup(stream.ReadUInt32())
-        | 74u ->
+        | 74us ->
             OpGroupDecorate(stream.ReadUInt32(), stream.ReadList(fun () -> stream.ReadUInt32()))
-        | 75u ->
+        | 75us ->
             OpGroupMemberDecorate(stream.ReadUInt32(), stream.ReadList(fun () -> PairIdRefLiteralInteger(stream.ReadUInt32(), stream.ReadUInt32())))
-        | 77u ->
+        | 77us ->
             OpVectorExtractDynamic(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 78u ->
+        | 78us ->
             OpVectorInsertDynamic(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 79u ->
+        | 79us ->
             OpVectorShuffle(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadList(fun () -> stream.ReadUInt32()))
-        | 80u ->
+        | 80us ->
             OpCompositeConstruct(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadList(fun () -> stream.ReadUInt32()))
-        | 81u ->
+        | 81us ->
             OpCompositeExtract(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadList(fun () -> stream.ReadUInt32()))
-        | 82u ->
+        | 82us ->
             OpCompositeInsert(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadList(fun () -> stream.ReadUInt32()))
-        | 83u ->
+        | 83us ->
             OpCopyObject(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 84u ->
+        | 84us ->
             OpTranspose(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 86u ->
+        | 86us ->
             OpSampledImage(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 87u ->
+        | 87us ->
             OpImageSampleImplicitLod(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadOption(fun () -> stream.ReadEnum()))
-        | 88u ->
+        | 88us ->
             OpImageSampleExplicitLod(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadEnum())
-        | 89u ->
+        | 89us ->
             OpImageSampleDrefImplicitLod(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadOption(fun () -> stream.ReadEnum()))
-        | 90u ->
+        | 90us ->
             OpImageSampleDrefExplicitLod(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadEnum())
-        | 91u ->
+        | 91us ->
             OpImageSampleProjImplicitLod(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadOption(fun () -> stream.ReadEnum()))
-        | 92u ->
+        | 92us ->
             OpImageSampleProjExplicitLod(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadEnum())
-        | 93u ->
+        | 93us ->
             OpImageSampleProjDrefImplicitLod(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadOption(fun () -> stream.ReadEnum()))
-        | 94u ->
+        | 94us ->
             OpImageSampleProjDrefExplicitLod(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadEnum())
-        | 95u ->
+        | 95us ->
             OpImageFetch(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadOption(fun () -> stream.ReadEnum()))
-        | 96u ->
+        | 96us ->
             OpImageGather(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadOption(fun () -> stream.ReadEnum()))
-        | 97u ->
+        | 97us ->
             OpImageDrefGather(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadOption(fun () -> stream.ReadEnum()))
-        | 98u ->
+        | 98us ->
             OpImageRead(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadOption(fun () -> stream.ReadEnum()))
-        | 99u ->
+        | 99us ->
             OpImageWrite(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadOption(fun () -> stream.ReadEnum()))
-        | 100u ->
+        | 100us ->
             OpImage(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 101u ->
+        | 101us ->
             OpImageQueryFormat(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 102u ->
+        | 102us ->
             OpImageQueryOrder(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 103u ->
+        | 103us ->
             OpImageQuerySizeLod(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 104u ->
+        | 104us ->
             OpImageQuerySize(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 105u ->
+        | 105us ->
             OpImageQueryLod(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 106u ->
+        | 106us ->
             OpImageQueryLevels(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 107u ->
+        | 107us ->
             OpImageQuerySamples(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 109u ->
+        | 109us ->
             OpConvertFToU(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 110u ->
+        | 110us ->
             OpConvertFToS(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 111u ->
+        | 111us ->
             OpConvertSToF(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 112u ->
+        | 112us ->
             OpConvertUToF(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 113u ->
+        | 113us ->
             OpUConvert(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 114u ->
+        | 114us ->
             OpSConvert(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 115u ->
+        | 115us ->
             OpFConvert(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 116u ->
+        | 116us ->
             OpQuantizeToF16(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 117u ->
+        | 117us ->
             OpConvertPtrToU(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 118u ->
+        | 118us ->
             OpSatConvertSToU(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 119u ->
+        | 119us ->
             OpSatConvertUToS(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 120u ->
+        | 120us ->
             OpConvertUToPtr(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 121u ->
+        | 121us ->
             OpPtrCastToGeneric(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 122u ->
+        | 122us ->
             OpGenericCastToPtr(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 123u ->
+        | 123us ->
             OpGenericCastToPtrExplicit(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadEnum())
-        | 124u ->
+        | 124us ->
             OpBitcast(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 126u ->
+        | 126us ->
             OpSNegate(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 127u ->
+        | 127us ->
             OpFNegate(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 128u ->
+        | 128us ->
             OpIAdd(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 129u ->
+        | 129us ->
             OpFAdd(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 130u ->
+        | 130us ->
             OpISub(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 131u ->
+        | 131us ->
             OpFSub(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 132u ->
+        | 132us ->
             OpIMul(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 133u ->
+        | 133us ->
             OpFMul(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 134u ->
+        | 134us ->
             OpUDiv(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 135u ->
+        | 135us ->
             OpSDiv(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 136u ->
+        | 136us ->
             OpFDiv(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 137u ->
+        | 137us ->
             OpUMod(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 138u ->
+        | 138us ->
             OpSRem(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 139u ->
+        | 139us ->
             OpSMod(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 140u ->
+        | 140us ->
             OpFRem(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 141u ->
+        | 141us ->
             OpFMod(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 142u ->
+        | 142us ->
             OpVectorTimesScalar(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 143u ->
+        | 143us ->
             OpMatrixTimesScalar(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 144u ->
+        | 144us ->
             OpVectorTimesMatrix(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 145u ->
+        | 145us ->
             OpMatrixTimesVector(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 146u ->
+        | 146us ->
             OpMatrixTimesMatrix(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 147u ->
+        | 147us ->
             OpOuterProduct(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 148u ->
+        | 148us ->
             OpDot(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 149u ->
+        | 149us ->
             OpIAddCarry(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 150u ->
+        | 150us ->
             OpISubBorrow(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 151u ->
+        | 151us ->
             OpUMulExtended(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 152u ->
+        | 152us ->
             OpSMulExtended(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 154u ->
+        | 154us ->
             OpAny(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 155u ->
+        | 155us ->
             OpAll(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 156u ->
+        | 156us ->
             OpIsNan(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 157u ->
+        | 157us ->
             OpIsInf(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 158u ->
+        | 158us ->
             OpIsFinite(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 159u ->
+        | 159us ->
             OpIsNormal(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 160u ->
+        | 160us ->
             OpSignBitSet(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 161u ->
+        | 161us ->
             OpLessOrGreater(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 162u ->
+        | 162us ->
             OpOrdered(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 163u ->
+        | 163us ->
             OpUnordered(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 164u ->
+        | 164us ->
             OpLogicalEqual(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 165u ->
+        | 165us ->
             OpLogicalNotEqual(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 166u ->
+        | 166us ->
             OpLogicalOr(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 167u ->
+        | 167us ->
             OpLogicalAnd(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 168u ->
+        | 168us ->
             OpLogicalNot(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 169u ->
+        | 169us ->
             OpSelect(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 170u ->
+        | 170us ->
             OpIEqual(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 171u ->
+        | 171us ->
             OpINotEqual(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 172u ->
+        | 172us ->
             OpUGreaterThan(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 173u ->
+        | 173us ->
             OpSGreaterThan(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 174u ->
+        | 174us ->
             OpUGreaterThanEqual(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 175u ->
+        | 175us ->
             OpSGreaterThanEqual(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 176u ->
+        | 176us ->
             OpULessThan(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 177u ->
+        | 177us ->
             OpSLessThan(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 178u ->
+        | 178us ->
             OpULessThanEqual(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 179u ->
+        | 179us ->
             OpSLessThanEqual(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 180u ->
+        | 180us ->
             OpFOrdEqual(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 181u ->
+        | 181us ->
             OpFUnordEqual(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 182u ->
+        | 182us ->
             OpFOrdNotEqual(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 183u ->
+        | 183us ->
             OpFUnordNotEqual(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 184u ->
+        | 184us ->
             OpFOrdLessThan(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 185u ->
+        | 185us ->
             OpFUnordLessThan(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 186u ->
+        | 186us ->
             OpFOrdGreaterThan(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 187u ->
+        | 187us ->
             OpFUnordGreaterThan(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 188u ->
+        | 188us ->
             OpFOrdLessThanEqual(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 189u ->
+        | 189us ->
             OpFUnordLessThanEqual(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 190u ->
+        | 190us ->
             OpFOrdGreaterThanEqual(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 191u ->
+        | 191us ->
             OpFUnordGreaterThanEqual(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 194u ->
+        | 194us ->
             OpShiftRightLogical(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 195u ->
+        | 195us ->
             OpShiftRightArithmetic(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 196u ->
+        | 196us ->
             OpShiftLeftLogical(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 197u ->
+        | 197us ->
             OpBitwiseOr(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 198u ->
+        | 198us ->
             OpBitwiseXor(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 199u ->
+        | 199us ->
             OpBitwiseAnd(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 200u ->
+        | 200us ->
             OpNot(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 201u ->
+        | 201us ->
             OpBitFieldInsert(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 202u ->
+        | 202us ->
             OpBitFieldSExtract(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 203u ->
+        | 203us ->
             OpBitFieldUExtract(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 204u ->
+        | 204us ->
             OpBitReverse(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 205u ->
+        | 205us ->
             OpBitCount(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 207u ->
+        | 207us ->
             OpDPdx(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 208u ->
+        | 208us ->
             OpDPdy(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 209u ->
+        | 209us ->
             OpFwidth(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 210u ->
+        | 210us ->
             OpDPdxFine(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 211u ->
+        | 211us ->
             OpDPdyFine(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 212u ->
+        | 212us ->
             OpFwidthFine(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 213u ->
+        | 213us ->
             OpDPdxCoarse(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 214u ->
+        | 214us ->
             OpDPdyCoarse(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 215u ->
+        | 215us ->
             OpFwidthCoarse(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 218u ->
+        | 218us ->
             OpEmitVertex
-        | 219u ->
+        | 219us ->
             OpEndPrimitive
-        | 220u ->
+        | 220us ->
             OpEmitStreamVertex(stream.ReadUInt32())
-        | 221u ->
+        | 221us ->
             OpEndStreamPrimitive(stream.ReadUInt32())
-        | 224u ->
+        | 224us ->
             OpControlBarrier(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 225u ->
+        | 225us ->
             OpMemoryBarrier(stream.ReadUInt32(), stream.ReadUInt32())
-        | 227u ->
+        | 227us ->
             OpAtomicLoad(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 228u ->
+        | 228us ->
             OpAtomicStore(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 229u ->
+        | 229us ->
             OpAtomicExchange(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 230u ->
+        | 230us ->
             OpAtomicCompareExchange(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 231u ->
+        | 231us ->
             OpAtomicCompareExchangeWeak(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 232u ->
+        | 232us ->
             OpAtomicIIncrement(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 233u ->
+        | 233us ->
             OpAtomicIDecrement(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 234u ->
+        | 234us ->
             OpAtomicIAdd(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 235u ->
+        | 235us ->
             OpAtomicISub(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 236u ->
+        | 236us ->
             OpAtomicSMin(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 237u ->
+        | 237us ->
             OpAtomicUMin(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 238u ->
+        | 238us ->
             OpAtomicSMax(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 239u ->
+        | 239us ->
             OpAtomicUMax(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 240u ->
+        | 240us ->
             OpAtomicAnd(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 241u ->
+        | 241us ->
             OpAtomicOr(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 242u ->
+        | 242us ->
             OpAtomicXor(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 245u ->
+        | 245us ->
             OpPhi(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadList(fun () -> PairIdRefIdRef(stream.ReadUInt32(), stream.ReadUInt32())))
-        | 246u ->
+        | 246us ->
             OpLoopMerge(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadEnum())
-        | 247u ->
+        | 247us ->
             OpSelectionMerge(stream.ReadUInt32(), stream.ReadEnum())
-        | 248u ->
+        | 248us ->
             OpLabel(stream.ReadUInt32())
-        | 249u ->
+        | 249us ->
             OpBranch(stream.ReadUInt32())
-        | 250u ->
+        | 250us ->
             OpBranchConditional(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadList(fun () -> stream.ReadUInt32()))
-        | 251u ->
+        | 251us ->
             OpSwitch(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadList(fun () -> PairLiteralIntegerIdRef(stream.ReadUInt32(), stream.ReadUInt32())))
-        | 252u ->
+        | 252us ->
             OpKill
-        | 253u ->
+        | 253us ->
             OpReturn
-        | 254u ->
+        | 254us ->
             OpReturnValue(stream.ReadUInt32())
-        | 255u ->
+        | 255us ->
             OpUnreachable
-        | 256u ->
+        | 256us ->
             OpLifetimeStart(stream.ReadUInt32(), stream.ReadUInt32())
-        | 257u ->
+        | 257us ->
             OpLifetimeStop(stream.ReadUInt32(), stream.ReadUInt32())
-        | 259u ->
+        | 259us ->
             OpGroupAsyncCopy(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 260u ->
+        | 260us ->
             OpGroupWaitEvents(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 261u ->
+        | 261us ->
             OpGroupAll(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 262u ->
+        | 262us ->
             OpGroupAny(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 263u ->
+        | 263us ->
             OpGroupBroadcast(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 264u ->
+        | 264us ->
             OpGroupIAdd(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadEnum(), stream.ReadUInt32())
-        | 265u ->
+        | 265us ->
             OpGroupFAdd(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadEnum(), stream.ReadUInt32())
-        | 266u ->
+        | 266us ->
             OpGroupFMin(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadEnum(), stream.ReadUInt32())
-        | 267u ->
+        | 267us ->
             OpGroupUMin(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadEnum(), stream.ReadUInt32())
-        | 268u ->
+        | 268us ->
             OpGroupSMin(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadEnum(), stream.ReadUInt32())
-        | 269u ->
+        | 269us ->
             OpGroupFMax(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadEnum(), stream.ReadUInt32())
-        | 270u ->
+        | 270us ->
             OpGroupUMax(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadEnum(), stream.ReadUInt32())
-        | 271u ->
+        | 271us ->
             OpGroupSMax(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadEnum(), stream.ReadUInt32())
-        | 274u ->
+        | 274us ->
             OpReadPipe(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 275u ->
+        | 275us ->
             OpWritePipe(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 276u ->
+        | 276us ->
             OpReservedReadPipe(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 277u ->
+        | 277us ->
             OpReservedWritePipe(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 278u ->
+        | 278us ->
             OpReserveReadPipePackets(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 279u ->
+        | 279us ->
             OpReserveWritePipePackets(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 280u ->
+        | 280us ->
             OpCommitReadPipe(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 281u ->
+        | 281us ->
             OpCommitWritePipe(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 282u ->
+        | 282us ->
             OpIsValidReserveId(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 283u ->
+        | 283us ->
             OpGetNumPipePackets(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 284u ->
+        | 284us ->
             OpGetMaxPipePackets(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 285u ->
+        | 285us ->
             OpGroupReserveReadPipePackets(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 286u ->
+        | 286us ->
             OpGroupReserveWritePipePackets(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 287u ->
+        | 287us ->
             OpGroupCommitReadPipe(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 288u ->
+        | 288us ->
             OpGroupCommitWritePipe(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 291u ->
+        | 291us ->
             OpEnqueueMarker(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 292u ->
+        | 292us ->
             OpEnqueueKernel(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadList(fun () -> stream.ReadUInt32()))
-        | 293u ->
+        | 293us ->
             OpGetKernelNDrangeSubGroupCount(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 294u ->
+        | 294us ->
             OpGetKernelNDrangeMaxSubGroupSize(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 295u ->
+        | 295us ->
             OpGetKernelWorkGroupSize(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 296u ->
+        | 296us ->
             OpGetKernelPreferredWorkGroupSizeMultiple(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 297u ->
+        | 297us ->
             OpRetainEvent(stream.ReadUInt32())
-        | 298u ->
+        | 298us ->
             OpReleaseEvent(stream.ReadUInt32())
-        | 299u ->
+        | 299us ->
             OpCreateUserEvent(stream.ReadUInt32(), stream.ReadUInt32())
-        | 300u ->
+        | 300us ->
             OpIsValidEvent(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 301u ->
+        | 301us ->
             OpSetUserEventStatus(stream.ReadUInt32(), stream.ReadUInt32())
-        | 302u ->
+        | 302us ->
             OpCaptureEventProfilingInfo(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 303u ->
+        | 303us ->
             OpGetDefaultQueue(stream.ReadUInt32(), stream.ReadUInt32())
-        | 304u ->
+        | 304us ->
             OpBuildNDRange(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 305u ->
+        | 305us ->
             OpImageSparseSampleImplicitLod(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadOption(fun () -> stream.ReadEnum()))
-        | 306u ->
+        | 306us ->
             OpImageSparseSampleExplicitLod(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadEnum())
-        | 307u ->
+        | 307us ->
             OpImageSparseSampleDrefImplicitLod(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadOption(fun () -> stream.ReadEnum()))
-        | 308u ->
+        | 308us ->
             OpImageSparseSampleDrefExplicitLod(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadEnum())
-        | 309u ->
+        | 309us ->
             OpImageSparseSampleProjImplicitLod(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadOption(fun () -> stream.ReadEnum()))
-        | 310u ->
+        | 310us ->
             OpImageSparseSampleProjExplicitLod(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadEnum())
-        | 311u ->
+        | 311us ->
             OpImageSparseSampleProjDrefImplicitLod(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadOption(fun () -> stream.ReadEnum()))
-        | 312u ->
+        | 312us ->
             OpImageSparseSampleProjDrefExplicitLod(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadEnum())
-        | 313u ->
+        | 313us ->
             OpImageSparseFetch(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadOption(fun () -> stream.ReadEnum()))
-        | 314u ->
+        | 314us ->
             OpImageSparseGather(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadOption(fun () -> stream.ReadEnum()))
-        | 315u ->
+        | 315us ->
             OpImageSparseDrefGather(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadOption(fun () -> stream.ReadEnum()))
-        | 316u ->
+        | 316us ->
             OpImageSparseTexelsResident(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 317u ->
+        | 317us ->
             OpNoLine
-        | 318u ->
+        | 318us ->
             OpAtomicFlagTestAndSet(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 319u ->
+        | 319us ->
             OpAtomicFlagClear(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 320u ->
+        | 320us ->
             OpImageSparseRead(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadOption(fun () -> stream.ReadEnum()))
-        | 321u ->
+        | 321us ->
             OpSizeOf(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 322u ->
+        | 322us ->
             OpTypePipeStorage(stream.ReadUInt32())
-        | 323u ->
+        | 323us ->
             OpConstantPipeStorage(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 324u ->
+        | 324us ->
             OpCreatePipeFromPipeStorage(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 325u ->
+        | 325us ->
             OpGetKernelLocalSizeForSubgroupCount(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 326u ->
+        | 326us ->
             OpGetKernelMaxNumSubgroups(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 327u ->
+        | 327us ->
             OpTypeNamedBarrier(stream.ReadUInt32())
-        | 328u ->
+        | 328us ->
             OpNamedBarrierInitialize(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 329u ->
+        | 329us ->
             OpMemoryNamedBarrier(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 330u ->
+        | 330us ->
             OpModuleProcessed(stream.ReadString())
-        | 331u ->
+        | 331us ->
             OpExecutionModeId(stream.ReadUInt32(), stream.ReadEnum())
-        | 332u ->
+        | 332us ->
             OpDecorateId(stream.ReadUInt32(), stream.ReadEnum())
-        | 333u ->
+        | 333us ->
             OpGroupNonUniformElect(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 334u ->
+        | 334us ->
             OpGroupNonUniformAll(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 335u ->
+        | 335us ->
             OpGroupNonUniformAny(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 336u ->
+        | 336us ->
             OpGroupNonUniformAllEqual(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 337u ->
+        | 337us ->
             OpGroupNonUniformBroadcast(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 338u ->
+        | 338us ->
             OpGroupNonUniformBroadcastFirst(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 339u ->
+        | 339us ->
             OpGroupNonUniformBallot(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 340u ->
+        | 340us ->
             OpGroupNonUniformInverseBallot(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 341u ->
+        | 341us ->
             OpGroupNonUniformBallotBitExtract(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 342u ->
+        | 342us ->
             OpGroupNonUniformBallotBitCount(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadEnum(), stream.ReadUInt32())
-        | 343u ->
+        | 343us ->
             OpGroupNonUniformBallotFindLSB(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 344u ->
+        | 344us ->
             OpGroupNonUniformBallotFindMSB(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 345u ->
+        | 345us ->
             OpGroupNonUniformShuffle(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 346u ->
+        | 346us ->
             OpGroupNonUniformShuffleXor(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 347u ->
+        | 347us ->
             OpGroupNonUniformShuffleUp(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 348u ->
+        | 348us ->
             OpGroupNonUniformShuffleDown(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 349u ->
+        | 349us ->
             OpGroupNonUniformIAdd(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadEnum(), stream.ReadUInt32(), stream.ReadOption(fun () -> stream.ReadUInt32()))
-        | 350u ->
+        | 350us ->
             OpGroupNonUniformFAdd(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadEnum(), stream.ReadUInt32(), stream.ReadOption(fun () -> stream.ReadUInt32()))
-        | 351u ->
+        | 351us ->
             OpGroupNonUniformIMul(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadEnum(), stream.ReadUInt32(), stream.ReadOption(fun () -> stream.ReadUInt32()))
-        | 352u ->
+        | 352us ->
             OpGroupNonUniformFMul(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadEnum(), stream.ReadUInt32(), stream.ReadOption(fun () -> stream.ReadUInt32()))
-        | 353u ->
+        | 353us ->
             OpGroupNonUniformSMin(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadEnum(), stream.ReadUInt32(), stream.ReadOption(fun () -> stream.ReadUInt32()))
-        | 354u ->
+        | 354us ->
             OpGroupNonUniformUMin(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadEnum(), stream.ReadUInt32(), stream.ReadOption(fun () -> stream.ReadUInt32()))
-        | 355u ->
+        | 355us ->
             OpGroupNonUniformFMin(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadEnum(), stream.ReadUInt32(), stream.ReadOption(fun () -> stream.ReadUInt32()))
-        | 356u ->
+        | 356us ->
             OpGroupNonUniformSMax(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadEnum(), stream.ReadUInt32(), stream.ReadOption(fun () -> stream.ReadUInt32()))
-        | 357u ->
+        | 357us ->
             OpGroupNonUniformUMax(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadEnum(), stream.ReadUInt32(), stream.ReadOption(fun () -> stream.ReadUInt32()))
-        | 358u ->
+        | 358us ->
             OpGroupNonUniformFMax(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadEnum(), stream.ReadUInt32(), stream.ReadOption(fun () -> stream.ReadUInt32()))
-        | 359u ->
+        | 359us ->
             OpGroupNonUniformBitwiseAnd(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadEnum(), stream.ReadUInt32(), stream.ReadOption(fun () -> stream.ReadUInt32()))
-        | 360u ->
+        | 360us ->
             OpGroupNonUniformBitwiseOr(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadEnum(), stream.ReadUInt32(), stream.ReadOption(fun () -> stream.ReadUInt32()))
-        | 361u ->
+        | 361us ->
             OpGroupNonUniformBitwiseXor(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadEnum(), stream.ReadUInt32(), stream.ReadOption(fun () -> stream.ReadUInt32()))
-        | 362u ->
+        | 362us ->
             OpGroupNonUniformLogicalAnd(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadEnum(), stream.ReadUInt32(), stream.ReadOption(fun () -> stream.ReadUInt32()))
-        | 363u ->
+        | 363us ->
             OpGroupNonUniformLogicalOr(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadEnum(), stream.ReadUInt32(), stream.ReadOption(fun () -> stream.ReadUInt32()))
-        | 364u ->
+        | 364us ->
             OpGroupNonUniformLogicalXor(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadEnum(), stream.ReadUInt32(), stream.ReadOption(fun () -> stream.ReadUInt32()))
-        | 365u ->
+        | 365us ->
             OpGroupNonUniformQuadBroadcast(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 366u ->
+        | 366us ->
             OpGroupNonUniformQuadSwap(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 400u ->
+        | 400us ->
             OpCopyLogical(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 401u ->
+        | 401us ->
             OpPtrEqual(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 402u ->
+        | 402us ->
             OpPtrNotEqual(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 403u ->
+        | 403us ->
             OpPtrDiff(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 4421u ->
+        | 4421us ->
             OpSubgroupBallotKHR(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 4422u ->
+        | 4422us ->
             OpSubgroupFirstInvocationKHR(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 4428u ->
+        | 4428us ->
             OpSubgroupAllKHR(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 4429u ->
+        | 4429us ->
             OpSubgroupAnyKHR(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 4430u ->
+        | 4430us ->
             OpSubgroupAllEqualKHR(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 4432u ->
+        | 4432us ->
             OpSubgroupReadInvocationKHR(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5000u ->
+        | 5000us ->
             OpGroupIAddNonUniformAMD(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadEnum(), stream.ReadUInt32())
-        | 5001u ->
+        | 5001us ->
             OpGroupFAddNonUniformAMD(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadEnum(), stream.ReadUInt32())
-        | 5002u ->
+        | 5002us ->
             OpGroupFMinNonUniformAMD(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadEnum(), stream.ReadUInt32())
-        | 5003u ->
+        | 5003us ->
             OpGroupUMinNonUniformAMD(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadEnum(), stream.ReadUInt32())
-        | 5004u ->
+        | 5004us ->
             OpGroupSMinNonUniformAMD(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadEnum(), stream.ReadUInt32())
-        | 5005u ->
+        | 5005us ->
             OpGroupFMaxNonUniformAMD(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadEnum(), stream.ReadUInt32())
-        | 5006u ->
+        | 5006us ->
             OpGroupUMaxNonUniformAMD(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadEnum(), stream.ReadUInt32())
-        | 5007u ->
+        | 5007us ->
             OpGroupSMaxNonUniformAMD(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadEnum(), stream.ReadUInt32())
-        | 5011u ->
+        | 5011us ->
             OpFragmentMaskFetchAMD(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5012u ->
+        | 5012us ->
             OpFragmentFetchAMD(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5056u ->
+        | 5056us ->
             OpReadClockKHR(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5283u ->
+        | 5283us ->
             OpImageSampleFootprintNV(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadOption(fun () -> stream.ReadEnum()))
-        | 5296u ->
+        | 5296us ->
             OpGroupNonUniformPartitionNV(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5299u ->
+        | 5299us ->
             OpWritePackedPrimitiveIndices4x8NV(stream.ReadUInt32(), stream.ReadUInt32())
-        | 5334u ->
+        | 5334us ->
             OpReportIntersectionNV(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5335u ->
+        | 5335us ->
             OpIgnoreIntersectionNV
-        | 5336u ->
+        | 5336us ->
             OpTerminateRayNV
-        | 5337u ->
+        | 5337us ->
             OpTraceNV(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5341u ->
+        | 5341us ->
             OpTypeAccelerationStructureNV(stream.ReadUInt32())
-        | 5344u ->
+        | 5344us ->
             OpExecuteCallableNV(stream.ReadUInt32(), stream.ReadUInt32())
-        | 5358u ->
+        | 5358us ->
             OpTypeCooperativeMatrixNV(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5359u ->
+        | 5359us ->
             OpCooperativeMatrixLoadNV(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadOption(fun () -> stream.ReadEnum()))
-        | 5360u ->
+        | 5360us ->
             OpCooperativeMatrixStoreNV(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadOption(fun () -> stream.ReadEnum()))
-        | 5361u ->
+        | 5361us ->
             OpCooperativeMatrixMulAddNV(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5362u ->
+        | 5362us ->
             OpCooperativeMatrixLengthNV(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5364u ->
+        | 5364us ->
             OpBeginInvocationInterlockEXT
-        | 5365u ->
+        | 5365us ->
             OpEndInvocationInterlockEXT
-        | 5380u ->
+        | 5380us ->
             OpDemoteToHelperInvocationEXT
-        | 5381u ->
+        | 5381us ->
             OpIsHelperInvocationEXT(stream.ReadUInt32(), stream.ReadUInt32())
-        | 5571u ->
+        | 5571us ->
             OpSubgroupShuffleINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5572u ->
+        | 5572us ->
             OpSubgroupShuffleDownINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5573u ->
+        | 5573us ->
             OpSubgroupShuffleUpINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5574u ->
+        | 5574us ->
             OpSubgroupShuffleXorINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5575u ->
+        | 5575us ->
             OpSubgroupBlockReadINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5576u ->
+        | 5576us ->
             OpSubgroupBlockWriteINTEL(stream.ReadUInt32(), stream.ReadUInt32())
-        | 5577u ->
+        | 5577us ->
             OpSubgroupImageBlockReadINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5578u ->
+        | 5578us ->
             OpSubgroupImageBlockWriteINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5580u ->
+        | 5580us ->
             OpSubgroupImageMediaBlockReadINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5581u ->
+        | 5581us ->
             OpSubgroupImageMediaBlockWriteINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5585u ->
+        | 5585us ->
             OpUCountLeadingZerosINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5586u ->
+        | 5586us ->
             OpUCountTrailingZerosINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5587u ->
+        | 5587us ->
             OpAbsISubINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5588u ->
+        | 5588us ->
             OpAbsUSubINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5589u ->
+        | 5589us ->
             OpIAddSatINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5590u ->
+        | 5590us ->
             OpUAddSatINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5591u ->
+        | 5591us ->
             OpIAverageINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5592u ->
+        | 5592us ->
             OpUAverageINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5593u ->
+        | 5593us ->
             OpIAverageRoundedINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5594u ->
+        | 5594us ->
             OpUAverageRoundedINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5595u ->
+        | 5595us ->
             OpISubSatINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5596u ->
+        | 5596us ->
             OpUSubSatINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5597u ->
+        | 5597us ->
             OpIMul32x16INTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5598u ->
+        | 5598us ->
             OpUMul32x16INTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5632u ->
+        | 5632us ->
             OpDecorateString(stream.ReadUInt32(), stream.ReadEnum())
-        | 5633u ->
+        | 5633us ->
             OpMemberDecorateString(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadEnum())
-        | 5699u ->
+        | 5699us ->
             OpVmeImageINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5700u ->
+        | 5700us ->
             OpTypeVmeImageINTEL(stream.ReadUInt32(), stream.ReadUInt32())
-        | 5701u ->
+        | 5701us ->
             OpTypeAvcImePayloadINTEL(stream.ReadUInt32())
-        | 5702u ->
+        | 5702us ->
             OpTypeAvcRefPayloadINTEL(stream.ReadUInt32())
-        | 5703u ->
+        | 5703us ->
             OpTypeAvcSicPayloadINTEL(stream.ReadUInt32())
-        | 5704u ->
+        | 5704us ->
             OpTypeAvcMcePayloadINTEL(stream.ReadUInt32())
-        | 5705u ->
+        | 5705us ->
             OpTypeAvcMceResultINTEL(stream.ReadUInt32())
-        | 5706u ->
+        | 5706us ->
             OpTypeAvcImeResultINTEL(stream.ReadUInt32())
-        | 5707u ->
+        | 5707us ->
             OpTypeAvcImeResultSingleReferenceStreamoutINTEL(stream.ReadUInt32())
-        | 5708u ->
+        | 5708us ->
             OpTypeAvcImeResultDualReferenceStreamoutINTEL(stream.ReadUInt32())
-        | 5709u ->
+        | 5709us ->
             OpTypeAvcImeSingleReferenceStreaminINTEL(stream.ReadUInt32())
-        | 5710u ->
+        | 5710us ->
             OpTypeAvcImeDualReferenceStreaminINTEL(stream.ReadUInt32())
-        | 5711u ->
+        | 5711us ->
             OpTypeAvcRefResultINTEL(stream.ReadUInt32())
-        | 5712u ->
+        | 5712us ->
             OpTypeAvcSicResultINTEL(stream.ReadUInt32())
-        | 5713u ->
+        | 5713us ->
             OpSubgroupAvcMceGetDefaultInterBaseMultiReferencePenaltyINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5714u ->
+        | 5714us ->
             OpSubgroupAvcMceSetInterBaseMultiReferencePenaltyINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5715u ->
+        | 5715us ->
             OpSubgroupAvcMceGetDefaultInterShapePenaltyINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5716u ->
+        | 5716us ->
             OpSubgroupAvcMceSetInterShapePenaltyINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5717u ->
+        | 5717us ->
             OpSubgroupAvcMceGetDefaultInterDirectionPenaltyINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5718u ->
+        | 5718us ->
             OpSubgroupAvcMceSetInterDirectionPenaltyINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5719u ->
+        | 5719us ->
             OpSubgroupAvcMceGetDefaultIntraLumaShapePenaltyINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5720u ->
+        | 5720us ->
             OpSubgroupAvcMceGetDefaultInterMotionVectorCostTableINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5721u ->
+        | 5721us ->
             OpSubgroupAvcMceGetDefaultHighPenaltyCostTableINTEL(stream.ReadUInt32(), stream.ReadUInt32())
-        | 5722u ->
+        | 5722us ->
             OpSubgroupAvcMceGetDefaultMediumPenaltyCostTableINTEL(stream.ReadUInt32(), stream.ReadUInt32())
-        | 5723u ->
+        | 5723us ->
             OpSubgroupAvcMceGetDefaultLowPenaltyCostTableINTEL(stream.ReadUInt32(), stream.ReadUInt32())
-        | 5724u ->
+        | 5724us ->
             OpSubgroupAvcMceSetMotionVectorCostFunctionINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5725u ->
+        | 5725us ->
             OpSubgroupAvcMceGetDefaultIntraLumaModePenaltyINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5726u ->
+        | 5726us ->
             OpSubgroupAvcMceGetDefaultNonDcLumaIntraPenaltyINTEL(stream.ReadUInt32(), stream.ReadUInt32())
-        | 5727u ->
+        | 5727us ->
             OpSubgroupAvcMceGetDefaultIntraChromaModeBasePenaltyINTEL(stream.ReadUInt32(), stream.ReadUInt32())
-        | 5728u ->
+        | 5728us ->
             OpSubgroupAvcMceSetAcOnlyHaarINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5729u ->
+        | 5729us ->
             OpSubgroupAvcMceSetSourceInterlacedFieldPolarityINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5730u ->
+        | 5730us ->
             OpSubgroupAvcMceSetSingleReferenceInterlacedFieldPolarityINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5731u ->
+        | 5731us ->
             OpSubgroupAvcMceSetDualReferenceInterlacedFieldPolaritiesINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5732u ->
+        | 5732us ->
             OpSubgroupAvcMceConvertToImePayloadINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5733u ->
+        | 5733us ->
             OpSubgroupAvcMceConvertToImeResultINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5734u ->
+        | 5734us ->
             OpSubgroupAvcMceConvertToRefPayloadINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5735u ->
+        | 5735us ->
             OpSubgroupAvcMceConvertToRefResultINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5736u ->
+        | 5736us ->
             OpSubgroupAvcMceConvertToSicPayloadINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5737u ->
+        | 5737us ->
             OpSubgroupAvcMceConvertToSicResultINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5738u ->
+        | 5738us ->
             OpSubgroupAvcMceGetMotionVectorsINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5739u ->
+        | 5739us ->
             OpSubgroupAvcMceGetInterDistortionsINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5740u ->
+        | 5740us ->
             OpSubgroupAvcMceGetBestInterDistortionsINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5741u ->
+        | 5741us ->
             OpSubgroupAvcMceGetInterMajorShapeINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5742u ->
+        | 5742us ->
             OpSubgroupAvcMceGetInterMinorShapeINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5743u ->
+        | 5743us ->
             OpSubgroupAvcMceGetInterDirectionsINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5744u ->
+        | 5744us ->
             OpSubgroupAvcMceGetInterMotionVectorCountINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5745u ->
+        | 5745us ->
             OpSubgroupAvcMceGetInterReferenceIdsINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5746u ->
+        | 5746us ->
             OpSubgroupAvcMceGetInterReferenceInterlacedFieldPolaritiesINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5747u ->
+        | 5747us ->
             OpSubgroupAvcImeInitializeINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5748u ->
+        | 5748us ->
             OpSubgroupAvcImeSetSingleReferenceINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5749u ->
+        | 5749us ->
             OpSubgroupAvcImeSetDualReferenceINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5750u ->
+        | 5750us ->
             OpSubgroupAvcImeRefWindowSizeINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5751u ->
+        | 5751us ->
             OpSubgroupAvcImeAdjustRefOffsetINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5752u ->
+        | 5752us ->
             OpSubgroupAvcImeConvertToMcePayloadINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5753u ->
+        | 5753us ->
             OpSubgroupAvcImeSetMaxMotionVectorCountINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5754u ->
+        | 5754us ->
             OpSubgroupAvcImeSetUnidirectionalMixDisableINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5755u ->
+        | 5755us ->
             OpSubgroupAvcImeSetEarlySearchTerminationThresholdINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5756u ->
+        | 5756us ->
             OpSubgroupAvcImeSetWeightedSadINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5757u ->
+        | 5757us ->
             OpSubgroupAvcImeEvaluateWithSingleReferenceINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5758u ->
+        | 5758us ->
             OpSubgroupAvcImeEvaluateWithDualReferenceINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5759u ->
+        | 5759us ->
             OpSubgroupAvcImeEvaluateWithSingleReferenceStreaminINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5760u ->
+        | 5760us ->
             OpSubgroupAvcImeEvaluateWithDualReferenceStreaminINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5761u ->
+        | 5761us ->
             OpSubgroupAvcImeEvaluateWithSingleReferenceStreamoutINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5762u ->
+        | 5762us ->
             OpSubgroupAvcImeEvaluateWithDualReferenceStreamoutINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5763u ->
+        | 5763us ->
             OpSubgroupAvcImeEvaluateWithSingleReferenceStreaminoutINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5764u ->
+        | 5764us ->
             OpSubgroupAvcImeEvaluateWithDualReferenceStreaminoutINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5765u ->
+        | 5765us ->
             OpSubgroupAvcImeConvertToMceResultINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5766u ->
+        | 5766us ->
             OpSubgroupAvcImeGetSingleReferenceStreaminINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5767u ->
+        | 5767us ->
             OpSubgroupAvcImeGetDualReferenceStreaminINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5768u ->
+        | 5768us ->
             OpSubgroupAvcImeStripSingleReferenceStreamoutINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5769u ->
+        | 5769us ->
             OpSubgroupAvcImeStripDualReferenceStreamoutINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5770u ->
+        | 5770us ->
             OpSubgroupAvcImeGetStreamoutSingleReferenceMajorShapeMotionVectorsINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5771u ->
+        | 5771us ->
             OpSubgroupAvcImeGetStreamoutSingleReferenceMajorShapeDistortionsINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5772u ->
+        | 5772us ->
             OpSubgroupAvcImeGetStreamoutSingleReferenceMajorShapeReferenceIdsINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5773u ->
+        | 5773us ->
             OpSubgroupAvcImeGetStreamoutDualReferenceMajorShapeMotionVectorsINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5774u ->
+        | 5774us ->
             OpSubgroupAvcImeGetStreamoutDualReferenceMajorShapeDistortionsINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5775u ->
+        | 5775us ->
             OpSubgroupAvcImeGetStreamoutDualReferenceMajorShapeReferenceIdsINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5776u ->
+        | 5776us ->
             OpSubgroupAvcImeGetBorderReachedINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5777u ->
+        | 5777us ->
             OpSubgroupAvcImeGetTruncatedSearchIndicationINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5778u ->
+        | 5778us ->
             OpSubgroupAvcImeGetUnidirectionalEarlySearchTerminationINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5779u ->
+        | 5779us ->
             OpSubgroupAvcImeGetWeightingPatternMinimumMotionVectorINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5780u ->
+        | 5780us ->
             OpSubgroupAvcImeGetWeightingPatternMinimumDistortionINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5781u ->
+        | 5781us ->
             OpSubgroupAvcFmeInitializeINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5782u ->
+        | 5782us ->
             OpSubgroupAvcBmeInitializeINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5783u ->
+        | 5783us ->
             OpSubgroupAvcRefConvertToMcePayloadINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5784u ->
+        | 5784us ->
             OpSubgroupAvcRefSetBidirectionalMixDisableINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5785u ->
+        | 5785us ->
             OpSubgroupAvcRefSetBilinearFilterEnableINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5786u ->
+        | 5786us ->
             OpSubgroupAvcRefEvaluateWithSingleReferenceINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5787u ->
+        | 5787us ->
             OpSubgroupAvcRefEvaluateWithDualReferenceINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5788u ->
+        | 5788us ->
             OpSubgroupAvcRefEvaluateWithMultiReferenceINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5789u ->
+        | 5789us ->
             OpSubgroupAvcRefEvaluateWithMultiReferenceInterlacedINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5790u ->
+        | 5790us ->
             OpSubgroupAvcRefConvertToMceResultINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5791u ->
+        | 5791us ->
             OpSubgroupAvcSicInitializeINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5792u ->
+        | 5792us ->
             OpSubgroupAvcSicConfigureSkcINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5793u ->
+        | 5793us ->
             OpSubgroupAvcSicConfigureIpeLumaINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5794u ->
+        | 5794us ->
             OpSubgroupAvcSicConfigureIpeLumaChromaINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5795u ->
+        | 5795us ->
             OpSubgroupAvcSicGetMotionVectorMaskINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5796u ->
+        | 5796us ->
             OpSubgroupAvcSicConvertToMcePayloadINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5797u ->
+        | 5797us ->
             OpSubgroupAvcSicSetIntraLumaShapePenaltyINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5798u ->
+        | 5798us ->
             OpSubgroupAvcSicSetIntraLumaModeCostFunctionINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5799u ->
+        | 5799us ->
             OpSubgroupAvcSicSetIntraChromaModeCostFunctionINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5800u ->
+        | 5800us ->
             OpSubgroupAvcSicSetBilinearFilterEnableINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5801u ->
+        | 5801us ->
             OpSubgroupAvcSicSetSkcForwardTransformEnableINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5802u ->
+        | 5802us ->
             OpSubgroupAvcSicSetBlockBasedRawSkipSadINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5803u ->
+        | 5803us ->
             OpSubgroupAvcSicEvaluateIpeINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5804u ->
+        | 5804us ->
             OpSubgroupAvcSicEvaluateWithSingleReferenceINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5805u ->
+        | 5805us ->
             OpSubgroupAvcSicEvaluateWithDualReferenceINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5806u ->
+        | 5806us ->
             OpSubgroupAvcSicEvaluateWithMultiReferenceINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5807u ->
+        | 5807us ->
             OpSubgroupAvcSicEvaluateWithMultiReferenceInterlacedINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5808u ->
+        | 5808us ->
             OpSubgroupAvcSicConvertToMceResultINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5809u ->
+        | 5809us ->
             OpSubgroupAvcSicGetIpeLumaShapeINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5810u ->
+        | 5810us ->
             OpSubgroupAvcSicGetBestIpeLumaDistortionINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5811u ->
+        | 5811us ->
             OpSubgroupAvcSicGetBestIpeChromaDistortionINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5812u ->
+        | 5812us ->
             OpSubgroupAvcSicGetPackedIpeLumaModesINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5813u ->
+        | 5813us ->
             OpSubgroupAvcSicGetIpeChromaModeINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5814u ->
+        | 5814us ->
             OpSubgroupAvcSicGetPackedSkcLumaCountThresholdINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5815u ->
+        | 5815us ->
             OpSubgroupAvcSicGetPackedSkcLumaSumThresholdINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
-        | 5816u ->
+        | 5816us ->
             OpSubgroupAvcSicGetInterRawSadsINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())        | _ -> failwith "invalid opcode" 

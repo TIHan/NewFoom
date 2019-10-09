@@ -13,6 +13,7 @@ let instructions =
 
 [<RequireQualifiedAccess>]
 type OperandType =
+    | UInt16
     | UInt32
     | String
     | Composite of name: string * OperandType list
@@ -22,6 +23,7 @@ type OperandType =
 
     member x.Name =
         match x with
+        | UInt16 -> "uint16"
         | UInt32 -> "uint32"
         | String -> "string"
         | Composite (name, _) -> name
@@ -47,7 +49,11 @@ let rec getType (name: string) (category: string) (bases: string []) =
     | "Composite" ->
         OperandType.Composite (name, bases |> List.ofArray |> List.map (fun x -> getType String.Empty x [||]))
     | _ ->
-        OperandType.UInt32
+        match name with
+        | "Opcode" ->
+            OperandType.UInt16
+        | _ ->
+            OperandType.UInt32
 
 let genKind (kind: SpirvSpec.OperandKind) =
     let comment =
@@ -134,7 +140,7 @@ let genInstructionMemberOpcodeCase (instr: SpirvSpec.Instruction) =
             String.Empty
         else
             " _"
-    "       | " + instr.Opname + underscore () + " -> " + string instr.Opcode + "u"
+    "       | " + instr.Opname + underscore () + " -> " + string instr.Opcode + "us"
 
 let genInstructionMemberOpcodeMember () =
     "    member x.Opcode =
@@ -163,6 +169,7 @@ let genCaseArgsMatch argName count =
 
 let rec genSerializeType arg (ty: OperandType) =
     match ty with
+    | OperandType.UInt16 -> "stream.WriteUInt16(" + arg + ")"
     | OperandType.UInt32 -> "stream.WriteUInt32(" + arg + ")"
     | OperandType.String -> "stream.WriteString(" + arg + ")"
     | OperandType.Enum _ -> "stream.WriteEnum(" + arg + ")"
@@ -176,6 +183,7 @@ let rec genSerializeType arg (ty: OperandType) =
         
 let rec genDeserializeType (ty: OperandType) =
     match ty with
+    | OperandType.UInt16 -> "stream.ReadUInt16()"
     | OperandType.UInt32 -> "stream.ReadUInt32()"
     | OperandType.String -> "stream.ReadString()"
     | OperandType.Enum _ -> "stream.ReadEnum()"
@@ -199,7 +207,7 @@ let genSerializeInstruction (instr: SpirvSpec.Instruction) =
         |> Array.reduce (fun x y -> x + "\n" + y)
 
 let genDeserializeInstruction (instr: SpirvSpec.Instruction) =
-    "    | " + string instr.Opcode + "u" + " ->\n" +
+    "    | " + string instr.Opcode + "us" + " ->\n" +
 
     "            " +
     match instr.Operands with
@@ -220,7 +228,7 @@ let genSerializeInstructions () =
          |> Array.reduce (fun x y -> x + "\n" + y))
 
 let genDeserializeInstructions () =
-    "    static member internal Deserialize(opcode: uint32, stream: SpirvStream) =
+    "    static member internal Deserialize(opcode: uint16, stream: SpirvStream) =
         match opcode with\n" +
         (instructions
          |> Array.map (fun x ->
@@ -247,7 +255,11 @@ module FSharp.Spirv.GeneratedSpec
 open System
 open System.IO
 open InternalHelpers
+
+// https://github.com/KhronosGroup/SPIRV-Headers/blob/master/include/spirv/unified1/spirv.core.grammar.json
 """ + "\n" + 
+    "[<Literal>] 
+let MagicNumber = " + string spec.MagicNumber + "u\n\n" +
     genKinds () + "\n" +
     genInstructions ()
 

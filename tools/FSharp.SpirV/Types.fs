@@ -221,7 +221,7 @@ type SpirvInstruction =
     | UnhandledOp of Op * Word list
 
 [<NoEquality;NoComparison>]
-type SpirvModule = 
+type SpirvModuleOld = 
     internal {
         magicNumber: Word
         versionNumber: Word
