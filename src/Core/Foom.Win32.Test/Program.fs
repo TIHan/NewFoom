@@ -70,7 +70,7 @@ let main argv =
             //let positions =
             //    [|
             //        Vector2 (0.f, -0.5f)
-            //        Vector2 (0.5f, 0.5f)
+            //        Vector2 (0.5f, 1.0f)
             //        Vector2 (-0.5f, 0.5f)
             //    |]
 
@@ -103,14 +103,14 @@ let main argv =
    // let vertexBytes = System.IO.File.ReadAllBytes("triangle_vertex.spv")
     let vertexBytes =
         use ms = new System.IO.MemoryStream 100
-        SpirvModule.Serialize (ms, spvVertex)
+        SpirvModuleOld.Serialize (ms, spvVertex)
         let bytes = Array.zeroCreate (int ms.Length)
         ms.Position <- 0L
         ms.Read(bytes, 0, bytes.Length) |> ignore
         bytes
     let fragmentBytes =
         use ms = new System.IO.MemoryStream 100
-        SpirvModule.Serialize (ms, spvFragment)
+        SpirvModuleOld.Serialize (ms, spvFragment)
         let bytes = Array.zeroCreate (int ms.Length)
         ms.Position <- 0L
         ms.Read(bytes, 0, bytes.Length) |> ignore

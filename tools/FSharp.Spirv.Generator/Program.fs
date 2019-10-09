@@ -18,6 +18,7 @@ type OperandType =
     | String
     | Composite of name: string * OperandType list
     | Enum of name: string
+    | DiscriminatedUnion of name: string * cases: DiscriminatedUnionCase list
     | Option of OperandType
     | List of OperandType
 
@@ -28,12 +29,17 @@ type OperandType =
         | String -> "string"
         | Composite (name, _) -> name
         | Enum name -> name
+        | DiscriminatedUnion (name, _) -> name
         | Option ty -> ty.Name + " option"
         | List ty -> ty.Name + " list"
 
+and DiscriminatedUnionCaseItem = DiscriminatedUnionCaseItem of name: string option * typ: OperandType
+
+and DiscriminatedUnionCase = DiscriminatedUnionCase of name: string * value: int * pars: DiscriminatedUnionCaseItem list
+
 let typeLookup = Dictionary<string, OperandType>()
 
-let rec getType (name: string) (category: string) (bases: string []) =
+let rec getType (name: string) (category: string) (bases: string []) pars =
     match category with
     | "Id" -> OperandType.UInt32
     | "Literal" ->
@@ -43,11 +49,11 @@ let rec getType (name: string) (category: string) (bases: string []) =
         | _ ->
             OperandType.UInt32
     | "ValueEnum" ->
-        OperandType.Enum name
+        OperandType.DiscriminatedUnion (name, pars)
     | "BitEnum" ->
         OperandType.Enum name
     | "Composite" ->
-        OperandType.Composite (name, bases |> List.ofArray |> List.map (fun x -> getType String.Empty x [||]))
+        OperandType.Composite (name, bases |> List.ofArray |> List.map (fun x -> getType String.Empty x [||] []))
     | _ ->
         match name with
         | "Opcode" ->
@@ -55,13 +61,44 @@ let rec getType (name: string) (category: string) (bases: string []) =
         | _ ->
             OperandType.UInt32
 
+let genDiscriminatedUnionCaseItem (item: DiscriminatedUnionCaseItem) =
+    match item with
+    | DiscriminatedUnionCaseItem (name, typ) ->
+        match name with
+        | Some name -> name + ": " + typ.Name
+        | _ -> typ.Name
+
+let genDiscriminatedUnionCase (u: DiscriminatedUnionCase) =
+    match u with
+    | DiscriminatedUnionCase(name, value, pars) ->
+            "   | " + name + (if pars.IsEmpty then String.Empty else pars |> List.map genDiscriminatedUnionCaseItem |> List.reduce (fun x y -> x + " * " + y))
+
+let createDiscriminatedUnionCaseItems (p: SpirvSpec.Parameter []) =
+    p
+    |> Array.map (fun x -> DiscriminatedUnionCaseItem(x.Name, typeLookup.[x.Kind]))
+    |> List.ofArray
+
+let createDiscriminatedUnionCases (e: SpirvSpec.Enumerant []) =
+    e
+    |> Array.map (fun x ->
+        let name =
+            match x.Enumerant with
+            | "1D" -> "One"
+            | "2D" -> "Two"
+            | "3D" -> "Three"
+            | _ -> x.Enumerant
+        DiscriminatedUnionCase(name, x.Value.Number.Value, createDiscriminatedUnionCaseItems x.Parameters)
+    )
+    |> List.ofArray
+
 let genKind (kind: SpirvSpec.OperandKind) =
     let comment =
         match kind.Doc with
         | Some doc -> """/// """ + doc + "\n"
         | _ -> String.Empty
 
-    typeLookup.[kind.Kind] <- getType kind.Kind kind.Category kind.Bases
+    let cases = createDiscriminatedUnionCases kind.Enumerants
+    typeLookup.[kind.Kind] <- getType kind.Kind kind.Category kind.Bases cases
 
     comment +
     match kind.Category with
@@ -77,16 +114,9 @@ let genKind (kind: SpirvSpec.OperandKind) =
         "type " + kind.Kind + " = " + tyName + "\n"
     | "ValueEnum" ->
         "type " + kind.Kind + " =\n" +
-        (kind.Enumerants
-            |> Array.map (fun case ->
-            let name =
-                match case.Enumerant with
-                | "1D" -> "One"
-                | "2D" -> "Two"
-                | "3D" -> "Three"
-                | _ -> case.Enumerant
-            "   | " + name + " = " + (if case.Value.Number.IsSome then string case.Value.Number.Value else case.Value.String.Value) + "u")
-            |> Array.reduce (fun case1 case2 -> case1 + "\n" + case2)) + "\n"
+        (cases 
+         |> List.map (genDiscriminatedUnionCase)
+         |> List.reduce (fun x y -> x + "\n" + y))
     | "BitEnum" ->
         "type " + kind.Kind + " =\n" +
         (kind.Enumerants
@@ -180,6 +210,7 @@ let rec genSerializeType arg (ty: OperandType) =
         "stream.WriteOption(" + arg + ", fun v -> " + genSerializeType "v" ty + ")"
     | OperandType.List ty ->
         "stream.WriteList(" + arg + ", fun v -> " + genSerializeType "v" ty + ")"
+   // | OperandType.
         
 let rec genDeserializeType (ty: OperandType) =
     match ty with

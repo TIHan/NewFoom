@@ -608,4 +608,4 @@ let GenModule (info: SpirvGenInfo) expr =
         @
         (cenv.currentInstructions |> List.ofSeq)
 
-    SpirvModule.Create(instrs = instrs)
+    SpirvModuleOld.Create(instrs = instrs)
