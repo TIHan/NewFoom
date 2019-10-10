@@ -1,4 +1,4 @@
-﻿[<RequireQualifiedAccess>]
+﻿[<AutoOpen>]
 module FSharp.Spirv.Quotations.Intrinsics
 
 open System
@@ -9,3 +9,8 @@ open FSharp.Quotations
 open FSharp.Quotations.Patterns
 open FSharp.Quotations.DerivedPatterns
 open FSharp.Spirv
+
+[<Literal>]
+let private ErrorMessage = "Do not call outside the code quotation."
+
+let NewDecorate<'T> (_decorations: Decoration list) (_storageClass: StorageClass) : 'T = failwith ErrorMessage

@@ -2,6 +2,7 @@
 
 open System.Numerics
 open FSharp.Spirv
+open System.Reflection.Metadata
 
 let mutable nextStamp = 0L 
 let newStamp () =

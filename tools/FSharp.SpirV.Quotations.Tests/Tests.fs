@@ -16,18 +16,21 @@ let ``Compiler Vertex`` () =
                     Vector2 (0.5f, 0.5f)
                     Vector2 (-0.5f, 0.5f)
                 |]
+
             let colors =
                 [|
                     Vector3 (1.f, 0.f, 0.f)
                     Vector3 (0.f, 1.f, 0.f)
                     Vector3 (0.f, 0.f, 1.f)
                 |]
+       
+            let gl_VertexIndex = Intrinsics.NewDecorate<int> [Decoration.BuiltIn BuiltIn.VertexIndex] StorageClass.Input
+            let mutable gl_Position  = Intrinsics.NewDecorate<Vector4> [Decoration.BuiltIn BuiltIn.Position] StorageClass.Input
+            let mutable fragColor = Intrinsics.NewDecorate<Vector3> [Decoration.Location 0u] StorageClass.Output
 
-            fun (gl_VertexIndex: int) ->              
-                {| 
-                    gl_Position = Vector4(positions.[gl_VertexIndex], 0.f, 1.f)
-                    fragColor = colors.[gl_VertexIndex]
-                |}
+            fun () ->
+                gl_Position <- Vector4(positions.[gl_VertexIndex], 0.f, 1.f)
+                fragColor <- colors.[gl_VertexIndex]
         @>
 
     let info = SpirvGenInfo.Create(AddressingModel.Logical, MemoryModel.GLSL450, ExecutionModel.Vertex, [Capability.Shader], ["GLSL.std.450"])

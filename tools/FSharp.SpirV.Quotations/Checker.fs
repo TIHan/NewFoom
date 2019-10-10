@@ -4,12 +4,14 @@ module FSharp.Spirv.Quotations.Checker
 open System
 open System.Numerics
 open System.Collections.Generic
+open System.Reflection
 open FSharp.NativeInterop
 open FSharp.Quotations
 open FSharp.Quotations.Patterns
 open FSharp.Quotations.DerivedPatterns
 open FSharp.Spirv
 open FSharp.Spirv.Specification
+open FSharp.Reflection
 open Tast
 
 [<NoEquality;NoComparison>]
@@ -49,30 +51,19 @@ let rec mkSpirvType ty =
 let mkSpirvArrayType elementSpvTy length =
     SpirvTypeArray (elementSpvTy, length)
 
-let outputDecorationsByName (name: string) =
-    match name with
-    | "gl_Position" -> [Decoration.BuiltIn BuiltIn.Position]
-    | _ -> []
-
-let inputDecorationsByName (name: string) =
-    match name with
-    | "gl_VertexIndex" -> [Decoration.BuiltIn BuiltIn.VertexIndex]
-    | _ -> []
-
-let mkSpirvVarOfVarAux env storageClass var getSpvTy =
+let mkSpirvVarOfVarAux env decorations storageClass var getSpvTy =
     match env.varCache.TryFind var with
     | Some spvVar -> env, spvVar
     | _ ->
         let spvTy = getSpvTy ()
-        let decorations = inputDecorationsByName var.Name
         let spvVar = mkSpirvVar (var.Name, spvTy, decorations, storageClass, var.IsMutable)
         { env with varCache = env.varCache.Add(var, spvVar) }, spvVar
 
-let mkSpirvVarOfVar env storageClass var =
-    mkSpirvVarOfVarAux env storageClass var (fun () -> mkSpirvType var.Type)
+let mkSpirvVarOfVar env decorations storageClass var =
+    mkSpirvVarOfVarAux env decorations storageClass var (fun () -> mkSpirvType var.Type)
 
-let mkSpirvVarOfVarWithArrayType env storageClass var elementSpvTy arrayLen =
-    mkSpirvVarOfVarAux env storageClass var (fun () -> mkSpirvArrayType elementSpvTy arrayLen)
+let mkSpirvVarOfVarWithArrayType env decorations storageClass var elementSpvTy arrayLen =
+    mkSpirvVarOfVarAux env decorations storageClass var (fun () -> mkSpirvArrayType elementSpvTy arrayLen)
 
 let rec mkSpirvConst expr =
     match expr with
@@ -117,18 +108,14 @@ let rec mkSpirvConst expr =
 let addSpirvDeclVar env spvVar =
     { env with decls = env.decls @ [SpirvDeclVar spvVar] }, spvVar
 
-let addInputSpirvDeclVar env var =
-    let env, spvVar = mkSpirvVarOfVar env StorageClass.Input var
-    addSpirvDeclVar env spvVar
-
 let addSpirvDeclConst env var rhs =
     let spvConst = mkSpirvConst rhs
     let env, spvVar =
         match spvConst with
         | SpirvConstArray (elementTy, constants, _) -> 
-            mkSpirvVarOfVarWithArrayType env StorageClass.Private var elementTy constants.Length
+            mkSpirvVarOfVarWithArrayType env [] StorageClass.Private var elementTy constants.Length
         | _ -> 
-            mkSpirvVarOfVar env StorageClass.Private var
+            mkSpirvVarOfVar env [] StorageClass.Private var
 
     { env with decls = env.decls @ [SpirvDeclConst (spvVar, spvConst)] }, spvVar
 
@@ -142,29 +129,14 @@ let rec CheckExpr env isReturnable expr =
     | Value _ ->
         env, CheckValue expr
 
-    | NewRecord(ty, args) when isReturnable ->
-        let env, exprOpt =
-            ((env, None), args, ty.GetProperties() |> List.ofArray)
-            |||> List.fold2 (fun (env, exprOpt) arg prop ->
-                let spvTy = mkSpirvType prop.PropertyType
-                let decorations = outputDecorationsByName prop.Name
-                let var = mkSpirvVar (prop.Name, spvTy, decorations, StorageClass.Output, true)
-                let env, _ = addSpirvDeclVar env var
-
-                let env, spvExpr = CheckExpr env false arg
-                match exprOpt with
-                | None -> 
-                    env, Some (SpirvVarSet (var, spvExpr))
-                | Some expr ->
-                    env, Some (SpirvSequential (expr, SpirvVarSet (var, spvExpr))) 
-            )
-        match exprOpt with
-        | Some expr -> env, expr
-        | _ -> env, SpirvNop
-
     | Var var ->
-        let env, spvVar = mkSpirvVarOfVar env StorageClass.Private var
+        let env, spvVar = mkSpirvVarOfVar env [] StorageClass.Function var
         env, SpirvVar spvVar
+
+    | VarSet (var, rhs) ->
+        let env, spvVar = mkSpirvVarOfVar env [] StorageClass.Function var
+        let env, spvRhs = CheckExpr env false rhs
+        env, SpirvVarSet(spvVar, spvRhs)
 
     | Sequential(expr1, expr2) ->
         let env, spvExpr1 = CheckExpr env false expr1
@@ -194,7 +166,7 @@ let rec CheckExpr env isReturnable expr =
             failwithf "Invalid type for NewObject: %A" spvTy
 
     | Let(var, rhs, body) ->
-        let env, spvVar = mkSpirvVarOfVar env StorageClass.Private var
+        let env, spvVar = mkSpirvVarOfVar env [] StorageClass.Function var
         let env, spvRhs = CheckExpr env false rhs
         let env, spvBody = CheckExpr env true body
         env, SpirvLet (spvVar, spvRhs, spvBody)
@@ -226,26 +198,65 @@ and CheckExprs (env: env) exprs =
     ||> List.fold (fun (env, spvExprs) expr ->
         let env, spvExpr = CheckExpr env false expr
         (env, spvExprs @ [spvExpr])
-    )
+    )  
 
 let rec CheckTopLevelExpr env expr =
     match expr with
+    | Let(var, SpecificCall <@ NewDecorate<_> @> (None, [tyArg], args), body) ->
+        let env, spvExpr1 = CheckNewDecorate env var var.Name tyArg args var.IsMutable
+        let env, spvExpr2 = CheckTopLevelExpr env body
+        env, SpirvTopLevelSequential(spvExpr1, spvExpr2)
+                
     | Let(var, rhs, body) ->
         let env, _ = addSpirvDeclConst env var rhs
         CheckTopLevelExpr env body
 
-    | Lambda(var, ((Lambda _) as body)) ->
-        let env, spvVar = addInputSpirvDeclVar env var
-        let env, checkedBody = CheckTopLevelExpr env body
-        env, SpirvTopLevelLambda(spvVar, checkedBody)
-
     | Lambda(var, body) ->
-        let env, spvVar = addInputSpirvDeclVar env var
+        let env, spvVar = mkSpirvVarOfVar env [] StorageClass.Private var
         let env, checkedBody = CheckExpr env true body
         env, SpirvTopLevelLambdaBody(spvVar, checkedBody)
                 
     | _ ->
         failwithf "Top-level expression not supported: %A" expr
+
+and CheckNewDecorate env var name tyArg args isMutable =
+    let spvTy = mkSpirvType tyArg
+
+    let rec flattenList x acc =
+        match x with
+        | NewUnionCase(caseInfo, [arg0;arg1]) when caseInfo.DeclaringType.GetGenericTypeDefinition() = typeof<_ list>.GetGenericTypeDefinition() && caseInfo.Name = "Cons" ->
+            flattenList arg1 (acc @ [arg0])
+        | _ -> acc
+
+    let rec checkDecorationValue x =
+        match x with
+        | Value(x, _) -> x
+        | NewUnionCase(caseInfo, args) ->
+            FSharpValue.MakeUnion(caseInfo, args |> List.map checkDecorationValue |> Array.ofList)
+        | _ ->
+            failwithf "Invalid decoration value: %A" x
+
+    let checkDecoration x =
+        match x with
+        | NewUnionCase(caseInfo, args) when caseInfo.DeclaringType = typeof<Decoration> ->
+            FSharpValue.MakeUnion(caseInfo, args |> List.map checkDecorationValue |> Array.ofList) :?> Decoration
+        | _ ->
+            failwith "Invalid decoration."
+
+    let checkStorageClass x =
+        match x with
+        | Value(v, ty) when ty = typeof<StorageClass> -> v :?> StorageClass
+        | _ -> failwith "Invalid storage class."
+
+    match args with
+    | [listArg;storageClassArg] ->
+        let flatArgs = flattenList listArg []
+        let decorations = flatArgs |> List.map checkDecoration
+        let storageClass = checkStorageClass storageClassArg
+        let env, spvVar = mkSpirvVarOfVar env decorations storageClass var
+        env, SpirvDeclVar spvVar |> SpirvTopLevelDecl
+    | _ ->
+        failwith "Invalid new decorate."
 
 let Check expr =
     let env, checkedExpr = CheckTopLevelExpr env.Default expr
