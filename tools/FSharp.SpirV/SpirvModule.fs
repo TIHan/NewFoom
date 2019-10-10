@@ -3,7 +3,6 @@ module FSharp.Spirv.SpirvModule
 
 open System.IO
 open FSharp.Spirv.InternalHelpers
-open FSharp.Spirv.GeneratedSpec
 
 [<AutoOpen>]
 module private Helpers =
@@ -44,7 +43,7 @@ type SpirvModule =
         instrs: Instruction list
     }
 
-    static member Create (?version: Word, ?bound: Word, ?instrs) =
+    static member Create (?version: uint32, ?bound: uint32, ?instrs) =
         let version = defaultArg version 65536u
         let bound = defaultArg bound 65536u
         let instrs = defaultArg instrs []

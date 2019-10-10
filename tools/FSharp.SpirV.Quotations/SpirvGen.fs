@@ -5,41 +5,40 @@ open System
 open System.Collections.Generic
 open FSharp.NativeInterop
 open FSharp.Spirv
-open Specification
 open Tast
 
 [<NoEquality;NoComparison>]
 type cenv =
     {
-        mutable nextResultId: Result_id
+        mutable nextResultId: IdResult
 
         // Types, Variables, Constants
 
-        types: Dictionary<Result_id, SpirvInstruction>
-        typesByType: Dictionary<SpirvType, Result_id>
-        typeFunctions: Dictionary<id list, Result_id * SpirvInstruction list>
-        typePointers: Dictionary<Result_id, SpirvInstruction>
-        typePointersByResultType: Dictionary<StorageClass * id, Result_id>
-        globalVariables: Dictionary<Result_id, SpirvInstruction * BuiltIn option>
-        globalVariablesByVar: Dictionary<SpirvVar, Result_id>
-        constants: Dictionary<Literal, Result_id * SpirvInstruction>
-        constantComposites: Dictionary<id list, Result_id * SpirvInstruction>
+        types: Dictionary<IdResult, Instruction>
+        typesByType: Dictionary<SpirvType, IdResult>
+        typeFunctions: Dictionary<IdRef list, IdResult * Instruction list>
+        typePointers: Dictionary<IdResult, Instruction>
+        typePointersByResultType: Dictionary<StorageClass * IdRef, IdResult>
+        globalVariables: Dictionary<IdResult, Instruction * BuiltIn option>
+        globalVariablesByVar: Dictionary<SpirvVar, IdResult>
+        constants: Dictionary<LiteralContextDependentNumber, IdResult * Instruction>
+        constantComposites: Dictionary<IdRef list, IdResult * Instruction>
 
         // Functions
 
-        functions: Dictionary<string, Result_id * SpirvInstruction list>
-        mainInitInstructions: ResizeArray<SpirvInstruction>
+        functions: Dictionary<string, IdResult * Instruction list>
+        mainInitInstructions: ResizeArray<Instruction>
 
         // Local
 
-        localVariables: Dictionary<Result_id, SpirvInstruction>
-        localVariablesByVar: Dictionary<SpirvVar, Result_id>
-        currentInstructions: ResizeArray<SpirvInstruction>
-        locals: Dictionary<Result_id, SpirvInstruction>
+        localVariables: Dictionary<IdResult, Instruction>
+        localVariablesByVar: Dictionary<SpirvVar, IdResult>
+        currentInstructions: ResizeArray<Instruction>
+        locals: Dictionary<IdResult, Instruction>
 
         // Debug Info
 
-        debugNames: ResizeArray<(string * id)>
+        debugNames: ResizeArray<(string * IdRef)>
     }
 
     static member Default =
@@ -87,7 +86,7 @@ let addMainInitInstructions cenv instrs =
 let getTypeInstruction cenv id =
     cenv.types.[id]
 
-let getTypeByTypeInstruction cenv ty : id =
+let getTypeByTypeInstruction cenv ty : IdRef =
     cenv.typesByType.[ty]
 
 let getTypePointerInstruction cenv id =
@@ -110,7 +109,7 @@ let tryAddCompositeExtractInstructions cenv ty composite =
     if isCompositeType ty then
         let resultType = getTypeByTypeInstruction cenv ty
         match getTypeInstruction cenv resultType with
-        | OpTypeVector(_, componentType, [componentCount]) ->
+        | OpTypeVector(_, componentType, componentCount) ->
             [ for i = 0 to int componentCount - 1 do
                 let resultId = nextResultId cenv
                 addInstructions cenv [OpCompositeExtract(componentType, resultId, composite, [uint32 i])]
@@ -134,10 +133,10 @@ let emitTypeVoid cenv =
     emitTypeAux cenv SpirvTypeVoid (fun resultId -> OpTypeVoid resultId)
 
 let emitTypeSingle cenv =
-    emitTypeAux cenv SpirvTypeSingle (fun resultId -> OpTypeFloat(resultId, [32u]))
+    emitTypeAux cenv SpirvTypeSingle (fun resultId -> OpTypeFloat(resultId, 32u))
 
 let emitTypeInt cenv =
-    emitTypeAux cenv SpirvTypeInt (fun resultId -> OpTypeInt(resultId, 32u, [1u]))
+    emitTypeAux cenv SpirvTypeInt (fun resultId -> OpTypeInt(resultId, 32u, 1u))
 
 let emitPointer cenv storageClass typeId =    
     match cenv.typePointersByResultType.TryGetValue ((storageClass, typeId)) with
@@ -158,13 +157,13 @@ let emitConstantAux cenv resultType debugName literal =
         resultId
 
 let emitConstantInt cenv (n: int) =
-    emitConstantAux cenv (emitTypeInt cenv) "int" [BitConverter.ToUInt32(ReadOnlySpan(&&n |> NativePtr.toVoidPtr, 4))]
+    emitConstantAux cenv (emitTypeInt cenv) "int" (BitConverter.ToUInt32(ReadOnlySpan(&&n |> NativePtr.toVoidPtr, 4)))
 
 let emitConstantUInt32 cenv (n: uint32) =
-    emitConstantAux cenv (emitTypeInt cenv) "uint32" [n]
+    emitConstantAux cenv (emitTypeInt cenv) "uint32" n
 
 let emitConstantSingle cenv (n: single) =
-    emitConstantAux cenv (emitTypeSingle cenv) "single" [BitConverter.ToUInt32(ReadOnlySpan(&&n |> NativePtr.toVoidPtr, 4))]
+    emitConstantAux cenv (emitTypeSingle cenv) "single" (BitConverter.ToUInt32(ReadOnlySpan(&&n |> NativePtr.toVoidPtr, 4)))
 
 let emitConstantComposite cenv resultType debugName constituents =
     match cenv.constantComposites.TryGetValue constituents with
@@ -177,30 +176,30 @@ let emitConstantComposite cenv resultType debugName constituents =
 
 let emitTypeVector2 cenv =
     let componentType = emitTypeSingle cenv
-    emitTypeAux cenv SpirvTypeVector2 (fun resultId -> OpTypeVector(resultId, componentType, [2u]))
+    emitTypeAux cenv SpirvTypeVector2 (fun resultId -> OpTypeVector(resultId, componentType, 2u))
 
 let emitTypeVector3 cenv =
     let componentType = emitTypeSingle cenv
-    emitTypeAux cenv SpirvTypeVector3 (fun resultId -> OpTypeVector(resultId, componentType, [3u]))
+    emitTypeAux cenv SpirvTypeVector3 (fun resultId -> OpTypeVector(resultId, componentType, 3u))
 
 let emitTypeVector4 cenv =
     let componentType = emitTypeSingle cenv
-    emitTypeAux cenv SpirvTypeVector4 (fun resultId -> OpTypeVector(resultId, componentType, [4u]))
+    emitTypeAux cenv SpirvTypeVector4 (fun resultId -> OpTypeVector(resultId, componentType, 4u))
 
-let emitConstantVector2 cenv (constituents: id list) =
+let emitConstantVector2 cenv (constituents: IdRef list) =
     emitConstantComposite cenv (emitTypeVector2 cenv) "Vector2" constituents
 
-let emitConstantVector3 cenv (constituents: id list) =
+let emitConstantVector3 cenv (constituents: IdRef list) =
     emitConstantComposite cenv (emitTypeVector3 cenv) "Vector3" constituents
 
-let emitConstantVector4 cenv (constituents: id list) =
+let emitConstantVector4 cenv (constituents: IdRef list) =
     emitConstantComposite cenv (emitTypeVector4 cenv) "Vector4" constituents
 
 let emitTypeMatrix4x4 cenv =
     let columnType = emitTypeVector4 cenv
-    emitTypeAux cenv SpirvTypeMatrix4x4 (fun resultId -> OpTypeMatrix(resultId, columnType, [4u]))
+    emitTypeAux cenv SpirvTypeMatrix4x4 (fun resultId -> OpTypeMatrix(resultId, columnType, 4u))
 
-let emitConstantMatrix4x4 cenv (constituents: id list) =
+let emitConstantMatrix4x4 cenv (constituents: IdRef list) =
     emitConstantComposite cenv (emitTypeMatrix4x4 cenv) "Matrix4x4" constituents
 
 let rec emitType cenv ty =
@@ -293,8 +292,8 @@ let GenGlobalVar cenv spvVar =
 
         let builtInOpt =
             match spvVar.Decorations with
-            | [(Decoration.BuiltIn, [builtInValue])] -> 
-                Some (LanguagePrimitives.EnumOfValue (int builtInValue))
+            | [(Decoration.BuiltIn builtInValue)] -> 
+                Some builtInValue
             | _ -> 
                 None
 
@@ -484,7 +483,7 @@ and GenMain cenv env expr =
     let funInstrs = cenv.currentInstructions
 
     OpFunction(
-        emitTypeVoid cenv, env.entryPoint, FunctionControlMask.MaskNone, 
+        emitTypeVoid cenv, env.entryPoint, FunctionControl.None, 
         emitTypeFunction cenv [SpirvTypeVoid] SpirvTypeVoid)
     |> funInstrs.Add
 
@@ -521,20 +520,20 @@ let GenModule (info: SpirvGenInfo) expr =
 
             match builtInOpt with
             | Some builtIn ->
-                OpDecorate (resultId, Decoration.BuiltIn, [uint32 builtIn])
+                OpDecorate (resultId, Decoration.BuiltIn builtIn)
                 |> annoations.Add
             | _ -> ()
 
             match instr with
             | OpVariable (_, _, StorageClass.Input, _) ->
                 if builtInOpt.IsNone then
-                    OpDecorate (resultId, Decoration.Location, [input])
+                    OpDecorate (resultId, Decoration.Location input)
                     |> annoations.Add
                     input <- input + 1u
 
             | OpVariable (_, _, StorageClass.Output, _) ->
                 if builtInOpt.IsNone then
-                    OpDecorate (resultId, Decoration.Location, [output])
+                    OpDecorate (resultId, Decoration.Location output)
                     |> annoations.Add
                     output <- output + 1u
 
@@ -597,7 +596,7 @@ let GenModule (info: SpirvGenInfo) expr =
         [OpEntryPoint (info.ExecutionModel, entryPoint, "main", interfaces)]
         @
         (info.ExecutionMode
-         |> Option.map (fun (executionMode, literalNumber) -> OpExecutionMode (entryPoint, executionMode, literalNumber))
+         |> Option.map (fun executionMode -> OpExecutionMode (entryPoint, executionMode))
          |> Option.toList)
         @
         (cenv.debugNames
@@ -608,4 +607,4 @@ let GenModule (info: SpirvGenInfo) expr =
         @
         (cenv.currentInstructions |> List.ofSeq)
 
-    SpirvModuleOld.Create(instrs = instrs)
+    SpirvModule.Create(instrs = instrs)

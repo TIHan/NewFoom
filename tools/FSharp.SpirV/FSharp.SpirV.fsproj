@@ -5,13 +5,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="Specification.fs" />
-    <Compile Include="Types.fs" />
-    <Compile Include="Pickle.fs" />
     <Compile Include="InternalHelpers.fs" />
     <Compile Include="SpirvGen.fs" />
     <Compile Include="SpirvModule.fs" />
-    <Compile Include="Spirv.fs" />
   </ItemGroup>
 
 </Project>

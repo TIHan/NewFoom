@@ -20,9 +20,9 @@ let cleanName (name: string) =
 
 [<RequireQualifiedAccess>]
 type OperandType =
-    | UInt16
-    | UInt32
-    | String
+    | UInt16 of name: string
+    | UInt32 of name: string
+    | String of name: string
     | Composite of name: string * OperandType list
     | Enum of name: string
     | DiscriminatedUnion of name: string * cases: DiscriminatedUnionCase list
@@ -31,9 +31,9 @@ type OperandType =
 
     member x.Name =
         match x with
-        | UInt16 -> "uint16"
-        | UInt32 -> "uint32"
-        | String -> "string"
+        | UInt16 name -> name
+        | UInt32 name -> name
+        | String name -> name
         | Composite (name, _) -> name
         | Enum name -> name
         | DiscriminatedUnion (name, _) -> name
@@ -48,13 +48,13 @@ let typeLookup = Dictionary<string, OperandType>()
 
 let rec getType (name: string) (category: string) (bases: string []) (pars: DiscriminatedUnionCase list) =
     match category with
-    | "Id" -> OperandType.UInt32
+    | "Id" -> OperandType.UInt32 name
     | "Literal" ->
         match name with
         | "LiteralString" ->
-            OperandType.String
+            OperandType.String name
         | _ ->
-            OperandType.UInt32
+            OperandType.UInt32 name
     | "ValueEnum" when pars.Length > 0 ->
         OperandType.DiscriminatedUnion (name, pars)
     | "ValueEnum" | "BitEnum" ->
@@ -64,9 +64,9 @@ let rec getType (name: string) (category: string) (bases: string []) (pars: Disc
     | _ ->
         match name with
         | "Opcode" ->
-            OperandType.UInt16
+            OperandType.UInt16 name
         | _ ->
-            OperandType.UInt32
+            OperandType.UInt32 name
 
 let genDiscriminatedUnionCaseItem (item: DiscriminatedUnionCaseItem) =
     match item with
@@ -232,9 +232,9 @@ let genCaseArgsMatch argName count =
 
 let rec genSerializeType arg (ty: OperandType) =
     match ty with
-    | OperandType.UInt16 -> "stream.WriteUInt16(" + arg + ")"
-    | OperandType.UInt32 -> "stream.WriteUInt32(" + arg + ")"
-    | OperandType.String -> "stream.WriteString(" + arg + ")"
+    | OperandType.UInt16 _ -> "stream.WriteUInt16(" + arg + ")"
+    | OperandType.UInt32 _ -> "stream.WriteUInt32(" + arg + ")"
+    | OperandType.String _ -> "stream.WriteString(" + arg + ")"
     | OperandType.Enum _ -> "stream.WriteEnum(" + arg + ")"
     | OperandType.Composite (name, bases) ->
         "match " + arg + " with " + name + genCaseArgsMatch (arg + "_") bases.Length + " -> " +
@@ -263,9 +263,9 @@ and genSerializeCases (inst: string) (duName: string) (cases: DiscriminatedUnion
         
 let rec genDeserializeType (ty: OperandType) =
     match ty with
-    | OperandType.UInt16 -> "stream.ReadUInt16()"
-    | OperandType.UInt32 -> "stream.ReadUInt32()"
-    | OperandType.String -> "stream.ReadString()"
+    | OperandType.UInt16 _ -> "stream.ReadUInt16()"
+    | OperandType.UInt32 _ -> "stream.ReadUInt32()"
+    | OperandType.String _ -> "stream.ReadString()"
     | OperandType.Enum _ -> "stream.ReadEnum()"
     | OperandType.Composite (name, bases) ->
         name + "(" + (bases |> List.map (fun x -> genDeserializeType x) |> List.reduce (fun x y -> x + ", " + y)) + ")"
@@ -346,7 +346,8 @@ let genInstructions () =
 
 let genSource () =
     """// File is generated. Do not modify.
-module rec FSharp.Spirv.GeneratedSpec
+[<AutoOpen>]
+module rec FSharp.Spirv.Specification
 
 open System
 open System.IO

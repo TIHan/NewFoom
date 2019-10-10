@@ -16,7 +16,7 @@ type SpirvGenInfo private (addressingModel, memoryModel, executionModel, capabil
 
     member val ExecutionModel: ExecutionModel = executionModel
 
-    member val ExecutionMode: (ExecutionMode * LiteralNumber) option = executionMode
+    member val ExecutionMode: ExecutionMode option = executionMode
 
     static member Create (addressingModel, memoryModel, executionModel, ?capabilities, ?extendedInstructionSets, ?executionMode) =
         SpirvGenInfo (addressingModel, memoryModel, executionModel, defaultArg capabilities [], defaultArg extendedInstructionSets [], executionMode)

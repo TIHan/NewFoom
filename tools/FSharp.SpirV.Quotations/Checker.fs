@@ -51,12 +51,12 @@ let mkSpirvArrayType elementSpvTy length =
 
 let outputDecorationsByName (name: string) =
     match name with
-    | "gl_Position" -> [(Decoration.BuiltIn, [uint32 BuiltIn.Position])]
+    | "gl_Position" -> [Decoration.BuiltIn BuiltIn.Position]
     | _ -> []
 
 let inputDecorationsByName (name: string) =
     match name with
-    | "gl_VertexIndex" -> [(Decoration.BuiltIn, [uint32 BuiltIn.VertexIndex])]
+    | "gl_VertexIndex" -> [Decoration.BuiltIn BuiltIn.VertexIndex]
     | _ -> []
 
 let mkSpirvVarOfVarAux env storageClass var getSpvTy =

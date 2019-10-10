@@ -43,7 +43,7 @@ let ``Compiler Fragment`` () =
             {| outColor = Vector4(fragColor, 1.f) |}
         @>
 
-    let info = SpirvGenInfo.Create(AddressingModel.Logical, MemoryModel.GLSL450, ExecutionModel.Fragment, [Capability.Shader], ["GLSL.std.450"], (ExecutionMode.OriginUpperLeft, []))
+    let info = SpirvGenInfo.Create(AddressingModel.Logical, MemoryModel.GLSL450, ExecutionModel.Fragment, [Capability.Shader], ["GLSL.std.450"], ExecutionMode.OriginUpperLeft)
     let expr = Checker.Check fragment
     let spv = SpirvGen.GenModule info expr
     ()

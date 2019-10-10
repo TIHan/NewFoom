@@ -1,5 +1,6 @@
 // File is generated. Do not modify.
-module rec FSharp.Spirv.GeneratedSpec
+[<AutoOpen>]
+module rec FSharp.Spirv.Specification
 
 open System
 open System.IO
@@ -827,528 +828,528 @@ type PairIdRefIdRef = PairIdRefIdRef of IdRef * IdRef
 
 type Instruction =
    | OpNop
-   | OpUndef of uint32 * uint32
-   | OpSourceContinued of ContinuedSource: string
-   | OpSource of SourceLanguage * Version: uint32 * File: uint32 option * Source: string option
-   | OpSourceExtension of Extension: string
-   | OpName of Target: uint32 * Name: string
-   | OpMemberName of Type: uint32 * Member: uint32 * Name: string
-   | OpString of uint32 * String: string
-   | OpLine of File: uint32 * Line: uint32 * Column: uint32
-   | OpExtension of Name: string
-   | OpExtInstImport of uint32 * Name: string
-   | OpExtInst of uint32 * uint32 * Set: uint32 * Instruction: uint32 * Operand1: uint32 list
+   | OpUndef of IdResultType * IdResult
+   | OpSourceContinued of ContinuedSource: LiteralString
+   | OpSource of SourceLanguage * Version: LiteralInteger * File: IdRef option * Source: LiteralString option
+   | OpSourceExtension of Extension: LiteralString
+   | OpName of Target: IdRef * Name: LiteralString
+   | OpMemberName of Type: IdRef * Member: LiteralInteger * Name: LiteralString
+   | OpString of IdResult * String: LiteralString
+   | OpLine of File: IdRef * Line: LiteralInteger * Column: LiteralInteger
+   | OpExtension of Name: LiteralString
+   | OpExtInstImport of IdResult * Name: LiteralString
+   | OpExtInst of IdResultType * IdResult * Set: IdRef * Instruction: LiteralExtInstInteger * Operand1: IdRef list
    | OpMemoryModel of AddressingModel * MemoryModel
-   | OpEntryPoint of ExecutionModel * EntryPoint: uint32 * Name: string * Interface: uint32 list
-   | OpExecutionMode of EntryPoint: uint32 * Mode: ExecutionMode
+   | OpEntryPoint of ExecutionModel * EntryPoint: IdRef * Name: LiteralString * Interface: IdRef list
+   | OpExecutionMode of EntryPoint: IdRef * Mode: ExecutionMode
    | OpCapability of Capability: Capability
-   | OpTypeVoid of uint32
-   | OpTypeBool of uint32
-   | OpTypeInt of uint32 * Width: uint32 * Signedness: uint32
-   | OpTypeFloat of uint32 * Width: uint32
-   | OpTypeVector of uint32 * ComponentType: uint32 * ComponentCount: uint32
-   | OpTypeMatrix of uint32 * ColumnType: uint32 * ColumnCount: uint32
-   | OpTypeImage of uint32 * SampledType: uint32 * Dim * Depth: uint32 * Arrayed: uint32 * MS: uint32 * Sampled: uint32 * ImageFormat * AccessQualifier option
-   | OpTypeSampler of uint32
-   | OpTypeSampledImage of uint32 * ImageType: uint32
-   | OpTypeArray of uint32 * ElementType: uint32 * Length: uint32
-   | OpTypeRuntimeArray of uint32 * ElementType: uint32
-   | OpTypeStruct of uint32 * Member0type: uint32 list
-   | OpTypeOpaque of uint32 * string
-   | OpTypePointer of uint32 * StorageClass * Type: uint32
-   | OpTypeFunction of uint32 * ReturnType: uint32 * Parameter0Type: uint32 list
-   | OpTypeEvent of uint32
-   | OpTypeDeviceEvent of uint32
-   | OpTypeReserveId of uint32
-   | OpTypeQueue of uint32
-   | OpTypePipe of uint32 * Qualifier: AccessQualifier
-   | OpTypeForwardPointer of PointerType: uint32 * StorageClass
-   | OpConstantTrue of uint32 * uint32
-   | OpConstantFalse of uint32 * uint32
-   | OpConstant of uint32 * uint32 * Value: uint32
-   | OpConstantComposite of uint32 * uint32 * Constituents: uint32 list
-   | OpConstantSampler of uint32 * uint32 * SamplerAddressingMode * Param: uint32 * SamplerFilterMode
-   | OpConstantNull of uint32 * uint32
-   | OpSpecConstantTrue of uint32 * uint32
-   | OpSpecConstantFalse of uint32 * uint32
-   | OpSpecConstant of uint32 * uint32 * Value: uint32
-   | OpSpecConstantComposite of uint32 * uint32 * Constituents: uint32 list
-   | OpSpecConstantOp of uint32 * uint32 * Opcode: uint32
-   | OpFunction of uint32 * uint32 * FunctionControl * FunctionType: uint32
-   | OpFunctionParameter of uint32 * uint32
+   | OpTypeVoid of IdResult
+   | OpTypeBool of IdResult
+   | OpTypeInt of IdResult * Width: LiteralInteger * Signedness: LiteralInteger
+   | OpTypeFloat of IdResult * Width: LiteralInteger
+   | OpTypeVector of IdResult * ComponentType: IdRef * ComponentCount: LiteralInteger
+   | OpTypeMatrix of IdResult * ColumnType: IdRef * ColumnCount: LiteralInteger
+   | OpTypeImage of IdResult * SampledType: IdRef * Dim * Depth: LiteralInteger * Arrayed: LiteralInteger * MS: LiteralInteger * Sampled: LiteralInteger * ImageFormat * AccessQualifier option
+   | OpTypeSampler of IdResult
+   | OpTypeSampledImage of IdResult * ImageType: IdRef
+   | OpTypeArray of IdResult * ElementType: IdRef * Length: IdRef
+   | OpTypeRuntimeArray of IdResult * ElementType: IdRef
+   | OpTypeStruct of IdResult * Member0type: IdRef list
+   | OpTypeOpaque of IdResult * LiteralString
+   | OpTypePointer of IdResult * StorageClass * Type: IdRef
+   | OpTypeFunction of IdResult * ReturnType: IdRef * Parameter0Type: IdRef list
+   | OpTypeEvent of IdResult
+   | OpTypeDeviceEvent of IdResult
+   | OpTypeReserveId of IdResult
+   | OpTypeQueue of IdResult
+   | OpTypePipe of IdResult * Qualifier: AccessQualifier
+   | OpTypeForwardPointer of PointerType: IdRef * StorageClass
+   | OpConstantTrue of IdResultType * IdResult
+   | OpConstantFalse of IdResultType * IdResult
+   | OpConstant of IdResultType * IdResult * Value: LiteralContextDependentNumber
+   | OpConstantComposite of IdResultType * IdResult * Constituents: IdRef list
+   | OpConstantSampler of IdResultType * IdResult * SamplerAddressingMode * Param: LiteralInteger * SamplerFilterMode
+   | OpConstantNull of IdResultType * IdResult
+   | OpSpecConstantTrue of IdResultType * IdResult
+   | OpSpecConstantFalse of IdResultType * IdResult
+   | OpSpecConstant of IdResultType * IdResult * Value: LiteralContextDependentNumber
+   | OpSpecConstantComposite of IdResultType * IdResult * Constituents: IdRef list
+   | OpSpecConstantOp of IdResultType * IdResult * Opcode: LiteralSpecConstantOpInteger
+   | OpFunction of IdResultType * IdResult * FunctionControl * FunctionType: IdRef
+   | OpFunctionParameter of IdResultType * IdResult
    | OpFunctionEnd
-   | OpFunctionCall of uint32 * uint32 * Function: uint32 * Argument0: uint32 list
-   | OpVariable of uint32 * uint32 * StorageClass * Initializer: uint32 option
-   | OpImageTexelPointer of uint32 * uint32 * Image: uint32 * Coordinate: uint32 * Sample: uint32
-   | OpLoad of uint32 * uint32 * Pointer: uint32 * MemoryAccess option
-   | OpStore of Pointer: uint32 * Object: uint32 * MemoryAccess option
-   | OpCopyMemory of Target: uint32 * Source: uint32 * MemoryAccess option * MemoryAccess option
-   | OpCopyMemorySized of Target: uint32 * Source: uint32 * Size: uint32 * MemoryAccess option * MemoryAccess option
-   | OpAccessChain of uint32 * uint32 * Base: uint32 * Indexes: uint32 list
-   | OpInBoundsAccessChain of uint32 * uint32 * Base: uint32 * Indexes: uint32 list
-   | OpPtrAccessChain of uint32 * uint32 * Base: uint32 * Element: uint32 * Indexes: uint32 list
-   | OpArrayLength of uint32 * uint32 * Structure: uint32 * Arraymember: uint32
-   | OpGenericPtrMemSemantics of uint32 * uint32 * Pointer: uint32
-   | OpInBoundsPtrAccessChain of uint32 * uint32 * Base: uint32 * Element: uint32 * Indexes: uint32 list
-   | OpDecorate of Target: uint32 * Decoration
-   | OpMemberDecorate of StructureType: uint32 * Member: uint32 * Decoration
-   | OpDecorationGroup of uint32
-   | OpGroupDecorate of DecorationGroup: uint32 * Targets: uint32 list
-   | OpGroupMemberDecorate of DecorationGroup: uint32 * Targets: PairIdRefLiteralInteger list
-   | OpVectorExtractDynamic of uint32 * uint32 * Vector: uint32 * Index: uint32
-   | OpVectorInsertDynamic of uint32 * uint32 * Vector: uint32 * Component: uint32 * Index: uint32
-   | OpVectorShuffle of uint32 * uint32 * Vector1: uint32 * Vector2: uint32 * Components: uint32 list
-   | OpCompositeConstruct of uint32 * uint32 * Constituents: uint32 list
-   | OpCompositeExtract of uint32 * uint32 * Composite: uint32 * Indexes: uint32 list
-   | OpCompositeInsert of uint32 * uint32 * Object: uint32 * Composite: uint32 * Indexes: uint32 list
-   | OpCopyObject of uint32 * uint32 * Operand: uint32
-   | OpTranspose of uint32 * uint32 * Matrix: uint32
-   | OpSampledImage of uint32 * uint32 * Image: uint32 * Sampler: uint32
-   | OpImageSampleImplicitLod of uint32 * uint32 * SampledImage: uint32 * Coordinate: uint32 * ImageOperands option
-   | OpImageSampleExplicitLod of uint32 * uint32 * SampledImage: uint32 * Coordinate: uint32 * ImageOperands
-   | OpImageSampleDrefImplicitLod of uint32 * uint32 * SampledImage: uint32 * Coordinate: uint32 * Dref: uint32 * ImageOperands option
-   | OpImageSampleDrefExplicitLod of uint32 * uint32 * SampledImage: uint32 * Coordinate: uint32 * Dref: uint32 * ImageOperands
-   | OpImageSampleProjImplicitLod of uint32 * uint32 * SampledImage: uint32 * Coordinate: uint32 * ImageOperands option
-   | OpImageSampleProjExplicitLod of uint32 * uint32 * SampledImage: uint32 * Coordinate: uint32 * ImageOperands
-   | OpImageSampleProjDrefImplicitLod of uint32 * uint32 * SampledImage: uint32 * Coordinate: uint32 * Dref: uint32 * ImageOperands option
-   | OpImageSampleProjDrefExplicitLod of uint32 * uint32 * SampledImage: uint32 * Coordinate: uint32 * Dref: uint32 * ImageOperands
-   | OpImageFetch of uint32 * uint32 * Image: uint32 * Coordinate: uint32 * ImageOperands option
-   | OpImageGather of uint32 * uint32 * SampledImage: uint32 * Coordinate: uint32 * Component: uint32 * ImageOperands option
-   | OpImageDrefGather of uint32 * uint32 * SampledImage: uint32 * Coordinate: uint32 * Dref: uint32 * ImageOperands option
-   | OpImageRead of uint32 * uint32 * Image: uint32 * Coordinate: uint32 * ImageOperands option
-   | OpImageWrite of Image: uint32 * Coordinate: uint32 * Texel: uint32 * ImageOperands option
-   | OpImage of uint32 * uint32 * SampledImage: uint32
-   | OpImageQueryFormat of uint32 * uint32 * Image: uint32
-   | OpImageQueryOrder of uint32 * uint32 * Image: uint32
-   | OpImageQuerySizeLod of uint32 * uint32 * Image: uint32 * LevelofDetail: uint32
-   | OpImageQuerySize of uint32 * uint32 * Image: uint32
-   | OpImageQueryLod of uint32 * uint32 * SampledImage: uint32 * Coordinate: uint32
-   | OpImageQueryLevels of uint32 * uint32 * Image: uint32
-   | OpImageQuerySamples of uint32 * uint32 * Image: uint32
-   | OpConvertFToU of uint32 * uint32 * FloatValue: uint32
-   | OpConvertFToS of uint32 * uint32 * FloatValue: uint32
-   | OpConvertSToF of uint32 * uint32 * SignedValue: uint32
-   | OpConvertUToF of uint32 * uint32 * UnsignedValue: uint32
-   | OpUConvert of uint32 * uint32 * UnsignedValue: uint32
-   | OpSConvert of uint32 * uint32 * SignedValue: uint32
-   | OpFConvert of uint32 * uint32 * FloatValue: uint32
-   | OpQuantizeToF16 of uint32 * uint32 * Value: uint32
-   | OpConvertPtrToU of uint32 * uint32 * Pointer: uint32
-   | OpSatConvertSToU of uint32 * uint32 * SignedValue: uint32
-   | OpSatConvertUToS of uint32 * uint32 * UnsignedValue: uint32
-   | OpConvertUToPtr of uint32 * uint32 * IntegerValue: uint32
-   | OpPtrCastToGeneric of uint32 * uint32 * Pointer: uint32
-   | OpGenericCastToPtr of uint32 * uint32 * Pointer: uint32
-   | OpGenericCastToPtrExplicit of uint32 * uint32 * Pointer: uint32 * Storage: StorageClass
-   | OpBitcast of uint32 * uint32 * Operand: uint32
-   | OpSNegate of uint32 * uint32 * Operand: uint32
-   | OpFNegate of uint32 * uint32 * Operand: uint32
-   | OpIAdd of uint32 * uint32 * Operand1: uint32 * Operand2: uint32
-   | OpFAdd of uint32 * uint32 * Operand1: uint32 * Operand2: uint32
-   | OpISub of uint32 * uint32 * Operand1: uint32 * Operand2: uint32
-   | OpFSub of uint32 * uint32 * Operand1: uint32 * Operand2: uint32
-   | OpIMul of uint32 * uint32 * Operand1: uint32 * Operand2: uint32
-   | OpFMul of uint32 * uint32 * Operand1: uint32 * Operand2: uint32
-   | OpUDiv of uint32 * uint32 * Operand1: uint32 * Operand2: uint32
-   | OpSDiv of uint32 * uint32 * Operand1: uint32 * Operand2: uint32
-   | OpFDiv of uint32 * uint32 * Operand1: uint32 * Operand2: uint32
-   | OpUMod of uint32 * uint32 * Operand1: uint32 * Operand2: uint32
-   | OpSRem of uint32 * uint32 * Operand1: uint32 * Operand2: uint32
-   | OpSMod of uint32 * uint32 * Operand1: uint32 * Operand2: uint32
-   | OpFRem of uint32 * uint32 * Operand1: uint32 * Operand2: uint32
-   | OpFMod of uint32 * uint32 * Operand1: uint32 * Operand2: uint32
-   | OpVectorTimesScalar of uint32 * uint32 * Vector: uint32 * Scalar: uint32
-   | OpMatrixTimesScalar of uint32 * uint32 * Matrix: uint32 * Scalar: uint32
-   | OpVectorTimesMatrix of uint32 * uint32 * Vector: uint32 * Matrix: uint32
-   | OpMatrixTimesVector of uint32 * uint32 * Matrix: uint32 * Vector: uint32
-   | OpMatrixTimesMatrix of uint32 * uint32 * LeftMatrix: uint32 * RightMatrix: uint32
-   | OpOuterProduct of uint32 * uint32 * Vector1: uint32 * Vector2: uint32
-   | OpDot of uint32 * uint32 * Vector1: uint32 * Vector2: uint32
-   | OpIAddCarry of uint32 * uint32 * Operand1: uint32 * Operand2: uint32
-   | OpISubBorrow of uint32 * uint32 * Operand1: uint32 * Operand2: uint32
-   | OpUMulExtended of uint32 * uint32 * Operand1: uint32 * Operand2: uint32
-   | OpSMulExtended of uint32 * uint32 * Operand1: uint32 * Operand2: uint32
-   | OpAny of uint32 * uint32 * Vector: uint32
-   | OpAll of uint32 * uint32 * Vector: uint32
-   | OpIsNan of uint32 * uint32 * x: uint32
-   | OpIsInf of uint32 * uint32 * x: uint32
-   | OpIsFinite of uint32 * uint32 * x: uint32
-   | OpIsNormal of uint32 * uint32 * x: uint32
-   | OpSignBitSet of uint32 * uint32 * x: uint32
-   | OpLessOrGreater of uint32 * uint32 * x: uint32 * y: uint32
-   | OpOrdered of uint32 * uint32 * x: uint32 * y: uint32
-   | OpUnordered of uint32 * uint32 * x: uint32 * y: uint32
-   | OpLogicalEqual of uint32 * uint32 * Operand1: uint32 * Operand2: uint32
-   | OpLogicalNotEqual of uint32 * uint32 * Operand1: uint32 * Operand2: uint32
-   | OpLogicalOr of uint32 * uint32 * Operand1: uint32 * Operand2: uint32
-   | OpLogicalAnd of uint32 * uint32 * Operand1: uint32 * Operand2: uint32
-   | OpLogicalNot of uint32 * uint32 * Operand: uint32
-   | OpSelect of uint32 * uint32 * Condition: uint32 * Object1: uint32 * Object2: uint32
-   | OpIEqual of uint32 * uint32 * Operand1: uint32 * Operand2: uint32
-   | OpINotEqual of uint32 * uint32 * Operand1: uint32 * Operand2: uint32
-   | OpUGreaterThan of uint32 * uint32 * Operand1: uint32 * Operand2: uint32
-   | OpSGreaterThan of uint32 * uint32 * Operand1: uint32 * Operand2: uint32
-   | OpUGreaterThanEqual of uint32 * uint32 * Operand1: uint32 * Operand2: uint32
-   | OpSGreaterThanEqual of uint32 * uint32 * Operand1: uint32 * Operand2: uint32
-   | OpULessThan of uint32 * uint32 * Operand1: uint32 * Operand2: uint32
-   | OpSLessThan of uint32 * uint32 * Operand1: uint32 * Operand2: uint32
-   | OpULessThanEqual of uint32 * uint32 * Operand1: uint32 * Operand2: uint32
-   | OpSLessThanEqual of uint32 * uint32 * Operand1: uint32 * Operand2: uint32
-   | OpFOrdEqual of uint32 * uint32 * Operand1: uint32 * Operand2: uint32
-   | OpFUnordEqual of uint32 * uint32 * Operand1: uint32 * Operand2: uint32
-   | OpFOrdNotEqual of uint32 * uint32 * Operand1: uint32 * Operand2: uint32
-   | OpFUnordNotEqual of uint32 * uint32 * Operand1: uint32 * Operand2: uint32
-   | OpFOrdLessThan of uint32 * uint32 * Operand1: uint32 * Operand2: uint32
-   | OpFUnordLessThan of uint32 * uint32 * Operand1: uint32 * Operand2: uint32
-   | OpFOrdGreaterThan of uint32 * uint32 * Operand1: uint32 * Operand2: uint32
-   | OpFUnordGreaterThan of uint32 * uint32 * Operand1: uint32 * Operand2: uint32
-   | OpFOrdLessThanEqual of uint32 * uint32 * Operand1: uint32 * Operand2: uint32
-   | OpFUnordLessThanEqual of uint32 * uint32 * Operand1: uint32 * Operand2: uint32
-   | OpFOrdGreaterThanEqual of uint32 * uint32 * Operand1: uint32 * Operand2: uint32
-   | OpFUnordGreaterThanEqual of uint32 * uint32 * Operand1: uint32 * Operand2: uint32
-   | OpShiftRightLogical of uint32 * uint32 * Base: uint32 * Shift: uint32
-   | OpShiftRightArithmetic of uint32 * uint32 * Base: uint32 * Shift: uint32
-   | OpShiftLeftLogical of uint32 * uint32 * Base: uint32 * Shift: uint32
-   | OpBitwiseOr of uint32 * uint32 * Operand1: uint32 * Operand2: uint32
-   | OpBitwiseXor of uint32 * uint32 * Operand1: uint32 * Operand2: uint32
-   | OpBitwiseAnd of uint32 * uint32 * Operand1: uint32 * Operand2: uint32
-   | OpNot of uint32 * uint32 * Operand: uint32
-   | OpBitFieldInsert of uint32 * uint32 * Base: uint32 * Insert: uint32 * Offset: uint32 * Count: uint32
-   | OpBitFieldSExtract of uint32 * uint32 * Base: uint32 * Offset: uint32 * Count: uint32
-   | OpBitFieldUExtract of uint32 * uint32 * Base: uint32 * Offset: uint32 * Count: uint32
-   | OpBitReverse of uint32 * uint32 * Base: uint32
-   | OpBitCount of uint32 * uint32 * Base: uint32
-   | OpDPdx of uint32 * uint32 * P: uint32
-   | OpDPdy of uint32 * uint32 * P: uint32
-   | OpFwidth of uint32 * uint32 * P: uint32
-   | OpDPdxFine of uint32 * uint32 * P: uint32
-   | OpDPdyFine of uint32 * uint32 * P: uint32
-   | OpFwidthFine of uint32 * uint32 * P: uint32
-   | OpDPdxCoarse of uint32 * uint32 * P: uint32
-   | OpDPdyCoarse of uint32 * uint32 * P: uint32
-   | OpFwidthCoarse of uint32 * uint32 * P: uint32
+   | OpFunctionCall of IdResultType * IdResult * Function: IdRef * Argument0: IdRef list
+   | OpVariable of IdResultType * IdResult * StorageClass * Initializer: IdRef option
+   | OpImageTexelPointer of IdResultType * IdResult * Image: IdRef * Coordinate: IdRef * Sample: IdRef
+   | OpLoad of IdResultType * IdResult * Pointer: IdRef * MemoryAccess option
+   | OpStore of Pointer: IdRef * Object: IdRef * MemoryAccess option
+   | OpCopyMemory of Target: IdRef * Source: IdRef * MemoryAccess option * MemoryAccess option
+   | OpCopyMemorySized of Target: IdRef * Source: IdRef * Size: IdRef * MemoryAccess option * MemoryAccess option
+   | OpAccessChain of IdResultType * IdResult * Base: IdRef * Indexes: IdRef list
+   | OpInBoundsAccessChain of IdResultType * IdResult * Base: IdRef * Indexes: IdRef list
+   | OpPtrAccessChain of IdResultType * IdResult * Base: IdRef * Element: IdRef * Indexes: IdRef list
+   | OpArrayLength of IdResultType * IdResult * Structure: IdRef * Arraymember: LiteralInteger
+   | OpGenericPtrMemSemantics of IdResultType * IdResult * Pointer: IdRef
+   | OpInBoundsPtrAccessChain of IdResultType * IdResult * Base: IdRef * Element: IdRef * Indexes: IdRef list
+   | OpDecorate of Target: IdRef * Decoration
+   | OpMemberDecorate of StructureType: IdRef * Member: LiteralInteger * Decoration
+   | OpDecorationGroup of IdResult
+   | OpGroupDecorate of DecorationGroup: IdRef * Targets: IdRef list
+   | OpGroupMemberDecorate of DecorationGroup: IdRef * Targets: PairIdRefLiteralInteger list
+   | OpVectorExtractDynamic of IdResultType * IdResult * Vector: IdRef * Index: IdRef
+   | OpVectorInsertDynamic of IdResultType * IdResult * Vector: IdRef * Component: IdRef * Index: IdRef
+   | OpVectorShuffle of IdResultType * IdResult * Vector1: IdRef * Vector2: IdRef * Components: LiteralInteger list
+   | OpCompositeConstruct of IdResultType * IdResult * Constituents: IdRef list
+   | OpCompositeExtract of IdResultType * IdResult * Composite: IdRef * Indexes: LiteralInteger list
+   | OpCompositeInsert of IdResultType * IdResult * Object: IdRef * Composite: IdRef * Indexes: LiteralInteger list
+   | OpCopyObject of IdResultType * IdResult * Operand: IdRef
+   | OpTranspose of IdResultType * IdResult * Matrix: IdRef
+   | OpSampledImage of IdResultType * IdResult * Image: IdRef * Sampler: IdRef
+   | OpImageSampleImplicitLod of IdResultType * IdResult * SampledImage: IdRef * Coordinate: IdRef * ImageOperands option
+   | OpImageSampleExplicitLod of IdResultType * IdResult * SampledImage: IdRef * Coordinate: IdRef * ImageOperands
+   | OpImageSampleDrefImplicitLod of IdResultType * IdResult * SampledImage: IdRef * Coordinate: IdRef * Dref: IdRef * ImageOperands option
+   | OpImageSampleDrefExplicitLod of IdResultType * IdResult * SampledImage: IdRef * Coordinate: IdRef * Dref: IdRef * ImageOperands
+   | OpImageSampleProjImplicitLod of IdResultType * IdResult * SampledImage: IdRef * Coordinate: IdRef * ImageOperands option
+   | OpImageSampleProjExplicitLod of IdResultType * IdResult * SampledImage: IdRef * Coordinate: IdRef * ImageOperands
+   | OpImageSampleProjDrefImplicitLod of IdResultType * IdResult * SampledImage: IdRef * Coordinate: IdRef * Dref: IdRef * ImageOperands option
+   | OpImageSampleProjDrefExplicitLod of IdResultType * IdResult * SampledImage: IdRef * Coordinate: IdRef * Dref: IdRef * ImageOperands
+   | OpImageFetch of IdResultType * IdResult * Image: IdRef * Coordinate: IdRef * ImageOperands option
+   | OpImageGather of IdResultType * IdResult * SampledImage: IdRef * Coordinate: IdRef * Component: IdRef * ImageOperands option
+   | OpImageDrefGather of IdResultType * IdResult * SampledImage: IdRef * Coordinate: IdRef * Dref: IdRef * ImageOperands option
+   | OpImageRead of IdResultType * IdResult * Image: IdRef * Coordinate: IdRef * ImageOperands option
+   | OpImageWrite of Image: IdRef * Coordinate: IdRef * Texel: IdRef * ImageOperands option
+   | OpImage of IdResultType * IdResult * SampledImage: IdRef
+   | OpImageQueryFormat of IdResultType * IdResult * Image: IdRef
+   | OpImageQueryOrder of IdResultType * IdResult * Image: IdRef
+   | OpImageQuerySizeLod of IdResultType * IdResult * Image: IdRef * LevelofDetail: IdRef
+   | OpImageQuerySize of IdResultType * IdResult * Image: IdRef
+   | OpImageQueryLod of IdResultType * IdResult * SampledImage: IdRef * Coordinate: IdRef
+   | OpImageQueryLevels of IdResultType * IdResult * Image: IdRef
+   | OpImageQuerySamples of IdResultType * IdResult * Image: IdRef
+   | OpConvertFToU of IdResultType * IdResult * FloatValue: IdRef
+   | OpConvertFToS of IdResultType * IdResult * FloatValue: IdRef
+   | OpConvertSToF of IdResultType * IdResult * SignedValue: IdRef
+   | OpConvertUToF of IdResultType * IdResult * UnsignedValue: IdRef
+   | OpUConvert of IdResultType * IdResult * UnsignedValue: IdRef
+   | OpSConvert of IdResultType * IdResult * SignedValue: IdRef
+   | OpFConvert of IdResultType * IdResult * FloatValue: IdRef
+   | OpQuantizeToF16 of IdResultType * IdResult * Value: IdRef
+   | OpConvertPtrToU of IdResultType * IdResult * Pointer: IdRef
+   | OpSatConvertSToU of IdResultType * IdResult * SignedValue: IdRef
+   | OpSatConvertUToS of IdResultType * IdResult * UnsignedValue: IdRef
+   | OpConvertUToPtr of IdResultType * IdResult * IntegerValue: IdRef
+   | OpPtrCastToGeneric of IdResultType * IdResult * Pointer: IdRef
+   | OpGenericCastToPtr of IdResultType * IdResult * Pointer: IdRef
+   | OpGenericCastToPtrExplicit of IdResultType * IdResult * Pointer: IdRef * Storage: StorageClass
+   | OpBitcast of IdResultType * IdResult * Operand: IdRef
+   | OpSNegate of IdResultType * IdResult * Operand: IdRef
+   | OpFNegate of IdResultType * IdResult * Operand: IdRef
+   | OpIAdd of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpFAdd of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpISub of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpFSub of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpIMul of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpFMul of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpUDiv of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpSDiv of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpFDiv of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpUMod of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpSRem of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpSMod of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpFRem of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpFMod of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpVectorTimesScalar of IdResultType * IdResult * Vector: IdRef * Scalar: IdRef
+   | OpMatrixTimesScalar of IdResultType * IdResult * Matrix: IdRef * Scalar: IdRef
+   | OpVectorTimesMatrix of IdResultType * IdResult * Vector: IdRef * Matrix: IdRef
+   | OpMatrixTimesVector of IdResultType * IdResult * Matrix: IdRef * Vector: IdRef
+   | OpMatrixTimesMatrix of IdResultType * IdResult * LeftMatrix: IdRef * RightMatrix: IdRef
+   | OpOuterProduct of IdResultType * IdResult * Vector1: IdRef * Vector2: IdRef
+   | OpDot of IdResultType * IdResult * Vector1: IdRef * Vector2: IdRef
+   | OpIAddCarry of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpISubBorrow of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpUMulExtended of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpSMulExtended of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpAny of IdResultType * IdResult * Vector: IdRef
+   | OpAll of IdResultType * IdResult * Vector: IdRef
+   | OpIsNan of IdResultType * IdResult * x: IdRef
+   | OpIsInf of IdResultType * IdResult * x: IdRef
+   | OpIsFinite of IdResultType * IdResult * x: IdRef
+   | OpIsNormal of IdResultType * IdResult * x: IdRef
+   | OpSignBitSet of IdResultType * IdResult * x: IdRef
+   | OpLessOrGreater of IdResultType * IdResult * x: IdRef * y: IdRef
+   | OpOrdered of IdResultType * IdResult * x: IdRef * y: IdRef
+   | OpUnordered of IdResultType * IdResult * x: IdRef * y: IdRef
+   | OpLogicalEqual of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpLogicalNotEqual of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpLogicalOr of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpLogicalAnd of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpLogicalNot of IdResultType * IdResult * Operand: IdRef
+   | OpSelect of IdResultType * IdResult * Condition: IdRef * Object1: IdRef * Object2: IdRef
+   | OpIEqual of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpINotEqual of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpUGreaterThan of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpSGreaterThan of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpUGreaterThanEqual of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpSGreaterThanEqual of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpULessThan of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpSLessThan of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpULessThanEqual of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpSLessThanEqual of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpFOrdEqual of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpFUnordEqual of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpFOrdNotEqual of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpFUnordNotEqual of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpFOrdLessThan of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpFUnordLessThan of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpFOrdGreaterThan of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpFUnordGreaterThan of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpFOrdLessThanEqual of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpFUnordLessThanEqual of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpFOrdGreaterThanEqual of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpFUnordGreaterThanEqual of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpShiftRightLogical of IdResultType * IdResult * Base: IdRef * Shift: IdRef
+   | OpShiftRightArithmetic of IdResultType * IdResult * Base: IdRef * Shift: IdRef
+   | OpShiftLeftLogical of IdResultType * IdResult * Base: IdRef * Shift: IdRef
+   | OpBitwiseOr of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpBitwiseXor of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpBitwiseAnd of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpNot of IdResultType * IdResult * Operand: IdRef
+   | OpBitFieldInsert of IdResultType * IdResult * Base: IdRef * Insert: IdRef * Offset: IdRef * Count: IdRef
+   | OpBitFieldSExtract of IdResultType * IdResult * Base: IdRef * Offset: IdRef * Count: IdRef
+   | OpBitFieldUExtract of IdResultType * IdResult * Base: IdRef * Offset: IdRef * Count: IdRef
+   | OpBitReverse of IdResultType * IdResult * Base: IdRef
+   | OpBitCount of IdResultType * IdResult * Base: IdRef
+   | OpDPdx of IdResultType * IdResult * P: IdRef
+   | OpDPdy of IdResultType * IdResult * P: IdRef
+   | OpFwidth of IdResultType * IdResult * P: IdRef
+   | OpDPdxFine of IdResultType * IdResult * P: IdRef
+   | OpDPdyFine of IdResultType * IdResult * P: IdRef
+   | OpFwidthFine of IdResultType * IdResult * P: IdRef
+   | OpDPdxCoarse of IdResultType * IdResult * P: IdRef
+   | OpDPdyCoarse of IdResultType * IdResult * P: IdRef
+   | OpFwidthCoarse of IdResultType * IdResult * P: IdRef
    | OpEmitVertex
    | OpEndPrimitive
-   | OpEmitStreamVertex of Stream: uint32
-   | OpEndStreamPrimitive of Stream: uint32
-   | OpControlBarrier of Execution: uint32 * Memory: uint32 * Semantics: uint32
-   | OpMemoryBarrier of Memory: uint32 * Semantics: uint32
-   | OpAtomicLoad of uint32 * uint32 * Pointer: uint32 * Memory: uint32 * Semantics: uint32
-   | OpAtomicStore of Pointer: uint32 * Memory: uint32 * Semantics: uint32 * Value: uint32
-   | OpAtomicExchange of uint32 * uint32 * Pointer: uint32 * Memory: uint32 * Semantics: uint32 * Value: uint32
-   | OpAtomicCompareExchange of uint32 * uint32 * Pointer: uint32 * Memory: uint32 * Equal: uint32 * Unequal: uint32 * Value: uint32 * Comparator: uint32
-   | OpAtomicCompareExchangeWeak of uint32 * uint32 * Pointer: uint32 * Memory: uint32 * Equal: uint32 * Unequal: uint32 * Value: uint32 * Comparator: uint32
-   | OpAtomicIIncrement of uint32 * uint32 * Pointer: uint32 * Memory: uint32 * Semantics: uint32
-   | OpAtomicIDecrement of uint32 * uint32 * Pointer: uint32 * Memory: uint32 * Semantics: uint32
-   | OpAtomicIAdd of uint32 * uint32 * Pointer: uint32 * Memory: uint32 * Semantics: uint32 * Value: uint32
-   | OpAtomicISub of uint32 * uint32 * Pointer: uint32 * Memory: uint32 * Semantics: uint32 * Value: uint32
-   | OpAtomicSMin of uint32 * uint32 * Pointer: uint32 * Memory: uint32 * Semantics: uint32 * Value: uint32
-   | OpAtomicUMin of uint32 * uint32 * Pointer: uint32 * Memory: uint32 * Semantics: uint32 * Value: uint32
-   | OpAtomicSMax of uint32 * uint32 * Pointer: uint32 * Memory: uint32 * Semantics: uint32 * Value: uint32
-   | OpAtomicUMax of uint32 * uint32 * Pointer: uint32 * Memory: uint32 * Semantics: uint32 * Value: uint32
-   | OpAtomicAnd of uint32 * uint32 * Pointer: uint32 * Memory: uint32 * Semantics: uint32 * Value: uint32
-   | OpAtomicOr of uint32 * uint32 * Pointer: uint32 * Memory: uint32 * Semantics: uint32 * Value: uint32
-   | OpAtomicXor of uint32 * uint32 * Pointer: uint32 * Memory: uint32 * Semantics: uint32 * Value: uint32
-   | OpPhi of uint32 * uint32 * VariableParent: PairIdRefIdRef list
-   | OpLoopMerge of MergeBlock: uint32 * ContinueTarget: uint32 * LoopControl
-   | OpSelectionMerge of MergeBlock: uint32 * SelectionControl
-   | OpLabel of uint32
-   | OpBranch of TargetLabel: uint32
-   | OpBranchConditional of Condition: uint32 * TrueLabel: uint32 * FalseLabel: uint32 * Branchweights: uint32 list
-   | OpSwitch of Selector: uint32 * Default: uint32 * Target: PairLiteralIntegerIdRef list
+   | OpEmitStreamVertex of Stream: IdRef
+   | OpEndStreamPrimitive of Stream: IdRef
+   | OpControlBarrier of Execution: IdScope * Memory: IdScope * Semantics: IdMemorySemantics
+   | OpMemoryBarrier of Memory: IdScope * Semantics: IdMemorySemantics
+   | OpAtomicLoad of IdResultType * IdResult * Pointer: IdRef * Memory: IdScope * Semantics: IdMemorySemantics
+   | OpAtomicStore of Pointer: IdRef * Memory: IdScope * Semantics: IdMemorySemantics * Value: IdRef
+   | OpAtomicExchange of IdResultType * IdResult * Pointer: IdRef * Memory: IdScope * Semantics: IdMemorySemantics * Value: IdRef
+   | OpAtomicCompareExchange of IdResultType * IdResult * Pointer: IdRef * Memory: IdScope * Equal: IdMemorySemantics * Unequal: IdMemorySemantics * Value: IdRef * Comparator: IdRef
+   | OpAtomicCompareExchangeWeak of IdResultType * IdResult * Pointer: IdRef * Memory: IdScope * Equal: IdMemorySemantics * Unequal: IdMemorySemantics * Value: IdRef * Comparator: IdRef
+   | OpAtomicIIncrement of IdResultType * IdResult * Pointer: IdRef * Memory: IdScope * Semantics: IdMemorySemantics
+   | OpAtomicIDecrement of IdResultType * IdResult * Pointer: IdRef * Memory: IdScope * Semantics: IdMemorySemantics
+   | OpAtomicIAdd of IdResultType * IdResult * Pointer: IdRef * Memory: IdScope * Semantics: IdMemorySemantics * Value: IdRef
+   | OpAtomicISub of IdResultType * IdResult * Pointer: IdRef * Memory: IdScope * Semantics: IdMemorySemantics * Value: IdRef
+   | OpAtomicSMin of IdResultType * IdResult * Pointer: IdRef * Memory: IdScope * Semantics: IdMemorySemantics * Value: IdRef
+   | OpAtomicUMin of IdResultType * IdResult * Pointer: IdRef * Memory: IdScope * Semantics: IdMemorySemantics * Value: IdRef
+   | OpAtomicSMax of IdResultType * IdResult * Pointer: IdRef * Memory: IdScope * Semantics: IdMemorySemantics * Value: IdRef
+   | OpAtomicUMax of IdResultType * IdResult * Pointer: IdRef * Memory: IdScope * Semantics: IdMemorySemantics * Value: IdRef
+   | OpAtomicAnd of IdResultType * IdResult * Pointer: IdRef * Memory: IdScope * Semantics: IdMemorySemantics * Value: IdRef
+   | OpAtomicOr of IdResultType * IdResult * Pointer: IdRef * Memory: IdScope * Semantics: IdMemorySemantics * Value: IdRef
+   | OpAtomicXor of IdResultType * IdResult * Pointer: IdRef * Memory: IdScope * Semantics: IdMemorySemantics * Value: IdRef
+   | OpPhi of IdResultType * IdResult * VariableParent: PairIdRefIdRef list
+   | OpLoopMerge of MergeBlock: IdRef * ContinueTarget: IdRef * LoopControl
+   | OpSelectionMerge of MergeBlock: IdRef * SelectionControl
+   | OpLabel of IdResult
+   | OpBranch of TargetLabel: IdRef
+   | OpBranchConditional of Condition: IdRef * TrueLabel: IdRef * FalseLabel: IdRef * Branchweights: LiteralInteger list
+   | OpSwitch of Selector: IdRef * Default: IdRef * Target: PairLiteralIntegerIdRef list
    | OpKill
    | OpReturn
-   | OpReturnValue of Value: uint32
+   | OpReturnValue of Value: IdRef
    | OpUnreachable
-   | OpLifetimeStart of Pointer: uint32 * Size: uint32
-   | OpLifetimeStop of Pointer: uint32 * Size: uint32
-   | OpGroupAsyncCopy of uint32 * uint32 * Execution: uint32 * Destination: uint32 * Source: uint32 * NumElements: uint32 * Stride: uint32 * Event: uint32
-   | OpGroupWaitEvents of Execution: uint32 * NumEvents: uint32 * EventsList: uint32
-   | OpGroupAll of uint32 * uint32 * Execution: uint32 * Predicate: uint32
-   | OpGroupAny of uint32 * uint32 * Execution: uint32 * Predicate: uint32
-   | OpGroupBroadcast of uint32 * uint32 * Execution: uint32 * Value: uint32 * LocalId: uint32
-   | OpGroupIAdd of uint32 * uint32 * Execution: uint32 * Operation: GroupOperation * X: uint32
-   | OpGroupFAdd of uint32 * uint32 * Execution: uint32 * Operation: GroupOperation * X: uint32
-   | OpGroupFMin of uint32 * uint32 * Execution: uint32 * Operation: GroupOperation * X: uint32
-   | OpGroupUMin of uint32 * uint32 * Execution: uint32 * Operation: GroupOperation * X: uint32
-   | OpGroupSMin of uint32 * uint32 * Execution: uint32 * Operation: GroupOperation * X: uint32
-   | OpGroupFMax of uint32 * uint32 * Execution: uint32 * Operation: GroupOperation * X: uint32
-   | OpGroupUMax of uint32 * uint32 * Execution: uint32 * Operation: GroupOperation * X: uint32
-   | OpGroupSMax of uint32 * uint32 * Execution: uint32 * Operation: GroupOperation * X: uint32
-   | OpReadPipe of uint32 * uint32 * Pipe: uint32 * Pointer: uint32 * PacketSize: uint32 * PacketAlignment: uint32
-   | OpWritePipe of uint32 * uint32 * Pipe: uint32 * Pointer: uint32 * PacketSize: uint32 * PacketAlignment: uint32
-   | OpReservedReadPipe of uint32 * uint32 * Pipe: uint32 * ReserveId: uint32 * Index: uint32 * Pointer: uint32 * PacketSize: uint32 * PacketAlignment: uint32
-   | OpReservedWritePipe of uint32 * uint32 * Pipe: uint32 * ReserveId: uint32 * Index: uint32 * Pointer: uint32 * PacketSize: uint32 * PacketAlignment: uint32
-   | OpReserveReadPipePackets of uint32 * uint32 * Pipe: uint32 * NumPackets: uint32 * PacketSize: uint32 * PacketAlignment: uint32
-   | OpReserveWritePipePackets of uint32 * uint32 * Pipe: uint32 * NumPackets: uint32 * PacketSize: uint32 * PacketAlignment: uint32
-   | OpCommitReadPipe of Pipe: uint32 * ReserveId: uint32 * PacketSize: uint32 * PacketAlignment: uint32
-   | OpCommitWritePipe of Pipe: uint32 * ReserveId: uint32 * PacketSize: uint32 * PacketAlignment: uint32
-   | OpIsValidReserveId of uint32 * uint32 * ReserveId: uint32
-   | OpGetNumPipePackets of uint32 * uint32 * Pipe: uint32 * PacketSize: uint32 * PacketAlignment: uint32
-   | OpGetMaxPipePackets of uint32 * uint32 * Pipe: uint32 * PacketSize: uint32 * PacketAlignment: uint32
-   | OpGroupReserveReadPipePackets of uint32 * uint32 * Execution: uint32 * Pipe: uint32 * NumPackets: uint32 * PacketSize: uint32 * PacketAlignment: uint32
-   | OpGroupReserveWritePipePackets of uint32 * uint32 * Execution: uint32 * Pipe: uint32 * NumPackets: uint32 * PacketSize: uint32 * PacketAlignment: uint32
-   | OpGroupCommitReadPipe of Execution: uint32 * Pipe: uint32 * ReserveId: uint32 * PacketSize: uint32 * PacketAlignment: uint32
-   | OpGroupCommitWritePipe of Execution: uint32 * Pipe: uint32 * ReserveId: uint32 * PacketSize: uint32 * PacketAlignment: uint32
-   | OpEnqueueMarker of uint32 * uint32 * Queue: uint32 * NumEvents: uint32 * WaitEvents: uint32 * RetEvent: uint32
-   | OpEnqueueKernel of uint32 * uint32 * Queue: uint32 * Flags: uint32 * NDRange: uint32 * NumEvents: uint32 * WaitEvents: uint32 * RetEvent: uint32 * Invoke: uint32 * Param: uint32 * ParamSize: uint32 * ParamAlign: uint32 * LocalSize: uint32 list
-   | OpGetKernelNDrangeSubGroupCount of uint32 * uint32 * NDRange: uint32 * Invoke: uint32 * Param: uint32 * ParamSize: uint32 * ParamAlign: uint32
-   | OpGetKernelNDrangeMaxSubGroupSize of uint32 * uint32 * NDRange: uint32 * Invoke: uint32 * Param: uint32 * ParamSize: uint32 * ParamAlign: uint32
-   | OpGetKernelWorkGroupSize of uint32 * uint32 * Invoke: uint32 * Param: uint32 * ParamSize: uint32 * ParamAlign: uint32
-   | OpGetKernelPreferredWorkGroupSizeMultiple of uint32 * uint32 * Invoke: uint32 * Param: uint32 * ParamSize: uint32 * ParamAlign: uint32
-   | OpRetainEvent of Event: uint32
-   | OpReleaseEvent of Event: uint32
-   | OpCreateUserEvent of uint32 * uint32
-   | OpIsValidEvent of uint32 * uint32 * Event: uint32
-   | OpSetUserEventStatus of Event: uint32 * Status: uint32
-   | OpCaptureEventProfilingInfo of Event: uint32 * ProfilingInfo: uint32 * Value: uint32
-   | OpGetDefaultQueue of uint32 * uint32
-   | OpBuildNDRange of uint32 * uint32 * GlobalWorkSize: uint32 * LocalWorkSize: uint32 * GlobalWorkOffset: uint32
-   | OpImageSparseSampleImplicitLod of uint32 * uint32 * SampledImage: uint32 * Coordinate: uint32 * ImageOperands option
-   | OpImageSparseSampleExplicitLod of uint32 * uint32 * SampledImage: uint32 * Coordinate: uint32 * ImageOperands
-   | OpImageSparseSampleDrefImplicitLod of uint32 * uint32 * SampledImage: uint32 * Coordinate: uint32 * Dref: uint32 * ImageOperands option
-   | OpImageSparseSampleDrefExplicitLod of uint32 * uint32 * SampledImage: uint32 * Coordinate: uint32 * Dref: uint32 * ImageOperands
-   | OpImageSparseSampleProjImplicitLod of uint32 * uint32 * SampledImage: uint32 * Coordinate: uint32 * ImageOperands option
-   | OpImageSparseSampleProjExplicitLod of uint32 * uint32 * SampledImage: uint32 * Coordinate: uint32 * ImageOperands
-   | OpImageSparseSampleProjDrefImplicitLod of uint32 * uint32 * SampledImage: uint32 * Coordinate: uint32 * Dref: uint32 * ImageOperands option
-   | OpImageSparseSampleProjDrefExplicitLod of uint32 * uint32 * SampledImage: uint32 * Coordinate: uint32 * Dref: uint32 * ImageOperands
-   | OpImageSparseFetch of uint32 * uint32 * Image: uint32 * Coordinate: uint32 * ImageOperands option
-   | OpImageSparseGather of uint32 * uint32 * SampledImage: uint32 * Coordinate: uint32 * Component: uint32 * ImageOperands option
-   | OpImageSparseDrefGather of uint32 * uint32 * SampledImage: uint32 * Coordinate: uint32 * Dref: uint32 * ImageOperands option
-   | OpImageSparseTexelsResident of uint32 * uint32 * ResidentCode: uint32
+   | OpLifetimeStart of Pointer: IdRef * Size: LiteralInteger
+   | OpLifetimeStop of Pointer: IdRef * Size: LiteralInteger
+   | OpGroupAsyncCopy of IdResultType * IdResult * Execution: IdScope * Destination: IdRef * Source: IdRef * NumElements: IdRef * Stride: IdRef * Event: IdRef
+   | OpGroupWaitEvents of Execution: IdScope * NumEvents: IdRef * EventsList: IdRef
+   | OpGroupAll of IdResultType * IdResult * Execution: IdScope * Predicate: IdRef
+   | OpGroupAny of IdResultType * IdResult * Execution: IdScope * Predicate: IdRef
+   | OpGroupBroadcast of IdResultType * IdResult * Execution: IdScope * Value: IdRef * LocalId: IdRef
+   | OpGroupIAdd of IdResultType * IdResult * Execution: IdScope * Operation: GroupOperation * X: IdRef
+   | OpGroupFAdd of IdResultType * IdResult * Execution: IdScope * Operation: GroupOperation * X: IdRef
+   | OpGroupFMin of IdResultType * IdResult * Execution: IdScope * Operation: GroupOperation * X: IdRef
+   | OpGroupUMin of IdResultType * IdResult * Execution: IdScope * Operation: GroupOperation * X: IdRef
+   | OpGroupSMin of IdResultType * IdResult * Execution: IdScope * Operation: GroupOperation * X: IdRef
+   | OpGroupFMax of IdResultType * IdResult * Execution: IdScope * Operation: GroupOperation * X: IdRef
+   | OpGroupUMax of IdResultType * IdResult * Execution: IdScope * Operation: GroupOperation * X: IdRef
+   | OpGroupSMax of IdResultType * IdResult * Execution: IdScope * Operation: GroupOperation * X: IdRef
+   | OpReadPipe of IdResultType * IdResult * Pipe: IdRef * Pointer: IdRef * PacketSize: IdRef * PacketAlignment: IdRef
+   | OpWritePipe of IdResultType * IdResult * Pipe: IdRef * Pointer: IdRef * PacketSize: IdRef * PacketAlignment: IdRef
+   | OpReservedReadPipe of IdResultType * IdResult * Pipe: IdRef * ReserveId: IdRef * Index: IdRef * Pointer: IdRef * PacketSize: IdRef * PacketAlignment: IdRef
+   | OpReservedWritePipe of IdResultType * IdResult * Pipe: IdRef * ReserveId: IdRef * Index: IdRef * Pointer: IdRef * PacketSize: IdRef * PacketAlignment: IdRef
+   | OpReserveReadPipePackets of IdResultType * IdResult * Pipe: IdRef * NumPackets: IdRef * PacketSize: IdRef * PacketAlignment: IdRef
+   | OpReserveWritePipePackets of IdResultType * IdResult * Pipe: IdRef * NumPackets: IdRef * PacketSize: IdRef * PacketAlignment: IdRef
+   | OpCommitReadPipe of Pipe: IdRef * ReserveId: IdRef * PacketSize: IdRef * PacketAlignment: IdRef
+   | OpCommitWritePipe of Pipe: IdRef * ReserveId: IdRef * PacketSize: IdRef * PacketAlignment: IdRef
+   | OpIsValidReserveId of IdResultType * IdResult * ReserveId: IdRef
+   | OpGetNumPipePackets of IdResultType * IdResult * Pipe: IdRef * PacketSize: IdRef * PacketAlignment: IdRef
+   | OpGetMaxPipePackets of IdResultType * IdResult * Pipe: IdRef * PacketSize: IdRef * PacketAlignment: IdRef
+   | OpGroupReserveReadPipePackets of IdResultType * IdResult * Execution: IdScope * Pipe: IdRef * NumPackets: IdRef * PacketSize: IdRef * PacketAlignment: IdRef
+   | OpGroupReserveWritePipePackets of IdResultType * IdResult * Execution: IdScope * Pipe: IdRef * NumPackets: IdRef * PacketSize: IdRef * PacketAlignment: IdRef
+   | OpGroupCommitReadPipe of Execution: IdScope * Pipe: IdRef * ReserveId: IdRef * PacketSize: IdRef * PacketAlignment: IdRef
+   | OpGroupCommitWritePipe of Execution: IdScope * Pipe: IdRef * ReserveId: IdRef * PacketSize: IdRef * PacketAlignment: IdRef
+   | OpEnqueueMarker of IdResultType * IdResult * Queue: IdRef * NumEvents: IdRef * WaitEvents: IdRef * RetEvent: IdRef
+   | OpEnqueueKernel of IdResultType * IdResult * Queue: IdRef * Flags: IdRef * NDRange: IdRef * NumEvents: IdRef * WaitEvents: IdRef * RetEvent: IdRef * Invoke: IdRef * Param: IdRef * ParamSize: IdRef * ParamAlign: IdRef * LocalSize: IdRef list
+   | OpGetKernelNDrangeSubGroupCount of IdResultType * IdResult * NDRange: IdRef * Invoke: IdRef * Param: IdRef * ParamSize: IdRef * ParamAlign: IdRef
+   | OpGetKernelNDrangeMaxSubGroupSize of IdResultType * IdResult * NDRange: IdRef * Invoke: IdRef * Param: IdRef * ParamSize: IdRef * ParamAlign: IdRef
+   | OpGetKernelWorkGroupSize of IdResultType * IdResult * Invoke: IdRef * Param: IdRef * ParamSize: IdRef * ParamAlign: IdRef
+   | OpGetKernelPreferredWorkGroupSizeMultiple of IdResultType * IdResult * Invoke: IdRef * Param: IdRef * ParamSize: IdRef * ParamAlign: IdRef
+   | OpRetainEvent of Event: IdRef
+   | OpReleaseEvent of Event: IdRef
+   | OpCreateUserEvent of IdResultType * IdResult
+   | OpIsValidEvent of IdResultType * IdResult * Event: IdRef
+   | OpSetUserEventStatus of Event: IdRef * Status: IdRef
+   | OpCaptureEventProfilingInfo of Event: IdRef * ProfilingInfo: IdRef * Value: IdRef
+   | OpGetDefaultQueue of IdResultType * IdResult
+   | OpBuildNDRange of IdResultType * IdResult * GlobalWorkSize: IdRef * LocalWorkSize: IdRef * GlobalWorkOffset: IdRef
+   | OpImageSparseSampleImplicitLod of IdResultType * IdResult * SampledImage: IdRef * Coordinate: IdRef * ImageOperands option
+   | OpImageSparseSampleExplicitLod of IdResultType * IdResult * SampledImage: IdRef * Coordinate: IdRef * ImageOperands
+   | OpImageSparseSampleDrefImplicitLod of IdResultType * IdResult * SampledImage: IdRef * Coordinate: IdRef * Dref: IdRef * ImageOperands option
+   | OpImageSparseSampleDrefExplicitLod of IdResultType * IdResult * SampledImage: IdRef * Coordinate: IdRef * Dref: IdRef * ImageOperands
+   | OpImageSparseSampleProjImplicitLod of IdResultType * IdResult * SampledImage: IdRef * Coordinate: IdRef * ImageOperands option
+   | OpImageSparseSampleProjExplicitLod of IdResultType * IdResult * SampledImage: IdRef * Coordinate: IdRef * ImageOperands
+   | OpImageSparseSampleProjDrefImplicitLod of IdResultType * IdResult * SampledImage: IdRef * Coordinate: IdRef * Dref: IdRef * ImageOperands option
+   | OpImageSparseSampleProjDrefExplicitLod of IdResultType * IdResult * SampledImage: IdRef * Coordinate: IdRef * Dref: IdRef * ImageOperands
+   | OpImageSparseFetch of IdResultType * IdResult * Image: IdRef * Coordinate: IdRef * ImageOperands option
+   | OpImageSparseGather of IdResultType * IdResult * SampledImage: IdRef * Coordinate: IdRef * Component: IdRef * ImageOperands option
+   | OpImageSparseDrefGather of IdResultType * IdResult * SampledImage: IdRef * Coordinate: IdRef * Dref: IdRef * ImageOperands option
+   | OpImageSparseTexelsResident of IdResultType * IdResult * ResidentCode: IdRef
    | OpNoLine
-   | OpAtomicFlagTestAndSet of uint32 * uint32 * Pointer: uint32 * Memory: uint32 * Semantics: uint32
-   | OpAtomicFlagClear of Pointer: uint32 * Memory: uint32 * Semantics: uint32
-   | OpImageSparseRead of uint32 * uint32 * Image: uint32 * Coordinate: uint32 * ImageOperands option
-   | OpSizeOf of uint32 * uint32 * Pointer: uint32
-   | OpTypePipeStorage of uint32
-   | OpConstantPipeStorage of uint32 * uint32 * PacketSize: uint32 * PacketAlignment: uint32 * Capacity: uint32
-   | OpCreatePipeFromPipeStorage of uint32 * uint32 * PipeStorage: uint32
-   | OpGetKernelLocalSizeForSubgroupCount of uint32 * uint32 * SubgroupCount: uint32 * Invoke: uint32 * Param: uint32 * ParamSize: uint32 * ParamAlign: uint32
-   | OpGetKernelMaxNumSubgroups of uint32 * uint32 * Invoke: uint32 * Param: uint32 * ParamSize: uint32 * ParamAlign: uint32
-   | OpTypeNamedBarrier of uint32
-   | OpNamedBarrierInitialize of uint32 * uint32 * SubgroupCount: uint32
-   | OpMemoryNamedBarrier of NamedBarrier: uint32 * Memory: uint32 * Semantics: uint32
-   | OpModuleProcessed of Process: string
-   | OpExecutionModeId of EntryPoint: uint32 * Mode: ExecutionMode
-   | OpDecorateId of Target: uint32 * Decoration
-   | OpGroupNonUniformElect of uint32 * uint32 * Execution: uint32
-   | OpGroupNonUniformAll of uint32 * uint32 * Execution: uint32 * Predicate: uint32
-   | OpGroupNonUniformAny of uint32 * uint32 * Execution: uint32 * Predicate: uint32
-   | OpGroupNonUniformAllEqual of uint32 * uint32 * Execution: uint32 * Value: uint32
-   | OpGroupNonUniformBroadcast of uint32 * uint32 * Execution: uint32 * Value: uint32 * Id: uint32
-   | OpGroupNonUniformBroadcastFirst of uint32 * uint32 * Execution: uint32 * Value: uint32
-   | OpGroupNonUniformBallot of uint32 * uint32 * Execution: uint32 * Predicate: uint32
-   | OpGroupNonUniformInverseBallot of uint32 * uint32 * Execution: uint32 * Value: uint32
-   | OpGroupNonUniformBallotBitExtract of uint32 * uint32 * Execution: uint32 * Value: uint32 * Index: uint32
-   | OpGroupNonUniformBallotBitCount of uint32 * uint32 * Execution: uint32 * Operation: GroupOperation * Value: uint32
-   | OpGroupNonUniformBallotFindLSB of uint32 * uint32 * Execution: uint32 * Value: uint32
-   | OpGroupNonUniformBallotFindMSB of uint32 * uint32 * Execution: uint32 * Value: uint32
-   | OpGroupNonUniformShuffle of uint32 * uint32 * Execution: uint32 * Value: uint32 * Id: uint32
-   | OpGroupNonUniformShuffleXor of uint32 * uint32 * Execution: uint32 * Value: uint32 * Mask: uint32
-   | OpGroupNonUniformShuffleUp of uint32 * uint32 * Execution: uint32 * Value: uint32 * Delta: uint32
-   | OpGroupNonUniformShuffleDown of uint32 * uint32 * Execution: uint32 * Value: uint32 * Delta: uint32
-   | OpGroupNonUniformIAdd of uint32 * uint32 * Execution: uint32 * Operation: GroupOperation * Value: uint32 * ClusterSize: uint32 option
-   | OpGroupNonUniformFAdd of uint32 * uint32 * Execution: uint32 * Operation: GroupOperation * Value: uint32 * ClusterSize: uint32 option
-   | OpGroupNonUniformIMul of uint32 * uint32 * Execution: uint32 * Operation: GroupOperation * Value: uint32 * ClusterSize: uint32 option
-   | OpGroupNonUniformFMul of uint32 * uint32 * Execution: uint32 * Operation: GroupOperation * Value: uint32 * ClusterSize: uint32 option
-   | OpGroupNonUniformSMin of uint32 * uint32 * Execution: uint32 * Operation: GroupOperation * Value: uint32 * ClusterSize: uint32 option
-   | OpGroupNonUniformUMin of uint32 * uint32 * Execution: uint32 * Operation: GroupOperation * Value: uint32 * ClusterSize: uint32 option
-   | OpGroupNonUniformFMin of uint32 * uint32 * Execution: uint32 * Operation: GroupOperation * Value: uint32 * ClusterSize: uint32 option
-   | OpGroupNonUniformSMax of uint32 * uint32 * Execution: uint32 * Operation: GroupOperation * Value: uint32 * ClusterSize: uint32 option
-   | OpGroupNonUniformUMax of uint32 * uint32 * Execution: uint32 * Operation: GroupOperation * Value: uint32 * ClusterSize: uint32 option
-   | OpGroupNonUniformFMax of uint32 * uint32 * Execution: uint32 * Operation: GroupOperation * Value: uint32 * ClusterSize: uint32 option
-   | OpGroupNonUniformBitwiseAnd of uint32 * uint32 * Execution: uint32 * Operation: GroupOperation * Value: uint32 * ClusterSize: uint32 option
-   | OpGroupNonUniformBitwiseOr of uint32 * uint32 * Execution: uint32 * Operation: GroupOperation * Value: uint32 * ClusterSize: uint32 option
-   | OpGroupNonUniformBitwiseXor of uint32 * uint32 * Execution: uint32 * Operation: GroupOperation * Value: uint32 * ClusterSize: uint32 option
-   | OpGroupNonUniformLogicalAnd of uint32 * uint32 * Execution: uint32 * Operation: GroupOperation * Value: uint32 * ClusterSize: uint32 option
-   | OpGroupNonUniformLogicalOr of uint32 * uint32 * Execution: uint32 * Operation: GroupOperation * Value: uint32 * ClusterSize: uint32 option
-   | OpGroupNonUniformLogicalXor of uint32 * uint32 * Execution: uint32 * Operation: GroupOperation * Value: uint32 * ClusterSize: uint32 option
-   | OpGroupNonUniformQuadBroadcast of uint32 * uint32 * Execution: uint32 * Value: uint32 * Index: uint32
-   | OpGroupNonUniformQuadSwap of uint32 * uint32 * Execution: uint32 * Value: uint32 * Direction: uint32
-   | OpCopyLogical of uint32 * uint32 * Operand: uint32
-   | OpPtrEqual of uint32 * uint32 * Operand1: uint32 * Operand2: uint32
-   | OpPtrNotEqual of uint32 * uint32 * Operand1: uint32 * Operand2: uint32
-   | OpPtrDiff of uint32 * uint32 * Operand1: uint32 * Operand2: uint32
-   | OpSubgroupBallotKHR of uint32 * uint32 * Predicate: uint32
-   | OpSubgroupFirstInvocationKHR of uint32 * uint32 * Value: uint32
-   | OpSubgroupAllKHR of uint32 * uint32 * Predicate: uint32
-   | OpSubgroupAnyKHR of uint32 * uint32 * Predicate: uint32
-   | OpSubgroupAllEqualKHR of uint32 * uint32 * Predicate: uint32
-   | OpSubgroupReadInvocationKHR of uint32 * uint32 * Value: uint32 * Index: uint32
-   | OpGroupIAddNonUniformAMD of uint32 * uint32 * Execution: uint32 * Operation: GroupOperation * X: uint32
-   | OpGroupFAddNonUniformAMD of uint32 * uint32 * Execution: uint32 * Operation: GroupOperation * X: uint32
-   | OpGroupFMinNonUniformAMD of uint32 * uint32 * Execution: uint32 * Operation: GroupOperation * X: uint32
-   | OpGroupUMinNonUniformAMD of uint32 * uint32 * Execution: uint32 * Operation: GroupOperation * X: uint32
-   | OpGroupSMinNonUniformAMD of uint32 * uint32 * Execution: uint32 * Operation: GroupOperation * X: uint32
-   | OpGroupFMaxNonUniformAMD of uint32 * uint32 * Execution: uint32 * Operation: GroupOperation * X: uint32
-   | OpGroupUMaxNonUniformAMD of uint32 * uint32 * Execution: uint32 * Operation: GroupOperation * X: uint32
-   | OpGroupSMaxNonUniformAMD of uint32 * uint32 * Execution: uint32 * Operation: GroupOperation * X: uint32
-   | OpFragmentMaskFetchAMD of uint32 * uint32 * Image: uint32 * Coordinate: uint32
-   | OpFragmentFetchAMD of uint32 * uint32 * Image: uint32 * Coordinate: uint32 * FragmentIndex: uint32
-   | OpReadClockKHR of uint32 * uint32 * Execution: uint32
-   | OpImageSampleFootprintNV of uint32 * uint32 * SampledImage: uint32 * Coordinate: uint32 * Granularity: uint32 * Coarse: uint32 * ImageOperands option
-   | OpGroupNonUniformPartitionNV of uint32 * uint32 * Value: uint32
-   | OpWritePackedPrimitiveIndices4x8NV of IndexOffset: uint32 * PackedIndices: uint32
-   | OpReportIntersectionNV of uint32 * uint32 * Hit: uint32 * HitKind: uint32
+   | OpAtomicFlagTestAndSet of IdResultType * IdResult * Pointer: IdRef * Memory: IdScope * Semantics: IdMemorySemantics
+   | OpAtomicFlagClear of Pointer: IdRef * Memory: IdScope * Semantics: IdMemorySemantics
+   | OpImageSparseRead of IdResultType * IdResult * Image: IdRef * Coordinate: IdRef * ImageOperands option
+   | OpSizeOf of IdResultType * IdResult * Pointer: IdRef
+   | OpTypePipeStorage of IdResult
+   | OpConstantPipeStorage of IdResultType * IdResult * PacketSize: LiteralInteger * PacketAlignment: LiteralInteger * Capacity: LiteralInteger
+   | OpCreatePipeFromPipeStorage of IdResultType * IdResult * PipeStorage: IdRef
+   | OpGetKernelLocalSizeForSubgroupCount of IdResultType * IdResult * SubgroupCount: IdRef * Invoke: IdRef * Param: IdRef * ParamSize: IdRef * ParamAlign: IdRef
+   | OpGetKernelMaxNumSubgroups of IdResultType * IdResult * Invoke: IdRef * Param: IdRef * ParamSize: IdRef * ParamAlign: IdRef
+   | OpTypeNamedBarrier of IdResult
+   | OpNamedBarrierInitialize of IdResultType * IdResult * SubgroupCount: IdRef
+   | OpMemoryNamedBarrier of NamedBarrier: IdRef * Memory: IdScope * Semantics: IdMemorySemantics
+   | OpModuleProcessed of Process: LiteralString
+   | OpExecutionModeId of EntryPoint: IdRef * Mode: ExecutionMode
+   | OpDecorateId of Target: IdRef * Decoration
+   | OpGroupNonUniformElect of IdResultType * IdResult * Execution: IdScope
+   | OpGroupNonUniformAll of IdResultType * IdResult * Execution: IdScope * Predicate: IdRef
+   | OpGroupNonUniformAny of IdResultType * IdResult * Execution: IdScope * Predicate: IdRef
+   | OpGroupNonUniformAllEqual of IdResultType * IdResult * Execution: IdScope * Value: IdRef
+   | OpGroupNonUniformBroadcast of IdResultType * IdResult * Execution: IdScope * Value: IdRef * Id: IdRef
+   | OpGroupNonUniformBroadcastFirst of IdResultType * IdResult * Execution: IdScope * Value: IdRef
+   | OpGroupNonUniformBallot of IdResultType * IdResult * Execution: IdScope * Predicate: IdRef
+   | OpGroupNonUniformInverseBallot of IdResultType * IdResult * Execution: IdScope * Value: IdRef
+   | OpGroupNonUniformBallotBitExtract of IdResultType * IdResult * Execution: IdScope * Value: IdRef * Index: IdRef
+   | OpGroupNonUniformBallotBitCount of IdResultType * IdResult * Execution: IdScope * Operation: GroupOperation * Value: IdRef
+   | OpGroupNonUniformBallotFindLSB of IdResultType * IdResult * Execution: IdScope * Value: IdRef
+   | OpGroupNonUniformBallotFindMSB of IdResultType * IdResult * Execution: IdScope * Value: IdRef
+   | OpGroupNonUniformShuffle of IdResultType * IdResult * Execution: IdScope * Value: IdRef * Id: IdRef
+   | OpGroupNonUniformShuffleXor of IdResultType * IdResult * Execution: IdScope * Value: IdRef * Mask: IdRef
+   | OpGroupNonUniformShuffleUp of IdResultType * IdResult * Execution: IdScope * Value: IdRef * Delta: IdRef
+   | OpGroupNonUniformShuffleDown of IdResultType * IdResult * Execution: IdScope * Value: IdRef * Delta: IdRef
+   | OpGroupNonUniformIAdd of IdResultType * IdResult * Execution: IdScope * Operation: GroupOperation * Value: IdRef * ClusterSize: IdRef option
+   | OpGroupNonUniformFAdd of IdResultType * IdResult * Execution: IdScope * Operation: GroupOperation * Value: IdRef * ClusterSize: IdRef option
+   | OpGroupNonUniformIMul of IdResultType * IdResult * Execution: IdScope * Operation: GroupOperation * Value: IdRef * ClusterSize: IdRef option
+   | OpGroupNonUniformFMul of IdResultType * IdResult * Execution: IdScope * Operation: GroupOperation * Value: IdRef * ClusterSize: IdRef option
+   | OpGroupNonUniformSMin of IdResultType * IdResult * Execution: IdScope * Operation: GroupOperation * Value: IdRef * ClusterSize: IdRef option
+   | OpGroupNonUniformUMin of IdResultType * IdResult * Execution: IdScope * Operation: GroupOperation * Value: IdRef * ClusterSize: IdRef option
+   | OpGroupNonUniformFMin of IdResultType * IdResult * Execution: IdScope * Operation: GroupOperation * Value: IdRef * ClusterSize: IdRef option
+   | OpGroupNonUniformSMax of IdResultType * IdResult * Execution: IdScope * Operation: GroupOperation * Value: IdRef * ClusterSize: IdRef option
+   | OpGroupNonUniformUMax of IdResultType * IdResult * Execution: IdScope * Operation: GroupOperation * Value: IdRef * ClusterSize: IdRef option
+   | OpGroupNonUniformFMax of IdResultType * IdResult * Execution: IdScope * Operation: GroupOperation * Value: IdRef * ClusterSize: IdRef option
+   | OpGroupNonUniformBitwiseAnd of IdResultType * IdResult * Execution: IdScope * Operation: GroupOperation * Value: IdRef * ClusterSize: IdRef option
+   | OpGroupNonUniformBitwiseOr of IdResultType * IdResult * Execution: IdScope * Operation: GroupOperation * Value: IdRef * ClusterSize: IdRef option
+   | OpGroupNonUniformBitwiseXor of IdResultType * IdResult * Execution: IdScope * Operation: GroupOperation * Value: IdRef * ClusterSize: IdRef option
+   | OpGroupNonUniformLogicalAnd of IdResultType * IdResult * Execution: IdScope * Operation: GroupOperation * Value: IdRef * ClusterSize: IdRef option
+   | OpGroupNonUniformLogicalOr of IdResultType * IdResult * Execution: IdScope * Operation: GroupOperation * Value: IdRef * ClusterSize: IdRef option
+   | OpGroupNonUniformLogicalXor of IdResultType * IdResult * Execution: IdScope * Operation: GroupOperation * Value: IdRef * ClusterSize: IdRef option
+   | OpGroupNonUniformQuadBroadcast of IdResultType * IdResult * Execution: IdScope * Value: IdRef * Index: IdRef
+   | OpGroupNonUniformQuadSwap of IdResultType * IdResult * Execution: IdScope * Value: IdRef * Direction: IdRef
+   | OpCopyLogical of IdResultType * IdResult * Operand: IdRef
+   | OpPtrEqual of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpPtrNotEqual of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpPtrDiff of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpSubgroupBallotKHR of IdResultType * IdResult * Predicate: IdRef
+   | OpSubgroupFirstInvocationKHR of IdResultType * IdResult * Value: IdRef
+   | OpSubgroupAllKHR of IdResultType * IdResult * Predicate: IdRef
+   | OpSubgroupAnyKHR of IdResultType * IdResult * Predicate: IdRef
+   | OpSubgroupAllEqualKHR of IdResultType * IdResult * Predicate: IdRef
+   | OpSubgroupReadInvocationKHR of IdResultType * IdResult * Value: IdRef * Index: IdRef
+   | OpGroupIAddNonUniformAMD of IdResultType * IdResult * Execution: IdScope * Operation: GroupOperation * X: IdRef
+   | OpGroupFAddNonUniformAMD of IdResultType * IdResult * Execution: IdScope * Operation: GroupOperation * X: IdRef
+   | OpGroupFMinNonUniformAMD of IdResultType * IdResult * Execution: IdScope * Operation: GroupOperation * X: IdRef
+   | OpGroupUMinNonUniformAMD of IdResultType * IdResult * Execution: IdScope * Operation: GroupOperation * X: IdRef
+   | OpGroupSMinNonUniformAMD of IdResultType * IdResult * Execution: IdScope * Operation: GroupOperation * X: IdRef
+   | OpGroupFMaxNonUniformAMD of IdResultType * IdResult * Execution: IdScope * Operation: GroupOperation * X: IdRef
+   | OpGroupUMaxNonUniformAMD of IdResultType * IdResult * Execution: IdScope * Operation: GroupOperation * X: IdRef
+   | OpGroupSMaxNonUniformAMD of IdResultType * IdResult * Execution: IdScope * Operation: GroupOperation * X: IdRef
+   | OpFragmentMaskFetchAMD of IdResultType * IdResult * Image: IdRef * Coordinate: IdRef
+   | OpFragmentFetchAMD of IdResultType * IdResult * Image: IdRef * Coordinate: IdRef * FragmentIndex: IdRef
+   | OpReadClockKHR of IdResultType * IdResult * Execution: IdScope
+   | OpImageSampleFootprintNV of IdResultType * IdResult * SampledImage: IdRef * Coordinate: IdRef * Granularity: IdRef * Coarse: IdRef * ImageOperands option
+   | OpGroupNonUniformPartitionNV of IdResultType * IdResult * Value: IdRef
+   | OpWritePackedPrimitiveIndices4x8NV of IndexOffset: IdRef * PackedIndices: IdRef
+   | OpReportIntersectionNV of IdResultType * IdResult * Hit: IdRef * HitKind: IdRef
    | OpIgnoreIntersectionNV
    | OpTerminateRayNV
-   | OpTraceNV of Accel: uint32 * RayFlags: uint32 * CullMask: uint32 * SBTOffset: uint32 * SBTStride: uint32 * MissIndex: uint32 * RayOrigin: uint32 * RayTmin: uint32 * RayDirection: uint32 * RayTmax: uint32 * PayloadId: uint32
-   | OpTypeAccelerationStructureNV of uint32
-   | OpExecuteCallableNV of SBTIndex: uint32 * CallableDataId: uint32
-   | OpTypeCooperativeMatrixNV of uint32 * ComponentType: uint32 * Execution: uint32 * Rows: uint32 * Columns: uint32
-   | OpCooperativeMatrixLoadNV of uint32 * uint32 * Pointer: uint32 * Stride: uint32 * ColumnMajor: uint32 * MemoryAccess option
-   | OpCooperativeMatrixStoreNV of Pointer: uint32 * Object: uint32 * Stride: uint32 * ColumnMajor: uint32 * MemoryAccess option
-   | OpCooperativeMatrixMulAddNV of uint32 * uint32 * A: uint32 * B: uint32 * C: uint32
-   | OpCooperativeMatrixLengthNV of uint32 * uint32 * Type: uint32
+   | OpTraceNV of Accel: IdRef * RayFlags: IdRef * CullMask: IdRef * SBTOffset: IdRef * SBTStride: IdRef * MissIndex: IdRef * RayOrigin: IdRef * RayTmin: IdRef * RayDirection: IdRef * RayTmax: IdRef * PayloadId: IdRef
+   | OpTypeAccelerationStructureNV of IdResult
+   | OpExecuteCallableNV of SBTIndex: IdRef * CallableDataId: IdRef
+   | OpTypeCooperativeMatrixNV of IdResult * ComponentType: IdRef * Execution: IdScope * Rows: IdRef * Columns: IdRef
+   | OpCooperativeMatrixLoadNV of IdResultType * IdResult * Pointer: IdRef * Stride: IdRef * ColumnMajor: IdRef * MemoryAccess option
+   | OpCooperativeMatrixStoreNV of Pointer: IdRef * Object: IdRef * Stride: IdRef * ColumnMajor: IdRef * MemoryAccess option
+   | OpCooperativeMatrixMulAddNV of IdResultType * IdResult * A: IdRef * B: IdRef * C: IdRef
+   | OpCooperativeMatrixLengthNV of IdResultType * IdResult * Type: IdRef
    | OpBeginInvocationInterlockEXT
    | OpEndInvocationInterlockEXT
    | OpDemoteToHelperInvocationEXT
-   | OpIsHelperInvocationEXT of uint32 * uint32
-   | OpSubgroupShuffleINTEL of uint32 * uint32 * Data: uint32 * InvocationId: uint32
-   | OpSubgroupShuffleDownINTEL of uint32 * uint32 * Current: uint32 * Next: uint32 * Delta: uint32
-   | OpSubgroupShuffleUpINTEL of uint32 * uint32 * Previous: uint32 * Current: uint32 * Delta: uint32
-   | OpSubgroupShuffleXorINTEL of uint32 * uint32 * Data: uint32 * Value: uint32
-   | OpSubgroupBlockReadINTEL of uint32 * uint32 * Ptr: uint32
-   | OpSubgroupBlockWriteINTEL of Ptr: uint32 * Data: uint32
-   | OpSubgroupImageBlockReadINTEL of uint32 * uint32 * Image: uint32 * Coordinate: uint32
-   | OpSubgroupImageBlockWriteINTEL of Image: uint32 * Coordinate: uint32 * Data: uint32
-   | OpSubgroupImageMediaBlockReadINTEL of uint32 * uint32 * Image: uint32 * Coordinate: uint32 * Width: uint32 * Height: uint32
-   | OpSubgroupImageMediaBlockWriteINTEL of Image: uint32 * Coordinate: uint32 * Width: uint32 * Height: uint32 * Data: uint32
-   | OpUCountLeadingZerosINTEL of uint32 * uint32 * Operand: uint32
-   | OpUCountTrailingZerosINTEL of uint32 * uint32 * Operand: uint32
-   | OpAbsISubINTEL of uint32 * uint32 * Operand1: uint32 * Operand2: uint32
-   | OpAbsUSubINTEL of uint32 * uint32 * Operand1: uint32 * Operand2: uint32
-   | OpIAddSatINTEL of uint32 * uint32 * Operand1: uint32 * Operand2: uint32
-   | OpUAddSatINTEL of uint32 * uint32 * Operand1: uint32 * Operand2: uint32
-   | OpIAverageINTEL of uint32 * uint32 * Operand1: uint32 * Operand2: uint32
-   | OpUAverageINTEL of uint32 * uint32 * Operand1: uint32 * Operand2: uint32
-   | OpIAverageRoundedINTEL of uint32 * uint32 * Operand1: uint32 * Operand2: uint32
-   | OpUAverageRoundedINTEL of uint32 * uint32 * Operand1: uint32 * Operand2: uint32
-   | OpISubSatINTEL of uint32 * uint32 * Operand1: uint32 * Operand2: uint32
-   | OpUSubSatINTEL of uint32 * uint32 * Operand1: uint32 * Operand2: uint32
-   | OpIMul32x16INTEL of uint32 * uint32 * Operand1: uint32 * Operand2: uint32
-   | OpUMul32x16INTEL of uint32 * uint32 * Operand1: uint32 * Operand2: uint32
-   | OpDecorateString of Target: uint32 * Decoration
-   | OpMemberDecorateString of StructType: uint32 * Member: uint32 * Decoration
-   | OpVmeImageINTEL of uint32 * uint32 * ImageType: uint32 * Sampler: uint32
-   | OpTypeVmeImageINTEL of uint32 * ImageType: uint32
-   | OpTypeAvcImePayloadINTEL of uint32
-   | OpTypeAvcRefPayloadINTEL of uint32
-   | OpTypeAvcSicPayloadINTEL of uint32
-   | OpTypeAvcMcePayloadINTEL of uint32
-   | OpTypeAvcMceResultINTEL of uint32
-   | OpTypeAvcImeResultINTEL of uint32
-   | OpTypeAvcImeResultSingleReferenceStreamoutINTEL of uint32
-   | OpTypeAvcImeResultDualReferenceStreamoutINTEL of uint32
-   | OpTypeAvcImeSingleReferenceStreaminINTEL of uint32
-   | OpTypeAvcImeDualReferenceStreaminINTEL of uint32
-   | OpTypeAvcRefResultINTEL of uint32
-   | OpTypeAvcSicResultINTEL of uint32
-   | OpSubgroupAvcMceGetDefaultInterBaseMultiReferencePenaltyINTEL of uint32 * uint32 * SliceType: uint32 * Qp: uint32
-   | OpSubgroupAvcMceSetInterBaseMultiReferencePenaltyINTEL of uint32 * uint32 * ReferenceBasePenalty: uint32 * Payload: uint32
-   | OpSubgroupAvcMceGetDefaultInterShapePenaltyINTEL of uint32 * uint32 * SliceType: uint32 * Qp: uint32
-   | OpSubgroupAvcMceSetInterShapePenaltyINTEL of uint32 * uint32 * PackedShapePenalty: uint32 * Payload: uint32
-   | OpSubgroupAvcMceGetDefaultInterDirectionPenaltyINTEL of uint32 * uint32 * SliceType: uint32 * Qp: uint32
-   | OpSubgroupAvcMceSetInterDirectionPenaltyINTEL of uint32 * uint32 * DirectionCost: uint32 * Payload: uint32
-   | OpSubgroupAvcMceGetDefaultIntraLumaShapePenaltyINTEL of uint32 * uint32 * SliceType: uint32 * Qp: uint32
-   | OpSubgroupAvcMceGetDefaultInterMotionVectorCostTableINTEL of uint32 * uint32 * SliceType: uint32 * Qp: uint32
-   | OpSubgroupAvcMceGetDefaultHighPenaltyCostTableINTEL of uint32 * uint32
-   | OpSubgroupAvcMceGetDefaultMediumPenaltyCostTableINTEL of uint32 * uint32
-   | OpSubgroupAvcMceGetDefaultLowPenaltyCostTableINTEL of uint32 * uint32
-   | OpSubgroupAvcMceSetMotionVectorCostFunctionINTEL of uint32 * uint32 * PackedCostCenterDelta: uint32 * PackedCostTable: uint32 * CostPrecision: uint32 * Payload: uint32
-   | OpSubgroupAvcMceGetDefaultIntraLumaModePenaltyINTEL of uint32 * uint32 * SliceType: uint32 * Qp: uint32
-   | OpSubgroupAvcMceGetDefaultNonDcLumaIntraPenaltyINTEL of uint32 * uint32
-   | OpSubgroupAvcMceGetDefaultIntraChromaModeBasePenaltyINTEL of uint32 * uint32
-   | OpSubgroupAvcMceSetAcOnlyHaarINTEL of uint32 * uint32 * Payload: uint32
-   | OpSubgroupAvcMceSetSourceInterlacedFieldPolarityINTEL of uint32 * uint32 * SourceFieldPolarity: uint32 * Payload: uint32
-   | OpSubgroupAvcMceSetSingleReferenceInterlacedFieldPolarityINTEL of uint32 * uint32 * ReferenceFieldPolarity: uint32 * Payload: uint32
-   | OpSubgroupAvcMceSetDualReferenceInterlacedFieldPolaritiesINTEL of uint32 * uint32 * ForwardReferenceFieldPolarity: uint32 * BackwardReferenceFieldPolarity: uint32 * Payload: uint32
-   | OpSubgroupAvcMceConvertToImePayloadINTEL of uint32 * uint32 * Payload: uint32
-   | OpSubgroupAvcMceConvertToImeResultINTEL of uint32 * uint32 * Payload: uint32
-   | OpSubgroupAvcMceConvertToRefPayloadINTEL of uint32 * uint32 * Payload: uint32
-   | OpSubgroupAvcMceConvertToRefResultINTEL of uint32 * uint32 * Payload: uint32
-   | OpSubgroupAvcMceConvertToSicPayloadINTEL of uint32 * uint32 * Payload: uint32
-   | OpSubgroupAvcMceConvertToSicResultINTEL of uint32 * uint32 * Payload: uint32
-   | OpSubgroupAvcMceGetMotionVectorsINTEL of uint32 * uint32 * Payload: uint32
-   | OpSubgroupAvcMceGetInterDistortionsINTEL of uint32 * uint32 * Payload: uint32
-   | OpSubgroupAvcMceGetBestInterDistortionsINTEL of uint32 * uint32 * Payload: uint32
-   | OpSubgroupAvcMceGetInterMajorShapeINTEL of uint32 * uint32 * Payload: uint32
-   | OpSubgroupAvcMceGetInterMinorShapeINTEL of uint32 * uint32 * Payload: uint32
-   | OpSubgroupAvcMceGetInterDirectionsINTEL of uint32 * uint32 * Payload: uint32
-   | OpSubgroupAvcMceGetInterMotionVectorCountINTEL of uint32 * uint32 * Payload: uint32
-   | OpSubgroupAvcMceGetInterReferenceIdsINTEL of uint32 * uint32 * Payload: uint32
-   | OpSubgroupAvcMceGetInterReferenceInterlacedFieldPolaritiesINTEL of uint32 * uint32 * PackedReferenceIds: uint32 * PackedReferenceParameterFieldPolarities: uint32 * Payload: uint32
-   | OpSubgroupAvcImeInitializeINTEL of uint32 * uint32 * SrcCoord: uint32 * PartitionMask: uint32 * SADAdjustment: uint32
-   | OpSubgroupAvcImeSetSingleReferenceINTEL of uint32 * uint32 * RefOffset: uint32 * SearchWindowConfig: uint32 * Payload: uint32
-   | OpSubgroupAvcImeSetDualReferenceINTEL of uint32 * uint32 * FwdRefOffset: uint32 * BwdRefOffset: uint32 * idSearchWindowConfig: uint32 * Payload: uint32
-   | OpSubgroupAvcImeRefWindowSizeINTEL of uint32 * uint32 * SearchWindowConfig: uint32 * DualRef: uint32
-   | OpSubgroupAvcImeAdjustRefOffsetINTEL of uint32 * uint32 * RefOffset: uint32 * SrcCoord: uint32 * RefWindowSize: uint32 * ImageSize: uint32
-   | OpSubgroupAvcImeConvertToMcePayloadINTEL of uint32 * uint32 * Payload: uint32
-   | OpSubgroupAvcImeSetMaxMotionVectorCountINTEL of uint32 * uint32 * MaxMotionVectorCount: uint32 * Payload: uint32
-   | OpSubgroupAvcImeSetUnidirectionalMixDisableINTEL of uint32 * uint32 * Payload: uint32
-   | OpSubgroupAvcImeSetEarlySearchTerminationThresholdINTEL of uint32 * uint32 * Threshold: uint32 * Payload: uint32
-   | OpSubgroupAvcImeSetWeightedSadINTEL of uint32 * uint32 * PackedSadWeights: uint32 * Payload: uint32
-   | OpSubgroupAvcImeEvaluateWithSingleReferenceINTEL of uint32 * uint32 * SrcImage: uint32 * RefImage: uint32 * Payload: uint32
-   | OpSubgroupAvcImeEvaluateWithDualReferenceINTEL of uint32 * uint32 * SrcImage: uint32 * FwdRefImage: uint32 * BwdRefImage: uint32 * Payload: uint32
-   | OpSubgroupAvcImeEvaluateWithSingleReferenceStreaminINTEL of uint32 * uint32 * SrcImage: uint32 * RefImage: uint32 * Payload: uint32 * StreaminComponents: uint32
-   | OpSubgroupAvcImeEvaluateWithDualReferenceStreaminINTEL of uint32 * uint32 * SrcImage: uint32 * FwdRefImage: uint32 * BwdRefImage: uint32 * Payload: uint32 * StreaminComponents: uint32
-   | OpSubgroupAvcImeEvaluateWithSingleReferenceStreamoutINTEL of uint32 * uint32 * SrcImage: uint32 * RefImage: uint32 * Payload: uint32
-   | OpSubgroupAvcImeEvaluateWithDualReferenceStreamoutINTEL of uint32 * uint32 * SrcImage: uint32 * FwdRefImage: uint32 * BwdRefImage: uint32 * Payload: uint32
-   | OpSubgroupAvcImeEvaluateWithSingleReferenceStreaminoutINTEL of uint32 * uint32 * SrcImage: uint32 * RefImage: uint32 * Payload: uint32 * StreaminComponents: uint32
-   | OpSubgroupAvcImeEvaluateWithDualReferenceStreaminoutINTEL of uint32 * uint32 * SrcImage: uint32 * FwdRefImage: uint32 * BwdRefImage: uint32 * Payload: uint32 * StreaminComponents: uint32
-   | OpSubgroupAvcImeConvertToMceResultINTEL of uint32 * uint32 * Payload: uint32
-   | OpSubgroupAvcImeGetSingleReferenceStreaminINTEL of uint32 * uint32 * Payload: uint32
-   | OpSubgroupAvcImeGetDualReferenceStreaminINTEL of uint32 * uint32 * Payload: uint32
-   | OpSubgroupAvcImeStripSingleReferenceStreamoutINTEL of uint32 * uint32 * Payload: uint32
-   | OpSubgroupAvcImeStripDualReferenceStreamoutINTEL of uint32 * uint32 * Payload: uint32
-   | OpSubgroupAvcImeGetStreamoutSingleReferenceMajorShapeMotionVectorsINTEL of uint32 * uint32 * Payload: uint32 * MajorShape: uint32
-   | OpSubgroupAvcImeGetStreamoutSingleReferenceMajorShapeDistortionsINTEL of uint32 * uint32 * Payload: uint32 * MajorShape: uint32
-   | OpSubgroupAvcImeGetStreamoutSingleReferenceMajorShapeReferenceIdsINTEL of uint32 * uint32 * Payload: uint32 * MajorShape: uint32
-   | OpSubgroupAvcImeGetStreamoutDualReferenceMajorShapeMotionVectorsINTEL of uint32 * uint32 * Payload: uint32 * MajorShape: uint32 * Direction: uint32
-   | OpSubgroupAvcImeGetStreamoutDualReferenceMajorShapeDistortionsINTEL of uint32 * uint32 * Payload: uint32 * MajorShape: uint32 * Direction: uint32
-   | OpSubgroupAvcImeGetStreamoutDualReferenceMajorShapeReferenceIdsINTEL of uint32 * uint32 * Payload: uint32 * MajorShape: uint32 * Direction: uint32
-   | OpSubgroupAvcImeGetBorderReachedINTEL of uint32 * uint32 * ImageSelect: uint32 * Payload: uint32
-   | OpSubgroupAvcImeGetTruncatedSearchIndicationINTEL of uint32 * uint32 * Payload: uint32
-   | OpSubgroupAvcImeGetUnidirectionalEarlySearchTerminationINTEL of uint32 * uint32 * Payload: uint32
-   | OpSubgroupAvcImeGetWeightingPatternMinimumMotionVectorINTEL of uint32 * uint32 * Payload: uint32
-   | OpSubgroupAvcImeGetWeightingPatternMinimumDistortionINTEL of uint32 * uint32 * Payload: uint32
-   | OpSubgroupAvcFmeInitializeINTEL of uint32 * uint32 * SrcCoord: uint32 * MotionVectors: uint32 * MajorShapes: uint32 * MinorShapes: uint32 * Direction: uint32 * PixelResolution: uint32 * SadAdjustment: uint32
-   | OpSubgroupAvcBmeInitializeINTEL of uint32 * uint32 * SrcCoord: uint32 * MotionVectors: uint32 * MajorShapes: uint32 * MinorShapes: uint32 * Direction: uint32 * PixelResolution: uint32 * BidirectionalWeight: uint32 * SadAdjustment: uint32
-   | OpSubgroupAvcRefConvertToMcePayloadINTEL of uint32 * uint32 * Payload: uint32
-   | OpSubgroupAvcRefSetBidirectionalMixDisableINTEL of uint32 * uint32 * Payload: uint32
-   | OpSubgroupAvcRefSetBilinearFilterEnableINTEL of uint32 * uint32 * Payload: uint32
-   | OpSubgroupAvcRefEvaluateWithSingleReferenceINTEL of uint32 * uint32 * SrcImage: uint32 * RefImage: uint32 * Payload: uint32
-   | OpSubgroupAvcRefEvaluateWithDualReferenceINTEL of uint32 * uint32 * SrcImage: uint32 * FwdRefImage: uint32 * BwdRefImage: uint32 * Payload: uint32
-   | OpSubgroupAvcRefEvaluateWithMultiReferenceINTEL of uint32 * uint32 * SrcImage: uint32 * PackedReferenceIds: uint32 * Payload: uint32
-   | OpSubgroupAvcRefEvaluateWithMultiReferenceInterlacedINTEL of uint32 * uint32 * SrcImage: uint32 * PackedReferenceIds: uint32 * PackedReferenceFieldPolarities: uint32 * Payload: uint32
-   | OpSubgroupAvcRefConvertToMceResultINTEL of uint32 * uint32 * Payload: uint32
-   | OpSubgroupAvcSicInitializeINTEL of uint32 * uint32 * SrcCoord: uint32
-   | OpSubgroupAvcSicConfigureSkcINTEL of uint32 * uint32 * SkipBlockPartitionType: uint32 * SkipMotionVectorMask: uint32 * MotionVectors: uint32 * BidirectionalWeight: uint32 * SadAdjustment: uint32 * Payload: uint32
-   | OpSubgroupAvcSicConfigureIpeLumaINTEL of uint32 * uint32 * LumaIntraPartitionMask: uint32 * IntraNeighbourAvailabilty: uint32 * LeftEdgeLumaPixels: uint32 * UpperLeftCornerLumaPixel: uint32 * UpperEdgeLumaPixels: uint32 * UpperRightEdgeLumaPixels: uint32 * SadAdjustment: uint32 * Payload: uint32
-   | OpSubgroupAvcSicConfigureIpeLumaChromaINTEL of uint32 * uint32 * LumaIntraPartitionMask: uint32 * IntraNeighbourAvailabilty: uint32 * LeftEdgeLumaPixels: uint32 * UpperLeftCornerLumaPixel: uint32 * UpperEdgeLumaPixels: uint32 * UpperRightEdgeLumaPixels: uint32 * LeftEdgeChromaPixels: uint32 * UpperLeftCornerChromaPixel: uint32 * UpperEdgeChromaPixels: uint32 * SadAdjustment: uint32 * Payload: uint32
-   | OpSubgroupAvcSicGetMotionVectorMaskINTEL of uint32 * uint32 * SkipBlockPartitionType: uint32 * Direction: uint32
-   | OpSubgroupAvcSicConvertToMcePayloadINTEL of uint32 * uint32 * Payload: uint32
-   | OpSubgroupAvcSicSetIntraLumaShapePenaltyINTEL of uint32 * uint32 * PackedShapePenalty: uint32 * Payload: uint32
-   | OpSubgroupAvcSicSetIntraLumaModeCostFunctionINTEL of uint32 * uint32 * LumaModePenalty: uint32 * LumaPackedNeighborModes: uint32 * LumaPackedNonDcPenalty: uint32 * Payload: uint32
-   | OpSubgroupAvcSicSetIntraChromaModeCostFunctionINTEL of uint32 * uint32 * ChromaModeBasePenalty: uint32 * Payload: uint32
-   | OpSubgroupAvcSicSetBilinearFilterEnableINTEL of uint32 * uint32 * Payload: uint32
-   | OpSubgroupAvcSicSetSkcForwardTransformEnableINTEL of uint32 * uint32 * PackedSadCoefficients: uint32 * Payload: uint32
-   | OpSubgroupAvcSicSetBlockBasedRawSkipSadINTEL of uint32 * uint32 * BlockBasedSkipType: uint32 * Payload: uint32
-   | OpSubgroupAvcSicEvaluateIpeINTEL of uint32 * uint32 * SrcImage: uint32 * Payload: uint32
-   | OpSubgroupAvcSicEvaluateWithSingleReferenceINTEL of uint32 * uint32 * SrcImage: uint32 * RefImage: uint32 * Payload: uint32
-   | OpSubgroupAvcSicEvaluateWithDualReferenceINTEL of uint32 * uint32 * SrcImage: uint32 * FwdRefImage: uint32 * BwdRefImage: uint32 * Payload: uint32
-   | OpSubgroupAvcSicEvaluateWithMultiReferenceINTEL of uint32 * uint32 * SrcImage: uint32 * PackedReferenceIds: uint32 * Payload: uint32
-   | OpSubgroupAvcSicEvaluateWithMultiReferenceInterlacedINTEL of uint32 * uint32 * SrcImage: uint32 * PackedReferenceIds: uint32 * PackedReferenceFieldPolarities: uint32 * Payload: uint32
-   | OpSubgroupAvcSicConvertToMceResultINTEL of uint32 * uint32 * Payload: uint32
-   | OpSubgroupAvcSicGetIpeLumaShapeINTEL of uint32 * uint32 * Payload: uint32
-   | OpSubgroupAvcSicGetBestIpeLumaDistortionINTEL of uint32 * uint32 * Payload: uint32
-   | OpSubgroupAvcSicGetBestIpeChromaDistortionINTEL of uint32 * uint32 * Payload: uint32
-   | OpSubgroupAvcSicGetPackedIpeLumaModesINTEL of uint32 * uint32 * Payload: uint32
-   | OpSubgroupAvcSicGetIpeChromaModeINTEL of uint32 * uint32 * Payload: uint32
-   | OpSubgroupAvcSicGetPackedSkcLumaCountThresholdINTEL of uint32 * uint32 * Payload: uint32
-   | OpSubgroupAvcSicGetPackedSkcLumaSumThresholdINTEL of uint32 * uint32 * Payload: uint32
-   | OpSubgroupAvcSicGetInterRawSadsINTEL of uint32 * uint32 * Payload: uint32
+   | OpIsHelperInvocationEXT of IdResultType * IdResult
+   | OpSubgroupShuffleINTEL of IdResultType * IdResult * Data: IdRef * InvocationId: IdRef
+   | OpSubgroupShuffleDownINTEL of IdResultType * IdResult * Current: IdRef * Next: IdRef * Delta: IdRef
+   | OpSubgroupShuffleUpINTEL of IdResultType * IdResult * Previous: IdRef * Current: IdRef * Delta: IdRef
+   | OpSubgroupShuffleXorINTEL of IdResultType * IdResult * Data: IdRef * Value: IdRef
+   | OpSubgroupBlockReadINTEL of IdResultType * IdResult * Ptr: IdRef
+   | OpSubgroupBlockWriteINTEL of Ptr: IdRef * Data: IdRef
+   | OpSubgroupImageBlockReadINTEL of IdResultType * IdResult * Image: IdRef * Coordinate: IdRef
+   | OpSubgroupImageBlockWriteINTEL of Image: IdRef * Coordinate: IdRef * Data: IdRef
+   | OpSubgroupImageMediaBlockReadINTEL of IdResultType * IdResult * Image: IdRef * Coordinate: IdRef * Width: IdRef * Height: IdRef
+   | OpSubgroupImageMediaBlockWriteINTEL of Image: IdRef * Coordinate: IdRef * Width: IdRef * Height: IdRef * Data: IdRef
+   | OpUCountLeadingZerosINTEL of IdResultType * IdResult * Operand: IdRef
+   | OpUCountTrailingZerosINTEL of IdResultType * IdResult * Operand: IdRef
+   | OpAbsISubINTEL of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpAbsUSubINTEL of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpIAddSatINTEL of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpUAddSatINTEL of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpIAverageINTEL of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpUAverageINTEL of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpIAverageRoundedINTEL of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpUAverageRoundedINTEL of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpISubSatINTEL of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpUSubSatINTEL of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpIMul32x16INTEL of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpUMul32x16INTEL of IdResultType * IdResult * Operand1: IdRef * Operand2: IdRef
+   | OpDecorateString of Target: IdRef * Decoration
+   | OpMemberDecorateString of StructType: IdRef * Member: LiteralInteger * Decoration
+   | OpVmeImageINTEL of IdResultType * IdResult * ImageType: IdRef * Sampler: IdRef
+   | OpTypeVmeImageINTEL of IdResult * ImageType: IdRef
+   | OpTypeAvcImePayloadINTEL of IdResult
+   | OpTypeAvcRefPayloadINTEL of IdResult
+   | OpTypeAvcSicPayloadINTEL of IdResult
+   | OpTypeAvcMcePayloadINTEL of IdResult
+   | OpTypeAvcMceResultINTEL of IdResult
+   | OpTypeAvcImeResultINTEL of IdResult
+   | OpTypeAvcImeResultSingleReferenceStreamoutINTEL of IdResult
+   | OpTypeAvcImeResultDualReferenceStreamoutINTEL of IdResult
+   | OpTypeAvcImeSingleReferenceStreaminINTEL of IdResult
+   | OpTypeAvcImeDualReferenceStreaminINTEL of IdResult
+   | OpTypeAvcRefResultINTEL of IdResult
+   | OpTypeAvcSicResultINTEL of IdResult
+   | OpSubgroupAvcMceGetDefaultInterBaseMultiReferencePenaltyINTEL of IdResultType * IdResult * SliceType: IdRef * Qp: IdRef
+   | OpSubgroupAvcMceSetInterBaseMultiReferencePenaltyINTEL of IdResultType * IdResult * ReferenceBasePenalty: IdRef * Payload: IdRef
+   | OpSubgroupAvcMceGetDefaultInterShapePenaltyINTEL of IdResultType * IdResult * SliceType: IdRef * Qp: IdRef
+   | OpSubgroupAvcMceSetInterShapePenaltyINTEL of IdResultType * IdResult * PackedShapePenalty: IdRef * Payload: IdRef
+   | OpSubgroupAvcMceGetDefaultInterDirectionPenaltyINTEL of IdResultType * IdResult * SliceType: IdRef * Qp: IdRef
+   | OpSubgroupAvcMceSetInterDirectionPenaltyINTEL of IdResultType * IdResult * DirectionCost: IdRef * Payload: IdRef
+   | OpSubgroupAvcMceGetDefaultIntraLumaShapePenaltyINTEL of IdResultType * IdResult * SliceType: IdRef * Qp: IdRef
+   | OpSubgroupAvcMceGetDefaultInterMotionVectorCostTableINTEL of IdResultType * IdResult * SliceType: IdRef * Qp: IdRef
+   | OpSubgroupAvcMceGetDefaultHighPenaltyCostTableINTEL of IdResultType * IdResult
+   | OpSubgroupAvcMceGetDefaultMediumPenaltyCostTableINTEL of IdResultType * IdResult
+   | OpSubgroupAvcMceGetDefaultLowPenaltyCostTableINTEL of IdResultType * IdResult
+   | OpSubgroupAvcMceSetMotionVectorCostFunctionINTEL of IdResultType * IdResult * PackedCostCenterDelta: IdRef * PackedCostTable: IdRef * CostPrecision: IdRef * Payload: IdRef
+   | OpSubgroupAvcMceGetDefaultIntraLumaModePenaltyINTEL of IdResultType * IdResult * SliceType: IdRef * Qp: IdRef
+   | OpSubgroupAvcMceGetDefaultNonDcLumaIntraPenaltyINTEL of IdResultType * IdResult
+   | OpSubgroupAvcMceGetDefaultIntraChromaModeBasePenaltyINTEL of IdResultType * IdResult
+   | OpSubgroupAvcMceSetAcOnlyHaarINTEL of IdResultType * IdResult * Payload: IdRef
+   | OpSubgroupAvcMceSetSourceInterlacedFieldPolarityINTEL of IdResultType * IdResult * SourceFieldPolarity: IdRef * Payload: IdRef
+   | OpSubgroupAvcMceSetSingleReferenceInterlacedFieldPolarityINTEL of IdResultType * IdResult * ReferenceFieldPolarity: IdRef * Payload: IdRef
+   | OpSubgroupAvcMceSetDualReferenceInterlacedFieldPolaritiesINTEL of IdResultType * IdResult * ForwardReferenceFieldPolarity: IdRef * BackwardReferenceFieldPolarity: IdRef * Payload: IdRef
+   | OpSubgroupAvcMceConvertToImePayloadINTEL of IdResultType * IdResult * Payload: IdRef
+   | OpSubgroupAvcMceConvertToImeResultINTEL of IdResultType * IdResult * Payload: IdRef
+   | OpSubgroupAvcMceConvertToRefPayloadINTEL of IdResultType * IdResult * Payload: IdRef
+   | OpSubgroupAvcMceConvertToRefResultINTEL of IdResultType * IdResult * Payload: IdRef
+   | OpSubgroupAvcMceConvertToSicPayloadINTEL of IdResultType * IdResult * Payload: IdRef
+   | OpSubgroupAvcMceConvertToSicResultINTEL of IdResultType * IdResult * Payload: IdRef
+   | OpSubgroupAvcMceGetMotionVectorsINTEL of IdResultType * IdResult * Payload: IdRef
+   | OpSubgroupAvcMceGetInterDistortionsINTEL of IdResultType * IdResult * Payload: IdRef
+   | OpSubgroupAvcMceGetBestInterDistortionsINTEL of IdResultType * IdResult * Payload: IdRef
+   | OpSubgroupAvcMceGetInterMajorShapeINTEL of IdResultType * IdResult * Payload: IdRef
+   | OpSubgroupAvcMceGetInterMinorShapeINTEL of IdResultType * IdResult * Payload: IdRef
+   | OpSubgroupAvcMceGetInterDirectionsINTEL of IdResultType * IdResult * Payload: IdRef
+   | OpSubgroupAvcMceGetInterMotionVectorCountINTEL of IdResultType * IdResult * Payload: IdRef
+   | OpSubgroupAvcMceGetInterReferenceIdsINTEL of IdResultType * IdResult * Payload: IdRef
+   | OpSubgroupAvcMceGetInterReferenceInterlacedFieldPolaritiesINTEL of IdResultType * IdResult * PackedReferenceIds: IdRef * PackedReferenceParameterFieldPolarities: IdRef * Payload: IdRef
+   | OpSubgroupAvcImeInitializeINTEL of IdResultType * IdResult * SrcCoord: IdRef * PartitionMask: IdRef * SADAdjustment: IdRef
+   | OpSubgroupAvcImeSetSingleReferenceINTEL of IdResultType * IdResult * RefOffset: IdRef * SearchWindowConfig: IdRef * Payload: IdRef
+   | OpSubgroupAvcImeSetDualReferenceINTEL of IdResultType * IdResult * FwdRefOffset: IdRef * BwdRefOffset: IdRef * idSearchWindowConfig: IdRef * Payload: IdRef
+   | OpSubgroupAvcImeRefWindowSizeINTEL of IdResultType * IdResult * SearchWindowConfig: IdRef * DualRef: IdRef
+   | OpSubgroupAvcImeAdjustRefOffsetINTEL of IdResultType * IdResult * RefOffset: IdRef * SrcCoord: IdRef * RefWindowSize: IdRef * ImageSize: IdRef
+   | OpSubgroupAvcImeConvertToMcePayloadINTEL of IdResultType * IdResult * Payload: IdRef
+   | OpSubgroupAvcImeSetMaxMotionVectorCountINTEL of IdResultType * IdResult * MaxMotionVectorCount: IdRef * Payload: IdRef
+   | OpSubgroupAvcImeSetUnidirectionalMixDisableINTEL of IdResultType * IdResult * Payload: IdRef
+   | OpSubgroupAvcImeSetEarlySearchTerminationThresholdINTEL of IdResultType * IdResult * Threshold: IdRef * Payload: IdRef
+   | OpSubgroupAvcImeSetWeightedSadINTEL of IdResultType * IdResult * PackedSadWeights: IdRef * Payload: IdRef
+   | OpSubgroupAvcImeEvaluateWithSingleReferenceINTEL of IdResultType * IdResult * SrcImage: IdRef * RefImage: IdRef * Payload: IdRef
+   | OpSubgroupAvcImeEvaluateWithDualReferenceINTEL of IdResultType * IdResult * SrcImage: IdRef * FwdRefImage: IdRef * BwdRefImage: IdRef * Payload: IdRef
+   | OpSubgroupAvcImeEvaluateWithSingleReferenceStreaminINTEL of IdResultType * IdResult * SrcImage: IdRef * RefImage: IdRef * Payload: IdRef * StreaminComponents: IdRef
+   | OpSubgroupAvcImeEvaluateWithDualReferenceStreaminINTEL of IdResultType * IdResult * SrcImage: IdRef * FwdRefImage: IdRef * BwdRefImage: IdRef * Payload: IdRef * StreaminComponents: IdRef
+   | OpSubgroupAvcImeEvaluateWithSingleReferenceStreamoutINTEL of IdResultType * IdResult * SrcImage: IdRef * RefImage: IdRef * Payload: IdRef
+   | OpSubgroupAvcImeEvaluateWithDualReferenceStreamoutINTEL of IdResultType * IdResult * SrcImage: IdRef * FwdRefImage: IdRef * BwdRefImage: IdRef * Payload: IdRef
+   | OpSubgroupAvcImeEvaluateWithSingleReferenceStreaminoutINTEL of IdResultType * IdResult * SrcImage: IdRef * RefImage: IdRef * Payload: IdRef * StreaminComponents: IdRef
+   | OpSubgroupAvcImeEvaluateWithDualReferenceStreaminoutINTEL of IdResultType * IdResult * SrcImage: IdRef * FwdRefImage: IdRef * BwdRefImage: IdRef * Payload: IdRef * StreaminComponents: IdRef
+   | OpSubgroupAvcImeConvertToMceResultINTEL of IdResultType * IdResult * Payload: IdRef
+   | OpSubgroupAvcImeGetSingleReferenceStreaminINTEL of IdResultType * IdResult * Payload: IdRef
+   | OpSubgroupAvcImeGetDualReferenceStreaminINTEL of IdResultType * IdResult * Payload: IdRef
+   | OpSubgroupAvcImeStripSingleReferenceStreamoutINTEL of IdResultType * IdResult * Payload: IdRef
+   | OpSubgroupAvcImeStripDualReferenceStreamoutINTEL of IdResultType * IdResult * Payload: IdRef
+   | OpSubgroupAvcImeGetStreamoutSingleReferenceMajorShapeMotionVectorsINTEL of IdResultType * IdResult * Payload: IdRef * MajorShape: IdRef
+   | OpSubgroupAvcImeGetStreamoutSingleReferenceMajorShapeDistortionsINTEL of IdResultType * IdResult * Payload: IdRef * MajorShape: IdRef
+   | OpSubgroupAvcImeGetStreamoutSingleReferenceMajorShapeReferenceIdsINTEL of IdResultType * IdResult * Payload: IdRef * MajorShape: IdRef
+   | OpSubgroupAvcImeGetStreamoutDualReferenceMajorShapeMotionVectorsINTEL of IdResultType * IdResult * Payload: IdRef * MajorShape: IdRef * Direction: IdRef
+   | OpSubgroupAvcImeGetStreamoutDualReferenceMajorShapeDistortionsINTEL of IdResultType * IdResult * Payload: IdRef * MajorShape: IdRef * Direction: IdRef
+   | OpSubgroupAvcImeGetStreamoutDualReferenceMajorShapeReferenceIdsINTEL of IdResultType * IdResult * Payload: IdRef * MajorShape: IdRef * Direction: IdRef
+   | OpSubgroupAvcImeGetBorderReachedINTEL of IdResultType * IdResult * ImageSelect: IdRef * Payload: IdRef
+   | OpSubgroupAvcImeGetTruncatedSearchIndicationINTEL of IdResultType * IdResult * Payload: IdRef
+   | OpSubgroupAvcImeGetUnidirectionalEarlySearchTerminationINTEL of IdResultType * IdResult * Payload: IdRef
+   | OpSubgroupAvcImeGetWeightingPatternMinimumMotionVectorINTEL of IdResultType * IdResult * Payload: IdRef
+   | OpSubgroupAvcImeGetWeightingPatternMinimumDistortionINTEL of IdResultType * IdResult * Payload: IdRef
+   | OpSubgroupAvcFmeInitializeINTEL of IdResultType * IdResult * SrcCoord: IdRef * MotionVectors: IdRef * MajorShapes: IdRef * MinorShapes: IdRef * Direction: IdRef * PixelResolution: IdRef * SadAdjustment: IdRef
+   | OpSubgroupAvcBmeInitializeINTEL of IdResultType * IdResult * SrcCoord: IdRef * MotionVectors: IdRef * MajorShapes: IdRef * MinorShapes: IdRef * Direction: IdRef * PixelResolution: IdRef * BidirectionalWeight: IdRef * SadAdjustment: IdRef
+   | OpSubgroupAvcRefConvertToMcePayloadINTEL of IdResultType * IdResult * Payload: IdRef
+   | OpSubgroupAvcRefSetBidirectionalMixDisableINTEL of IdResultType * IdResult * Payload: IdRef
+   | OpSubgroupAvcRefSetBilinearFilterEnableINTEL of IdResultType * IdResult * Payload: IdRef
+   | OpSubgroupAvcRefEvaluateWithSingleReferenceINTEL of IdResultType * IdResult * SrcImage: IdRef * RefImage: IdRef * Payload: IdRef
+   | OpSubgroupAvcRefEvaluateWithDualReferenceINTEL of IdResultType * IdResult * SrcImage: IdRef * FwdRefImage: IdRef * BwdRefImage: IdRef * Payload: IdRef
+   | OpSubgroupAvcRefEvaluateWithMultiReferenceINTEL of IdResultType * IdResult * SrcImage: IdRef * PackedReferenceIds: IdRef * Payload: IdRef
+   | OpSubgroupAvcRefEvaluateWithMultiReferenceInterlacedINTEL of IdResultType * IdResult * SrcImage: IdRef * PackedReferenceIds: IdRef * PackedReferenceFieldPolarities: IdRef * Payload: IdRef
+   | OpSubgroupAvcRefConvertToMceResultINTEL of IdResultType * IdResult * Payload: IdRef
+   | OpSubgroupAvcSicInitializeINTEL of IdResultType * IdResult * SrcCoord: IdRef
+   | OpSubgroupAvcSicConfigureSkcINTEL of IdResultType * IdResult * SkipBlockPartitionType: IdRef * SkipMotionVectorMask: IdRef * MotionVectors: IdRef * BidirectionalWeight: IdRef * SadAdjustment: IdRef * Payload: IdRef
+   | OpSubgroupAvcSicConfigureIpeLumaINTEL of IdResultType * IdResult * LumaIntraPartitionMask: IdRef * IntraNeighbourAvailabilty: IdRef * LeftEdgeLumaPixels: IdRef * UpperLeftCornerLumaPixel: IdRef * UpperEdgeLumaPixels: IdRef * UpperRightEdgeLumaPixels: IdRef * SadAdjustment: IdRef * Payload: IdRef
+   | OpSubgroupAvcSicConfigureIpeLumaChromaINTEL of IdResultType * IdResult * LumaIntraPartitionMask: IdRef * IntraNeighbourAvailabilty: IdRef * LeftEdgeLumaPixels: IdRef * UpperLeftCornerLumaPixel: IdRef * UpperEdgeLumaPixels: IdRef * UpperRightEdgeLumaPixels: IdRef * LeftEdgeChromaPixels: IdRef * UpperLeftCornerChromaPixel: IdRef * UpperEdgeChromaPixels: IdRef * SadAdjustment: IdRef * Payload: IdRef
+   | OpSubgroupAvcSicGetMotionVectorMaskINTEL of IdResultType * IdResult * SkipBlockPartitionType: IdRef * Direction: IdRef
+   | OpSubgroupAvcSicConvertToMcePayloadINTEL of IdResultType * IdResult * Payload: IdRef
+   | OpSubgroupAvcSicSetIntraLumaShapePenaltyINTEL of IdResultType * IdResult * PackedShapePenalty: IdRef * Payload: IdRef
+   | OpSubgroupAvcSicSetIntraLumaModeCostFunctionINTEL of IdResultType * IdResult * LumaModePenalty: IdRef * LumaPackedNeighborModes: IdRef * LumaPackedNonDcPenalty: IdRef * Payload: IdRef
+   | OpSubgroupAvcSicSetIntraChromaModeCostFunctionINTEL of IdResultType * IdResult * ChromaModeBasePenalty: IdRef * Payload: IdRef
+   | OpSubgroupAvcSicSetBilinearFilterEnableINTEL of IdResultType * IdResult * Payload: IdRef
+   | OpSubgroupAvcSicSetSkcForwardTransformEnableINTEL of IdResultType * IdResult * PackedSadCoefficients: IdRef * Payload: IdRef
+   | OpSubgroupAvcSicSetBlockBasedRawSkipSadINTEL of IdResultType * IdResult * BlockBasedSkipType: IdRef * Payload: IdRef
+   | OpSubgroupAvcSicEvaluateIpeINTEL of IdResultType * IdResult * SrcImage: IdRef * Payload: IdRef
+   | OpSubgroupAvcSicEvaluateWithSingleReferenceINTEL of IdResultType * IdResult * SrcImage: IdRef * RefImage: IdRef * Payload: IdRef
+   | OpSubgroupAvcSicEvaluateWithDualReferenceINTEL of IdResultType * IdResult * SrcImage: IdRef * FwdRefImage: IdRef * BwdRefImage: IdRef * Payload: IdRef
+   | OpSubgroupAvcSicEvaluateWithMultiReferenceINTEL of IdResultType * IdResult * SrcImage: IdRef * PackedReferenceIds: IdRef * Payload: IdRef
+   | OpSubgroupAvcSicEvaluateWithMultiReferenceInterlacedINTEL of IdResultType * IdResult * SrcImage: IdRef * PackedReferenceIds: IdRef * PackedReferenceFieldPolarities: IdRef * Payload: IdRef
+   | OpSubgroupAvcSicConvertToMceResultINTEL of IdResultType * IdResult * Payload: IdRef
+   | OpSubgroupAvcSicGetIpeLumaShapeINTEL of IdResultType * IdResult * Payload: IdRef
+   | OpSubgroupAvcSicGetBestIpeLumaDistortionINTEL of IdResultType * IdResult * Payload: IdRef
+   | OpSubgroupAvcSicGetBestIpeChromaDistortionINTEL of IdResultType * IdResult * Payload: IdRef
+   | OpSubgroupAvcSicGetPackedIpeLumaModesINTEL of IdResultType * IdResult * Payload: IdRef
+   | OpSubgroupAvcSicGetIpeChromaModeINTEL of IdResultType * IdResult * Payload: IdRef
+   | OpSubgroupAvcSicGetPackedSkcLumaCountThresholdINTEL of IdResultType * IdResult * Payload: IdRef
+   | OpSubgroupAvcSicGetPackedSkcLumaSumThresholdINTEL of IdResultType * IdResult * Payload: IdRef
+   | OpSubgroupAvcSicGetInterRawSadsINTEL of IdResultType * IdResult * Payload: IdRef
 
     member x.Opcode =
        match x with

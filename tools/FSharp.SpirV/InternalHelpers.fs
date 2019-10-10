@@ -53,11 +53,11 @@ module private LittleEndian =
         ((uint64 data.[offset + 7]) <<< 56)
 
 let private wordRemainder n =
-    let remainder = n % sizeof<Word>
+    let remainder = n % sizeof<uint32>
     if remainder = 0 then
-        sizeof<Word>
+        sizeof<uint32>
     else
-        sizeof<Word> - remainder
+        sizeof<uint32> - remainder
 
 [<NoEquality;NoComparison>]
 type SpirvStream =

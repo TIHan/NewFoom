@@ -1,13 +1,13 @@
 ﻿module FSharp.Spirv.Quotations.Tast
 
 open System.Numerics
-open FSharp.Spirv.Specification
+open FSharp.Spirv
 
 let mutable nextStamp = 0L 
 let newStamp () =
     System.Threading.Interlocked.Increment &nextStamp 
 
-type Decorations = (Decoration * uint32 list) list
+type Decorations = Decoration list
 
 type SpirvType =
     | SpirvTypeVoid

@@ -95,7 +95,7 @@ let main argv =
         |> SpirvGen.GenModule spvVertexInfo
 
     let fragment = <@ fun fragColor -> {| outColor = Vector4(fragColor, 1.f) |} @>
-    let spvFragmentInfo = SpirvGenInfo.Create(AddressingModel.Logical, MemoryModel.GLSL450, ExecutionModel.Fragment, [Capability.Shader], ["GLSL.std.450"], (ExecutionMode.OriginUpperLeft, []))
+    let spvFragmentInfo = SpirvGenInfo.Create(AddressingModel.Logical, MemoryModel.GLSL450, ExecutionModel.Fragment, [Capability.Shader], ["GLSL.std.450"], ExecutionMode.OriginUpperLeft)
     let spvFragment = 
         Checker.Check fragment
         |> SpirvGen.GenModule spvFragmentInfo
@@ -103,14 +103,14 @@ let main argv =
    // let vertexBytes = System.IO.File.ReadAllBytes("triangle_vertex.spv")
     let vertexBytes =
         use ms = new System.IO.MemoryStream 100
-        SpirvModuleOld.Serialize (ms, spvVertex)
+        SpirvModule.Serialize (ms, spvVertex)
         let bytes = Array.zeroCreate (int ms.Length)
         ms.Position <- 0L
         ms.Read(bytes, 0, bytes.Length) |> ignore
         bytes
     let fragmentBytes =
         use ms = new System.IO.MemoryStream 100
-        SpirvModuleOld.Serialize (ms, spvFragment)
+        SpirvModule.Serialize (ms, spvFragment)
         let bytes = Array.zeroCreate (int ms.Length)
         ms.Position <- 0L
         ms.Read(bytes, 0, bytes.Length) |> ignore
