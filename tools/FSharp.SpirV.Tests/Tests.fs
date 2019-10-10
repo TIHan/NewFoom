@@ -8,7 +8,7 @@ open FSharp.Spirv
 [<Fact>]
 let ``Deserialize triangle_vertex`` () =
     use file = File.OpenRead("triangle_vertex.spv")
-    let spv = SpirvModuleOld.Deserialize file
+    let spv = SpirvModule.Deserialize file
     ()
 
 [<Fact>]

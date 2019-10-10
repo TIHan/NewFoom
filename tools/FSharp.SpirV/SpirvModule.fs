@@ -14,8 +14,9 @@ module private Helpers =
         Instruction.Deserialize(opcode, s)
 
     let writeInstruction (instr: Instruction, s: SpirvStream) =
-        s.WriteUInt16(instr.Opcode)
         let pos = s.Position
+        s.WriteUInt16(instr.Opcode)
+        let posWordCount = s.Position
         s.WriteUInt16(instr.Opcode)
 
         Instruction.Serialize(instr, s)
@@ -29,7 +30,7 @@ module private Helpers =
 
         let wordCount = bytesRead / sizeof<uint32>
 
-        s.Seek(pos, SeekOrigin.Begin)
+        s.Seek(posWordCount, SeekOrigin.Begin)
         s.WriteUInt16(uint16 wordCount)
         s.Seek(endPos, SeekOrigin.Begin)
 

@@ -1,5 +1,5 @@
 // File is generated. Do not modify.
-module FSharp.Spirv.GeneratedSpec
+module rec FSharp.Spirv.GeneratedSpec
 
 open System
 open System.IO
@@ -21,13 +21,9 @@ type ImageOperands =
    | Sample = 0x0040u
    | MinLod = 0x0080u
    | MakeTexelAvailable = 0x0100u
-   | MakeTexelAvailableKHR = 0x0100u
    | MakeTexelVisible = 0x0200u
-   | MakeTexelVisibleKHR = 0x0200u
    | NonPrivateTexel = 0x0400u
-   | NonPrivateTexelKHR = 0x0400u
    | VolatileTexel = 0x0800u
-   | VolatileTexelKHR = 0x0800u
    | SignExtend = 0x1000u
    | ZeroExtend = 0x2000u
 
@@ -65,7 +61,6 @@ type FunctionControl =
 
 type MemorySemantics =
    | Relaxed = 0x0000u
-   | None = 0x0000u
    | Acquire = 0x0002u
    | Release = 0x0004u
    | AcquireRelease = 0x0008u
@@ -77,11 +72,8 @@ type MemorySemantics =
    | AtomicCounterMemory = 0x0400u
    | ImageMemory = 0x0800u
    | OutputMemory = 0x1000u
-   | OutputMemoryKHR = 0x1000u
    | MakeAvailable = 0x2000u
-   | MakeAvailableKHR = 0x2000u
    | MakeVisible = 0x4000u
-   | MakeVisibleKHR = 0x4000u
    | Volatile = 0x8000u
 
 type MemoryAccess =
@@ -90,11 +82,8 @@ type MemoryAccess =
    | Aligned = 0x0002u
    | Nontemporal = 0x0004u
    | MakePointerAvailable = 0x0008u
-   | MakePointerAvailableKHR = 0x0008u
    | MakePointerVisible = 0x0010u
-   | MakePointerVisibleKHR = 0x0010u
    | NonPrivatePointer = 0x0020u
-   | NonPrivatePointerKHR = 0x0020u
 
 type KernelProfilingInfo =
    | None = 0x0000u
@@ -130,72 +119,130 @@ type AddressingModel =
    | Physical32 = 1u
    | Physical64 = 2u
    | PhysicalStorageBuffer64 = 5348u
-   | PhysicalStorageBuffer64EXT = 5348u
 
 type MemoryModel =
    | Simple = 0u
    | GLSL450 = 1u
    | OpenCL = 2u
    | Vulkan = 3u
-   | VulkanKHR = 3u
 
+[<RequireQualifiedAccess>]
 type ExecutionMode =
-   | Invocations = 0u
-   | SpacingEqual = 1u
-   | SpacingFractionalEven = 2u
-   | SpacingFractionalOdd = 3u
-   | VertexOrderCw = 4u
-   | VertexOrderCcw = 5u
-   | PixelCenterInteger = 6u
-   | OriginUpperLeft = 7u
-   | OriginLowerLeft = 8u
-   | EarlyFragmentTests = 9u
-   | PointMode = 10u
-   | Xfb = 11u
-   | DepthReplacing = 12u
-   | DepthGreater = 14u
-   | DepthLess = 15u
-   | DepthUnchanged = 16u
-   | LocalSize = 17u
-   | LocalSizeHint = 18u
-   | InputPoints = 19u
-   | InputLines = 20u
-   | InputLinesAdjacency = 21u
-   | Triangles = 22u
-   | InputTrianglesAdjacency = 23u
-   | Quads = 24u
-   | Isolines = 25u
-   | OutputVertices = 26u
-   | OutputPoints = 27u
-   | OutputLineStrip = 28u
-   | OutputTriangleStrip = 29u
-   | VecTypeHint = 30u
-   | ContractionOff = 31u
-   | Initializer = 33u
-   | Finalizer = 34u
-   | SubgroupSize = 35u
-   | SubgroupsPerWorkgroup = 36u
-   | SubgroupsPerWorkgroupId = 37u
-   | LocalSizeId = 38u
-   | LocalSizeHintId = 39u
-   | PostDepthCoverage = 4446u
-   | DenormPreserve = 4459u
-   | DenormFlushToZero = 4460u
-   | SignedZeroInfNanPreserve = 4461u
-   | RoundingModeRTE = 4462u
-   | RoundingModeRTZ = 4463u
-   | StencilRefReplacingEXT = 5027u
-   | OutputLinesNV = 5269u
-   | OutputPrimitivesNV = 5270u
-   | DerivativeGroupQuadsNV = 5289u
-   | DerivativeGroupLinearNV = 5290u
-   | OutputTrianglesNV = 5298u
-   | PixelInterlockOrderedEXT = 5366u
-   | PixelInterlockUnorderedEXT = 5367u
-   | SampleInterlockOrderedEXT = 5368u
-   | SampleInterlockUnorderedEXT = 5369u
-   | ShadingRateInterlockOrderedEXT = 5370u
-   | ShadingRateInterlockUnorderedEXT = 5371u
+    | Invocations of NumberofInvocationinvocations: LiteralInteger
+    | SpacingEqual
+    | SpacingFractionalEven
+    | SpacingFractionalOdd
+    | VertexOrderCw
+    | VertexOrderCcw
+    | PixelCenterInteger
+    | OriginUpperLeft
+    | OriginLowerLeft
+    | EarlyFragmentTests
+    | PointMode
+    | Xfb
+    | DepthReplacing
+    | DepthGreater
+    | DepthLess
+    | DepthUnchanged
+    | LocalSize of xsize: LiteralInteger * ysize: LiteralInteger * zsize: LiteralInteger
+    | LocalSizeHint of xsize: LiteralInteger * ysize: LiteralInteger * zsize: LiteralInteger
+    | InputPoints
+    | InputLines
+    | InputLinesAdjacency
+    | Triangles
+    | InputTrianglesAdjacency
+    | Quads
+    | Isolines
+    | OutputVertices of Vertexcount: LiteralInteger
+    | OutputPoints
+    | OutputLineStrip
+    | OutputTriangleStrip
+    | VecTypeHint of Vectortype: LiteralInteger
+    | ContractionOff
+    | Initializer
+    | Finalizer
+    | SubgroupSize of SubgroupSize: LiteralInteger
+    | SubgroupsPerWorkgroup of SubgroupsPerWorkgroup: LiteralInteger
+    | SubgroupsPerWorkgroupId of SubgroupsPerWorkgroup: IdRef
+    | LocalSizeId of xsize: IdRef * ysize: IdRef * zsize: IdRef
+    | LocalSizeHintId of LocalSizeHint: IdRef
+    | PostDepthCoverage
+    | DenormPreserve of TargetWidth: LiteralInteger
+    | DenormFlushToZero of TargetWidth: LiteralInteger
+    | SignedZeroInfNanPreserve of TargetWidth: LiteralInteger
+    | RoundingModeRTE of TargetWidth: LiteralInteger
+    | RoundingModeRTZ of TargetWidth: LiteralInteger
+    | StencilRefReplacingEXT
+    | OutputLinesNV
+    | OutputPrimitivesNV of Primitivecount: LiteralInteger
+    | DerivativeGroupQuadsNV
+    | DerivativeGroupLinearNV
+    | OutputTrianglesNV
+    | PixelInterlockOrderedEXT
+    | PixelInterlockUnorderedEXT
+    | SampleInterlockOrderedEXT
+    | SampleInterlockUnorderedEXT
+    | ShadingRateInterlockOrderedEXT
+    | ShadingRateInterlockUnorderedEXT
+
+    member x.Value =
+       match x with
+       | Invocations _ -> 0u
+       | SpacingEqual -> 1u
+       | SpacingFractionalEven -> 2u
+       | SpacingFractionalOdd -> 3u
+       | VertexOrderCw -> 4u
+       | VertexOrderCcw -> 5u
+       | PixelCenterInteger -> 6u
+       | OriginUpperLeft -> 7u
+       | OriginLowerLeft -> 8u
+       | EarlyFragmentTests -> 9u
+       | PointMode -> 10u
+       | Xfb -> 11u
+       | DepthReplacing -> 12u
+       | DepthGreater -> 14u
+       | DepthLess -> 15u
+       | DepthUnchanged -> 16u
+       | LocalSize _ -> 17u
+       | LocalSizeHint _ -> 18u
+       | InputPoints -> 19u
+       | InputLines -> 20u
+       | InputLinesAdjacency -> 21u
+       | Triangles -> 22u
+       | InputTrianglesAdjacency -> 23u
+       | Quads -> 24u
+       | Isolines -> 25u
+       | OutputVertices _ -> 26u
+       | OutputPoints -> 27u
+       | OutputLineStrip -> 28u
+       | OutputTriangleStrip -> 29u
+       | VecTypeHint _ -> 30u
+       | ContractionOff -> 31u
+       | Initializer -> 33u
+       | Finalizer -> 34u
+       | SubgroupSize _ -> 35u
+       | SubgroupsPerWorkgroup _ -> 36u
+       | SubgroupsPerWorkgroupId _ -> 37u
+       | LocalSizeId _ -> 38u
+       | LocalSizeHintId _ -> 39u
+       | PostDepthCoverage -> 4446u
+       | DenormPreserve _ -> 4459u
+       | DenormFlushToZero _ -> 4460u
+       | SignedZeroInfNanPreserve _ -> 4461u
+       | RoundingModeRTE _ -> 4462u
+       | RoundingModeRTZ _ -> 4463u
+       | StencilRefReplacingEXT -> 5027u
+       | OutputLinesNV -> 5269u
+       | OutputPrimitivesNV _ -> 5270u
+       | DerivativeGroupQuadsNV -> 5289u
+       | DerivativeGroupLinearNV -> 5290u
+       | OutputTrianglesNV -> 5298u
+       | PixelInterlockOrderedEXT -> 5366u
+       | PixelInterlockUnorderedEXT -> 5367u
+       | SampleInterlockOrderedEXT -> 5368u
+       | SampleInterlockUnorderedEXT -> 5369u
+       | ShadingRateInterlockOrderedEXT -> 5370u
+       | ShadingRateInterlockUnorderedEXT -> 5371u
 
 type StorageClass =
    | UniformConstant = 0u
@@ -218,7 +265,6 @@ type StorageClass =
    | IncomingRayPayloadNV = 5342u
    | ShaderRecordBufferNV = 5343u
    | PhysicalStorageBuffer = 5349u
-   | PhysicalStorageBufferEXT = 5349u
 
 type Dim =
    | One = 0u
@@ -348,76 +394,139 @@ type FunctionParameterAttribute =
    | NoWrite = 6u
    | NoReadWrite = 7u
 
+[<RequireQualifiedAccess>]
 type Decoration =
-   | RelaxedPrecision = 0u
-   | SpecId = 1u
-   | Block = 2u
-   | BufferBlock = 3u
-   | RowMajor = 4u
-   | ColMajor = 5u
-   | ArrayStride = 6u
-   | MatrixStride = 7u
-   | GLSLShared = 8u
-   | GLSLPacked = 9u
-   | CPacked = 10u
-   | BuiltIn = 11u
-   | NoPerspective = 13u
-   | Flat = 14u
-   | Patch = 15u
-   | Centroid = 16u
-   | Sample = 17u
-   | Invariant = 18u
-   | Restrict = 19u
-   | Aliased = 20u
-   | Volatile = 21u
-   | Constant = 22u
-   | Coherent = 23u
-   | NonWritable = 24u
-   | NonReadable = 25u
-   | Uniform = 26u
-   | UniformId = 27u
-   | SaturatedConversion = 28u
-   | Stream = 29u
-   | Location = 30u
-   | Component = 31u
-   | Index = 32u
-   | Binding = 33u
-   | DescriptorSet = 34u
-   | Offset = 35u
-   | XfbBuffer = 36u
-   | XfbStride = 37u
-   | FuncParamAttr = 38u
-   | FPRoundingMode = 39u
-   | FPFastMathMode = 40u
-   | LinkageAttributes = 41u
-   | NoContraction = 42u
-   | InputAttachmentIndex = 43u
-   | Alignment = 44u
-   | MaxByteOffset = 45u
-   | AlignmentId = 46u
-   | MaxByteOffsetId = 47u
-   | NoSignedWrap = 4469u
-   | NoUnsignedWrap = 4470u
-   | ExplicitInterpAMD = 4999u
-   | OverrideCoverageNV = 5248u
-   | PassthroughNV = 5250u
-   | ViewportRelativeNV = 5252u
-   | SecondaryViewportRelativeNV = 5256u
-   | PerPrimitiveNV = 5271u
-   | PerViewNV = 5272u
-   | PerTaskNV = 5273u
-   | PerVertexNV = 5285u
-   | NonUniform = 5300u
-   | NonUniformEXT = 5300u
-   | RestrictPointer = 5355u
-   | RestrictPointerEXT = 5355u
-   | AliasedPointer = 5356u
-   | AliasedPointerEXT = 5356u
-   | CounterBuffer = 5634u
-   | HlslCounterBufferGOOGLE = 5634u
-   | UserSemantic = 5635u
-   | HlslSemanticGOOGLE = 5635u
-   | UserTypeGOOGLE = 5636u
+    | RelaxedPrecision
+    | SpecId of SpecializationConstantID: LiteralInteger
+    | Block
+    | BufferBlock
+    | RowMajor
+    | ColMajor
+    | ArrayStride of ArrayStride: LiteralInteger
+    | MatrixStride of MatrixStride: LiteralInteger
+    | GLSLShared
+    | GLSLPacked
+    | CPacked
+    | BuiltIn of BuiltIn
+    | NoPerspective
+    | Flat
+    | Patch
+    | Centroid
+    | Sample
+    | Invariant
+    | Restrict
+    | Aliased
+    | Volatile
+    | Constant
+    | Coherent
+    | NonWritable
+    | NonReadable
+    | Uniform
+    | UniformId of Execution: IdScope
+    | SaturatedConversion
+    | Stream of StreamNumber: LiteralInteger
+    | Location of Location: LiteralInteger
+    | Component of Component: LiteralInteger
+    | Index of Index: LiteralInteger
+    | Binding of BindingPoint: LiteralInteger
+    | DescriptorSet of DescriptorSet: LiteralInteger
+    | Offset of ByteOffset: LiteralInteger
+    | XfbBuffer of XFBBufferNumber: LiteralInteger
+    | XfbStride of XFBStride: LiteralInteger
+    | FuncParamAttr of FunctionParameterAttribute: FunctionParameterAttribute
+    | FPRoundingMode of FloatingPointRoundingMode: FPRoundingMode
+    | FPFastMathMode of FastMathMode: FPFastMathMode
+    | LinkageAttributes of Name: LiteralString * LinkageType: LinkageType
+    | NoContraction
+    | InputAttachmentIndex of AttachmentIndex: LiteralInteger
+    | Alignment of Alignment: LiteralInteger
+    | MaxByteOffset of MaxByteOffset: LiteralInteger
+    | AlignmentId of Alignment: IdRef
+    | MaxByteOffsetId of MaxByteOffset: IdRef
+    | NoSignedWrap
+    | NoUnsignedWrap
+    | ExplicitInterpAMD
+    | OverrideCoverageNV
+    | PassthroughNV
+    | ViewportRelativeNV
+    | SecondaryViewportRelativeNV of Offset: LiteralInteger
+    | PerPrimitiveNV
+    | PerViewNV
+    | PerTaskNV
+    | PerVertexNV
+    | NonUniform
+    | RestrictPointer
+    | AliasedPointer
+    | CounterBuffer of CounterBuffer: IdRef
+    | UserSemantic of Semantic: LiteralString
+    | UserTypeGOOGLE of UserType: LiteralString
+
+    member x.Value =
+       match x with
+       | RelaxedPrecision -> 0u
+       | SpecId _ -> 1u
+       | Block -> 2u
+       | BufferBlock -> 3u
+       | RowMajor -> 4u
+       | ColMajor -> 5u
+       | ArrayStride _ -> 6u
+       | MatrixStride _ -> 7u
+       | GLSLShared -> 8u
+       | GLSLPacked -> 9u
+       | CPacked -> 10u
+       | BuiltIn _ -> 11u
+       | NoPerspective -> 13u
+       | Flat -> 14u
+       | Patch -> 15u
+       | Centroid -> 16u
+       | Sample -> 17u
+       | Invariant -> 18u
+       | Restrict -> 19u
+       | Aliased -> 20u
+       | Volatile -> 21u
+       | Constant -> 22u
+       | Coherent -> 23u
+       | NonWritable -> 24u
+       | NonReadable -> 25u
+       | Uniform -> 26u
+       | UniformId _ -> 27u
+       | SaturatedConversion -> 28u
+       | Stream _ -> 29u
+       | Location _ -> 30u
+       | Component _ -> 31u
+       | Index _ -> 32u
+       | Binding _ -> 33u
+       | DescriptorSet _ -> 34u
+       | Offset _ -> 35u
+       | XfbBuffer _ -> 36u
+       | XfbStride _ -> 37u
+       | FuncParamAttr _ -> 38u
+       | FPRoundingMode _ -> 39u
+       | FPFastMathMode _ -> 40u
+       | LinkageAttributes _ -> 41u
+       | NoContraction -> 42u
+       | InputAttachmentIndex _ -> 43u
+       | Alignment _ -> 44u
+       | MaxByteOffset _ -> 45u
+       | AlignmentId _ -> 46u
+       | MaxByteOffsetId _ -> 47u
+       | NoSignedWrap -> 4469u
+       | NoUnsignedWrap -> 4470u
+       | ExplicitInterpAMD -> 4999u
+       | OverrideCoverageNV -> 5248u
+       | PassthroughNV -> 5250u
+       | ViewportRelativeNV -> 5252u
+       | SecondaryViewportRelativeNV _ -> 5256u
+       | PerPrimitiveNV -> 5271u
+       | PerViewNV -> 5272u
+       | PerTaskNV -> 5273u
+       | PerVertexNV -> 5285u
+       | NonUniform -> 5300u
+       | RestrictPointer -> 5355u
+       | AliasedPointer -> 5356u
+       | CounterBuffer _ -> 5634u
+       | UserSemantic _ -> 5635u
+       | UserTypeGOOGLE _ -> 5636u
 
 type BuiltIn =
    | Position = 0u
@@ -466,11 +575,6 @@ type BuiltIn =
    | SubgroupGtMask = 4418u
    | SubgroupLeMask = 4419u
    | SubgroupLtMask = 4420u
-   | SubgroupEqMaskKHR = 4416u
-   | SubgroupGeMaskKHR = 4417u
-   | SubgroupGtMaskKHR = 4418u
-   | SubgroupLeMaskKHR = 4419u
-   | SubgroupLtMaskKHR = 4420u
    | BaseVertex = 4424u
    | BaseInstance = 4425u
    | DrawIndex = 4426u
@@ -501,9 +605,7 @@ type BuiltIn =
    | BaryCoordNV = 5286u
    | BaryCoordNoPerspNV = 5287u
    | FragSizeEXT = 5292u
-   | FragmentSizeNV = 5292u
    | FragInvocationCountEXT = 5293u
-   | InvocationsPerPixelNV = 5293u
    | LaunchIdNV = 5319u
    | LaunchSizeNV = 5320u
    | WorldRayOriginNV = 5321u
@@ -530,7 +632,6 @@ type Scope =
    | Subgroup = 3u
    | Invocation = 4u
    | QueueFamily = 5u
-   | QueueFamilyKHR = 5u
 
 type GroupOperation =
    | Reduce = 0u
@@ -620,9 +721,7 @@ type Capability =
    | DrawParameters = 4427u
    | SubgroupVoteKHR = 4431u
    | StorageBuffer16BitAccess = 4433u
-   | StorageUniformBufferBlock16 = 4433u
    | UniformAndStorageBuffer16BitAccess = 4434u
-   | StorageUniform16 = 4434u
    | StoragePushConstant16 = 4435u
    | StorageInputOutput16 = 4436u
    | DeviceGroup = 4437u
@@ -648,7 +747,6 @@ type Capability =
    | SampleMaskOverrideCoverageNV = 5249u
    | GeometryShaderPassthroughNV = 5251u
    | ShaderViewportIndexLayerEXT = 5254u
-   | ShaderViewportIndexLayerNV = 5254u
    | ShaderViewportMaskNV = 5255u
    | ShaderStereoViewNV = 5259u
    | PerViewAttributesNV = 5260u
@@ -658,39 +756,23 @@ type Capability =
    | FragmentBarycentricNV = 5284u
    | ComputeDerivativeGroupQuadsNV = 5288u
    | FragmentDensityEXT = 5291u
-   | ShadingRateNV = 5291u
    | GroupNonUniformPartitionedNV = 5297u
    | ShaderNonUniform = 5301u
-   | ShaderNonUniformEXT = 5301u
    | RuntimeDescriptorArray = 5302u
-   | RuntimeDescriptorArrayEXT = 5302u
    | InputAttachmentArrayDynamicIndexing = 5303u
-   | InputAttachmentArrayDynamicIndexingEXT = 5303u
    | UniformTexelBufferArrayDynamicIndexing = 5304u
-   | UniformTexelBufferArrayDynamicIndexingEXT = 5304u
    | StorageTexelBufferArrayDynamicIndexing = 5305u
-   | StorageTexelBufferArrayDynamicIndexingEXT = 5305u
    | UniformBufferArrayNonUniformIndexing = 5306u
-   | UniformBufferArrayNonUniformIndexingEXT = 5306u
    | SampledImageArrayNonUniformIndexing = 5307u
-   | SampledImageArrayNonUniformIndexingEXT = 5307u
    | StorageBufferArrayNonUniformIndexing = 5308u
-   | StorageBufferArrayNonUniformIndexingEXT = 5308u
    | StorageImageArrayNonUniformIndexing = 5309u
-   | StorageImageArrayNonUniformIndexingEXT = 5309u
    | InputAttachmentArrayNonUniformIndexing = 5310u
-   | InputAttachmentArrayNonUniformIndexingEXT = 5310u
    | UniformTexelBufferArrayNonUniformIndexing = 5311u
-   | UniformTexelBufferArrayNonUniformIndexingEXT = 5311u
    | StorageTexelBufferArrayNonUniformIndexing = 5312u
-   | StorageTexelBufferArrayNonUniformIndexingEXT = 5312u
    | RayTracingNV = 5340u
    | VulkanMemoryModel = 5345u
-   | VulkanMemoryModelKHR = 5345u
    | VulkanMemoryModelDeviceScope = 5346u
-   | VulkanMemoryModelDeviceScopeKHR = 5346u
    | PhysicalStorageBufferAddresses = 5347u
-   | PhysicalStorageBufferAddressesEXT = 5347u
    | ComputeDerivativeGroupLinearNV = 5350u
    | CooperativeMatrixNV = 5357u
    | FragmentShaderSampleInterlockEXT = 5363u
@@ -2371,7 +2453,63 @@ type Instruction =
             stream.WriteList(arg3, fun v -> stream.WriteUInt32(v))
         | OpExecutionMode(arg0, arg1) ->
             stream.WriteUInt32(arg0)
-            stream.WriteEnum(arg1)
+            match arg1 with
+            | ExecutionMode.Invocations(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0)
+            | ExecutionMode.SpacingEqual _ -> stream.WriteUInt32(arg1.Value)
+            | ExecutionMode.SpacingFractionalEven _ -> stream.WriteUInt32(arg1.Value)
+            | ExecutionMode.SpacingFractionalOdd _ -> stream.WriteUInt32(arg1.Value)
+            | ExecutionMode.VertexOrderCw _ -> stream.WriteUInt32(arg1.Value)
+            | ExecutionMode.VertexOrderCcw _ -> stream.WriteUInt32(arg1.Value)
+            | ExecutionMode.PixelCenterInteger _ -> stream.WriteUInt32(arg1.Value)
+            | ExecutionMode.OriginUpperLeft _ -> stream.WriteUInt32(arg1.Value)
+            | ExecutionMode.OriginLowerLeft _ -> stream.WriteUInt32(arg1.Value)
+            | ExecutionMode.EarlyFragmentTests _ -> stream.WriteUInt32(arg1.Value)
+            | ExecutionMode.PointMode _ -> stream.WriteUInt32(arg1.Value)
+            | ExecutionMode.Xfb _ -> stream.WriteUInt32(arg1.Value)
+            | ExecutionMode.DepthReplacing _ -> stream.WriteUInt32(arg1.Value)
+            | ExecutionMode.DepthGreater _ -> stream.WriteUInt32(arg1.Value)
+            | ExecutionMode.DepthLess _ -> stream.WriteUInt32(arg1.Value)
+            | ExecutionMode.DepthUnchanged _ -> stream.WriteUInt32(arg1.Value)
+            | ExecutionMode.LocalSize(arg1_arg0, arg1_arg1, arg1_arg2) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0);stream.WriteUInt32(arg1_arg1);stream.WriteUInt32(arg1_arg2)
+            | ExecutionMode.LocalSizeHint(arg1_arg0, arg1_arg1, arg1_arg2) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0);stream.WriteUInt32(arg1_arg1);stream.WriteUInt32(arg1_arg2)
+            | ExecutionMode.InputPoints _ -> stream.WriteUInt32(arg1.Value)
+            | ExecutionMode.InputLines _ -> stream.WriteUInt32(arg1.Value)
+            | ExecutionMode.InputLinesAdjacency _ -> stream.WriteUInt32(arg1.Value)
+            | ExecutionMode.Triangles _ -> stream.WriteUInt32(arg1.Value)
+            | ExecutionMode.InputTrianglesAdjacency _ -> stream.WriteUInt32(arg1.Value)
+            | ExecutionMode.Quads _ -> stream.WriteUInt32(arg1.Value)
+            | ExecutionMode.Isolines _ -> stream.WriteUInt32(arg1.Value)
+            | ExecutionMode.OutputVertices(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0)
+            | ExecutionMode.OutputPoints _ -> stream.WriteUInt32(arg1.Value)
+            | ExecutionMode.OutputLineStrip _ -> stream.WriteUInt32(arg1.Value)
+            | ExecutionMode.OutputTriangleStrip _ -> stream.WriteUInt32(arg1.Value)
+            | ExecutionMode.VecTypeHint(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0)
+            | ExecutionMode.ContractionOff _ -> stream.WriteUInt32(arg1.Value)
+            | ExecutionMode.Initializer _ -> stream.WriteUInt32(arg1.Value)
+            | ExecutionMode.Finalizer _ -> stream.WriteUInt32(arg1.Value)
+            | ExecutionMode.SubgroupSize(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0)
+            | ExecutionMode.SubgroupsPerWorkgroup(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0)
+            | ExecutionMode.SubgroupsPerWorkgroupId(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0)
+            | ExecutionMode.LocalSizeId(arg1_arg0, arg1_arg1, arg1_arg2) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0);stream.WriteUInt32(arg1_arg1);stream.WriteUInt32(arg1_arg2)
+            | ExecutionMode.LocalSizeHintId(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0)
+            | ExecutionMode.PostDepthCoverage _ -> stream.WriteUInt32(arg1.Value)
+            | ExecutionMode.DenormPreserve(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0)
+            | ExecutionMode.DenormFlushToZero(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0)
+            | ExecutionMode.SignedZeroInfNanPreserve(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0)
+            | ExecutionMode.RoundingModeRTE(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0)
+            | ExecutionMode.RoundingModeRTZ(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0)
+            | ExecutionMode.StencilRefReplacingEXT _ -> stream.WriteUInt32(arg1.Value)
+            | ExecutionMode.OutputLinesNV _ -> stream.WriteUInt32(arg1.Value)
+            | ExecutionMode.OutputPrimitivesNV(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0)
+            | ExecutionMode.DerivativeGroupQuadsNV _ -> stream.WriteUInt32(arg1.Value)
+            | ExecutionMode.DerivativeGroupLinearNV _ -> stream.WriteUInt32(arg1.Value)
+            | ExecutionMode.OutputTrianglesNV _ -> stream.WriteUInt32(arg1.Value)
+            | ExecutionMode.PixelInterlockOrderedEXT _ -> stream.WriteUInt32(arg1.Value)
+            | ExecutionMode.PixelInterlockUnorderedEXT _ -> stream.WriteUInt32(arg1.Value)
+            | ExecutionMode.SampleInterlockOrderedEXT _ -> stream.WriteUInt32(arg1.Value)
+            | ExecutionMode.SampleInterlockUnorderedEXT _ -> stream.WriteUInt32(arg1.Value)
+            | ExecutionMode.ShadingRateInterlockOrderedEXT _ -> stream.WriteUInt32(arg1.Value)
+            | ExecutionMode.ShadingRateInterlockUnorderedEXT _ -> stream.WriteUInt32(arg1.Value)
         | OpCapability(arg0) ->
             stream.WriteEnum(arg0)
         | OpTypeVoid(arg0) ->
@@ -2563,11 +2701,139 @@ type Instruction =
             stream.WriteList(arg4, fun v -> stream.WriteUInt32(v))
         | OpDecorate(arg0, arg1) ->
             stream.WriteUInt32(arg0)
-            stream.WriteEnum(arg1)
+            match arg1 with
+            | Decoration.RelaxedPrecision _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.SpecId(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0)
+            | Decoration.Block _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.BufferBlock _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.RowMajor _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.ColMajor _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.ArrayStride(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0)
+            | Decoration.MatrixStride(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0)
+            | Decoration.GLSLShared _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.GLSLPacked _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.CPacked _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.BuiltIn(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteEnum(arg1_arg0)
+            | Decoration.NoPerspective _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.Flat _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.Patch _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.Centroid _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.Sample _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.Invariant _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.Restrict _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.Aliased _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.Volatile _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.Constant _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.Coherent _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.NonWritable _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.NonReadable _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.Uniform _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.UniformId(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0)
+            | Decoration.SaturatedConversion _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.Stream(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0)
+            | Decoration.Location(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0)
+            | Decoration.Component(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0)
+            | Decoration.Index(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0)
+            | Decoration.Binding(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0)
+            | Decoration.DescriptorSet(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0)
+            | Decoration.Offset(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0)
+            | Decoration.XfbBuffer(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0)
+            | Decoration.XfbStride(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0)
+            | Decoration.FuncParamAttr(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteEnum(arg1_arg0)
+            | Decoration.FPRoundingMode(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteEnum(arg1_arg0)
+            | Decoration.FPFastMathMode(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteEnum(arg1_arg0)
+            | Decoration.LinkageAttributes(arg1_arg0, arg1_arg1) -> stream.WriteUInt32(arg1.Value);stream.WriteString(arg1_arg0);stream.WriteEnum(arg1_arg1)
+            | Decoration.NoContraction _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.InputAttachmentIndex(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0)
+            | Decoration.Alignment(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0)
+            | Decoration.MaxByteOffset(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0)
+            | Decoration.AlignmentId(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0)
+            | Decoration.MaxByteOffsetId(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0)
+            | Decoration.NoSignedWrap _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.NoUnsignedWrap _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.ExplicitInterpAMD _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.OverrideCoverageNV _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.PassthroughNV _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.ViewportRelativeNV _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.SecondaryViewportRelativeNV(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0)
+            | Decoration.PerPrimitiveNV _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.PerViewNV _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.PerTaskNV _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.PerVertexNV _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.NonUniform _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.RestrictPointer _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.AliasedPointer _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.CounterBuffer(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0)
+            | Decoration.UserSemantic(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteString(arg1_arg0)
+            | Decoration.UserTypeGOOGLE(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteString(arg1_arg0)
         | OpMemberDecorate(arg0, arg1, arg2) ->
             stream.WriteUInt32(arg0)
             stream.WriteUInt32(arg1)
-            stream.WriteEnum(arg2)
+            match arg2 with
+            | Decoration.RelaxedPrecision _ -> stream.WriteUInt32(arg2.Value)
+            | Decoration.SpecId(arg2_arg0) -> stream.WriteUInt32(arg2.Value);stream.WriteUInt32(arg2_arg0)
+            | Decoration.Block _ -> stream.WriteUInt32(arg2.Value)
+            | Decoration.BufferBlock _ -> stream.WriteUInt32(arg2.Value)
+            | Decoration.RowMajor _ -> stream.WriteUInt32(arg2.Value)
+            | Decoration.ColMajor _ -> stream.WriteUInt32(arg2.Value)
+            | Decoration.ArrayStride(arg2_arg0) -> stream.WriteUInt32(arg2.Value);stream.WriteUInt32(arg2_arg0)
+            | Decoration.MatrixStride(arg2_arg0) -> stream.WriteUInt32(arg2.Value);stream.WriteUInt32(arg2_arg0)
+            | Decoration.GLSLShared _ -> stream.WriteUInt32(arg2.Value)
+            | Decoration.GLSLPacked _ -> stream.WriteUInt32(arg2.Value)
+            | Decoration.CPacked _ -> stream.WriteUInt32(arg2.Value)
+            | Decoration.BuiltIn(arg2_arg0) -> stream.WriteUInt32(arg2.Value);stream.WriteEnum(arg2_arg0)
+            | Decoration.NoPerspective _ -> stream.WriteUInt32(arg2.Value)
+            | Decoration.Flat _ -> stream.WriteUInt32(arg2.Value)
+            | Decoration.Patch _ -> stream.WriteUInt32(arg2.Value)
+            | Decoration.Centroid _ -> stream.WriteUInt32(arg2.Value)
+            | Decoration.Sample _ -> stream.WriteUInt32(arg2.Value)
+            | Decoration.Invariant _ -> stream.WriteUInt32(arg2.Value)
+            | Decoration.Restrict _ -> stream.WriteUInt32(arg2.Value)
+            | Decoration.Aliased _ -> stream.WriteUInt32(arg2.Value)
+            | Decoration.Volatile _ -> stream.WriteUInt32(arg2.Value)
+            | Decoration.Constant _ -> stream.WriteUInt32(arg2.Value)
+            | Decoration.Coherent _ -> stream.WriteUInt32(arg2.Value)
+            | Decoration.NonWritable _ -> stream.WriteUInt32(arg2.Value)
+            | Decoration.NonReadable _ -> stream.WriteUInt32(arg2.Value)
+            | Decoration.Uniform _ -> stream.WriteUInt32(arg2.Value)
+            | Decoration.UniformId(arg2_arg0) -> stream.WriteUInt32(arg2.Value);stream.WriteUInt32(arg2_arg0)
+            | Decoration.SaturatedConversion _ -> stream.WriteUInt32(arg2.Value)
+            | Decoration.Stream(arg2_arg0) -> stream.WriteUInt32(arg2.Value);stream.WriteUInt32(arg2_arg0)
+            | Decoration.Location(arg2_arg0) -> stream.WriteUInt32(arg2.Value);stream.WriteUInt32(arg2_arg0)
+            | Decoration.Component(arg2_arg0) -> stream.WriteUInt32(arg2.Value);stream.WriteUInt32(arg2_arg0)
+            | Decoration.Index(arg2_arg0) -> stream.WriteUInt32(arg2.Value);stream.WriteUInt32(arg2_arg0)
+            | Decoration.Binding(arg2_arg0) -> stream.WriteUInt32(arg2.Value);stream.WriteUInt32(arg2_arg0)
+            | Decoration.DescriptorSet(arg2_arg0) -> stream.WriteUInt32(arg2.Value);stream.WriteUInt32(arg2_arg0)
+            | Decoration.Offset(arg2_arg0) -> stream.WriteUInt32(arg2.Value);stream.WriteUInt32(arg2_arg0)
+            | Decoration.XfbBuffer(arg2_arg0) -> stream.WriteUInt32(arg2.Value);stream.WriteUInt32(arg2_arg0)
+            | Decoration.XfbStride(arg2_arg0) -> stream.WriteUInt32(arg2.Value);stream.WriteUInt32(arg2_arg0)
+            | Decoration.FuncParamAttr(arg2_arg0) -> stream.WriteUInt32(arg2.Value);stream.WriteEnum(arg2_arg0)
+            | Decoration.FPRoundingMode(arg2_arg0) -> stream.WriteUInt32(arg2.Value);stream.WriteEnum(arg2_arg0)
+            | Decoration.FPFastMathMode(arg2_arg0) -> stream.WriteUInt32(arg2.Value);stream.WriteEnum(arg2_arg0)
+            | Decoration.LinkageAttributes(arg2_arg0, arg2_arg1) -> stream.WriteUInt32(arg2.Value);stream.WriteString(arg2_arg0);stream.WriteEnum(arg2_arg1)
+            | Decoration.NoContraction _ -> stream.WriteUInt32(arg2.Value)
+            | Decoration.InputAttachmentIndex(arg2_arg0) -> stream.WriteUInt32(arg2.Value);stream.WriteUInt32(arg2_arg0)
+            | Decoration.Alignment(arg2_arg0) -> stream.WriteUInt32(arg2.Value);stream.WriteUInt32(arg2_arg0)
+            | Decoration.MaxByteOffset(arg2_arg0) -> stream.WriteUInt32(arg2.Value);stream.WriteUInt32(arg2_arg0)
+            | Decoration.AlignmentId(arg2_arg0) -> stream.WriteUInt32(arg2.Value);stream.WriteUInt32(arg2_arg0)
+            | Decoration.MaxByteOffsetId(arg2_arg0) -> stream.WriteUInt32(arg2.Value);stream.WriteUInt32(arg2_arg0)
+            | Decoration.NoSignedWrap _ -> stream.WriteUInt32(arg2.Value)
+            | Decoration.NoUnsignedWrap _ -> stream.WriteUInt32(arg2.Value)
+            | Decoration.ExplicitInterpAMD _ -> stream.WriteUInt32(arg2.Value)
+            | Decoration.OverrideCoverageNV _ -> stream.WriteUInt32(arg2.Value)
+            | Decoration.PassthroughNV _ -> stream.WriteUInt32(arg2.Value)
+            | Decoration.ViewportRelativeNV _ -> stream.WriteUInt32(arg2.Value)
+            | Decoration.SecondaryViewportRelativeNV(arg2_arg0) -> stream.WriteUInt32(arg2.Value);stream.WriteUInt32(arg2_arg0)
+            | Decoration.PerPrimitiveNV _ -> stream.WriteUInt32(arg2.Value)
+            | Decoration.PerViewNV _ -> stream.WriteUInt32(arg2.Value)
+            | Decoration.PerTaskNV _ -> stream.WriteUInt32(arg2.Value)
+            | Decoration.PerVertexNV _ -> stream.WriteUInt32(arg2.Value)
+            | Decoration.NonUniform _ -> stream.WriteUInt32(arg2.Value)
+            | Decoration.RestrictPointer _ -> stream.WriteUInt32(arg2.Value)
+            | Decoration.AliasedPointer _ -> stream.WriteUInt32(arg2.Value)
+            | Decoration.CounterBuffer(arg2_arg0) -> stream.WriteUInt32(arg2.Value);stream.WriteUInt32(arg2_arg0)
+            | Decoration.UserSemantic(arg2_arg0) -> stream.WriteUInt32(arg2.Value);stream.WriteString(arg2_arg0)
+            | Decoration.UserTypeGOOGLE(arg2_arg0) -> stream.WriteUInt32(arg2.Value);stream.WriteString(arg2_arg0)
         | OpDecorationGroup(arg0) ->
             stream.WriteUInt32(arg0)
         | OpGroupDecorate(arg0, arg1) ->
@@ -3774,10 +4040,130 @@ type Instruction =
             stream.WriteString(arg0)
         | OpExecutionModeId(arg0, arg1) ->
             stream.WriteUInt32(arg0)
-            stream.WriteEnum(arg1)
+            match arg1 with
+            | ExecutionMode.Invocations(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0)
+            | ExecutionMode.SpacingEqual _ -> stream.WriteUInt32(arg1.Value)
+            | ExecutionMode.SpacingFractionalEven _ -> stream.WriteUInt32(arg1.Value)
+            | ExecutionMode.SpacingFractionalOdd _ -> stream.WriteUInt32(arg1.Value)
+            | ExecutionMode.VertexOrderCw _ -> stream.WriteUInt32(arg1.Value)
+            | ExecutionMode.VertexOrderCcw _ -> stream.WriteUInt32(arg1.Value)
+            | ExecutionMode.PixelCenterInteger _ -> stream.WriteUInt32(arg1.Value)
+            | ExecutionMode.OriginUpperLeft _ -> stream.WriteUInt32(arg1.Value)
+            | ExecutionMode.OriginLowerLeft _ -> stream.WriteUInt32(arg1.Value)
+            | ExecutionMode.EarlyFragmentTests _ -> stream.WriteUInt32(arg1.Value)
+            | ExecutionMode.PointMode _ -> stream.WriteUInt32(arg1.Value)
+            | ExecutionMode.Xfb _ -> stream.WriteUInt32(arg1.Value)
+            | ExecutionMode.DepthReplacing _ -> stream.WriteUInt32(arg1.Value)
+            | ExecutionMode.DepthGreater _ -> stream.WriteUInt32(arg1.Value)
+            | ExecutionMode.DepthLess _ -> stream.WriteUInt32(arg1.Value)
+            | ExecutionMode.DepthUnchanged _ -> stream.WriteUInt32(arg1.Value)
+            | ExecutionMode.LocalSize(arg1_arg0, arg1_arg1, arg1_arg2) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0);stream.WriteUInt32(arg1_arg1);stream.WriteUInt32(arg1_arg2)
+            | ExecutionMode.LocalSizeHint(arg1_arg0, arg1_arg1, arg1_arg2) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0);stream.WriteUInt32(arg1_arg1);stream.WriteUInt32(arg1_arg2)
+            | ExecutionMode.InputPoints _ -> stream.WriteUInt32(arg1.Value)
+            | ExecutionMode.InputLines _ -> stream.WriteUInt32(arg1.Value)
+            | ExecutionMode.InputLinesAdjacency _ -> stream.WriteUInt32(arg1.Value)
+            | ExecutionMode.Triangles _ -> stream.WriteUInt32(arg1.Value)
+            | ExecutionMode.InputTrianglesAdjacency _ -> stream.WriteUInt32(arg1.Value)
+            | ExecutionMode.Quads _ -> stream.WriteUInt32(arg1.Value)
+            | ExecutionMode.Isolines _ -> stream.WriteUInt32(arg1.Value)
+            | ExecutionMode.OutputVertices(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0)
+            | ExecutionMode.OutputPoints _ -> stream.WriteUInt32(arg1.Value)
+            | ExecutionMode.OutputLineStrip _ -> stream.WriteUInt32(arg1.Value)
+            | ExecutionMode.OutputTriangleStrip _ -> stream.WriteUInt32(arg1.Value)
+            | ExecutionMode.VecTypeHint(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0)
+            | ExecutionMode.ContractionOff _ -> stream.WriteUInt32(arg1.Value)
+            | ExecutionMode.Initializer _ -> stream.WriteUInt32(arg1.Value)
+            | ExecutionMode.Finalizer _ -> stream.WriteUInt32(arg1.Value)
+            | ExecutionMode.SubgroupSize(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0)
+            | ExecutionMode.SubgroupsPerWorkgroup(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0)
+            | ExecutionMode.SubgroupsPerWorkgroupId(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0)
+            | ExecutionMode.LocalSizeId(arg1_arg0, arg1_arg1, arg1_arg2) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0);stream.WriteUInt32(arg1_arg1);stream.WriteUInt32(arg1_arg2)
+            | ExecutionMode.LocalSizeHintId(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0)
+            | ExecutionMode.PostDepthCoverage _ -> stream.WriteUInt32(arg1.Value)
+            | ExecutionMode.DenormPreserve(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0)
+            | ExecutionMode.DenormFlushToZero(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0)
+            | ExecutionMode.SignedZeroInfNanPreserve(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0)
+            | ExecutionMode.RoundingModeRTE(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0)
+            | ExecutionMode.RoundingModeRTZ(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0)
+            | ExecutionMode.StencilRefReplacingEXT _ -> stream.WriteUInt32(arg1.Value)
+            | ExecutionMode.OutputLinesNV _ -> stream.WriteUInt32(arg1.Value)
+            | ExecutionMode.OutputPrimitivesNV(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0)
+            | ExecutionMode.DerivativeGroupQuadsNV _ -> stream.WriteUInt32(arg1.Value)
+            | ExecutionMode.DerivativeGroupLinearNV _ -> stream.WriteUInt32(arg1.Value)
+            | ExecutionMode.OutputTrianglesNV _ -> stream.WriteUInt32(arg1.Value)
+            | ExecutionMode.PixelInterlockOrderedEXT _ -> stream.WriteUInt32(arg1.Value)
+            | ExecutionMode.PixelInterlockUnorderedEXT _ -> stream.WriteUInt32(arg1.Value)
+            | ExecutionMode.SampleInterlockOrderedEXT _ -> stream.WriteUInt32(arg1.Value)
+            | ExecutionMode.SampleInterlockUnorderedEXT _ -> stream.WriteUInt32(arg1.Value)
+            | ExecutionMode.ShadingRateInterlockOrderedEXT _ -> stream.WriteUInt32(arg1.Value)
+            | ExecutionMode.ShadingRateInterlockUnorderedEXT _ -> stream.WriteUInt32(arg1.Value)
         | OpDecorateId(arg0, arg1) ->
             stream.WriteUInt32(arg0)
-            stream.WriteEnum(arg1)
+            match arg1 with
+            | Decoration.RelaxedPrecision _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.SpecId(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0)
+            | Decoration.Block _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.BufferBlock _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.RowMajor _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.ColMajor _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.ArrayStride(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0)
+            | Decoration.MatrixStride(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0)
+            | Decoration.GLSLShared _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.GLSLPacked _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.CPacked _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.BuiltIn(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteEnum(arg1_arg0)
+            | Decoration.NoPerspective _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.Flat _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.Patch _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.Centroid _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.Sample _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.Invariant _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.Restrict _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.Aliased _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.Volatile _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.Constant _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.Coherent _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.NonWritable _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.NonReadable _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.Uniform _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.UniformId(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0)
+            | Decoration.SaturatedConversion _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.Stream(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0)
+            | Decoration.Location(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0)
+            | Decoration.Component(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0)
+            | Decoration.Index(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0)
+            | Decoration.Binding(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0)
+            | Decoration.DescriptorSet(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0)
+            | Decoration.Offset(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0)
+            | Decoration.XfbBuffer(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0)
+            | Decoration.XfbStride(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0)
+            | Decoration.FuncParamAttr(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteEnum(arg1_arg0)
+            | Decoration.FPRoundingMode(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteEnum(arg1_arg0)
+            | Decoration.FPFastMathMode(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteEnum(arg1_arg0)
+            | Decoration.LinkageAttributes(arg1_arg0, arg1_arg1) -> stream.WriteUInt32(arg1.Value);stream.WriteString(arg1_arg0);stream.WriteEnum(arg1_arg1)
+            | Decoration.NoContraction _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.InputAttachmentIndex(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0)
+            | Decoration.Alignment(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0)
+            | Decoration.MaxByteOffset(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0)
+            | Decoration.AlignmentId(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0)
+            | Decoration.MaxByteOffsetId(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0)
+            | Decoration.NoSignedWrap _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.NoUnsignedWrap _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.ExplicitInterpAMD _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.OverrideCoverageNV _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.PassthroughNV _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.ViewportRelativeNV _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.SecondaryViewportRelativeNV(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0)
+            | Decoration.PerPrimitiveNV _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.PerViewNV _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.PerTaskNV _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.PerVertexNV _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.NonUniform _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.RestrictPointer _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.AliasedPointer _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.CounterBuffer(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0)
+            | Decoration.UserSemantic(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteString(arg1_arg0)
+            | Decoration.UserTypeGOOGLE(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteString(arg1_arg0)
         | OpGroupNonUniformElect(arg0, arg1, arg2) ->
             stream.WriteUInt32(arg0)
             stream.WriteUInt32(arg1)
@@ -4295,11 +4681,139 @@ type Instruction =
             stream.WriteUInt32(arg3)
         | OpDecorateString(arg0, arg1) ->
             stream.WriteUInt32(arg0)
-            stream.WriteEnum(arg1)
+            match arg1 with
+            | Decoration.RelaxedPrecision _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.SpecId(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0)
+            | Decoration.Block _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.BufferBlock _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.RowMajor _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.ColMajor _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.ArrayStride(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0)
+            | Decoration.MatrixStride(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0)
+            | Decoration.GLSLShared _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.GLSLPacked _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.CPacked _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.BuiltIn(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteEnum(arg1_arg0)
+            | Decoration.NoPerspective _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.Flat _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.Patch _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.Centroid _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.Sample _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.Invariant _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.Restrict _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.Aliased _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.Volatile _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.Constant _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.Coherent _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.NonWritable _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.NonReadable _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.Uniform _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.UniformId(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0)
+            | Decoration.SaturatedConversion _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.Stream(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0)
+            | Decoration.Location(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0)
+            | Decoration.Component(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0)
+            | Decoration.Index(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0)
+            | Decoration.Binding(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0)
+            | Decoration.DescriptorSet(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0)
+            | Decoration.Offset(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0)
+            | Decoration.XfbBuffer(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0)
+            | Decoration.XfbStride(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0)
+            | Decoration.FuncParamAttr(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteEnum(arg1_arg0)
+            | Decoration.FPRoundingMode(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteEnum(arg1_arg0)
+            | Decoration.FPFastMathMode(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteEnum(arg1_arg0)
+            | Decoration.LinkageAttributes(arg1_arg0, arg1_arg1) -> stream.WriteUInt32(arg1.Value);stream.WriteString(arg1_arg0);stream.WriteEnum(arg1_arg1)
+            | Decoration.NoContraction _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.InputAttachmentIndex(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0)
+            | Decoration.Alignment(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0)
+            | Decoration.MaxByteOffset(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0)
+            | Decoration.AlignmentId(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0)
+            | Decoration.MaxByteOffsetId(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0)
+            | Decoration.NoSignedWrap _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.NoUnsignedWrap _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.ExplicitInterpAMD _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.OverrideCoverageNV _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.PassthroughNV _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.ViewportRelativeNV _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.SecondaryViewportRelativeNV(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0)
+            | Decoration.PerPrimitiveNV _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.PerViewNV _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.PerTaskNV _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.PerVertexNV _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.NonUniform _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.RestrictPointer _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.AliasedPointer _ -> stream.WriteUInt32(arg1.Value)
+            | Decoration.CounterBuffer(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteUInt32(arg1_arg0)
+            | Decoration.UserSemantic(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteString(arg1_arg0)
+            | Decoration.UserTypeGOOGLE(arg1_arg0) -> stream.WriteUInt32(arg1.Value);stream.WriteString(arg1_arg0)
         | OpMemberDecorateString(arg0, arg1, arg2) ->
             stream.WriteUInt32(arg0)
             stream.WriteUInt32(arg1)
-            stream.WriteEnum(arg2)
+            match arg2 with
+            | Decoration.RelaxedPrecision _ -> stream.WriteUInt32(arg2.Value)
+            | Decoration.SpecId(arg2_arg0) -> stream.WriteUInt32(arg2.Value);stream.WriteUInt32(arg2_arg0)
+            | Decoration.Block _ -> stream.WriteUInt32(arg2.Value)
+            | Decoration.BufferBlock _ -> stream.WriteUInt32(arg2.Value)
+            | Decoration.RowMajor _ -> stream.WriteUInt32(arg2.Value)
+            | Decoration.ColMajor _ -> stream.WriteUInt32(arg2.Value)
+            | Decoration.ArrayStride(arg2_arg0) -> stream.WriteUInt32(arg2.Value);stream.WriteUInt32(arg2_arg0)
+            | Decoration.MatrixStride(arg2_arg0) -> stream.WriteUInt32(arg2.Value);stream.WriteUInt32(arg2_arg0)
+            | Decoration.GLSLShared _ -> stream.WriteUInt32(arg2.Value)
+            | Decoration.GLSLPacked _ -> stream.WriteUInt32(arg2.Value)
+            | Decoration.CPacked _ -> stream.WriteUInt32(arg2.Value)
+            | Decoration.BuiltIn(arg2_arg0) -> stream.WriteUInt32(arg2.Value);stream.WriteEnum(arg2_arg0)
+            | Decoration.NoPerspective _ -> stream.WriteUInt32(arg2.Value)
+            | Decoration.Flat _ -> stream.WriteUInt32(arg2.Value)
+            | Decoration.Patch _ -> stream.WriteUInt32(arg2.Value)
+            | Decoration.Centroid _ -> stream.WriteUInt32(arg2.Value)
+            | Decoration.Sample _ -> stream.WriteUInt32(arg2.Value)
+            | Decoration.Invariant _ -> stream.WriteUInt32(arg2.Value)
+            | Decoration.Restrict _ -> stream.WriteUInt32(arg2.Value)
+            | Decoration.Aliased _ -> stream.WriteUInt32(arg2.Value)
+            | Decoration.Volatile _ -> stream.WriteUInt32(arg2.Value)
+            | Decoration.Constant _ -> stream.WriteUInt32(arg2.Value)
+            | Decoration.Coherent _ -> stream.WriteUInt32(arg2.Value)
+            | Decoration.NonWritable _ -> stream.WriteUInt32(arg2.Value)
+            | Decoration.NonReadable _ -> stream.WriteUInt32(arg2.Value)
+            | Decoration.Uniform _ -> stream.WriteUInt32(arg2.Value)
+            | Decoration.UniformId(arg2_arg0) -> stream.WriteUInt32(arg2.Value);stream.WriteUInt32(arg2_arg0)
+            | Decoration.SaturatedConversion _ -> stream.WriteUInt32(arg2.Value)
+            | Decoration.Stream(arg2_arg0) -> stream.WriteUInt32(arg2.Value);stream.WriteUInt32(arg2_arg0)
+            | Decoration.Location(arg2_arg0) -> stream.WriteUInt32(arg2.Value);stream.WriteUInt32(arg2_arg0)
+            | Decoration.Component(arg2_arg0) -> stream.WriteUInt32(arg2.Value);stream.WriteUInt32(arg2_arg0)
+            | Decoration.Index(arg2_arg0) -> stream.WriteUInt32(arg2.Value);stream.WriteUInt32(arg2_arg0)
+            | Decoration.Binding(arg2_arg0) -> stream.WriteUInt32(arg2.Value);stream.WriteUInt32(arg2_arg0)
+            | Decoration.DescriptorSet(arg2_arg0) -> stream.WriteUInt32(arg2.Value);stream.WriteUInt32(arg2_arg0)
+            | Decoration.Offset(arg2_arg0) -> stream.WriteUInt32(arg2.Value);stream.WriteUInt32(arg2_arg0)
+            | Decoration.XfbBuffer(arg2_arg0) -> stream.WriteUInt32(arg2.Value);stream.WriteUInt32(arg2_arg0)
+            | Decoration.XfbStride(arg2_arg0) -> stream.WriteUInt32(arg2.Value);stream.WriteUInt32(arg2_arg0)
+            | Decoration.FuncParamAttr(arg2_arg0) -> stream.WriteUInt32(arg2.Value);stream.WriteEnum(arg2_arg0)
+            | Decoration.FPRoundingMode(arg2_arg0) -> stream.WriteUInt32(arg2.Value);stream.WriteEnum(arg2_arg0)
+            | Decoration.FPFastMathMode(arg2_arg0) -> stream.WriteUInt32(arg2.Value);stream.WriteEnum(arg2_arg0)
+            | Decoration.LinkageAttributes(arg2_arg0, arg2_arg1) -> stream.WriteUInt32(arg2.Value);stream.WriteString(arg2_arg0);stream.WriteEnum(arg2_arg1)
+            | Decoration.NoContraction _ -> stream.WriteUInt32(arg2.Value)
+            | Decoration.InputAttachmentIndex(arg2_arg0) -> stream.WriteUInt32(arg2.Value);stream.WriteUInt32(arg2_arg0)
+            | Decoration.Alignment(arg2_arg0) -> stream.WriteUInt32(arg2.Value);stream.WriteUInt32(arg2_arg0)
+            | Decoration.MaxByteOffset(arg2_arg0) -> stream.WriteUInt32(arg2.Value);stream.WriteUInt32(arg2_arg0)
+            | Decoration.AlignmentId(arg2_arg0) -> stream.WriteUInt32(arg2.Value);stream.WriteUInt32(arg2_arg0)
+            | Decoration.MaxByteOffsetId(arg2_arg0) -> stream.WriteUInt32(arg2.Value);stream.WriteUInt32(arg2_arg0)
+            | Decoration.NoSignedWrap _ -> stream.WriteUInt32(arg2.Value)
+            | Decoration.NoUnsignedWrap _ -> stream.WriteUInt32(arg2.Value)
+            | Decoration.ExplicitInterpAMD _ -> stream.WriteUInt32(arg2.Value)
+            | Decoration.OverrideCoverageNV _ -> stream.WriteUInt32(arg2.Value)
+            | Decoration.PassthroughNV _ -> stream.WriteUInt32(arg2.Value)
+            | Decoration.ViewportRelativeNV _ -> stream.WriteUInt32(arg2.Value)
+            | Decoration.SecondaryViewportRelativeNV(arg2_arg0) -> stream.WriteUInt32(arg2.Value);stream.WriteUInt32(arg2_arg0)
+            | Decoration.PerPrimitiveNV _ -> stream.WriteUInt32(arg2.Value)
+            | Decoration.PerViewNV _ -> stream.WriteUInt32(arg2.Value)
+            | Decoration.PerTaskNV _ -> stream.WriteUInt32(arg2.Value)
+            | Decoration.PerVertexNV _ -> stream.WriteUInt32(arg2.Value)
+            | Decoration.NonUniform _ -> stream.WriteUInt32(arg2.Value)
+            | Decoration.RestrictPointer _ -> stream.WriteUInt32(arg2.Value)
+            | Decoration.AliasedPointer _ -> stream.WriteUInt32(arg2.Value)
+            | Decoration.CounterBuffer(arg2_arg0) -> stream.WriteUInt32(arg2.Value);stream.WriteUInt32(arg2_arg0)
+            | Decoration.UserSemantic(arg2_arg0) -> stream.WriteUInt32(arg2.Value);stream.WriteString(arg2_arg0)
+            | Decoration.UserTypeGOOGLE(arg2_arg0) -> stream.WriteUInt32(arg2.Value);stream.WriteString(arg2_arg0)
         | OpVmeImageINTEL(arg0, arg1, arg2, arg3) ->
             stream.WriteUInt32(arg0)
             stream.WriteUInt32(arg1)
@@ -4905,7 +5419,7 @@ type Instruction =
         | 15us ->
             OpEntryPoint(stream.ReadEnum(), stream.ReadUInt32(), stream.ReadString(), stream.ReadList(fun () -> stream.ReadUInt32()))
         | 16us ->
-            OpExecutionMode(stream.ReadUInt32(), stream.ReadEnum())
+            OpExecutionMode(stream.ReadUInt32(), match stream.ReadUInt32() with | 0u -> ExecutionMode.Invocations(stream.ReadUInt32()) | 1u -> ExecutionMode.SpacingEqual | 2u -> ExecutionMode.SpacingFractionalEven | 3u -> ExecutionMode.SpacingFractionalOdd | 4u -> ExecutionMode.VertexOrderCw | 5u -> ExecutionMode.VertexOrderCcw | 6u -> ExecutionMode.PixelCenterInteger | 7u -> ExecutionMode.OriginUpperLeft | 8u -> ExecutionMode.OriginLowerLeft | 9u -> ExecutionMode.EarlyFragmentTests | 10u -> ExecutionMode.PointMode | 11u -> ExecutionMode.Xfb | 12u -> ExecutionMode.DepthReplacing | 14u -> ExecutionMode.DepthGreater | 15u -> ExecutionMode.DepthLess | 16u -> ExecutionMode.DepthUnchanged | 17u -> ExecutionMode.LocalSize(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32()) | 18u -> ExecutionMode.LocalSizeHint(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32()) | 19u -> ExecutionMode.InputPoints | 20u -> ExecutionMode.InputLines | 21u -> ExecutionMode.InputLinesAdjacency | 22u -> ExecutionMode.Triangles | 23u -> ExecutionMode.InputTrianglesAdjacency | 24u -> ExecutionMode.Quads | 25u -> ExecutionMode.Isolines | 26u -> ExecutionMode.OutputVertices(stream.ReadUInt32()) | 27u -> ExecutionMode.OutputPoints | 28u -> ExecutionMode.OutputLineStrip | 29u -> ExecutionMode.OutputTriangleStrip | 30u -> ExecutionMode.VecTypeHint(stream.ReadUInt32()) | 31u -> ExecutionMode.ContractionOff | 33u -> ExecutionMode.Initializer | 34u -> ExecutionMode.Finalizer | 35u -> ExecutionMode.SubgroupSize(stream.ReadUInt32()) | 36u -> ExecutionMode.SubgroupsPerWorkgroup(stream.ReadUInt32()) | 37u -> ExecutionMode.SubgroupsPerWorkgroupId(stream.ReadUInt32()) | 38u -> ExecutionMode.LocalSizeId(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32()) | 39u -> ExecutionMode.LocalSizeHintId(stream.ReadUInt32()) | 4446u -> ExecutionMode.PostDepthCoverage | 4459u -> ExecutionMode.DenormPreserve(stream.ReadUInt32()) | 4460u -> ExecutionMode.DenormFlushToZero(stream.ReadUInt32()) | 4461u -> ExecutionMode.SignedZeroInfNanPreserve(stream.ReadUInt32()) | 4462u -> ExecutionMode.RoundingModeRTE(stream.ReadUInt32()) | 4463u -> ExecutionMode.RoundingModeRTZ(stream.ReadUInt32()) | 5027u -> ExecutionMode.StencilRefReplacingEXT | 5269u -> ExecutionMode.OutputLinesNV | 5270u -> ExecutionMode.OutputPrimitivesNV(stream.ReadUInt32()) | 5289u -> ExecutionMode.DerivativeGroupQuadsNV | 5290u -> ExecutionMode.DerivativeGroupLinearNV | 5298u -> ExecutionMode.OutputTrianglesNV | 5366u -> ExecutionMode.PixelInterlockOrderedEXT | 5367u -> ExecutionMode.PixelInterlockUnorderedEXT | 5368u -> ExecutionMode.SampleInterlockOrderedEXT | 5369u -> ExecutionMode.SampleInterlockUnorderedEXT | 5370u -> ExecutionMode.ShadingRateInterlockOrderedEXT | 5371u -> ExecutionMode.ShadingRateInterlockUnorderedEXT | _ -> failwith "invalid" )
         | 17us ->
             OpCapability(stream.ReadEnum())
         | 19us ->
@@ -5005,9 +5519,9 @@ type Instruction =
         | 70us ->
             OpInBoundsPtrAccessChain(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadList(fun () -> stream.ReadUInt32()))
         | 71us ->
-            OpDecorate(stream.ReadUInt32(), stream.ReadEnum())
+            OpDecorate(stream.ReadUInt32(), match stream.ReadUInt32() with | 0u -> Decoration.RelaxedPrecision | 1u -> Decoration.SpecId(stream.ReadUInt32()) | 2u -> Decoration.Block | 3u -> Decoration.BufferBlock | 4u -> Decoration.RowMajor | 5u -> Decoration.ColMajor | 6u -> Decoration.ArrayStride(stream.ReadUInt32()) | 7u -> Decoration.MatrixStride(stream.ReadUInt32()) | 8u -> Decoration.GLSLShared | 9u -> Decoration.GLSLPacked | 10u -> Decoration.CPacked | 11u -> Decoration.BuiltIn(stream.ReadEnum()) | 13u -> Decoration.NoPerspective | 14u -> Decoration.Flat | 15u -> Decoration.Patch | 16u -> Decoration.Centroid | 17u -> Decoration.Sample | 18u -> Decoration.Invariant | 19u -> Decoration.Restrict | 20u -> Decoration.Aliased | 21u -> Decoration.Volatile | 22u -> Decoration.Constant | 23u -> Decoration.Coherent | 24u -> Decoration.NonWritable | 25u -> Decoration.NonReadable | 26u -> Decoration.Uniform | 27u -> Decoration.UniformId(stream.ReadUInt32()) | 28u -> Decoration.SaturatedConversion | 29u -> Decoration.Stream(stream.ReadUInt32()) | 30u -> Decoration.Location(stream.ReadUInt32()) | 31u -> Decoration.Component(stream.ReadUInt32()) | 32u -> Decoration.Index(stream.ReadUInt32()) | 33u -> Decoration.Binding(stream.ReadUInt32()) | 34u -> Decoration.DescriptorSet(stream.ReadUInt32()) | 35u -> Decoration.Offset(stream.ReadUInt32()) | 36u -> Decoration.XfbBuffer(stream.ReadUInt32()) | 37u -> Decoration.XfbStride(stream.ReadUInt32()) | 38u -> Decoration.FuncParamAttr(stream.ReadEnum()) | 39u -> Decoration.FPRoundingMode(stream.ReadEnum()) | 40u -> Decoration.FPFastMathMode(stream.ReadEnum()) | 41u -> Decoration.LinkageAttributes(stream.ReadString(), stream.ReadEnum()) | 42u -> Decoration.NoContraction | 43u -> Decoration.InputAttachmentIndex(stream.ReadUInt32()) | 44u -> Decoration.Alignment(stream.ReadUInt32()) | 45u -> Decoration.MaxByteOffset(stream.ReadUInt32()) | 46u -> Decoration.AlignmentId(stream.ReadUInt32()) | 47u -> Decoration.MaxByteOffsetId(stream.ReadUInt32()) | 4469u -> Decoration.NoSignedWrap | 4470u -> Decoration.NoUnsignedWrap | 4999u -> Decoration.ExplicitInterpAMD | 5248u -> Decoration.OverrideCoverageNV | 5250u -> Decoration.PassthroughNV | 5252u -> Decoration.ViewportRelativeNV | 5256u -> Decoration.SecondaryViewportRelativeNV(stream.ReadUInt32()) | 5271u -> Decoration.PerPrimitiveNV | 5272u -> Decoration.PerViewNV | 5273u -> Decoration.PerTaskNV | 5285u -> Decoration.PerVertexNV | 5300u -> Decoration.NonUniform | 5355u -> Decoration.RestrictPointer | 5356u -> Decoration.AliasedPointer | 5634u -> Decoration.CounterBuffer(stream.ReadUInt32()) | 5635u -> Decoration.UserSemantic(stream.ReadString()) | 5636u -> Decoration.UserTypeGOOGLE(stream.ReadString()) | _ -> failwith "invalid" )
         | 72us ->
-            OpMemberDecorate(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadEnum())
+            OpMemberDecorate(stream.ReadUInt32(), stream.ReadUInt32(), match stream.ReadUInt32() with | 0u -> Decoration.RelaxedPrecision | 1u -> Decoration.SpecId(stream.ReadUInt32()) | 2u -> Decoration.Block | 3u -> Decoration.BufferBlock | 4u -> Decoration.RowMajor | 5u -> Decoration.ColMajor | 6u -> Decoration.ArrayStride(stream.ReadUInt32()) | 7u -> Decoration.MatrixStride(stream.ReadUInt32()) | 8u -> Decoration.GLSLShared | 9u -> Decoration.GLSLPacked | 10u -> Decoration.CPacked | 11u -> Decoration.BuiltIn(stream.ReadEnum()) | 13u -> Decoration.NoPerspective | 14u -> Decoration.Flat | 15u -> Decoration.Patch | 16u -> Decoration.Centroid | 17u -> Decoration.Sample | 18u -> Decoration.Invariant | 19u -> Decoration.Restrict | 20u -> Decoration.Aliased | 21u -> Decoration.Volatile | 22u -> Decoration.Constant | 23u -> Decoration.Coherent | 24u -> Decoration.NonWritable | 25u -> Decoration.NonReadable | 26u -> Decoration.Uniform | 27u -> Decoration.UniformId(stream.ReadUInt32()) | 28u -> Decoration.SaturatedConversion | 29u -> Decoration.Stream(stream.ReadUInt32()) | 30u -> Decoration.Location(stream.ReadUInt32()) | 31u -> Decoration.Component(stream.ReadUInt32()) | 32u -> Decoration.Index(stream.ReadUInt32()) | 33u -> Decoration.Binding(stream.ReadUInt32()) | 34u -> Decoration.DescriptorSet(stream.ReadUInt32()) | 35u -> Decoration.Offset(stream.ReadUInt32()) | 36u -> Decoration.XfbBuffer(stream.ReadUInt32()) | 37u -> Decoration.XfbStride(stream.ReadUInt32()) | 38u -> Decoration.FuncParamAttr(stream.ReadEnum()) | 39u -> Decoration.FPRoundingMode(stream.ReadEnum()) | 40u -> Decoration.FPFastMathMode(stream.ReadEnum()) | 41u -> Decoration.LinkageAttributes(stream.ReadString(), stream.ReadEnum()) | 42u -> Decoration.NoContraction | 43u -> Decoration.InputAttachmentIndex(stream.ReadUInt32()) | 44u -> Decoration.Alignment(stream.ReadUInt32()) | 45u -> Decoration.MaxByteOffset(stream.ReadUInt32()) | 46u -> Decoration.AlignmentId(stream.ReadUInt32()) | 47u -> Decoration.MaxByteOffsetId(stream.ReadUInt32()) | 4469u -> Decoration.NoSignedWrap | 4470u -> Decoration.NoUnsignedWrap | 4999u -> Decoration.ExplicitInterpAMD | 5248u -> Decoration.OverrideCoverageNV | 5250u -> Decoration.PassthroughNV | 5252u -> Decoration.ViewportRelativeNV | 5256u -> Decoration.SecondaryViewportRelativeNV(stream.ReadUInt32()) | 5271u -> Decoration.PerPrimitiveNV | 5272u -> Decoration.PerViewNV | 5273u -> Decoration.PerTaskNV | 5285u -> Decoration.PerVertexNV | 5300u -> Decoration.NonUniform | 5355u -> Decoration.RestrictPointer | 5356u -> Decoration.AliasedPointer | 5634u -> Decoration.CounterBuffer(stream.ReadUInt32()) | 5635u -> Decoration.UserSemantic(stream.ReadString()) | 5636u -> Decoration.UserTypeGOOGLE(stream.ReadString()) | _ -> failwith "invalid" )
         | 73us ->
             OpDecorationGroup(stream.ReadUInt32())
         | 74us ->
@@ -5485,9 +5999,9 @@ type Instruction =
         | 330us ->
             OpModuleProcessed(stream.ReadString())
         | 331us ->
-            OpExecutionModeId(stream.ReadUInt32(), stream.ReadEnum())
+            OpExecutionModeId(stream.ReadUInt32(), match stream.ReadUInt32() with | 0u -> ExecutionMode.Invocations(stream.ReadUInt32()) | 1u -> ExecutionMode.SpacingEqual | 2u -> ExecutionMode.SpacingFractionalEven | 3u -> ExecutionMode.SpacingFractionalOdd | 4u -> ExecutionMode.VertexOrderCw | 5u -> ExecutionMode.VertexOrderCcw | 6u -> ExecutionMode.PixelCenterInteger | 7u -> ExecutionMode.OriginUpperLeft | 8u -> ExecutionMode.OriginLowerLeft | 9u -> ExecutionMode.EarlyFragmentTests | 10u -> ExecutionMode.PointMode | 11u -> ExecutionMode.Xfb | 12u -> ExecutionMode.DepthReplacing | 14u -> ExecutionMode.DepthGreater | 15u -> ExecutionMode.DepthLess | 16u -> ExecutionMode.DepthUnchanged | 17u -> ExecutionMode.LocalSize(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32()) | 18u -> ExecutionMode.LocalSizeHint(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32()) | 19u -> ExecutionMode.InputPoints | 20u -> ExecutionMode.InputLines | 21u -> ExecutionMode.InputLinesAdjacency | 22u -> ExecutionMode.Triangles | 23u -> ExecutionMode.InputTrianglesAdjacency | 24u -> ExecutionMode.Quads | 25u -> ExecutionMode.Isolines | 26u -> ExecutionMode.OutputVertices(stream.ReadUInt32()) | 27u -> ExecutionMode.OutputPoints | 28u -> ExecutionMode.OutputLineStrip | 29u -> ExecutionMode.OutputTriangleStrip | 30u -> ExecutionMode.VecTypeHint(stream.ReadUInt32()) | 31u -> ExecutionMode.ContractionOff | 33u -> ExecutionMode.Initializer | 34u -> ExecutionMode.Finalizer | 35u -> ExecutionMode.SubgroupSize(stream.ReadUInt32()) | 36u -> ExecutionMode.SubgroupsPerWorkgroup(stream.ReadUInt32()) | 37u -> ExecutionMode.SubgroupsPerWorkgroupId(stream.ReadUInt32()) | 38u -> ExecutionMode.LocalSizeId(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32()) | 39u -> ExecutionMode.LocalSizeHintId(stream.ReadUInt32()) | 4446u -> ExecutionMode.PostDepthCoverage | 4459u -> ExecutionMode.DenormPreserve(stream.ReadUInt32()) | 4460u -> ExecutionMode.DenormFlushToZero(stream.ReadUInt32()) | 4461u -> ExecutionMode.SignedZeroInfNanPreserve(stream.ReadUInt32()) | 4462u -> ExecutionMode.RoundingModeRTE(stream.ReadUInt32()) | 4463u -> ExecutionMode.RoundingModeRTZ(stream.ReadUInt32()) | 5027u -> ExecutionMode.StencilRefReplacingEXT | 5269u -> ExecutionMode.OutputLinesNV | 5270u -> ExecutionMode.OutputPrimitivesNV(stream.ReadUInt32()) | 5289u -> ExecutionMode.DerivativeGroupQuadsNV | 5290u -> ExecutionMode.DerivativeGroupLinearNV | 5298u -> ExecutionMode.OutputTrianglesNV | 5366u -> ExecutionMode.PixelInterlockOrderedEXT | 5367u -> ExecutionMode.PixelInterlockUnorderedEXT | 5368u -> ExecutionMode.SampleInterlockOrderedEXT | 5369u -> ExecutionMode.SampleInterlockUnorderedEXT | 5370u -> ExecutionMode.ShadingRateInterlockOrderedEXT | 5371u -> ExecutionMode.ShadingRateInterlockUnorderedEXT | _ -> failwith "invalid" )
         | 332us ->
-            OpDecorateId(stream.ReadUInt32(), stream.ReadEnum())
+            OpDecorateId(stream.ReadUInt32(), match stream.ReadUInt32() with | 0u -> Decoration.RelaxedPrecision | 1u -> Decoration.SpecId(stream.ReadUInt32()) | 2u -> Decoration.Block | 3u -> Decoration.BufferBlock | 4u -> Decoration.RowMajor | 5u -> Decoration.ColMajor | 6u -> Decoration.ArrayStride(stream.ReadUInt32()) | 7u -> Decoration.MatrixStride(stream.ReadUInt32()) | 8u -> Decoration.GLSLShared | 9u -> Decoration.GLSLPacked | 10u -> Decoration.CPacked | 11u -> Decoration.BuiltIn(stream.ReadEnum()) | 13u -> Decoration.NoPerspective | 14u -> Decoration.Flat | 15u -> Decoration.Patch | 16u -> Decoration.Centroid | 17u -> Decoration.Sample | 18u -> Decoration.Invariant | 19u -> Decoration.Restrict | 20u -> Decoration.Aliased | 21u -> Decoration.Volatile | 22u -> Decoration.Constant | 23u -> Decoration.Coherent | 24u -> Decoration.NonWritable | 25u -> Decoration.NonReadable | 26u -> Decoration.Uniform | 27u -> Decoration.UniformId(stream.ReadUInt32()) | 28u -> Decoration.SaturatedConversion | 29u -> Decoration.Stream(stream.ReadUInt32()) | 30u -> Decoration.Location(stream.ReadUInt32()) | 31u -> Decoration.Component(stream.ReadUInt32()) | 32u -> Decoration.Index(stream.ReadUInt32()) | 33u -> Decoration.Binding(stream.ReadUInt32()) | 34u -> Decoration.DescriptorSet(stream.ReadUInt32()) | 35u -> Decoration.Offset(stream.ReadUInt32()) | 36u -> Decoration.XfbBuffer(stream.ReadUInt32()) | 37u -> Decoration.XfbStride(stream.ReadUInt32()) | 38u -> Decoration.FuncParamAttr(stream.ReadEnum()) | 39u -> Decoration.FPRoundingMode(stream.ReadEnum()) | 40u -> Decoration.FPFastMathMode(stream.ReadEnum()) | 41u -> Decoration.LinkageAttributes(stream.ReadString(), stream.ReadEnum()) | 42u -> Decoration.NoContraction | 43u -> Decoration.InputAttachmentIndex(stream.ReadUInt32()) | 44u -> Decoration.Alignment(stream.ReadUInt32()) | 45u -> Decoration.MaxByteOffset(stream.ReadUInt32()) | 46u -> Decoration.AlignmentId(stream.ReadUInt32()) | 47u -> Decoration.MaxByteOffsetId(stream.ReadUInt32()) | 4469u -> Decoration.NoSignedWrap | 4470u -> Decoration.NoUnsignedWrap | 4999u -> Decoration.ExplicitInterpAMD | 5248u -> Decoration.OverrideCoverageNV | 5250u -> Decoration.PassthroughNV | 5252u -> Decoration.ViewportRelativeNV | 5256u -> Decoration.SecondaryViewportRelativeNV(stream.ReadUInt32()) | 5271u -> Decoration.PerPrimitiveNV | 5272u -> Decoration.PerViewNV | 5273u -> Decoration.PerTaskNV | 5285u -> Decoration.PerVertexNV | 5300u -> Decoration.NonUniform | 5355u -> Decoration.RestrictPointer | 5356u -> Decoration.AliasedPointer | 5634u -> Decoration.CounterBuffer(stream.ReadUInt32()) | 5635u -> Decoration.UserSemantic(stream.ReadString()) | 5636u -> Decoration.UserTypeGOOGLE(stream.ReadString()) | _ -> failwith "invalid" )
         | 333us ->
             OpGroupNonUniformElect(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
         | 334us ->
@@ -5683,9 +6197,9 @@ type Instruction =
         | 5598us ->
             OpUMul32x16INTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
         | 5632us ->
-            OpDecorateString(stream.ReadUInt32(), stream.ReadEnum())
+            OpDecorateString(stream.ReadUInt32(), match stream.ReadUInt32() with | 0u -> Decoration.RelaxedPrecision | 1u -> Decoration.SpecId(stream.ReadUInt32()) | 2u -> Decoration.Block | 3u -> Decoration.BufferBlock | 4u -> Decoration.RowMajor | 5u -> Decoration.ColMajor | 6u -> Decoration.ArrayStride(stream.ReadUInt32()) | 7u -> Decoration.MatrixStride(stream.ReadUInt32()) | 8u -> Decoration.GLSLShared | 9u -> Decoration.GLSLPacked | 10u -> Decoration.CPacked | 11u -> Decoration.BuiltIn(stream.ReadEnum()) | 13u -> Decoration.NoPerspective | 14u -> Decoration.Flat | 15u -> Decoration.Patch | 16u -> Decoration.Centroid | 17u -> Decoration.Sample | 18u -> Decoration.Invariant | 19u -> Decoration.Restrict | 20u -> Decoration.Aliased | 21u -> Decoration.Volatile | 22u -> Decoration.Constant | 23u -> Decoration.Coherent | 24u -> Decoration.NonWritable | 25u -> Decoration.NonReadable | 26u -> Decoration.Uniform | 27u -> Decoration.UniformId(stream.ReadUInt32()) | 28u -> Decoration.SaturatedConversion | 29u -> Decoration.Stream(stream.ReadUInt32()) | 30u -> Decoration.Location(stream.ReadUInt32()) | 31u -> Decoration.Component(stream.ReadUInt32()) | 32u -> Decoration.Index(stream.ReadUInt32()) | 33u -> Decoration.Binding(stream.ReadUInt32()) | 34u -> Decoration.DescriptorSet(stream.ReadUInt32()) | 35u -> Decoration.Offset(stream.ReadUInt32()) | 36u -> Decoration.XfbBuffer(stream.ReadUInt32()) | 37u -> Decoration.XfbStride(stream.ReadUInt32()) | 38u -> Decoration.FuncParamAttr(stream.ReadEnum()) | 39u -> Decoration.FPRoundingMode(stream.ReadEnum()) | 40u -> Decoration.FPFastMathMode(stream.ReadEnum()) | 41u -> Decoration.LinkageAttributes(stream.ReadString(), stream.ReadEnum()) | 42u -> Decoration.NoContraction | 43u -> Decoration.InputAttachmentIndex(stream.ReadUInt32()) | 44u -> Decoration.Alignment(stream.ReadUInt32()) | 45u -> Decoration.MaxByteOffset(stream.ReadUInt32()) | 46u -> Decoration.AlignmentId(stream.ReadUInt32()) | 47u -> Decoration.MaxByteOffsetId(stream.ReadUInt32()) | 4469u -> Decoration.NoSignedWrap | 4470u -> Decoration.NoUnsignedWrap | 4999u -> Decoration.ExplicitInterpAMD | 5248u -> Decoration.OverrideCoverageNV | 5250u -> Decoration.PassthroughNV | 5252u -> Decoration.ViewportRelativeNV | 5256u -> Decoration.SecondaryViewportRelativeNV(stream.ReadUInt32()) | 5271u -> Decoration.PerPrimitiveNV | 5272u -> Decoration.PerViewNV | 5273u -> Decoration.PerTaskNV | 5285u -> Decoration.PerVertexNV | 5300u -> Decoration.NonUniform | 5355u -> Decoration.RestrictPointer | 5356u -> Decoration.AliasedPointer | 5634u -> Decoration.CounterBuffer(stream.ReadUInt32()) | 5635u -> Decoration.UserSemantic(stream.ReadString()) | 5636u -> Decoration.UserTypeGOOGLE(stream.ReadString()) | _ -> failwith "invalid" )
         | 5633us ->
-            OpMemberDecorateString(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadEnum())
+            OpMemberDecorateString(stream.ReadUInt32(), stream.ReadUInt32(), match stream.ReadUInt32() with | 0u -> Decoration.RelaxedPrecision | 1u -> Decoration.SpecId(stream.ReadUInt32()) | 2u -> Decoration.Block | 3u -> Decoration.BufferBlock | 4u -> Decoration.RowMajor | 5u -> Decoration.ColMajor | 6u -> Decoration.ArrayStride(stream.ReadUInt32()) | 7u -> Decoration.MatrixStride(stream.ReadUInt32()) | 8u -> Decoration.GLSLShared | 9u -> Decoration.GLSLPacked | 10u -> Decoration.CPacked | 11u -> Decoration.BuiltIn(stream.ReadEnum()) | 13u -> Decoration.NoPerspective | 14u -> Decoration.Flat | 15u -> Decoration.Patch | 16u -> Decoration.Centroid | 17u -> Decoration.Sample | 18u -> Decoration.Invariant | 19u -> Decoration.Restrict | 20u -> Decoration.Aliased | 21u -> Decoration.Volatile | 22u -> Decoration.Constant | 23u -> Decoration.Coherent | 24u -> Decoration.NonWritable | 25u -> Decoration.NonReadable | 26u -> Decoration.Uniform | 27u -> Decoration.UniformId(stream.ReadUInt32()) | 28u -> Decoration.SaturatedConversion | 29u -> Decoration.Stream(stream.ReadUInt32()) | 30u -> Decoration.Location(stream.ReadUInt32()) | 31u -> Decoration.Component(stream.ReadUInt32()) | 32u -> Decoration.Index(stream.ReadUInt32()) | 33u -> Decoration.Binding(stream.ReadUInt32()) | 34u -> Decoration.DescriptorSet(stream.ReadUInt32()) | 35u -> Decoration.Offset(stream.ReadUInt32()) | 36u -> Decoration.XfbBuffer(stream.ReadUInt32()) | 37u -> Decoration.XfbStride(stream.ReadUInt32()) | 38u -> Decoration.FuncParamAttr(stream.ReadEnum()) | 39u -> Decoration.FPRoundingMode(stream.ReadEnum()) | 40u -> Decoration.FPFastMathMode(stream.ReadEnum()) | 41u -> Decoration.LinkageAttributes(stream.ReadString(), stream.ReadEnum()) | 42u -> Decoration.NoContraction | 43u -> Decoration.InputAttachmentIndex(stream.ReadUInt32()) | 44u -> Decoration.Alignment(stream.ReadUInt32()) | 45u -> Decoration.MaxByteOffset(stream.ReadUInt32()) | 46u -> Decoration.AlignmentId(stream.ReadUInt32()) | 47u -> Decoration.MaxByteOffsetId(stream.ReadUInt32()) | 4469u -> Decoration.NoSignedWrap | 4470u -> Decoration.NoUnsignedWrap | 4999u -> Decoration.ExplicitInterpAMD | 5248u -> Decoration.OverrideCoverageNV | 5250u -> Decoration.PassthroughNV | 5252u -> Decoration.ViewportRelativeNV | 5256u -> Decoration.SecondaryViewportRelativeNV(stream.ReadUInt32()) | 5271u -> Decoration.PerPrimitiveNV | 5272u -> Decoration.PerViewNV | 5273u -> Decoration.PerTaskNV | 5285u -> Decoration.PerVertexNV | 5300u -> Decoration.NonUniform | 5355u -> Decoration.RestrictPointer | 5356u -> Decoration.AliasedPointer | 5634u -> Decoration.CounterBuffer(stream.ReadUInt32()) | 5635u -> Decoration.UserSemantic(stream.ReadString()) | 5636u -> Decoration.UserTypeGOOGLE(stream.ReadString()) | _ -> failwith "invalid" )
         | 5699us ->
             OpVmeImageINTEL(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
         | 5700us ->
