@@ -202,8 +202,8 @@ and CheckExprs (env: env) exprs =
 
 let rec CheckTopLevelExpr env expr =
     match expr with
-    | Let(var, SpecificCall <@ NewDecorate<_> @> (None, [tyArg], args), body) ->
-        let env, spvExpr1 = CheckNewDecorate env var var.Name tyArg args var.IsMutable
+    | Let(var, SpecificCall <@ NewDecorate<_> @> (None, [_], args), body) ->
+        let env, spvExpr1 = CheckNewDecorate env var args
         let env, spvExpr2 = CheckTopLevelExpr env body
         env, SpirvTopLevelSequential(spvExpr1, spvExpr2)
                 
@@ -219,8 +219,7 @@ let rec CheckTopLevelExpr env expr =
     | _ ->
         failwithf "Top-level expression not supported: %A" expr
 
-and CheckNewDecorate env var name tyArg args isMutable =
-    let spvTy = mkSpirvType tyArg
+and CheckNewDecorate env var args =
 
     let rec flattenList x acc =
         match x with
@@ -254,6 +253,7 @@ and CheckNewDecorate env var name tyArg args isMutable =
         let decorations = flatArgs |> List.map checkDecoration
         let storageClass = checkStorageClass storageClassArg
         let env, spvVar = mkSpirvVarOfVar env decorations storageClass var
+        let env, spvVar = addSpirvDeclVar env spvVar
         env, SpirvDeclVar spvVar |> SpirvTopLevelDecl
     | _ ->
         failwith "Invalid new decorate."

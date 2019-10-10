@@ -13,4 +13,5 @@ open FSharp.Spirv
 [<Literal>]
 let private ErrorMessage = "Do not call outside the code quotation."
 
+[<RequiresExplicitTypeArguments>]
 let NewDecorate<'T> (_decorations: Decoration list) (_storageClass: StorageClass) : 'T = failwith ErrorMessage

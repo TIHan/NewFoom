@@ -67,34 +67,34 @@ let main argv =
     instance.CopyToMemory(ReadOnlySpan positions, positionsMemory)
     let vertex =
         <@
-            //let positions =
-            //    [|
-            //        Vector2 (0.f, -0.5f)
-            //        Vector2 (0.5f, 1.0f)
-            //        Vector2 (-0.5f, 0.5f)
-            //    |]
-
             let colors =
                 [|
                     Vector3 (1.f, 0.f, 0.f)
                     Vector3 (0.f, 1.f, 0.f)
                     Vector3 (0.f, 0.f, 1.f)
                 |]
+       
+            let gl_VertexIndex = NewDecorate<int> [Decoration.BuiltIn BuiltIn.VertexIndex] StorageClass.Input
+            let position = NewDecorate<Vector2> [Decoration.Location 0u] StorageClass.Input
+            let mutable gl_Position  = NewDecorate<Vector4> [Decoration.BuiltIn BuiltIn.Position] StorageClass.Output
+            let mutable fragColor = NewDecorate<Vector3> [Decoration.Location 0u] StorageClass.Output
 
-            
-
-            fun (gl_VertexIndex: int) (position: Vector2) ->              
-                {| 
-                    gl_Position = Vector4(position, 0.f, 1.f)
-                    fragColor = colors.[gl_VertexIndex]
-                |}
+            fun () ->
+                gl_Position <- Vector4(position, 0.f, 1.f)
+                fragColor <- colors.[gl_VertexIndex]
         @>
     let spvVertexInfo = SpirvGenInfo.Create(AddressingModel.Logical, MemoryModel.GLSL450, ExecutionModel.Vertex, [Capability.Shader], ["GLSL.std.450"])
     let spvVertex =
         Checker.Check vertex
         |> SpirvGen.GenModule spvVertexInfo
 
-    let fragment = <@ fun fragColor -> {| outColor = Vector4(fragColor, 1.f) |} @>
+    let fragment =
+        <@ 
+            let fragColor = NewDecorate<Vector3> [Decoration.Location 0u] StorageClass.Input
+            let mutable outColor = NewDecorate<Vector4> [Decoration.Location 0u] StorageClass.Output
+
+            fun () -> outColor <- Vector4(fragColor, 1.f)
+        @>
     let spvFragmentInfo = SpirvGenInfo.Create(AddressingModel.Logical, MemoryModel.GLSL450, ExecutionModel.Fragment, [Capability.Shader], ["GLSL.std.450"], ExecutionMode.OriginUpperLeft)
     let spvFragment = 
         Checker.Check fragment

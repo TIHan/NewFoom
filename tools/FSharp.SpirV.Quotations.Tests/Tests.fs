@@ -12,7 +12,7 @@ let ``Compiler Vertex`` () =
         <@
             let positions =
                 [|
-                    Vector2 (1.f, -0.5f)
+                    Vector2 (0.f, -0.5f)
                     Vector2 (0.5f, 0.5f)
                     Vector2 (-0.5f, 0.5f)
                 |]
@@ -24,9 +24,9 @@ let ``Compiler Vertex`` () =
                     Vector3 (0.f, 0.f, 1.f)
                 |]
        
-            let gl_VertexIndex = Intrinsics.NewDecorate<int> [Decoration.BuiltIn BuiltIn.VertexIndex] StorageClass.Input
-            let mutable gl_Position  = Intrinsics.NewDecorate<Vector4> [Decoration.BuiltIn BuiltIn.Position] StorageClass.Input
-            let mutable fragColor = Intrinsics.NewDecorate<Vector3> [Decoration.Location 0u] StorageClass.Output
+            let gl_VertexIndex = NewDecorate<int> [Decoration.BuiltIn BuiltIn.VertexIndex] StorageClass.Input
+            let mutable gl_Position  = NewDecorate<Vector4> [Decoration.BuiltIn BuiltIn.Position] StorageClass.Input
+            let mutable fragColor = NewDecorate<Vector3> [Decoration.Location 0u] StorageClass.Output
 
             fun () ->
                 gl_Position <- Vector4(positions.[gl_VertexIndex], 0.f, 1.f)
@@ -42,8 +42,10 @@ let ``Compiler Vertex`` () =
 let ``Compiler Fragment`` () =
     let fragment = 
         <@ 
-        fun (fragColor: Vector3) ->
-            {| outColor = Vector4(fragColor, 1.f) |}
+            let fragColor = NewDecorate<Vector3> [Decoration.Location 0u] StorageClass.Input
+            let mutable outColor = NewDecorate<Vector4> [Decoration.Location 0u] StorageClass.Output
+
+            fun () -> outColor <- Vector4(fragColor, 1.f)
         @>
 
     let info = SpirvGenInfo.Create(AddressingModel.Logical, MemoryModel.GLSL450, ExecutionModel.Fragment, [Capability.Shader], ["GLSL.std.450"], ExecutionMode.OriginUpperLeft)
