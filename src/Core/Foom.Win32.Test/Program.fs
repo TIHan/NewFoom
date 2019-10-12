@@ -83,7 +83,7 @@ let main argv =
                 gl_Position <- Vector4(position, 0.f, 1.f)
                 fragColor <- colors.[gl_VertexIndex]
         @>
-    let spvVertexInfo = SpirvGenInfo.Create(AddressingModel.Logical, MemoryModel.GLSL450, ExecutionModel.Vertex, [Capability.Shader], ["GLSL.std.450"])
+    let spvVertexInfo = SpirvGenInfo.Create(AddressingModel.Logical, MemoryModel.GLSL450, ExecutionModel.Vertex, [Capability.Shader], [])
     let spvVertex =
         Checker.Check vertex
         |> SpirvGen.GenModule spvVertexInfo
