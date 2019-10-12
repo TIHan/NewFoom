@@ -736,12 +736,11 @@ let getSuitableMemoryTypeIndex physicalDevice typeFilter properties =
                 yield uint32 i |]
     |> Array.head
 
-let allocateMemory physicalDevice device (memRequirements: VkMemoryRequirements) =
+let allocateMemory physicalDevice device (memRequirements: VkMemoryRequirements) properties =
     let memTypeIndex = 
         getSuitableMemoryTypeIndex 
             physicalDevice memRequirements.memoryTypeBits 
-            (VkMemoryPropertyFlags.VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT ||| 
-             VkMemoryPropertyFlags.VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)
+            properties
 
     let allocInfo =
         VkMemoryAllocateInfo (
@@ -1041,9 +1040,9 @@ type private DrawRecording =
         instanceCount: uint32
     }
 
-let mkMemory physicalDevice device buffer =
+let mkMemory physicalDevice device buffer properties =
     let memRequirements = getMemoryRequirements device buffer
-    let memory = allocateMemory physicalDevice device memRequirements
+    let memory = allocateMemory physicalDevice device memRequirements properties
     vkBindBufferMemory(device, buffer, memory, 0UL) |> checkResult
     memory
 
@@ -1054,7 +1053,7 @@ type VulkanBuffer =
         | Local of stagingBuffer: VkBuffer * localBuffer: VkBuffer
 
     static member Create<'T when 'T : unmanaged> (device, count, usage) =
-        if usage &&& VkBufferUsageFlags.VK_BUFFER_USAGE_TRANSFER_DST_BIT = VkBufferUsageFlags.VK_BUFFER_USAGE_VERTEX_BUFFER_BIT then
+        if usage &&& VkBufferUsageFlags.VK_BUFFER_USAGE_TRANSFER_DST_BIT = VkBufferUsageFlags.VK_BUFFER_USAGE_TRANSFER_DST_BIT then
             let stagingBuffer = mkBuffer<'T> device count VkBufferUsageFlags.VK_BUFFER_USAGE_TRANSFER_SRC_BIT
             let localBuffer = mkBuffer<'T> device count usage
             Local(stagingBuffer, localBuffer)
@@ -1068,11 +1067,14 @@ type VulkanMemory =
         | Local of stagingMemory: VkDeviceMemory * localMemory: VkDeviceMemory
 
     static member Allocate (physicalDevice, device, buffer) =
+        let sharedProperties = 
+         VkMemoryPropertyFlags.VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT ||| 
+         VkMemoryPropertyFlags.VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
         match buffer with
         | VulkanBuffer.Shared buffer ->
-            Shared(mkMemory physicalDevice device buffer)
+            Shared(mkMemory physicalDevice device buffer sharedProperties)
         | VulkanBuffer.Local (stagingBuffer, localBuffer) ->
-            Local(mkMemory physicalDevice device stagingBuffer, mkMemory physicalDevice device localBuffer)
+            Local(mkMemory physicalDevice device stagingBuffer sharedProperties, mkMemory physicalDevice device localBuffer VkMemoryPropertyFlags.VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
 
 [<Sealed>]
 type private SwapChain (physicalDevice, device, surface, indices, commandPool) =
