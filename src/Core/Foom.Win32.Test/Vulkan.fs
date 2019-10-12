@@ -182,11 +182,12 @@ type private QueueFamilyIndices =
     {
         graphicsFamily: uint32 option
         presentFamily: uint32 option
+        computeFamily: uint32 option
+        transferFamily: uint32 option
     }
 
     member this.IsComplete = this.graphicsFamily.IsSome && this.presentFamily.IsSome
 
-// TODO: Look into transfer queues
 let private getPhysicalDeviceQueueFamilies physicalDevice surface =
     let queueFamilyCount = 0u
 
@@ -212,10 +213,14 @@ let private getPhysicalDeviceQueueFamilies physicalDevice surface =
 
                 let i = uint32 i
                 { indices with graphicsFamily = Some (uint32 i) }
+            elif x.queueFlags &&& VkQueueFlags.VK_QUEUE_COMPUTE_BIT = VkQueueFlags.VK_QUEUE_COMPUTE_BIT then
+                { indices with computeFamily = Some (uint32 i) }
+            elif x.queueFlags &&& VkQueueFlags.VK_QUEUE_TRANSFER_BIT = VkQueueFlags.VK_QUEUE_TRANSFER_BIT then
+                { indices with transferFamily = Some (uint32 i) }
             else
                 indices
         else
-            indices) { graphicsFamily = None; presentFamily = None }
+            indices) { graphicsFamily = None; presentFamily = None; computeFamily = None; transferFamily = None }
 
 let private mkDeviceQueueCreateInfo queueFamilyIndex pQueuePriorities =
     VkDeviceQueueCreateInfo (
@@ -719,6 +724,20 @@ let mkBuffer<'T when 'T : unmanaged> device count usage =
     let vertexBuffer = VkBuffer ()
     vkCreateBuffer(device, &&bufferInfo, vkNullPtr, &&vertexBuffer) |> checkResult
     vertexBuffer
+
+let copyBuffer device commandPool srcBuffer dstBuffer size =
+    let allocInfo =
+        VkCommandBufferAllocateInfo (
+            sType = VkStructureType.VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+            level = VkCommandBufferLevel.VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+            commandPool = commandPool,
+            commandBufferCount = 1u
+        )
+
+    let commandBuffer = VkCommandBuffer()
+    vkAllocateCommandBuffers(device, &&allocInfo, &&commandBuffer) |> checkResult
+    
+    // TODO: finish this.
 
 let getMemoryRequirements device buffer =
     let memRequirements = VkMemoryRequirements ()
