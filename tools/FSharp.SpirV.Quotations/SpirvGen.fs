@@ -105,17 +105,27 @@ let isCompositeType ty =
     | SpirvTypeVector4 -> true
     | _ -> isAggregateType ty
 
+let getTypeVectorInfo cenv ty =
+    let resultType = getTypeByTypeInstruction cenv ty
+    match getTypeInstruction cenv resultType with
+    | OpTypeVector(_, componentType, componentCount) ->
+        (componentType, componentCount)
+    | _ ->
+        failwith "Invalid vector type."
+
+let addCompositeExtractInstruction cenv componentTypeId compositeId indices  =
+    let resultId = nextResultId cenv
+    addInstructions cenv [OpCompositeExtract(componentTypeId, resultId, compositeId, indices)]
+    resultId
+
+let addCompositeExtractInstructions cenv ty composite =
+    let componentType, componentCount = getTypeVectorInfo cenv ty
+    [ for i = 0 to int componentCount - 1 do
+        yield addCompositeExtractInstruction cenv componentType composite [uint32 i] ]
+
 let tryAddCompositeExtractInstructions cenv ty composite =
     if isCompositeType ty then
-        let resultType = getTypeByTypeInstruction cenv ty
-        match getTypeInstruction cenv resultType with
-        | OpTypeVector(_, componentType, componentCount) ->
-            [ for i = 0 to int componentCount - 1 do
-                let resultId = nextResultId cenv
-                addInstructions cenv [OpCompositeExtract(componentType, resultId, composite, [uint32 i])]
-                yield resultId ]
-        | _ ->
-            failwith "Unexpected instruction"
+        addCompositeExtractInstructions cenv ty composite
     else
         []
 
@@ -424,6 +434,27 @@ let rec GenExpr cenv (env: env) expr =
             addInstructions cenv [OpMatrixTimesMatrix(retTy, resultId, arg1, arg2)]
             resultId
 
+    | SpirvIntrinsicFieldGet fieldGet ->
+        let getComponent receiver fieldTy n =
+            let receiverId = GenExpr cenv env receiver
+            let fieldTyId = emitType cenv fieldTy
+            addCompositeExtractInstruction cenv fieldTyId receiverId [n]
+            
+        match fieldGet with
+        | Vector2_Get_X(receiver, fieldTy) 
+        | Vector3_Get_X(receiver, fieldTy)
+        | Vector4_Get_X(receiver, fieldTy) ->
+            getComponent receiver fieldTy 0u
+        | Vector2_Get_Y(receiver, fieldTy) 
+        | Vector3_Get_Y(receiver, fieldTy)
+        | Vector4_Get_Y(receiver, fieldTy) ->
+            getComponent receiver fieldTy 1u
+        | Vector3_Get_Z(receiver, fieldTy)
+        | Vector4_Get_Z(receiver, fieldTy) ->
+            getComponent receiver fieldTy 2u
+        | Vector4_Get_W(receiver, fieldTy) ->
+            getComponent receiver fieldTy 3u
+
 and GenVector cenv env retTy args =
     let constituents =
         args
@@ -538,6 +569,8 @@ let GenModule (info: SpirvGenInfo) expr =
                     output <- output + 1u
 
             | OpVariable (_, _, StorageClass.Private, _) -> ()
+
+            | OpVariable (_, _, StorageClass.Uniform, _) -> ()
 
             | _ ->
                 failwithf "Invalid instruction or global variable not supported: %A" instr

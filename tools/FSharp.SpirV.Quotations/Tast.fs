@@ -90,7 +90,8 @@ type SpirvExpr =
     | SpirvArrayIndexerGet of receiver: SpirvExpr * arg: SpirvExpr
     | SpirvVar of SpirvVar
     | SpirvVarSet of SpirvVar * SpirvExpr
-    | SpirvIntrinsicCall of SpirvIntrinsicCall 
+    | SpirvIntrinsicCall of SpirvIntrinsicCall
+    | SpirvIntrinsicFieldGet of SpirvIntrinsicFieldGet
 
     member x.Type =
         let rec getType expr =
@@ -125,6 +126,8 @@ type SpirvExpr =
                 SpirvTypeVoid
             | SpirvIntrinsicCall call ->
                 call.ReturnType
+            | SpirvIntrinsicFieldGet fieldGet ->
+                fieldGet.Type
         getType x
 
 and SpirvIntrinsicCall =
@@ -140,6 +143,33 @@ and SpirvIntrinsicCall =
         match x with
         | Transform__Vector4_Matrix4x4__Vector4 (arg1, arg2)
         | Multiply__Matrix4x4_Matrix4x4__Matrix4x4 (arg1, arg2) -> [arg1;arg2]
+
+and SpirvIntrinsicFieldGet =
+    | Vector2_Get_X of receiver: SpirvExpr * typ: SpirvType
+    | Vector2_Get_Y of receiver: SpirvExpr * typ: SpirvType
+
+    | Vector3_Get_X of receiver: SpirvExpr * typ: SpirvType
+    | Vector3_Get_Y of receiver: SpirvExpr * typ: SpirvType
+    | Vector3_Get_Z of receiver: SpirvExpr * typ: SpirvType
+
+    | Vector4_Get_X of receiver: SpirvExpr * typ: SpirvType
+    | Vector4_Get_Y of receiver: SpirvExpr * typ: SpirvType
+    | Vector4_Get_Z of receiver: SpirvExpr * typ: SpirvType
+    | Vector4_Get_W of receiver: SpirvExpr * typ: SpirvType
+
+    member x.Type =
+        match x with
+        | Vector2_Get_X(typ=typ)
+        | Vector2_Get_Y(typ=typ)
+
+        | Vector3_Get_X(typ=typ)
+        | Vector3_Get_Y(typ=typ)
+        | Vector3_Get_Z(typ=typ)
+
+        | Vector4_Get_X(typ=typ)
+        | Vector4_Get_Y(typ=typ)
+        | Vector4_Get_Z(typ=typ)
+        | Vector4_Get_W(typ=typ) -> typ
 
 type SpirvDecl =
     | SpirvDeclConst of SpirvVar * SpirvConst

@@ -74,10 +74,10 @@ let main argv =
                     Vector3 (0.f, 0.f, 1.f)
                 |]
        
-            let gl_VertexIndex = NewDecorate<int> [Decoration.BuiltIn BuiltIn.VertexIndex] StorageClass.Input
-            let position = NewDecorate<Vector2> [Decoration.Location 0u] StorageClass.Input
-            let mutable gl_Position  = NewDecorate<Vector4> [Decoration.BuiltIn BuiltIn.Position] StorageClass.Output
-            let mutable fragColor = NewDecorate<Vector3> [Decoration.Location 0u] StorageClass.Output
+            let gl_VertexIndex = Variable<int> [Decoration.BuiltIn BuiltIn.VertexIndex] StorageClass.Input
+            let position = Variable<Vector2> [Decoration.Location 0u] StorageClass.Input
+            let mutable gl_Position  = Variable<Vector4> [Decoration.BuiltIn BuiltIn.Position] StorageClass.Output
+            let mutable fragColor = Variable<Vector3> [Decoration.Location 0u] StorageClass.Output
 
             fun () ->
                 gl_Position <- Vector4(position, 0.f, 1.f)
@@ -90,8 +90,8 @@ let main argv =
 
     let fragment =
         <@ 
-            let fragColor = NewDecorate<Vector3> [Decoration.Location 0u] StorageClass.Input
-            let mutable outColor = NewDecorate<Vector4> [Decoration.Location 0u] StorageClass.Output
+            let fragColor = Variable<Vector3> [Decoration.Location 0u] StorageClass.Input
+            let mutable outColor = Variable<Vector4> [Decoration.Location 0u] StorageClass.Output
 
             fun () -> outColor <- Vector4(fragColor, 1.f)
         @>

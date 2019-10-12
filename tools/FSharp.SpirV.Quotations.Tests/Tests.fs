@@ -24,9 +24,9 @@ let ``Compiler Vertex`` () =
                     Vector3 (0.f, 0.f, 1.f)
                 |]
        
-            let gl_VertexIndex = NewDecorate<int> [Decoration.BuiltIn BuiltIn.VertexIndex] StorageClass.Input
-            let mutable gl_Position  = NewDecorate<Vector4> [Decoration.BuiltIn BuiltIn.Position] StorageClass.Output
-            let mutable fragColor = NewDecorate<Vector3> [Decoration.Location 0u] StorageClass.Output
+            let gl_VertexIndex = Variable<int> [Decoration.BuiltIn BuiltIn.VertexIndex] StorageClass.Input
+            let mutable gl_Position  = Variable<Vector4> [Decoration.BuiltIn BuiltIn.Position] StorageClass.Output
+            let mutable fragColor = Variable<Vector3> [Decoration.Location 0u] StorageClass.Output
 
             fun () ->
                 gl_Position <- Vector4(positions.[gl_VertexIndex], 0.f, 1.f)
@@ -42,8 +42,8 @@ let ``Compiler Vertex`` () =
 let ``Compiler Fragment`` () =
     let fragment = 
         <@ 
-            let fragColor = NewDecorate<Vector3> [Decoration.Location 0u] StorageClass.Input
-            let mutable outColor = NewDecorate<Vector4> [Decoration.Location 0u] StorageClass.Output
+            let fragColor = Variable<Vector3> [Decoration.Location 0u] StorageClass.Input
+            let mutable outColor = Variable<Vector4> [Decoration.Location 0u] StorageClass.Output
 
             fun () -> outColor <- Vector4(fragColor, 1.f)
         @>
@@ -57,29 +57,16 @@ let ``Compiler Fragment`` () =
 let ``Compiler Vertex - 2`` () =
     let vertex =
         <@
-            let positions =
-                [|
-                    Vector2 (1.f, -0.5f)
-                    Vector2 (0.5f, 0.5f)
-                    Vector2 (-0.5f, 0.5f)
-                |]
-            let colors =
-                [|
-                    Vector3 (1.f, 0.f, 0.f)
-                    Vector3 (0.f, 1.f, 0.f)
-                    Vector3 (0.f, 0.f, 1.f)
-                |]
+            let uni_projection = Variable<Matrix4x4> [Decoration.Uniform] StorageClass.Uniform
+            let uni_view = Variable<Matrix4x4> [Decoration.Uniform] StorageClass.Uniform
 
-            let uni_projection = NewDecorate<Matrix4x4> [Decoration.Uniform] StorageClass.Uniform
-            let uni_view = NewDecorate<Matrix4x4> [Decoration.Uniform] StorageClass.Uniform
+            let position = Variable<Vector3> [Decoration.Location 0u] StorageClass.Input
+            let in_uv = Variable<Vector2> [Decoration.Location 1u] StorageClass.Input
+            let in_color = Variable<Vector4> [Decoration.Location 2u] StorageClass.Input
 
-            let position = NewDecorate<Vector3> [Decoration.Location 0u] StorageClass.Input
-            let in_uv = NewDecorate<Vector2> [Decoration.Location 1u] StorageClass.Input
-            let in_color = NewDecorate<Vector4> [Decoration.Location 2u] StorageClass.Input
-
-            let mutable gl_Position = NewDecorate<Vector3> [Decoration.BuiltIn BuiltIn.Position] StorageClass.Output
-            let mutable uv = NewDecorate<Vector2> [Decoration.Location 0u] StorageClass.Output
-            let mutable color = NewDecorate<Vector4> [Decoration.Location 1u] StorageClass.Output
+            let mutable gl_Position = Variable<Vector3> [Decoration.BuiltIn BuiltIn.Position] StorageClass.Output
+            let mutable uv = Variable<Vector2> [Decoration.Location 0u] StorageClass.Output
+            let mutable color = Variable<Vector4> [Decoration.Location 1u] StorageClass.Output
 
             fun () ->
                 let snapToPixel = Vector4.Transform(Vector4(position, 1.f), uni_view * uni_projection)

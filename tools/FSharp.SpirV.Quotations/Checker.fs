@@ -171,6 +171,9 @@ let rec CheckExpr env isReturnable expr =
         let env, spvBody = CheckExpr env true body
         env, SpirvLet (spvVar, spvRhs, spvBody)
 
+    | FieldGet(Some receiver, fieldInfo) ->
+        let env, spvFieldGet = CheckIntrinsicField env receiver fieldInfo
+        env, SpirvIntrinsicFieldGet spvFieldGet
     | _ ->
         failwithf "Expression not supported: %A" expr
 
@@ -193,6 +196,30 @@ and CheckIntrinsicCall env checkedArgs expr =
     | _ ->
         failwithf "Call not supported: %A" expr
 
+and CheckIntrinsicField env receiver fieldInfo =
+    let env, spvReceiver = CheckExpr env false receiver
+    match fieldInfo.Name with
+    | "X" when receiver.Type = typeof<Vector2> ->
+        env, Vector2_Get_X(spvReceiver, SpirvTypeSingle)
+    | "Y" when receiver.Type = typeof<Vector2> ->
+        env, Vector2_Get_Y(spvReceiver, SpirvTypeSingle)
+    | "X" when receiver.Type = typeof<Vector3> ->
+        env, Vector3_Get_X(spvReceiver, SpirvTypeSingle)
+    | "Y" when receiver.Type = typeof<Vector3> ->
+        env, Vector3_Get_Y(spvReceiver, SpirvTypeSingle)
+    | "Z" when receiver.Type = typeof<Vector3> ->
+        env, Vector3_Get_Z(spvReceiver, SpirvTypeSingle)
+    | "X" when receiver.Type = typeof<Vector4> ->
+        env, Vector4_Get_X(spvReceiver, SpirvTypeSingle)
+    | "Y" when receiver.Type = typeof<Vector4> ->
+        env, Vector4_Get_Y(spvReceiver, SpirvTypeSingle)
+    | "Z" when receiver.Type = typeof<Vector4> ->
+        env, Vector4_Get_Z(spvReceiver, SpirvTypeSingle)
+    | "W" when receiver.Type = typeof<Vector4> ->
+        env, Vector4_Get_W(spvReceiver, SpirvTypeSingle)
+    | x ->
+        failwithf "Invalid field: %A" x
+
 and CheckExprs (env: env) exprs =
     ((env, []), exprs)
     ||> List.fold (fun (env, spvExprs) expr ->
@@ -202,8 +229,8 @@ and CheckExprs (env: env) exprs =
 
 let rec CheckTopLevelExpr env expr =
     match expr with
-    | Let(var, SpecificCall <@ NewDecorate<_> @> (None, [_], args), body) ->
-        let env, spvExpr1 = CheckNewDecorate env var args
+    | Let(var, SpecificCall <@ Variable<_> @> (None, [_], args), body) ->
+        let env, spvExpr1 = CheckVariable env var args
         let env, spvExpr2 = CheckTopLevelExpr env body
         env, SpirvTopLevelSequential(spvExpr1, spvExpr2)
                 
@@ -219,7 +246,7 @@ let rec CheckTopLevelExpr env expr =
     | _ ->
         failwithf "Top-level expression not supported: %A" expr
 
-and CheckNewDecorate env var args =
+and CheckVariable env var args =
 
     let rec flattenList x acc =
         match x with
