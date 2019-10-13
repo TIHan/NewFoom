@@ -27,6 +27,22 @@ type env =
             decls = []
         }
 
+let getFields (ty: Type) =
+    ty.GetFields(Reflection.BindingFlags.NonPublic ||| Reflection.BindingFlags.Public ||| Reflection.BindingFlags.Instance)
+
+let tryGetIndexForBackingField (propInfo: PropertyInfo) =
+    propInfo.CustomAttributes 
+    |> Seq.tryPick (fun x -> 
+        if x.AttributeType = typeof<CompilationMappingAttribute> && x.ConstructorArguments.Count = 2 &&
+           x.ConstructorArguments.[0].ArgumentType = typeof<SourceConstructFlags> && x.ConstructorArguments.[1].ArgumentType = typeof<int> then
+            if x.ConstructorArguments.[0].Value :?> SourceConstructFlags = SourceConstructFlags.Field then
+                let index = x.ConstructorArguments.[1].Value :?> int
+                Some index
+            else
+                None
+        else
+            None)
+
 let rec mkSpirvType ty =
     match ty with
     | _ when ty = typeof<int> -> 
@@ -45,6 +61,14 @@ let rec mkSpirvType ty =
         SpirvTypeMatrix4x4
     | _ when ty.IsArray ->
         failwith "Array can not be made here as it needs a specific length."
+    | _ when ty.IsValueType ->
+        let fields =
+            getFields ty
+            |> Seq.map (fun field ->
+                SpirvField (field.Name, mkSpirvType field.FieldType, [])
+            )
+            |> List.ofSeq
+        SpirvTypeStruct (ty.FullName, fields)
     | _ -> 
         failwithf "Unable to make SpirvType from Type: %A" ty
 
@@ -126,6 +150,9 @@ let CheckValue expr =
 let rec CheckExpr env isReturnable expr =
     match expr with
 
+    | Value (_, ty) when ty = typeof<unit> ->
+        env, SpirvNop
+
     | Value _ ->
         env, CheckValue expr
 
@@ -174,8 +201,25 @@ let rec CheckExpr env isReturnable expr =
     | FieldGet(Some receiver, fieldInfo) ->
         let env, spvFieldGet = CheckIntrinsicField env receiver fieldInfo
         env, SpirvIntrinsicFieldGet spvFieldGet
+    | PropertyGet(Some receiver, propInfo, args) ->
+        CheckPropertyGet env receiver propInfo args
     | _ ->
         failwithf "Expression not supported: %A" expr
+
+and CheckPropertyGet env receiver propInfo args =
+    let receiverTy = receiver.Type
+    if FSharpType.IsRecord receiverTy then
+        if not receiverTy.IsValueType then
+            failwithf "Receiver '%s' is not a value type." receiverTy.FullName
+
+        match tryGetIndexForBackingField propInfo with
+        | Some index ->
+            let env, spvReceiver = CheckExpr env false receiver
+            env, SpirvFieldGet (spvReceiver, index, mkSpirvType propInfo.PropertyType)
+        | _ ->
+            failwithf "Property get '%s' does not use backing field." propInfo.Name
+    else
+        failwithf "Property get '%s' not supported." propInfo.Name
 
 /// Check for intrinsic calls.
 and CheckIntrinsicCall env checkedArgs expr =

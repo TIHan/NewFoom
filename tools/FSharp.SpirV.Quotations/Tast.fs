@@ -92,6 +92,7 @@ type SpirvExpr =
     | SpirvVarSet of SpirvVar * SpirvExpr
     | SpirvIntrinsicCall of SpirvIntrinsicCall
     | SpirvIntrinsicFieldGet of SpirvIntrinsicFieldGet
+    | SpirvFieldGet of receiver: SpirvExpr * index: int * typ: SpirvType
 
     member x.Type =
         let rec getType expr =
@@ -128,6 +129,8 @@ type SpirvExpr =
                 call.ReturnType
             | SpirvIntrinsicFieldGet fieldGet ->
                 fieldGet.Type
+            | SpirvFieldGet (_, _, typ) ->
+                typ
         getType x
 
 and SpirvIntrinsicCall =

@@ -19,7 +19,7 @@ type cenv =
         typeFunctions: Dictionary<IdRef list, IdResult * Instruction list>
         typePointers: Dictionary<IdResult, Instruction>
         typePointersByResultType: Dictionary<StorageClass * IdRef, IdResult>
-        globalVariables: Dictionary<IdResult, Instruction * BuiltIn option>
+        globalVariables: Dictionary<IdResult, Instruction * Decoration list>
         globalVariablesByVar: Dictionary<SpirvVar, IdResult>
         constants: Dictionary<LiteralContextDependentNumber, IdResult * Instruction>
         constantComposites: Dictionary<IdRef list, IdResult * Instruction>
@@ -222,7 +222,7 @@ let rec emitType cenv ty =
     | SpirvTypeVector4 -> emitTypeVector4 cenv
     | SpirvTypeMatrix4x4 -> emitTypeMatrix4x4 cenv
     | SpirvTypeArray (elementTy, length) -> emitArrayType cenv elementTy length
-    | SpirvTypeStruct _ -> failwithf "Struct type not supported yet: %A" ty
+    | SpirvTypeStruct (_, fields) -> emitStructType cenv ty fields
 
 and emitArrayType cenv elementTy length =
     match elementTy with
@@ -231,6 +231,14 @@ and emitArrayType cenv elementTy length =
         let elementTyId = emitType cenv elementTy
         let lengthId = uint32 length |> emitConstantUInt32 cenv
         emitTypeAux cenv (SpirvTypeArray (elementTy, length)) (fun arrayTyId -> OpTypeArray(arrayTyId, elementTyId, lengthId))
+
+and emitStructType cenv ty fields =
+    let idRefs =
+        fields
+        |> List.map (fun (SpirvField(_, fieldTy, _)) -> 
+            emitType cenv fieldTy
+        )
+    emitTypeAux cenv ty (fun resultId -> OpTypeStruct(resultId, idRefs))
 
 let emitTypeFunction cenv paramTys retTy =
     let paramTyIds =
@@ -300,16 +308,9 @@ let GenGlobalVar cenv spvVar =
     | _ ->
         let storageClass = spvVar.StorageClass
 
-        let builtInOpt =
-            match spvVar.Decorations with
-            | [(Decoration.BuiltIn builtInValue)] -> 
-                Some builtInValue
-            | _ -> 
-                None
-
         let resultType = emitType cenv spvVar.Type |> emitPointer cenv storageClass
         let resultId = nextResultId cenv
-        cenv.globalVariables.[resultId] <- (OpVariable(resultType, resultId, storageClass, None), builtInOpt)
+        cenv.globalVariables.[resultId] <- (OpVariable(resultType, resultId, storageClass, None), spvVar.Decorations)
         cenv.globalVariablesByVar.[spvVar] <- resultId
         cenv.debugNames.Add(string resultId + "_" + spvVar.Name, resultId)
         resultId
@@ -455,6 +456,11 @@ let rec GenExpr cenv (env: env) expr =
         | Vector4_Get_W(receiver, fieldTy) ->
             getComponent receiver fieldTy 3u
 
+    | SpirvFieldGet (receiver, _index, ty) ->
+        let _receiverId = GenExpr cenv env receiver
+        let _tyId = emitType cenv ty
+        failwith "SpirvFieldGet not supported yet."
+
 and GenVector cenv env retTy args =
     let constituents =
         args
@@ -541,37 +547,22 @@ let GenModule (info: SpirvGenInfo) expr =
     GenMain cenv { entryPoint = entryPoint } expr |> ignore
 
     let annotations =
-        let mutable input = 0u
-        let mutable output = 0u
         let annoations = ResizeArray ()
         cenv.globalVariables
         |> Seq.iter (fun pair ->
             let resultId = pair.Key
-            let instr, builtInOpt = pair.Value
-
-            match builtInOpt with
-            | Some builtIn ->
-                OpDecorate (resultId, Decoration.BuiltIn builtIn)
-                |> annoations.Add
-            | _ -> ()
+            let instr, decorations = pair.Value
 
             match instr with
-            | OpVariable (_, _, StorageClass.Input, _) ->
-                if builtInOpt.IsNone then
-                    OpDecorate (resultId, Decoration.Location input)
+            | OpVariable (_, _, StorageClass.Input, _)
+            | OpVariable (_, _, StorageClass.Output, _) 
+            | OpVariable (_, _, StorageClass.Private, _)
+            | OpVariable (_, _, StorageClass.Uniform, _) ->
+                decorations
+                |> List.iter (fun decoration ->
+                    OpDecorate(resultId, decoration)
                     |> annoations.Add
-                    input <- input + 1u
-
-            | OpVariable (_, _, StorageClass.Output, _) ->
-                if builtInOpt.IsNone then
-                    OpDecorate (resultId, Decoration.Location output)
-                    |> annoations.Add
-                    output <- output + 1u
-
-            | OpVariable (_, _, StorageClass.Private, _) -> ()
-
-            | OpVariable (_, _, StorageClass.Uniform, _) -> ()
-
+                )
             | _ ->
                 failwithf "Invalid instruction or global variable not supported: %A" instr
         )
