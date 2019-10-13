@@ -8,6 +8,8 @@
     <Compile Include="Helpers.fs" />
     <Compile Include="Device.fsi" />
     <Compile Include="Device.fs" />
+    <Compile Include="SwapChain.fsi" />
+    <Compile Include="SwapChain.fs" />
     <Compile Include="Graphics.fsi" />
     <Compile Include="Graphics.fs" />
   </ItemGroup>

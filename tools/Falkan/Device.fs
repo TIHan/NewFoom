@@ -271,6 +271,18 @@ let mkLogicalDevice physicalDevice indices validationLayers deviceExtensions =
     vkCreateDevice(physicalDevice, &&createInfo, vkNullPtr, &&device) |> checkResult
     device
 
+let mkCommandPool device queueFamilyIndex =
+    let poolCreateInfo =
+        VkCommandPoolCreateInfo (
+            sType = VkStructureType.VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
+            queueFamilyIndex = queueFamilyIndex,
+            flags = VkCommandPoolCreateFlags () // Optional
+        )
+
+    let commandPool = VkCommandPool ()
+    vkCreateCommandPool(device, &&poolCreateInfo, vkNullPtr, &&commandPool) |> checkResult
+    commandPool
+
 [<Sealed>]
 type FalDevice private 
     (
@@ -288,6 +300,22 @@ type FalDevice private
     let checkDispose () =
         if isDisposed <> 0 then
             failwith "FalDevice is disposed."
+
+    member _.PhysicalDevice =
+        checkDispose ()
+        physicalDevice
+
+    member _.Device =
+        checkDispose ()
+        device
+
+    member _.Indices =
+        checkDispose ()
+        indices
+
+    member _.Surface =
+        checkDispose ()
+        surfaceOpt
 
     interface IDisposable with
         member x.Dispose () =
