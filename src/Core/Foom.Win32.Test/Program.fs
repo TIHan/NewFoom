@@ -88,8 +88,8 @@ let main argv =
             let mutable fragColor = Variable<Vector3> [Decoration.Location 0u] StorageClass.Output
 
             fun () ->
-              //  let x = position
-                gl_Position <- Vector4(position, 0.f, 1.f)
+                let x = position
+                gl_Position <- Vector4(x, 0.f, 1.f)
                 fragColor <- vertex.color
         @>
     let spvVertexInfo = SpirvGenInfo.Create(AddressingModel.Logical, MemoryModel.GLSL450, ExecutionModel.Vertex, [Capability.Shader], [])

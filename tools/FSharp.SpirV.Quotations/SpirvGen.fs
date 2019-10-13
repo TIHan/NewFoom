@@ -378,7 +378,11 @@ let rec GenExpr cenv (env: env) expr =
     | SpirvLet(spvVar, rhs, body) ->
         let spvVarId = GenLocalVar cenv spvVar
         let rhsId = GenExpr cenv env rhs
-        addInstructions cenv [OpStore(spvVarId, rhsId, None)]
+        let object =
+            match tryEmitLoad cenv rhsId with
+            | Some object -> object
+            | _ -> rhsId
+        addInstructions cenv [OpStore(spvVarId, object, None)]
         GenExpr cenv env body
 
     | SpirvSequential(expr1, expr2) ->
