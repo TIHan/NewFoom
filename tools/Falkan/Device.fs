@@ -1,4 +1,5 @@
-﻿module Falkan.Device
+﻿[<AutoOpen>]
+module Falkan.Device
 
 open System
 open System.Threading
@@ -321,7 +322,7 @@ type FalDevice private
 
         let instance = mkInstance appName engineName validationLayers
         // must create surface right after instance - influences device calls
-        let surfaceOpt = match mkSurface with Some mkSurface -> mkSurface instance | _ -> None
+        let surfaceOpt = match mkSurface with Some mkSurface -> Some(mkSurface instance) | _ -> None
         let debugMessenger = mkDebugMessenger instance debugCallback
         let physicalDevice = getSuitablePhysicalDevice instance
         let indices = getPhysicalDeviceQueueFamilies physicalDevice surfaceOpt

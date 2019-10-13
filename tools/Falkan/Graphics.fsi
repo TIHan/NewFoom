@@ -1,0 +1,2 @@
+﻿[<AutoOpen>]
+module Falkan.Graphics
