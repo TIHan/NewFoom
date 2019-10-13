@@ -613,12 +613,13 @@ let mkDynamicStateCreateInfo pDynamicStates dynamicStateCount =
         pDynamicStates = pDynamicStates
     )
 
-let mkPipelineLayout device =
+let mkPipelineLayout device (layouts: VkDescriptorSetLayout []) =
+    use pSetLayouts = fixed layouts
     let createInfo =
         VkPipelineLayoutCreateInfo (
             sType = VkStructureType.VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-            setLayoutCount = 0u, // Optional
-            pSetLayouts = vkNullPtr, // Optional
+            setLayoutCount = uint32 layouts.Length,
+            pSetLayouts = pSetLayouts,
             pushConstantRangeCount = 0u, // Optional
             pPushConstantRanges = vkNullPtr // Optional
         )
@@ -711,6 +712,27 @@ let mkVertexAttributeDescriptions<'T when 'T : unmanaged> locationOffset binding
             failwithf "Type not supported: %A" ty
     
     mk typeof<'T> locationOffset 0u
+
+let mkDescriptorSetLayout device stageFlags =
+    let binding =
+        VkDescriptorSetLayoutBinding (
+            binding = 0u,
+            descriptorType = VkDescriptorType.VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            descriptorCount = 1u,
+            stageFlags = stageFlags,
+            pImmutableSamplers = vkNullPtr // Optional, for image samplers
+        )
+
+    let layoutInfo =
+        VkDescriptorSetLayoutCreateInfo (
+            sType = VkStructureType.VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+            bindingCount = 1u,
+            pBindings = &&binding
+        )
+
+    let descriptorSetLayout = VkDescriptorSetLayout ()
+    vkCreateDescriptorSetLayout(device, &&layoutInfo, vkNullPtr, &&descriptorSetLayout) |> checkResult
+    descriptorSetLayout
 
 let mkBuffer<'T when 'T : unmanaged> device count usage =
     let bufferInfo =
@@ -1131,7 +1153,7 @@ type VulkanBuffer =
             Shared(buffer, memory)
 
 [<Sealed>]
-type private SwapChain (physicalDevice, device, surface, indices, commandPool) =
+type private SwapChain (physicalDevice, device, surface, indices, commandPool, layout) =
 
     let gate = obj ()
     let mutable state = None
@@ -1227,7 +1249,7 @@ type private SwapChain (physicalDevice, device, surface, indices, commandPool) =
             let swapChain, surfaceFormat, extent, images = mkSwapChain physicalDevice device surface indices
             let imageViews = mkImageViews device surfaceFormat.format images
             let renderPass = mkRenderPass device surfaceFormat.format
-            let pipelineLayout = mkPipelineLayout device
+            let pipelineLayout = mkPipelineLayout device [|layout|]
             let framebuffers = mkFramebuffers device renderPass extent imageViews
             let commandBuffers = mkCommandBuffers device commandPool framebuffers
 
@@ -1338,7 +1360,9 @@ type VulkanInstance
      surface: VkSurfaceKHR,
      commandPool: VkCommandPool,
      sync: Sync,
-     graphicsQueue: VkQueue, presentQueue: VkQueue, transferQueue: VkQueue, handles: GCHandle[],
+     graphicsQueue: VkQueue, presentQueue: VkQueue, transferQueue: VkQueue,
+     layout: VkDescriptorSetLayout,
+     handles: GCHandle[],
      swapChain: SwapChain) =
 
     let gate = obj ()
@@ -1437,6 +1461,8 @@ type VulkanInstance
 
                 (swapChain :> IDisposable).Dispose ()
 
+                vkDestroyDescriptorSetLayout(device, layout, vkNullPtr)
+
                 lock gate (fun () ->
                     buffers
                     |> Seq.iter destroyBuffer
@@ -1499,8 +1525,9 @@ type VulkanInstance
         let presentQueue = mkQueue device indices.presentFamily.Value
         // TODO: We should try to use a transfer queue instead of a graphics queue. This works for now.
        // let transferQueue = mkQueue device indices.transferFamily.Value
+        let layout = mkDescriptorSetLayout device VkShaderStageFlags.VK_SHADER_STAGE_VERTEX_BIT
 
-        let swapChain = new SwapChain(physicalDevice, device, surface, indices, commandPool)
+        let swapChain = new SwapChain(physicalDevice, device, surface, indices, commandPool, layout)
         swapChain.Recreate ()
 
         new VulkanInstance (
@@ -1511,7 +1538,9 @@ type VulkanInstance
             surface,
             commandPool,
             sync,
-            graphicsQueue, presentQueue, graphicsQueue, [|debugCallbackHandle|],
+            graphicsQueue, presentQueue, graphicsQueue,
+            layout,
+            [|debugCallbackHandle|],
             swapChain
         )
 

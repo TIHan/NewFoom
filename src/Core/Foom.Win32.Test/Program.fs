@@ -87,6 +87,8 @@ let main argv =
             let mutable gl_Position  = Variable<Vector4> [Decoration.BuiltIn BuiltIn.Position] StorageClass.Output
             let mutable fragColor = Variable<Vector3> [Decoration.Location 0u] StorageClass.Output
 
+            let mvp = Variable<ModelViewProjection> [Decoration.Uniform] StorageClass.Uniform
+
             fun () ->
                 gl_Position <- Vector4(vertex.position, 0.f, 1.f)
                 fragColor <- vertex.color
