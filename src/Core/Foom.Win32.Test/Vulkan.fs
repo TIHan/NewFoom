@@ -703,7 +703,7 @@ let mkVertexAttributeDescriptions<'T when 'T : unmanaged> locationOffset binding
         | _ when ty.IsValueType ->
             ty.GetFields(Reflection.BindingFlags.NonPublic ||| Reflection.BindingFlags.Public ||| Reflection.BindingFlags.Instance)
             |> Array.mapi (fun i field ->
-                mk field.FieldType (locationOffset + uint32 i) (Marshal.OffsetOf<'T> field.Name |> uint32)
+                mk field.FieldType (location + uint32 i) (Marshal.OffsetOf<'T> field.Name |> uint32)
             )
             |> Array.concat
     

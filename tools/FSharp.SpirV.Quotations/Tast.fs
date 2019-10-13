@@ -33,7 +33,11 @@ type SpirvType =
         | SpirvTypeArray (elementTy, length) -> elementTy.Name + "[" + string length + "]"
         | SpirvTypeStruct (name=name) -> name
 
-and SpirvField = SpirvField of name: string * fieldType: SpirvType * Decorations
+and SpirvField = SpirvField of name: string * fieldType: SpirvType * Decorations with
+
+    member x.Type =
+        match x with
+        | SpirvField (fieldType=typ) -> typ
 
 type SpirvVar = 
     {
@@ -92,7 +96,7 @@ type SpirvExpr =
     | SpirvVarSet of SpirvVar * SpirvExpr
     | SpirvIntrinsicCall of SpirvIntrinsicCall
     | SpirvIntrinsicFieldGet of SpirvIntrinsicFieldGet
-    | SpirvFieldGet of receiver: SpirvExpr * index: int * typ: SpirvType
+    | SpirvFieldGet of receiver: SpirvExpr * index: int
 
     member x.Type =
         let rec getType expr =
@@ -129,8 +133,10 @@ type SpirvExpr =
                 call.ReturnType
             | SpirvIntrinsicFieldGet fieldGet ->
                 fieldGet.Type
-            | SpirvFieldGet (_, _, typ) ->
-                typ
+            | SpirvFieldGet (receiver, index) ->
+                match receiver.Type with
+                | SpirvTypeStruct (_, fields) -> fields.[index].Type
+                | _ -> failwith "Invalid field get."
         getType x
 
 and SpirvIntrinsicCall =

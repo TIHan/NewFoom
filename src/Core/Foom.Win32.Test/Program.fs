@@ -72,8 +72,8 @@ let main argv =
     let vertices =
         [|
             { position = Vector2 (0.f, -0.5f); color = Vector3 (1.f, 0.f, 0.f) }
-            { position = Vector2 (0.5f, 0.5f); color = Vector3 (0.f, 1.f, 0.f) }
-            { position = Vector2 (-0.5f, 0.5f); color = Vector3 (0.f, 0.f, 1.f) }
+            { position = Vector2 (0.5f, 0.5f); color = Vector3 (1.f, 0.f, 0.f) }
+            { position = Vector2 (-0.5f, 0.5f); color = Vector3 (1.f, 0.f, 0.f) }
         |]
     let verticesBindings = [|mkVertexInputBinding<Vertex> 0u VkVertexInputRate.VK_VERTEX_INPUT_RATE_VERTEX|]
     let verticesAttributes = mkVertexAttributeDescriptions<Vertex> 0u 0u
@@ -81,15 +81,16 @@ let main argv =
     instance.FillBuffer(ReadOnlySpan vertices, verticesBuffer)
     let vertex =
         <@
-        //    let vertex = Variable<Vertex> [Decoration.Location 0u] StorageClass.Input
+            let vertex = Variable<Vertex> [Decoration.Location 0u] StorageClass.Input
             let position = Variable<Vector2> [Decoration.Location 0u] StorageClass.Input
             let color = Variable<Vector3> [Decoration.Location 1u] StorageClass.Input
             let mutable gl_Position  = Variable<Vector4> [Decoration.BuiltIn BuiltIn.Position] StorageClass.Output
             let mutable fragColor = Variable<Vector3> [Decoration.Location 0u] StorageClass.Output
 
             fun () ->
+              //  let x = position
                 gl_Position <- Vector4(position, 0.f, 1.f)
-                fragColor <- color
+                fragColor <- vertex.color
         @>
     let spvVertexInfo = SpirvGenInfo.Create(AddressingModel.Logical, MemoryModel.GLSL450, ExecutionModel.Vertex, [Capability.Shader], [])
     let spvVertex =

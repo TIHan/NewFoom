@@ -315,7 +315,7 @@ let GenGlobalVar cenv spvVar =
         cenv.debugNames.Add(string resultId + "_" + spvVar.Name, resultId)
         resultId
 
-let getAccessChainResultType cenv pointer =
+let getAccessChainResultType cenv pointer index =
     let resultType = 
         match cenv.localVariables.TryGetValue pointer with
         | true, OpVariable(resultType, _, _, _) -> resultType
@@ -327,8 +327,9 @@ let getAccessChainResultType cenv pointer =
     match cenv.typePointers.TryGetValue resultType with
     | true, OpTypePointer(_, storageClass, baseType) -> 
         match cenv.types.TryGetValue baseType with
-        | true, OpTypeArray (_, elementType, _) -> elementType
-        | _ -> baseType
+        | true, OpTypeArray (_, elementType, _) when index = 0 -> elementType
+        | true, OpTypeStruct (_, fields) when index >= 0 && index < fields.Length -> fields.[index]
+        | _ -> failwith "Unable to get backing type for pointer."
         |> emitPointer cenv storageClass
     | _ ->
         failwith "Invalid pointer type."
@@ -357,6 +358,9 @@ let tryEmitLoad cenv pointer =
         Some resultId
     | _ ->
         None
+
+//let tryEmitCopyObject cenv pointer  =
+    
 
 let emitLoad cenv pointer =
     match tryEmitLoad cenv pointer with
@@ -390,7 +394,7 @@ let rec GenExpr cenv (env: env) expr =
         let receiverId = GenExpr cenv env receiver
         let argId = GenExpr cenv env arg
 
-        let resultType = getAccessChainResultType cenv receiverId
+        let resultType = getAccessChainResultType cenv receiverId 0
         let index = emitLoad cenv argId
         let resultId = nextResultId cenv
         let op = OpAccessChain(resultType, resultId, receiverId, [index])
@@ -456,10 +460,16 @@ let rec GenExpr cenv (env: env) expr =
         | Vector4_Get_W(receiver, fieldTy) ->
             getComponent receiver fieldTy 3u
 
-    | SpirvFieldGet (receiver, _index, ty) ->
-        let _receiverId = GenExpr cenv env receiver
-        let _tyId = emitType cenv ty
-        failwith "SpirvFieldGet not supported yet."
+    | SpirvFieldGet (receiver, index) ->
+        let receiverId = GenExpr cenv env receiver
+
+        let resultType = getAccessChainResultType cenv receiverId index
+        let indexId = GenExpr cenv env (SpirvConst (SpirvConstInt(index, [])))
+        let resultId = nextResultId cenv
+        let op = OpAccessChain(resultType, resultId, receiverId, [indexId])
+        addInstructions cenv [op]
+        cenv.locals.[resultId] <- op
+        resultId
 
 and GenVector cenv env retTy args =
     let constituents =

@@ -215,7 +215,7 @@ and CheckPropertyGet env receiver propInfo args =
         match tryGetIndexForBackingField propInfo with
         | Some index ->
             let env, spvReceiver = CheckExpr env false receiver
-            env, SpirvFieldGet (spvReceiver, index, mkSpirvType propInfo.PropertyType)
+            env, SpirvFieldGet (spvReceiver, index)
         | _ ->
             failwithf "Property get '%s' does not use backing field." propInfo.Name
     else
