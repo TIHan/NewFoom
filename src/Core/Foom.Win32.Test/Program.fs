@@ -63,8 +63,7 @@ let main argv =
     let positionsBindings = [|mkVertexInputBinding<Vector2> 0u VkVertexInputRate.VK_VERTEX_INPUT_RATE_VERTEX|]
     let positionsAttributes = mkVertexAttributeDescriptions<Vector2> 0u 0u
     let positionsBuffer = instance.CreateVertexBuffer<Vector2> positions.Length
-    let positionsMemory = instance.AllocateMemory positionsBuffer
-    instance.CopyToMemory(ReadOnlySpan positions, positionsMemory)
+    instance.FillBuffer(ReadOnlySpan positions, positionsBuffer)
     let vertex =
         <@
             let colors =

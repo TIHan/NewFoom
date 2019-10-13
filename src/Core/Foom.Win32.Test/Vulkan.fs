@@ -725,20 +725,6 @@ let mkBuffer<'T when 'T : unmanaged> device count usage =
     vkCreateBuffer(device, &&bufferInfo, vkNullPtr, &&vertexBuffer) |> checkResult
     vertexBuffer
 
-let copyBuffer device commandPool srcBuffer dstBuffer size =
-    let allocInfo =
-        VkCommandBufferAllocateInfo (
-            sType = VkStructureType.VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-            level = VkCommandBufferLevel.VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-            commandPool = commandPool,
-            commandBufferCount = 1u
-        )
-
-    let commandBuffer = VkCommandBuffer()
-    vkAllocateCommandBuffers(device, &&allocInfo, &&commandBuffer) |> checkResult
-    
-    // TODO: finish this.
-
 let getMemoryRequirements device buffer =
     let memRequirements = VkMemoryRequirements ()
     vkGetBufferMemoryRequirements(device, buffer, &&memRequirements)
@@ -882,6 +868,27 @@ let private mkCommandBuffers device commandPool (framebuffers: VkFramebuffer [])
 
 module Cmd =
 
+    let recordCopyBuffer (commandBuffer: VkCommandBuffer) src dst size =
+        let beginInfo =
+            VkCommandBufferBeginInfo (
+                sType = VkStructureType.VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+                flags = VkCommandBufferUsageFlags.VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+                pInheritanceInfo = vkNullPtr
+            )
+
+        vkBeginCommandBuffer(commandBuffer, &&beginInfo) |> checkResult
+
+        let copyRegion =
+            VkBufferCopy (
+                srcOffset = 0UL, // Optional
+                dstOffset = 0UL, // Optional
+                size = size
+            )
+
+        vkCmdCopyBuffer(commandBuffer, src, dst, 1u, &&copyRegion)
+
+        vkEndCommandBuffer(commandBuffer) |> checkResult
+
     let recordDraw extent (framebuffers: VkFramebuffer []) (commandBuffers: VkCommandBuffer []) renderPass graphicsPipeline (vertexBuffers: VkBuffer []) vertexCount instanceCount =
         (framebuffers, commandBuffers)
         ||> Array.iter2 (fun framebuffer commandBuffer ->
@@ -939,6 +946,43 @@ module Cmd =
 
             vkEndCommandBuffer(commandBuffer) |> checkResult
         )
+
+let copyBuffer device commandPool srcBuffer dstBuffer size queue =
+    let allocInfo =
+        VkCommandBufferAllocateInfo (
+            sType = VkStructureType.VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+            level = VkCommandBufferLevel.VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+            commandPool = commandPool,
+            commandBufferCount = 1u
+        )
+
+    let commandBuffer = VkCommandBuffer()
+    vkAllocateCommandBuffers(device, &&allocInfo, &&commandBuffer) |> checkResult
+    
+    Cmd.recordCopyBuffer commandBuffer srcBuffer dstBuffer size
+
+    let submitInfo =
+        VkSubmitInfo (
+            sType = VkStructureType.VK_STRUCTURE_TYPE_SUBMIT_INFO,
+            commandBufferCount = 1u,
+            pCommandBuffers = &&commandBuffer
+        )
+
+    vkQueueSubmit(queue, 1u, &&submitInfo, VK_NULL_HANDLE) |> checkResult
+    vkQueueWaitIdle(queue) |> checkResult
+
+    vkFreeCommandBuffers(device, commandPool, 1u, &&commandBuffer)
+
+let fillBuffer<'T when 'T : unmanaged> device memory (data: ReadOnlySpan<'T>) =
+    let deviceData = nativeint 0
+    let pDeviceData = &&deviceData |> NativePtr.toNativeInt
+
+    vkMapMemory(device, memory, 0UL, uint64 (sizeof<'T> * data.Length), VkMemoryMapFlags.MinValue, pDeviceData) |> checkResult
+
+    let deviceDataSpan = Span<'T>(deviceData |> NativePtr.ofNativeInt<'T> |> NativePtr.toVoidPtr, data.Length)
+    data.CopyTo deviceDataSpan
+
+    vkUnmapMemory(device, memory)
 
 type Sync =
     {
@@ -1059,7 +1103,8 @@ type private DrawRecording =
         instanceCount: uint32
     }
 
-let mkMemory physicalDevice device buffer properties =
+// TODO: We should not be allocating memory for every buffer. We need to allocate a chunk and just use a portion of it.
+let bindMemory physicalDevice device buffer properties =
     let memRequirements = getMemoryRequirements device buffer
     let memory = allocateMemory physicalDevice device memRequirements properties
     vkBindBufferMemory(device, buffer, memory, 0UL) |> checkResult
@@ -1068,32 +1113,22 @@ let mkMemory physicalDevice device buffer properties =
 [<RequireQualifiedAccess>]
 type VulkanBuffer =
     private
-        | Shared of buffer: VkBuffer
-        | Local of stagingBuffer: VkBuffer * localBuffer: VkBuffer
+        | Shared of VkBuffer * VkDeviceMemory
+        | Local of VkBuffer * VkDeviceMemory
 
-    static member Create<'T when 'T : unmanaged> (device, count, usage) =
+    static member Create<'T when 'T : unmanaged> (physicalDevice, device, count, usage) =
+        let memProperties = 
+             VkMemoryPropertyFlags.VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT ||| 
+             VkMemoryPropertyFlags.VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+
+        let buffer = mkBuffer<'T> device count usage
         if usage &&& VkBufferUsageFlags.VK_BUFFER_USAGE_TRANSFER_DST_BIT = VkBufferUsageFlags.VK_BUFFER_USAGE_TRANSFER_DST_BIT then
-            let stagingBuffer = mkBuffer<'T> device count VkBufferUsageFlags.VK_BUFFER_USAGE_TRANSFER_SRC_BIT
-            let localBuffer = mkBuffer<'T> device count usage
-            Local(stagingBuffer, localBuffer)
+            // High-performance GPU memory
+            let memory = bindMemory physicalDevice device buffer VkMemoryPropertyFlags.VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+            Local(buffer, memory)
         else
-            Shared(mkBuffer<'T> device count usage)
-
-[<RequireQualifiedAccess>]
-type VulkanMemory =
-    private
-        | Shared of memory: VkDeviceMemory
-        | Local of stagingMemory: VkDeviceMemory * localMemory: VkDeviceMemory
-
-    static member Allocate (physicalDevice, device, buffer) =
-        let sharedProperties = 
-         VkMemoryPropertyFlags.VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT ||| 
-         VkMemoryPropertyFlags.VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
-        match buffer with
-        | VulkanBuffer.Shared buffer ->
-            Shared(mkMemory physicalDevice device buffer sharedProperties)
-        | VulkanBuffer.Local (stagingBuffer, localBuffer) ->
-            Local(mkMemory physicalDevice device stagingBuffer sharedProperties, mkMemory physicalDevice device localBuffer VkMemoryPropertyFlags.VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
+            let memory = bindMemory physicalDevice device buffer memProperties
+            Shared(buffer, memory)
 
 [<Sealed>]
 type private SwapChain (physicalDevice, device, surface, indices, commandPool) =
@@ -1251,7 +1286,7 @@ type private SwapChain (physicalDevice, device, surface, indices, commandPool) =
             let recording =
                 {
                     pipelineIndex = pipelineIndex
-                    vertexBuffers = vertexBuffers |> Array.map (function VulkanBuffer.Shared buffer -> buffer | VulkanBuffer.Local (_, buffer) -> buffer)
+                    vertexBuffers = vertexBuffers |> Array.map (function VulkanBuffer.Shared (buffer, _) -> buffer | VulkanBuffer.Local (buffer, _) -> buffer)
                     vertexCount = vertexCount
                     instanceCount = instanceCount
                 }
@@ -1303,34 +1338,23 @@ type VulkanInstance
      surface: VkSurfaceKHR,
      commandPool: VkCommandPool,
      sync: Sync,
-     graphicsQueue: VkQueue, presentQueue: VkQueue, handles: GCHandle[],
+     graphicsQueue: VkQueue, presentQueue: VkQueue, transferQueue: VkQueue, handles: GCHandle[],
      swapChain: SwapChain) =
 
     let gate = obj ()
-    let buffers = Collections.Generic.Dictionary<VulkanBuffer, VulkanMemory voption>()
+    let buffers = Collections.Generic.HashSet<VulkanBuffer> ()
     let mutable isDisposed = 0
 
     let checkDispose () =
         if isDisposed <> 0 then
             failwith "Vulkan instance is disposed."
 
-    let destroyBuffer buffer memoryOpt =
+    let destroyBuffer buffer =
         match buffer with
-        | VulkanBuffer.Shared buffer ->
+        | VulkanBuffer.Shared (buffer, memory)
+        | VulkanBuffer.Local (buffer, memory) ->
             vkDestroyBuffer(device, buffer, vkNullPtr)
-        | VulkanBuffer.Local (stagingBuffer, localBuffer) ->
-            vkDestroyBuffer(device, localBuffer, vkNullPtr)
-            vkDestroyBuffer(device, stagingBuffer, vkNullPtr)
-
-        match memoryOpt with
-        | ValueSome memory -> 
-            match memory with
-            | VulkanMemory.Shared memory ->
-                vkFreeMemory(device, memory, vkNullPtr)
-            | VulkanMemory.Local (stagingMemory, localMemory) ->
-                vkFreeMemory(device, localMemory, vkNullPtr)
-                vkFreeMemory(device, stagingMemory, vkNullPtr)
-        | _ -> ()
+            vkFreeMemory(device, memory, vkNullPtr)
 
     member __.Instance = 
         checkDispose ()
@@ -1364,49 +1388,44 @@ type VulkanInstance
 
         checkDispose ()
 
-        let buffer = VulkanBuffer.Create<'T>(device, count, VkBufferUsageFlags.VK_BUFFER_USAGE_VERTEX_BUFFER_BIT ||| VkBufferUsageFlags.VK_BUFFER_USAGE_TRANSFER_DST_BIT)
-        buffers.[buffer] <- ValueNone
+        let buffer = 
+            VulkanBuffer.Create<'T>(
+                physicalDevice, device, count, 
+                VkBufferUsageFlags.VK_BUFFER_USAGE_VERTEX_BUFFER_BIT ||| VkBufferUsageFlags.VK_BUFFER_USAGE_TRANSFER_DST_BIT)
+        if not (buffers.Add buffer) then
+            failwith "Should not fail."
         buffer
 
-    member _.AllocateMemory buffer =
-        lock gate <| fun _ ->
-
-        match buffers.TryGetValue buffer with
-        | true, ValueNone ->
-            let memory = VulkanMemory.Allocate(physicalDevice, device, buffer)
-            buffers.[buffer] <- ValueSome memory
-            memory
-        | true, _ -> 
-            failwith "Buffer already has memory allocated to it."
-        | _ ->
-            failwith "Buffer does not exist within this vulkan instance."
-
-    member _.CopyToMemory<'T when 'T : unmanaged> (data: ReadOnlySpan<'T>, memory: VulkanMemory) =
+    member _.FillBuffer<'T when 'T : unmanaged> (data: ReadOnlySpan<'T>, buffer: VulkanBuffer) =
         checkDispose ()
 
-        let memory =
-            match memory with
-            | VulkanMemory.Shared memory -> memory
-            | VulkanMemory.Local (memory, _) -> memory
+        match buffer with
+        | VulkanBuffer.Shared (_, memory) ->
+            fillBuffer device memory data
 
-        let deviceData = nativeint 0
-        let pDeviceData = &&deviceData |> NativePtr.toNativeInt
+        | VulkanBuffer.Local (buffer, _) -> 
+            let count = data.Length
+            let stagingBuffer = mkBuffer<'T> device count VkBufferUsageFlags.VK_BUFFER_USAGE_TRANSFER_SRC_BIT
+            let stagingProperties = 
+                    VkMemoryPropertyFlags.VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT ||| 
+                    VkMemoryPropertyFlags.VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+            let stagingMemory = bindMemory physicalDevice device stagingBuffer stagingProperties
 
-        vkMapMemory(device, memory, 0UL, uint64 (sizeof<'T> * data.Length), VkMemoryMapFlags.MinValue, pDeviceData) |> checkResult
+            fillBuffer device stagingMemory data
 
-        let deviceDataSpan = Span<'T>(deviceData |> NativePtr.ofNativeInt<'T> |> NativePtr.toVoidPtr, data.Length)
-        data.CopyTo deviceDataSpan
+            let size = uint64 (sizeof<'T> * count)
+            copyBuffer device commandPool stagingBuffer buffer size transferQueue
 
-        vkUnmapMemory(device, memory)
+            vkDestroyBuffer(device, stagingBuffer, vkNullPtr)
+            vkFreeMemory(device, stagingMemory, vkNullPtr)
 
     member _.DestroyBuffer buffer =
         lock gate <| fun _ ->
 
         checkDispose ()
-        match buffers.Remove buffer : bool * VulkanMemory voption with
-        | true, memoryOpt -> 
-            destroyBuffer buffer memoryOpt
-        | _ ->
+        if buffers.Remove buffer then
+            destroyBuffer buffer
+        else
             failwith "Buffer is not in the vulkan instance."
 
     interface IDisposable with
@@ -1420,9 +1439,7 @@ type VulkanInstance
 
                 lock gate (fun () ->
                     buffers
-                    |> Seq.iter (fun pair ->
-                        destroyBuffer pair.Key pair.Value
-                    )
+                    |> Seq.iter destroyBuffer
 
                     buffers.Clear()
                 )
@@ -1480,6 +1497,8 @@ type VulkanInstance
         let sync = mkSync device
         let graphicsQueue = mkQueue device indices.graphicsFamily.Value
         let presentQueue = mkQueue device indices.presentFamily.Value
+        // TODO: We should try to use a transfer queue instead of a graphics queue. This works for now.
+       // let transferQueue = mkQueue device indices.transferFamily.Value
 
         let swapChain = new SwapChain(physicalDevice, device, surface, indices, commandPool)
         swapChain.Recreate ()
@@ -1492,7 +1511,7 @@ type VulkanInstance
             surface,
             commandPool,
             sync,
-            graphicsQueue, presentQueue, [|debugCallbackHandle|],
+            graphicsQueue, presentQueue, graphicsQueue, [|debugCallbackHandle|],
             swapChain
         )
 
