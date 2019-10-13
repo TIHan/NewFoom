@@ -21,7 +21,7 @@ type cenv =
         typePointersByResultType: Dictionary<StorageClass * IdRef, IdResult>
         globalVariables: Dictionary<IdResult, Instruction * Decoration list>
         globalVariablesByVar: Dictionary<SpirvVar, IdResult>
-        constants: Dictionary<LiteralContextDependentNumber, IdResult * Instruction>
+        constants: Dictionary<SpirvConst, IdResult * Instruction>
         constantComposites: Dictionary<IdRef list, IdResult * Instruction>
 
         // Functions
@@ -148,6 +148,9 @@ let emitTypeSingle cenv =
 let emitTypeInt cenv =
     emitTypeAux cenv SpirvTypeInt (fun resultId -> OpTypeInt(resultId, 32u, 1u))
 
+let emitTypeUInt32 cenv =
+    emitTypeAux cenv SpirvTypeUInt32 (fun resultId -> OpTypeInt(resultId, 32u, 0u))
+
 let emitPointer cenv storageClass typeId =    
     match cenv.typePointersByResultType.TryGetValue ((storageClass, typeId)) with
     | true, resultId -> resultId
@@ -161,19 +164,26 @@ let emitConstantAux cenv resultType debugName literal =
     match cenv.constants.TryGetValue literal with
     | true, (resultId, _) -> resultId
     | _ ->
+        let valuePtr =
+            match literal with
+            | SpirvConstInt (value, _) -> &&value |> NativePtr.toVoidPtr
+            | SpirvConstSingle (value, _) -> &&value |> NativePtr.toVoidPtr
+            | _ -> failwith "Invalid constant."
+        let value = BitConverter.ToUInt32(ReadOnlySpan(valuePtr, 4))
+
         let resultId = nextResultId cenv
-        cenv.constants.[literal] <- (resultId, OpConstant(resultType, resultId, literal))
+        cenv.constants.[literal] <- (resultId, OpConstant(resultType, resultId, value))
         cenv.debugNames.Add(string resultId + "_const_" + debugName, resultId)
         resultId
 
 let emitConstantInt cenv (n: int) =
-    emitConstantAux cenv (emitTypeInt cenv) "int" (BitConverter.ToUInt32(ReadOnlySpan(&&n |> NativePtr.toVoidPtr, 4)))
+    emitConstantAux cenv (emitTypeInt cenv) "int" (SpirvConstInt(n, []))
 
 let emitConstantUInt32 cenv (n: uint32) =
-    emitConstantAux cenv (emitTypeInt cenv) "uint32" n
+    emitConstantAux cenv (emitTypeInt cenv) "uint32" (SpirvConstUInt32(n, []))
 
 let emitConstantSingle cenv (n: single) =
-    emitConstantAux cenv (emitTypeSingle cenv) "single" (BitConverter.ToUInt32(ReadOnlySpan(&&n |> NativePtr.toVoidPtr, 4)))
+    emitConstantAux cenv (emitTypeSingle cenv) "single" (SpirvConstSingle(n, []))
 
 let emitConstantComposite cenv resultType debugName constituents =
     match cenv.constantComposites.TryGetValue constituents with
@@ -216,6 +226,7 @@ let rec emitType cenv ty =
     match ty with
     | SpirvTypeVoid -> emitTypeVoid cenv
     | SpirvTypeInt -> emitTypeInt cenv
+    | SpirvTypeUInt32 -> emitTypeUInt32 cenv
     | SpirvTypeSingle -> emitTypeSingle cenv
     | SpirvTypeVector2 -> emitTypeVector2 cenv
     | SpirvTypeVector3 -> emitTypeVector3 cenv
@@ -265,6 +276,9 @@ let rec GenConst cenv spvConst =
     match spvConst with
     | SpirvConstInt (n, decorations) ->
         emitConstantInt cenv n
+
+    | SpirvConstUInt32 (n, decorations) ->
+        emitConstantUInt32 cenv n
 
     | SpirvConstSingle (n, docorations) ->
         emitConstantSingle cenv n
@@ -468,12 +482,17 @@ let rec GenExpr cenv (env: env) expr =
         let receiverId = GenExpr cenv env receiver
 
         let resultType = getAccessChainResultType cenv receiverId index
+        let tyId = 
+            match getTypePointerInstruction cenv resultType with
+            | OpTypePointer(_, _, tyId) -> tyId
+            | _ -> failwith "Invalid pointer."
+
         let indexId = GenExpr cenv env (SpirvConst (SpirvConstInt(index, [])))
-        let resultId = nextResultId cenv
-        let op = OpAccessChain(resultType, resultId, receiverId, [indexId])
+        let accessChainPointerId = nextResultId cenv
+        let op = OpAccessChain(resultType, accessChainPointerId, receiverId, [indexId])
         addInstructions cenv [op]
-        cenv.locals.[resultId] <- op
-        resultId
+        cenv.locals.[accessChainPointerId] <- op
+        accessChainPointerId
 
 and GenVector cenv env retTy args =
     let constituents =

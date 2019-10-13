@@ -13,6 +13,7 @@ type Decorations = Decoration list
 type SpirvType =
     | SpirvTypeVoid
     | SpirvTypeInt
+    | SpirvTypeUInt32
     | SpirvTypeSingle
     | SpirvTypeVector2
     | SpirvTypeVector3
@@ -25,6 +26,7 @@ type SpirvType =
         match x with
         | SpirvTypeVoid -> "void"
         | SpirvTypeInt -> "int"
+        | SpirvTypeUInt32 -> "uint32"
         | SpirvTypeSingle -> "single"
         | SpirvTypeVector2 -> "Vector2"
         | SpirvTypeVector3 -> "Vector3"
@@ -62,6 +64,7 @@ let mkSpirvVar (name, ty, decorations, storageClass, isMutable) =
 
 type SpirvConst =
     | SpirvConstInt of int * decorations: Decorations
+    | SpirvConstUInt32 of uint32 * decorations: Decorations
     | SpirvConstSingle of single * decorations: Decorations
     | SpirvConstVector2 of single * single * decorations: Decorations
     | SpirvConstVector3 of single * single * single * decorations: Decorations
@@ -76,6 +79,7 @@ type SpirvConst =
     member x.Decorations =
         match x with
         | SpirvConstInt (decorations=decorations)
+        | SpirvConstUInt32 (decorations=decorations)
         | SpirvConstSingle (decorations=decorations)
         | SpirvConstVector2 (decorations=decorations)
         | SpirvConstVector3 (decorations=decorations)
@@ -106,6 +110,7 @@ type SpirvExpr =
             | SpirvConst spvConst ->
                 match spvConst with
                 | SpirvConstInt _ -> SpirvTypeInt
+                | SpirvConstUInt32 _ -> SpirvTypeUInt32
                 | SpirvConstSingle _ -> SpirvTypeSingle
                 | SpirvConstVector2 _ -> SpirvTypeVector2
                 | SpirvConstVector3 _ -> SpirvTypeVector3
