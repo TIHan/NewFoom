@@ -271,18 +271,6 @@ let mkLogicalDevice physicalDevice indices validationLayers deviceExtensions =
     vkCreateDevice(physicalDevice, &&createInfo, vkNullPtr, &&device) |> checkResult
     device
 
-let mkCommandPool device queueFamilyIndex =
-    let poolCreateInfo =
-        VkCommandPoolCreateInfo (
-            sType = VkStructureType.VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
-            queueFamilyIndex = queueFamilyIndex,
-            flags = VkCommandPoolCreateFlags () // Optional
-        )
-
-    let commandPool = VkCommandPool ()
-    vkCreateCommandPool(device, &&poolCreateInfo, vkNullPtr, &&commandPool) |> checkResult
-    commandPool
-
 [<Sealed>]
 type FalDevice private 
     (
@@ -357,3 +345,17 @@ type FalDevice private
         let device = mkLogicalDevice physicalDevice indices validationLayers deviceExtensions
 
         new FalDevice (instance, surfaceOpt, debugMessenger, physicalDevice, indices, device, [|debugCallbackHandle|])
+
+    static member CreateWin32Surface (hwnd, hinstance, appName, engineName, validationLayers, deviceExtensions) =
+        let mkSurface =
+            fun instance ->
+                let createInfo = 
+                    VkWin32SurfaceCreateInfoKHR (
+                        sType = VkStructureType.VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR,
+                        hwnd = hwnd,
+                        hinstance = hinstance
+                    )
+                let surface = VkSurfaceKHR ()
+                vkCreateWin32SurfaceKHR(instance, &&createInfo, vkNullPtr, &&surface) |> checkResult
+                surface
+        FalDevice.Create (appName, engineName, validationLayers, deviceExtensions, mkSurface = mkSurface)

@@ -1,5 +1,5 @@
 ﻿[<AutoOpen>]
-module internal Falkan.SwapChain
+module Falkan.Graphics
 
 open System
 open FSharp.Vulkan.Interop
@@ -7,7 +7,7 @@ open FSharp.Vulkan.Interop
 type PipelineIndex = int
 
 [<Sealed>]
-type SwapChain =
+type FalGraphics =
     interface IDisposable
 
     member AddShader: vertexBindings: VkVertexInputBindingDescription [] * vertexAttributes: VkVertexInputAttributeDescription [] * ReadOnlySpan<byte> * fragmentBytes: ReadOnlySpan<byte> -> PipelineIndex
@@ -18,4 +18,4 @@ type SwapChain =
 
     member WaitIdle: unit -> unit
 
-    static member Create : VkPhysicalDevice * VkDevice * VkSurfaceKHR * graphicsFamily: uint32 * presentFamily: uint32 * VkCommandPool -> SwapChain
+    static member Create : FalDevice -> FalGraphics

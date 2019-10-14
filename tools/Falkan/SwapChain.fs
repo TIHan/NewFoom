@@ -32,6 +32,8 @@ type DrawRecording =
         instanceCount: uint32
     }
 
+type PipelineIndex = int
+
 let recordDraw extent (framebuffers: VkFramebuffer []) (commandBuffers: VkCommandBuffer []) renderPass graphicsPipeline (vertexBuffers: VkBuffer []) vertexCount instanceCount =
     (framebuffers, commandBuffers)
     ||> Array.iter2 (fun framebuffer commandBuffer ->
@@ -357,7 +359,7 @@ let getSwapExtent (capabilities: VkSurfaceCapabilitiesKHR) =
             height = height
         )
 
-let mkSwapChain physicalDevice device surface indices =
+let mkSwapChain physicalDevice device surface graphicsFamily presentFamily =
     let swapChainSupport = querySwapChainSupport physicalDevice surface
 
     let surfaceFormat = findSwapSurfaceFormat swapChainSupport.formats
@@ -375,8 +377,8 @@ let mkSwapChain physicalDevice device surface indices =
         else
             imageCount
 
-    let queueFamilyIndices = [|indices.graphicsFamily.Value;indices.presentFamily.Value|]
-    let isConcurrent = indices.graphicsFamily.Value <> indices.presentFamily.Value
+    let queueFamilyIndices = [|graphicsFamily;presentFamily|]
+    let isConcurrent = graphicsFamily <> presentFamily
     use pQueueFamilyIndices = fixed queueFamilyIndices
     let createInfo = 
         VkSwapchainCreateInfoKHR (
@@ -539,6 +541,7 @@ let mkFramebuffers device renderPass (extent: VkExtent2D) imageViews =
         vkCreateFramebuffer(device, &&framebufferCreateInfo, vkNullPtr, &&framebuffer) |> checkResult
         framebuffer)
 
+[<NoEquality;NoComparison>]
 type Sync =
     {
         imageAvailableSemaphores: VkSemaphore []
@@ -639,8 +642,29 @@ let drawFrame device swapChain sync (commandBuffers: VkCommandBuffer []) graphic
 
     (currentFrame + 1) % MaxFramesInFlight, res
 
+let mkDescriptorSetLayout device stageFlags =
+    let binding =
+        VkDescriptorSetLayoutBinding (
+            binding = 0u,
+            descriptorType = VkDescriptorType.VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            descriptorCount = 1u,
+            stageFlags = stageFlags,
+            pImmutableSamplers = vkNullPtr // Optional, for image samplers
+        )
+
+    let layoutInfo =
+        VkDescriptorSetLayoutCreateInfo (
+            sType = VkStructureType.VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+            bindingCount = 1u,
+            pBindings = &&binding
+        )
+
+    let descriptorSetLayout = VkDescriptorSetLayout ()
+    vkCreateDescriptorSetLayout(device, &&layoutInfo, vkNullPtr, &&descriptorSetLayout) |> checkResult
+    descriptorSetLayout
+
 [<Sealed>]
-type FalSwapChain private (physicalDevice, device, surface, indices, commandPool, layout) =
+type SwapChain private (physicalDevice, device, surface, sync, graphicsFamily, graphicsQueue, presentFamily, presentQueue, commandPool, layout) =
 
     let gate = obj ()
     let mutable state = None
@@ -717,14 +741,6 @@ type FalSwapChain private (physicalDevice, device, surface, indices, commandPool
             state.extent state.framebuffers state.commandBuffers state.renderPass 
             pipelines.[recording.pipelineIndex] recording.vertexBuffers recording.vertexCount recording.instanceCount
 
-    member _.SwapChain = 
-        check ()
-        state.Value.swapChain
-
-    member _.CommandBuffers =
-        check ()
-        state.Value.commandBuffers
-
     member x.Recreate () =
         if not (Monitor.IsEntered gate) then
             Monitor.Enter gate
@@ -733,7 +749,7 @@ type FalSwapChain private (physicalDevice, device, surface, indices, commandPool
             checkDispose ()
             destroy ()
 
-            let swapChain, surfaceFormat, extent, images = mkSwapChain physicalDevice device surface indices
+            let swapChain, surfaceFormat, extent, images = mkSwapChain physicalDevice device surface graphicsFamily presentFamily
             let imageViews = mkImageViews device surfaceFormat.format images
             let renderPass = mkRenderPass device surfaceFormat.format
             let pipelineLayout = mkPipelineLayout device [|layout|]
@@ -763,7 +779,7 @@ type FalSwapChain private (physicalDevice, device, surface, indices, commandPool
         finally
             Monitor.Exit gate
 
-    member x.AddShader (vertexBindings, vertexAttributes, vertexBytes: ReadOnlySpan<byte>, fragmentBytes: ReadOnlySpan<byte>) =
+    member x.AddShader (vertexBindings, vertexAttributes, vertexBytes: ReadOnlySpan<byte>, fragmentBytes: ReadOnlySpan<byte>) : PipelineIndex =
         if not (Monitor.IsEntered gate) then
             Monitor.Enter gate
 
@@ -796,27 +812,36 @@ type FalSwapChain private (physicalDevice, device, surface, indices, commandPool
                 {
                     pipelineIndex = pipelineIndex
                     vertexBuffers = vertexBuffers
-                    vertexCount = vertexCount
-                    instanceCount = instanceCount
+                    vertexCount = uint32 vertexCount
+                    instanceCount = uint32 instanceCount
                 }
             recordings.[pipelineIndex] <- recording
             record recording
         else
             failwith "Pipeline index is invalid."
 
-    member x.DrawFrame (sync, graphicsQueue, presentQueue) =
+    member x.DrawFrame () =
         lock gate |> fun _ ->
 
         if pipelines.Count > 0 then
             check ()
 
-            let nextFrame, res = drawFrame device x.SwapChain sync x.CommandBuffers graphicsQueue presentQueue currentFrame
+            let state = state.Value
+            let swapchain = state.swapChain
+            let commandBuffers = state.commandBuffers
+            let nextFrame, res = drawFrame device swapchain sync commandBuffers graphicsQueue presentQueue currentFrame
 
             if res = VkResult.VK_ERROR_OUT_OF_DATE_KHR || res = VkResult.VK_SUBOPTIMAL_KHR then
                 x.Recreate ()
             else
                 checkResult res
                 currentFrame <- nextFrame
+
+    member _.WaitIdle () =
+        check ()
+        vkQueueWaitIdle(presentQueue) |> checkResult
+        vkQueueWaitIdle(graphicsQueue) |> checkResult
+        vkDeviceWaitIdle(device) |> checkResult
 
     interface IDisposable with
 
@@ -834,3 +859,33 @@ type FalSwapChain private (physicalDevice, device, surface, indices, commandPool
 
                     destroy ()
                 )
+
+                vkDestroyDescriptorSetLayout(device, layout, vkNullPtr)
+
+                sync.inFlightFences
+                |> Array.rev
+                |> Array.iter (fun f ->
+                    vkDestroyFence(device, f, vkNullPtr)
+                )
+
+                sync.renderFinishedSemaphores
+                |> Array.rev
+                |> Array.iter (fun s ->
+                    vkDestroySemaphore(device, s, vkNullPtr)
+                )
+
+                sync.imageAvailableSemaphores
+                |> Array.rev
+                |> Array.iter (fun s ->
+                    vkDestroySemaphore(device, s, vkNullPtr)
+                )
+
+    static member Create(physicalDevice, device, surface, graphicsFamily, presentFamily, commandPool) =
+        let sync = mkSync device
+        let graphicsQueue = mkQueue device graphicsFamily
+        let presentQueue = mkQueue device presentFamily
+        let layout = mkDescriptorSetLayout device VkShaderStageFlags.VK_SHADER_STAGE_VERTEX_BIT
+
+        let swapChain = new SwapChain(physicalDevice, device, surface, sync, graphicsFamily, graphicsQueue, presentFamily, presentQueue, commandPool, layout)
+        swapChain.Recreate ()
+        swapChain
