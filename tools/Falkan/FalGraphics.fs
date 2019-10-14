@@ -22,7 +22,7 @@ type FalGraphics
      swapChain: SwapChain) =
 
     let gate = obj ()
-    let buffers = Collections.Generic.HashSet<FalBuffer> ()
+    let buffers = Collections.Generic.Dictionary<VkBuffer, FalBuffer> ()
     let mutable isDisposed = 0
 
     let checkDispose () =
@@ -37,9 +37,9 @@ type FalGraphics
         checkDispose ()
         swapChain.AddShader (vertexBindings, vertexAttributes, vertexBytes, fragmentBytes)
 
-    member _.RecordDraw (pipelineIndex, vertexBuffers, vertexCount, instanceCount) =
+    member _.RecordDraw (pipelineIndex, vertexBuffers: FalBuffer [], vertexCount, instanceCount) =
         checkDispose ()
-        swapChain.RecordDraw (pipelineIndex, vertexBuffers, vertexCount, instanceCount)
+        swapChain.RecordDraw (pipelineIndex, vertexBuffers |> Array.map (fun x -> x.Buffer), vertexCount, instanceCount)
 
     member __.DrawFrame () =
         checkDispose ()
@@ -55,21 +55,21 @@ type FalGraphics
 
         checkDispose ()   
 
-        let buffer = 
+        let falBuffer = 
             VertexBuffer<'T>.Create(
                 physicalDevice, device, commandPool, transferQueue, 
                 count, VkBufferUsageFlags.VK_BUFFER_USAGE_VERTEX_BUFFER_BIT ||| VkBufferUsageFlags.VK_BUFFER_USAGE_TRANSFER_DST_BIT)
-        if not (buffers.Add buffer) then
-            failwith "Should not fail."
-        buffer
+        buffers.Add (falBuffer.Buffer, falBuffer)
+        falBuffer
 
-    member _.DestroyBuffer buffer =
+    member _.DestroyBuffer (buffer: FalBuffer) =
         lock gate <| fun _ ->
 
         checkDispose ()
-        if buffers.Remove buffer then
-            destroyBuffer buffer
-        else
+        match buffers.Remove buffer.Buffer : bool * FalBuffer with
+        | true, falBuffer ->
+            destroyBuffer falBuffer
+        | _ ->
             failwith "Buffer is not in the vulkan instance."
 
     interface IDisposable with
@@ -82,7 +82,7 @@ type FalGraphics
                 (swapChain :> IDisposable).Dispose ()
 
                 lock gate (fun () ->
-                    buffers
+                    buffers.Values
                     |> Seq.iter destroyBuffer
 
                     buffers.Clear()

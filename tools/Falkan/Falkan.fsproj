@@ -5,6 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="PublicHelpers.fs" />
     <Compile Include="Helpers.fs" />
     <Compile Include="FalDevice.fsi" />
     <Compile Include="FalDevice.fs" />

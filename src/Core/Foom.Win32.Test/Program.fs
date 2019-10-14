@@ -1,6 +1,6 @@
 ﻿open Foom.Game
 open Foom.Win32
-open Foom.Vulkan
+open Falkan
 open FSharp.Vulkan.Interop
 open FSharp.Window
 open FSharp.Spirv
@@ -9,7 +9,7 @@ open FSharp.Spirv.Quotations
 open System
 open System.Numerics
 
-type EmptyWindowEvents (instance: VulkanInstance) =
+type EmptyWindowEvents (graphics: FalGraphics) =
 
     let gate = obj ()
     let mutable quit = false
@@ -19,7 +19,7 @@ type EmptyWindowEvents (instance: VulkanInstance) =
         member __.OnWindowClosing () =
             lock gate (fun () ->
                 quit <- true
-                instance.WaitIdle ()
+                graphics.WaitIdle ()
             )
 
         member __.OnInputEvents events = 
@@ -32,7 +32,7 @@ type EmptyWindowEvents (instance: VulkanInstance) =
         member __.OnRenderFrame (_, _, _, _) =
             lock gate (fun () ->
                 if not quit then
-                    instance.DrawFrame ()
+                    graphics.DrawFrame ()
             )
 
 [<Struct>]
@@ -63,7 +63,8 @@ let main argv =
     let hwnd = windowState.Hwnd
     let hinstance = windowState.Hinstance
 
-    use instance = VulkanInstance.CreateWin32(hwnd, hinstance, "App", "Engine", ["VK_LAYER_KHRONOS_validation"], [VK_KHR_SWAPCHAIN_EXTENSION_NAME])
+    use device = FalDevice.CreateWin32Surface(hwnd, hinstance, "App", "Engine", ["VK_LAYER_KHRONOS_validation"], [VK_KHR_SWAPCHAIN_EXTENSION_NAME])
+    use instance = FalGraphics.Create device
     let windowEvents = EmptyWindowEvents instance :> IWindowEvents
     windowState.WindowClosing.Add(windowEvents.OnWindowClosing)
 
@@ -78,7 +79,8 @@ let main argv =
     let verticesBindings = [|mkVertexInputBinding<Vertex> 0u VkVertexInputRate.VK_VERTEX_INPUT_RATE_VERTEX|]
     let verticesAttributes = mkVertexAttributeDescriptions<Vertex> 0u 0u
     let verticesBuffer = instance.CreateVertexBuffer<Vertex> vertices.Length
-    instance.FillBuffer(ReadOnlySpan vertices, verticesBuffer)
+    verticesBuffer.Fill(ReadOnlySpan vertices)
+
     let vertex =
         <@
             let vertex = Variable<Vertex> [Decoration.Location 0u] StorageClass.Input

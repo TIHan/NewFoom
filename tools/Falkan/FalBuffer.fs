@@ -177,7 +177,7 @@ type VertexBuffer<'T when 'T : unmanaged> private
         if usage &&& VkBufferUsageFlags.VK_BUFFER_USAGE_TRANSFER_DST_BIT = VkBufferUsageFlags.VK_BUFFER_USAGE_TRANSFER_DST_BIT then
             // High-performance GPU memory
             let memory = bindMemory physicalDevice device buffer VkMemoryPropertyFlags.VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
-            VertexBuffer<'T>(buffer, memory, physicalDevice, device, commandPool, transferQueue, true)
+            VertexBuffer<'T>(buffer, memory, physicalDevice, device, commandPool, transferQueue, false)
         else
             let memory = bindMemory physicalDevice device buffer memProperties
-            VertexBuffer<'T>(buffer, memory, physicalDevice, device, commandPool, transferQueue, false)
+            VertexBuffer<'T>(buffer, memory, physicalDevice, device, commandPool, transferQueue, true)

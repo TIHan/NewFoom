@@ -12,11 +12,11 @@
     <None Include="triangle_vertex.spv">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <Compile Include="Vulkan.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\..\tools\Falkan\Falkan.fsproj" />
     <ProjectReference Include="..\..\..\tools\FSharp.SpirV.Quotations\FSharp.Spirv.Quotations.fsproj" />
     <ProjectReference Include="..\..\..\tools\FSharp.Vulkan\FSharp.Vulkan.fsproj" />
     <ProjectReference Include="..\Foom.Core\Foom.Core.fsproj" />
