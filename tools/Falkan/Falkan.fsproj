@@ -9,8 +9,6 @@
     <Compile Include="Helpers.fs" />
     <Compile Include="FalDevice.fsi" />
     <Compile Include="FalDevice.fs" />
-    <Compile Include="FalBuffer.fsi" />
-    <Compile Include="FalBuffer.fs" />
     <Compile Include="Compute.fsi" />
     <Compile Include="Compute.fs" />
     <Compile Include="SwapChain.fsi" />

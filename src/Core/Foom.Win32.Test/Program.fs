@@ -79,7 +79,7 @@ let main argv =
     let verticesBindings = [|mkVertexInputBinding<Vertex> 0u VkVertexInputRate.VK_VERTEX_INPUT_RATE_VERTEX|]
     let verticesAttributes = mkVertexAttributeDescriptions<Vertex> 0u 0u
     let verticesBuffer = instance.CreateVertexBuffer<Vertex> vertices.Length
-    verticesBuffer.Fill(ReadOnlySpan vertices)
+    instance.FillBuffer(verticesBuffer, ReadOnlySpan vertices)
 
     let vertex =
         <@
@@ -130,7 +130,7 @@ let main argv =
    // let fragmentBytes = System.IO.File.ReadAllBytes("triangle_fragment.spv")
 
     let pipelineIndex = instance.AddShader(verticesBindings, verticesAttributes, ReadOnlySpan vertexBytes, ReadOnlySpan fragmentBytes)
-    instance.RecordDraw(pipelineIndex, [|verticesBuffer|], vertices.Length, 1)
+    instance.RecordDraw(pipelineIndex, [|verticesBuffer.Buffer|], vertices.Length, 1)
 
     window.Start ()
 
