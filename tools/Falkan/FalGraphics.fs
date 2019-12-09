@@ -121,31 +121,54 @@ let copyBuffer device commandPool srcBuffer dstBuffer size queue =
 
     vkFreeCommandBuffers(device, commandPool, 1u, &&commandBuffer)
 
+[<Flags>]
+type BufferFlags =
+    | None = 0b0uy
+    | SharedMemory = 0b1uy
+
+let inline hasSharedMemoryFlag flags =
+    flags &&& BufferFlags.SharedMemory = BufferFlags.SharedMemory
+
+type BufferKind =
+    | Unspecified = 0uy
+    | Vertex = 1uy
+    | Index = 2uy
+    | Uniform = 3uy
+
 [<Struct;NoComparison>]
 type Buffer =
     {
         buffer: VkBuffer
         memory: VkDeviceMemory
-        isShared: bool
+        flags: BufferFlags
+        kind: BufferKind
     }
 
-let mkVertexBuffer<'T when 'T : unmanaged> physicalDevice device count =
-    let usage = VkBufferUsageFlags.VK_BUFFER_USAGE_VERTEX_BUFFER_BIT ||| VkBufferUsageFlags.VK_BUFFER_USAGE_TRANSFER_DST_BIT
+    member x.IsShared = hasSharedMemoryFlag x.flags
+
+let mkBoundBuffer<'T when 'T : unmanaged> physicalDevice device count flags kind =
+    let isShared = hasSharedMemoryFlag flags
+    let usage =
+        match kind with
+        | BufferKind.Vertex -> VkBufferUsageFlags.VK_BUFFER_USAGE_VERTEX_BUFFER_BIT
+        | BufferKind.Index -> VkBufferUsageFlags.VK_BUFFER_USAGE_INDEX_BUFFER_BIT
+        | BufferKind.Uniform -> VkBufferUsageFlags.VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT
+        | _ -> Unchecked.defaultof<_>
     let memProperties = 
          VkMemoryPropertyFlags.VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT ||| 
          VkMemoryPropertyFlags.VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
 
-    let buffer = mkBuffer<'T> device count usage
-    if usage &&& VkBufferUsageFlags.VK_BUFFER_USAGE_TRANSFER_DST_BIT = VkBufferUsageFlags.VK_BUFFER_USAGE_TRANSFER_DST_BIT then
+    let buffer = mkBuffer<'T> device count (usage ||| VkBufferUsageFlags.VK_BUFFER_USAGE_TRANSFER_DST_BIT)
+    if isShared then
+        let memory = bindMemory physicalDevice device buffer memProperties
+        { buffer = buffer; memory = memory; flags = flags; kind = kind }
+    else
         // High-performance GPU memory
         let memory = bindMemory physicalDevice device buffer VkMemoryPropertyFlags.VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
-        { buffer = buffer; memory = memory; isShared = false }
-    else
-        let memory = bindMemory physicalDevice device buffer memProperties
-        { buffer = buffer; memory = memory; isShared = true }
+        { buffer = buffer; memory = memory; flags = flags; kind = kind }
 
-let fillBuffer<'T when 'T : unmanaged> physicalDevice device commandPool transferQueue buffer data =
-    if buffer.isShared then
+let fillBuffer<'T when 'T : unmanaged> physicalDevice device commandPool transferQueue (buffer: Buffer) data =
+    if buffer.IsShared then
         mapBuffer<'T> device buffer.memory data
     else
         // Memory that is not shared can not be written directly to from the CPU.
@@ -173,6 +196,8 @@ type PipelineIndex = int
 type FalBuffer<'T when 'T : unmanaged> = { buffer: Buffer } with
 
     member this.Buffer = this.buffer.buffer
+
+    member this.IsShared = this.buffer.IsShared
 
 [<Sealed>]
 type FalGraphics
@@ -212,12 +237,12 @@ type FalGraphics
         swapChain.WaitIdle ()
 
     [<RequiresExplicitTypeArguments>]
-    member _.CreateVertexBuffer<'T when 'T : unmanaged> count =
+    member _.CreateBuffer<'T when 'T : unmanaged> (size, flags, kind)  =
         lock gate <| fun _ ->
 
         checkDispose ()   
 
-        let buffer = mkVertexBuffer<'T> physicalDevice device count
+        let buffer = mkBoundBuffer<'T> physicalDevice device size flags kind
         buffers.Add (buffer.buffer, buffer)
         { buffer = buffer } : FalBuffer<'T>
 

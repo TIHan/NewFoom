@@ -4,12 +4,25 @@ module Falkan.Graphics
 open System
 open FSharp.Vulkan.Interop
 
+[<Flags>]
+type BufferFlags =
+    | None = 0b0uy
+    /// Indicates that the buffer's memory is shared between the CPU and GPU. Great for dynamic data.
+    | SharedMemory = 0b1uy
+
+type BufferKind =
+    | Unspecified = 0uy
+    | Vertex = 1uy
+    | Index = 2uy
+    | Uniform = 3uy
+
 [<Struct;NoComparison>]
 type Buffer =
     private {
         buffer: VkBuffer
         memory: VkDeviceMemory
-        isShared: bool
+        flags: BufferFlags
+        kind: BufferKind
     }
 
 type PipelineIndex = int
@@ -18,6 +31,8 @@ type PipelineIndex = int
 type FalBuffer<'T when 'T : unmanaged> = private { buffer: Buffer } with
 
     member Buffer: VkBuffer
+
+    member IsShared: bool
 
 [<Sealed>]
 type FalGraphics =
@@ -31,7 +46,7 @@ type FalGraphics =
 
     member WaitIdle: unit -> unit
 
-    member CreateVertexBuffer<'T when 'T : unmanaged> : count: int -> FalBuffer<'T>
+    member CreateBuffer<'T when 'T : unmanaged> : size: int * BufferFlags * BufferKind -> FalBuffer<'T>
 
     member FillBuffer<'T when 'T : unmanaged> : FalBuffer<'T> * ReadOnlySpan<'T> -> unit
 

@@ -78,7 +78,7 @@ let main argv =
         |]
     let verticesBindings = [|mkVertexInputBinding<Vertex> 0u VkVertexInputRate.VK_VERTEX_INPUT_RATE_VERTEX|]
     let verticesAttributes = mkVertexAttributeDescriptions<Vertex> 0u 0u
-    let verticesBuffer = instance.CreateVertexBuffer<Vertex> vertices.Length
+    let verticesBuffer = instance.CreateBuffer<Vertex> (vertices.Length, BufferFlags.None, BufferKind.Vertex)
     instance.FillBuffer(verticesBuffer, ReadOnlySpan vertices)
 
     let vertex =
