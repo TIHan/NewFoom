@@ -16,19 +16,10 @@ type BufferKind =
     | Index = 2uy
     | Uniform = 3uy
 
-[<Struct;NoComparison>]
-type Buffer =
-    private {
-        buffer: VkBuffer
-        memory: VkDeviceMemory
-        flags: BufferFlags
-        kind: BufferKind
-    }
-
 type PipelineIndex = int
 
-[<Struct;NoComparison>]
-type FalBuffer<'T when 'T : unmanaged> = private { buffer: Buffer } with
+[<Struct;NoComparison;NoEquality>]
+type FalBuffer<'T when 'T : unmanaged> =
 
     member Buffer: VkBuffer
 

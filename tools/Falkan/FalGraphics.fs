@@ -10,39 +10,6 @@ open FSharp.Vulkan.Interop
 #nowarn "9"
 #nowarn "51"
 
-let getMemoryRequirements device buffer =
-    let memRequirements = VkMemoryRequirements ()
-    vkGetBufferMemoryRequirements(device, buffer, &&memRequirements)
-    memRequirements
-
-let getSuitableMemoryTypeIndex physicalDevice typeFilter properties =
-    let memProperties = VkPhysicalDeviceMemoryProperties ()
-    vkGetPhysicalDeviceMemoryProperties(physicalDevice, &&memProperties)
-
-    [| for i = 0 to int memProperties.memoryTypeCount - 1 do
-        if typeFilter &&& (1u <<< i) <> 0u then
-            let memType = memProperties.memoryTypes.[i]
-            if memType.propertyFlags &&& properties = properties then
-                yield uint32 i |]
-    |> Array.head
-
-let allocateMemory physicalDevice device (memRequirements: VkMemoryRequirements) properties =
-    let memTypeIndex = 
-        getSuitableMemoryTypeIndex 
-            physicalDevice memRequirements.memoryTypeBits 
-            properties
-
-    let allocInfo =
-        VkMemoryAllocateInfo (
-            sType = VkStructureType.VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-            allocationSize = memRequirements.size,
-            memoryTypeIndex = memTypeIndex
-        )
-
-    let bufferMemory = VkDeviceMemory ()
-    vkAllocateMemory(device, &&allocInfo, vkNullPtr, &&bufferMemory) |> checkResult
-    bufferMemory
-
 [<Struct;NoEquality;NoComparison>]
 type DeviceMemory =
     {
@@ -102,8 +69,11 @@ type DeviceMemoryBucket private (raw: VkDeviceMemory, bucketSize: int) =
         lastBlock
 
     let getFreeSize () =
-        let lastBlock = getLastBlock ()
-        bucketSize - lastBlock.offset + lastBlock.size
+        if Seq.isEmpty blocks then
+            bucketSize
+        else
+            let lastBlock = getLastBlock ()
+            bucketSize - lastBlock.offset + lastBlock.size
 
     let getFreeFragmentBlock size =
         getFreeBlocks ()
@@ -197,6 +167,48 @@ type DeviceMemoryBucket private (raw: VkDeviceMemory, bucketSize: int) =
 
             freeBlock
 
+    static member Create(device, memTypeIndex, bucketSize) =
+        let allocInfo =
+            VkMemoryAllocateInfo (
+                sType = VkStructureType.VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+                allocationSize = uint64 bucketSize,
+                memoryTypeIndex = memTypeIndex
+            )
+
+        let raw = VkDeviceMemory ()
+        vkAllocateMemory(device, &&allocInfo, vkNullPtr, &&raw) |> checkResult
+        DeviceMemoryBucket(raw, bucketSize)
+
+let getMemoryRequirements device buffer =
+    let memRequirements = VkMemoryRequirements ()
+    vkGetBufferMemoryRequirements(device, buffer, &&memRequirements)
+    memRequirements
+
+let getSuitableMemoryTypeIndex physicalDevice typeFilter properties =
+    let memProperties = VkPhysicalDeviceMemoryProperties ()
+    vkGetPhysicalDeviceMemoryProperties(physicalDevice, &&memProperties)
+
+    [| for i = 0 to int memProperties.memoryTypeCount - 1 do
+        if typeFilter &&& (1u <<< i) <> 0u then
+            let memType = memProperties.memoryTypes.[i]
+            if memType.propertyFlags &&& properties = properties then
+                yield uint32 i |]
+    |> Array.head
+
+// TODO: Let's not make this a global.
+let buckets = System.Collections.Concurrent.ConcurrentDictionary<struct(uint32 * VkDevice), Lazy<DeviceMemoryBucket>>()
+
+let allocateMemory physicalDevice device (memRequirements: VkMemoryRequirements) properties =
+    let memTypeIndex = 
+        getSuitableMemoryTypeIndex 
+            physicalDevice memRequirements.memoryTypeBits 
+            properties
+
+    let factory = System.Func<_, _> (fun struct(memTypeIndex, device) -> lazy DeviceMemoryBucket.Create(device, memTypeIndex, 64 * 1024 * 1024)) // TODO: 64mb is arbitrary for now just to this working
+    let bucket = buckets.GetOrAdd(struct(memTypeIndex, device), factory)
+
+    bucket.Value.Allocate(int memRequirements.size)
+
 let mkBuffer<'T when 'T : unmanaged> device count usage =
     let bufferInfo =
         VkBufferCreateInfo (
@@ -210,11 +222,10 @@ let mkBuffer<'T when 'T : unmanaged> device count usage =
     vkCreateBuffer(device, &&bufferInfo, vkNullPtr, &&vertexBuffer) |> checkResult
     vertexBuffer
 
-// TODO: We should not be allocating memory for every buffer. We need to allocate a chunk and just use a portion of it.
 let bindMemory physicalDevice device buffer properties =
     let memRequirements = getMemoryRequirements device buffer
     let memory = allocateMemory physicalDevice device memRequirements properties
-    vkBindBufferMemory(device, buffer, memory, 0UL) |> checkResult
+    vkBindBufferMemory(device, buffer, memory.raw, uint64 memory.offset) |> checkResult
     memory
 
 let mapBuffer<'T when 'T : unmanaged> device memory (data: ReadOnlySpan<'T>) =
@@ -293,7 +304,7 @@ type BufferKind =
 type Buffer =
     {
         buffer: VkBuffer
-        memory: VkDeviceMemory
+        memory: DeviceMemory
         flags: BufferFlags
         kind: BufferKind
     }
@@ -323,7 +334,7 @@ let mkBoundBuffer<'T when 'T : unmanaged> physicalDevice device count flags kind
 
 let fillBuffer<'T when 'T : unmanaged> physicalDevice device commandPool transferQueue (buffer: Buffer) data =
     if buffer.IsShared then
-        mapBuffer<'T> device buffer.memory data
+        mapBuffer<'T> device buffer.memory.raw data
     else
         // Memory that is not shared can not be written directly to from the CPU.
         // In order to set it from the CPU, a temporary shared memory buffer is used as a staging buffer to transfer the data.
@@ -336,22 +347,24 @@ let fillBuffer<'T when 'T : unmanaged> physicalDevice device commandPool transfe
                 VkMemoryPropertyFlags.VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
         let stagingMemory = bindMemory physicalDevice device stagingBuffer stagingProperties
 
-        mapBuffer device stagingMemory data
+        mapBuffer device stagingMemory.raw data
 
         let size = uint64 (sizeof<'T> * count)
         copyBuffer device commandPool stagingBuffer buffer.buffer size transferQueue
 
         vkDestroyBuffer(device, stagingBuffer, vkNullPtr)
-        vkFreeMemory(device, stagingMemory, vkNullPtr)
+        vkFreeMemory(device, stagingMemory.raw, vkNullPtr)
 
 type PipelineIndex = int
 
-[<Struct;NoComparison>]
-type FalBuffer<'T when 'T : unmanaged> = { buffer: Buffer } with
+[<Struct;NoComparison;NoEquality>]
+type FalBuffer<'T when 'T : unmanaged>(buffer: Buffer) =
 
-    member this.Buffer = this.buffer.buffer
+    member this.Internal = buffer
 
-    member this.IsShared = this.buffer.IsShared
+    member this.Buffer = buffer.buffer
+
+    member this.IsShared = buffer.IsShared
 
 [<Sealed>]
 type FalGraphics
@@ -372,7 +385,7 @@ type FalGraphics
 
     let destroyBuffer (buffer: Buffer) =
         vkDestroyBuffer(device, buffer.buffer, vkNullPtr)
-        vkFreeMemory(device, buffer.memory, vkNullPtr)
+        vkFreeMemory(device, buffer.memory.raw, vkNullPtr)
 
     member __.AddShader (vertexBindings, vertexAttributes, vertexBytes, fragmentBytes) : PipelineIndex =
         checkDispose ()
@@ -398,18 +411,18 @@ type FalGraphics
 
         let buffer = mkBoundBuffer<'T> physicalDevice device size flags kind
         buffers.Add (buffer.buffer, buffer)
-        { buffer = buffer } : FalBuffer<'T>
+        FalBuffer<'T> buffer
 
     member _.FillBuffer<'T when 'T : unmanaged> (buffer: FalBuffer<'T>, data) =
         checkDispose ()
 
-        fillBuffer<'T> physicalDevice device commandPool transferQueue buffer.buffer data
+        fillBuffer<'T> physicalDevice device commandPool transferQueue buffer.Internal data
 
     member _.DestroyBuffer (buffer: FalBuffer<_>) =
         lock gate <| fun _ ->
 
         checkDispose ()
-        match buffers.Remove buffer.buffer.buffer : bool * Buffer with
+        match buffers.Remove buffer.Buffer : bool * Buffer with
         | true, buffer ->
             destroyBuffer buffer
         | _ ->
