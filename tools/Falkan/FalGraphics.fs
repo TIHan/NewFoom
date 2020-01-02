@@ -10,19 +10,6 @@ open FSharp.Vulkan.Interop
 #nowarn "9"
 #nowarn "51"
 
-let mkBuffer<'T when 'T : unmanaged> device count usage =
-    let bufferInfo =
-        VkBufferCreateInfo (
-            sType = VkStructureType.VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-            size = uint64 (sizeof<'T> * count),
-            usage = usage,
-            sharingMode = VkSharingMode.VK_SHARING_MODE_EXCLUSIVE
-        )
-    
-    let vertexBuffer = VkBuffer ()
-    vkCreateBuffer(device, &&bufferInfo, vkNullPtr, &&vertexBuffer) |> checkResult
-    vertexBuffer
-
 let getMemoryRequirements device buffer =
     let memRequirements = VkMemoryRequirements ()
     vkGetBufferMemoryRequirements(device, buffer, &&memRequirements)
@@ -55,6 +42,173 @@ let allocateMemory physicalDevice device (memRequirements: VkMemoryRequirements)
     let bufferMemory = VkDeviceMemory ()
     vkAllocateMemory(device, &&allocInfo, vkNullPtr, &&bufferMemory) |> checkResult
     bufferMemory
+
+[<Struct;NoEquality;NoComparison>]
+type DeviceMemory =
+    {
+        raw: VkDeviceMemory
+        offset: int
+        size: int
+    }
+
+[<Sealed>]
+type DeviceMemoryBucket private (raw: VkDeviceMemory, bucketSize: int) =
+
+    let gate = obj ()
+    let blocks = ResizeArray<struct(DeviceMemory * bool)> 100 // TODO: We could do better here. Could allocate on the LOH if it gets big enough.
+
+    let mutable freeBlocksCache = ValueNone
+    let getFreeBlocks () =
+        match freeBlocksCache with
+        | ValueSome blocks -> blocks
+        | _ ->
+            let mutable index = 0
+            let blocks =
+                blocks 
+                |> Seq.choose (fun struct(block, isFree) -> 
+                    if isFree then
+                        let i = index
+                        index <- index + 1
+                        Some struct(block, i)
+                    else
+                        None)
+                |> Seq.cache
+            freeBlocksCache <- ValueSome blocks
+            blocks
+
+    let mutable maxFreeFragmentSizeCache = ValueNone
+    let getMaxFreeFragmentSize () =
+        match maxFreeFragmentSizeCache with
+        | ValueSome size -> size
+        | _ ->
+            let blocks = getFreeBlocks ()
+            if Seq.isEmpty blocks then 0
+            else
+                let struct(block, _) = (blocks |> Seq.maxBy (fun struct(block, _) -> block.size))
+                let size = block.size
+                maxFreeFragmentSizeCache <- ValueSome size
+                size
+
+    let clearCache () =
+        freeBlocksCache <- ValueNone
+        maxFreeFragmentSizeCache <- ValueNone
+
+    let isBlockFree index =
+        let struct(_, isFree) = blocks.[index]
+        isFree
+
+    let getLastBlock () =
+        let struct(lastBlock, _) = blocks.[blocks.Count - 1]
+        lastBlock
+
+    let getFreeSize () =
+        let lastBlock = getLastBlock ()
+        bucketSize - lastBlock.offset + lastBlock.size
+
+    let getFreeFragmentBlock size =
+        getFreeBlocks ()
+        |> Seq.filter (fun struct(block, _) -> block.size >= size)
+        |> Seq.minBy (fun struct(block, _) -> block.size)
+
+    let allocateBlock size =
+        let block =
+            if Seq.isEmpty blocks then
+                let block =
+                    {
+                        raw = raw
+                        offset = 0
+                        size = size
+                    }
+                blocks.Add struct(block, false)
+                block
+            elif getFreeSize () >= size then
+                let lastBlock = getLastBlock ()
+                let block =
+                    {
+                        raw = raw
+                        offset = lastBlock.offset + lastBlock.size
+                        size = size
+                    }
+                blocks.Add struct(block, false)
+                block
+            elif getMaxFreeFragmentSize () >= size then
+                let struct(block, index) = getFreeFragmentBlock size
+                let newBlock =
+                    {
+                        raw = raw
+                        offset = block.offset
+                        size = size
+                    }
+                blocks.[index] <- struct(newBlock, false)
+
+                let remainingSize = block.size - size
+                let remainingIndex = index + 1
+                if remainingSize > 0 && remainingIndex < blocks.Count then
+                    let remainingBlock =
+                        {
+                            raw = raw
+                            offset = newBlock.offset + newBlock.size
+                            size = remainingSize
+                        }
+                    blocks.Insert(remainingIndex, struct(remainingBlock, true))
+                newBlock
+            else
+                failwith "Invalid allocation on GPU memory block."
+
+        clearCache ()
+        block
+
+    let freeBlock block =
+        let index = blocks |> Seq.findIndex (fun struct(x, isFree) -> not isFree && x.offset = block.offset && x.size = block.size)
+        blocks.[index] <- struct(block, true)
+
+        let possibleNextBlockIndexToMerge = index + 1
+        let possiblePrevBlockIndexToMerge = index - 1
+        if possibleNextBlockIndexToMerge < blocks.Count && isBlockFree possibleNextBlockIndexToMerge then
+            let struct(blockToMerge, _) = blocks.[possibleNextBlockIndexToMerge]
+            blocks.[index] <- struct({ block with size = block.size + blockToMerge.size }, true)
+            blocks.RemoveAt possibleNextBlockIndexToMerge
+        elif possiblePrevBlockIndexToMerge < blocks.Count && isBlockFree possiblePrevBlockIndexToMerge then
+            let struct(blockToMerge, _) = blocks.[possiblePrevBlockIndexToMerge]
+            blocks.[index] <- struct({ block with offset = blockToMerge.offset; size = block.size + blockToMerge.size }, true)
+            blocks.RemoveAt possiblePrevBlockIndexToMerge
+
+        clearCache ()
+
+    member _.MaxAvailableFreeSize =
+        // TODO: Add cache that doesn't lock
+        lock gate <| fun _ ->
+            let freeSize = getFreeSize ()
+            let freeFragmentSize = getMaxFreeFragmentSize ()
+            if freeSize > freeFragmentSize then freeSize
+            else freeFragmentSize
+
+    member _.Allocate size =
+        lock gate <| fun _ ->
+            if size > getFreeSize () && size > getMaxFreeFragmentSize () then
+                failwith "Not enough available GPU memory in bucket."
+
+            allocateBlock size
+
+    member _.Free block =
+        lock gate <| fun _ ->
+            if raw <> block.raw then
+                failwith "Invalid GPU memory to free in bucket."
+
+            freeBlock
+
+let mkBuffer<'T when 'T : unmanaged> device count usage =
+    let bufferInfo =
+        VkBufferCreateInfo (
+            sType = VkStructureType.VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+            size = uint64 (sizeof<'T> * count),
+            usage = usage,
+            sharingMode = VkSharingMode.VK_SHARING_MODE_EXCLUSIVE
+        )
+    
+    let vertexBuffer = VkBuffer ()
+    vkCreateBuffer(device, &&bufferInfo, vkNullPtr, &&vertexBuffer) |> checkResult
+    vertexBuffer
 
 // TODO: We should not be allocating memory for every buffer. We need to allocate a chunk and just use a portion of it.
 let bindMemory physicalDevice device buffer properties =
