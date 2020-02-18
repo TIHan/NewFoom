@@ -51,8 +51,8 @@ type Vertex =
     }
 
 let setRender (instance: FalGraphics) =
-    let mvpBindings = [||]
-    let mvpUniform = instance.CreateBuffer<ModelViewProjection>(sizeof<ModelViewProjection>, BufferFlags.None, BufferKind.Uniform)
+    //let mvpBindings = [||]
+    //let mvpUniform = instance.CreateBuffer<ModelViewProjection>(sizeof<ModelViewProjection>, BufferFlags.None, BufferKind.Uniform)
     let vertices =
         [|
             { position = Vector2 (0.f, -0.5f); color = Vector3 (1.f, 0.f, 0.f) }
@@ -72,10 +72,10 @@ let setRender (instance: FalGraphics) =
             let mutable gl_Position  = Variable<Vector4> [Decoration.BuiltIn BuiltIn.Position] StorageClass.Output
             let mutable fragColor = Variable<Vector3> [Decoration.Location 0u] StorageClass.Output
 
-            let mvp = Variable<ModelViewProjection> [Decoration.Uniform] StorageClass.Uniform
+      //      let mvp = Variable<ModelViewProjection> [Decoration.Uniform] StorageClass.Uniform
 
             fun () ->
-                let stuff = mvp.proj * mvp.view * mvp.model
+            //    let stuff = mvp.proj * mvp.view * mvp.model
                 gl_Position <- Vector4(vertex.position, 0.f, 1.f)
                 fragColor <- vertex.color
         @>

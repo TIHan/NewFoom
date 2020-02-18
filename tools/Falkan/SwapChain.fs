@@ -18,6 +18,8 @@ type SwapChainState =
         swapChain: VkSwapchainKHR
         imageViews: VkImageView []
         renderPass: VkRenderPass
+        descriptorSetLayout: VkDescriptorSetLayout
+        descriptorPool: VkDescriptorPool
         pipelineLayout: VkPipelineLayout
         framebuffers: VkFramebuffer []
         commandBuffers: VkCommandBuffer []
@@ -663,8 +665,25 @@ let mkDescriptorSetLayout device stageFlags =
     vkCreateDescriptorSetLayout(device, &&layoutInfo, vkNullPtr, &&descriptorSetLayout) |> checkResult
     descriptorSetLayout
 
+let mkDescriptorPool device size =
+    let poolSize =
+        VkDescriptorPoolSize(
+            typ = VkDescriptorType.VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            descriptorCount = uint32 size)
+
+    let poolInfo =
+        VkDescriptorPoolCreateInfo(
+            sType = VkStructureType.VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+            poolSizeCount = 1u,
+            pPoolSizes = &&poolSize,
+            maxSets = uint32 size)
+
+    let descriptorPool = VkDescriptorPool()
+    vkCreateDescriptorPool(device, &&poolInfo, vkNullPtr, &&descriptorPool) |> checkResult
+    descriptorPool
+
 [<Sealed>]
-type SwapChain private (physicalDevice, device, surface, sync, graphicsFamily, graphicsQueue, presentFamily, presentQueue, commandPool, layout) =
+type SwapChain private (physicalDevice, device, surface, sync, graphicsFamily, graphicsQueue, presentFamily, presentQueue, commandPool) =
 
     let gate = obj ()
     let mutable state = None
@@ -692,6 +711,8 @@ type SwapChain private (physicalDevice, device, surface, sync, graphicsFamily, g
                 swapChain = swapChain
                 imageViews = imageViews
                 renderPass = renderPass
+                descriptorSetLayout = descriptorSetLayout
+                descriptorPool = descriptorPool
                 pipelineLayout = pipelineLayout
                 framebuffers = framebuffers
                 commandBuffers = commandBuffers
@@ -718,6 +739,8 @@ type SwapChain private (physicalDevice, device, surface, sync, graphicsFamily, g
         )
 
         vkDestroyPipelineLayout(device, pipelineLayout, vkNullPtr)
+        vkDestroyDescriptorPool(device, descriptorPool, vkNullPtr)
+        vkDestroyDescriptorSetLayout(device, descriptorSetLayout, vkNullPtr)
         vkDestroyRenderPass(device, renderPass, vkNullPtr)
 
         imageViews
@@ -752,7 +775,9 @@ type SwapChain private (physicalDevice, device, surface, sync, graphicsFamily, g
             let swapChain, surfaceFormat, extent, images = mkSwapChain physicalDevice device surface graphicsFamily presentFamily
             let imageViews = mkImageViews device surfaceFormat.format images
             let renderPass = mkRenderPass device surfaceFormat.format
-            let pipelineLayout = mkPipelineLayout device [|layout|]
+            let descriptorSetLayout = mkDescriptorSetLayout device VkShaderStageFlags.VK_SHADER_STAGE_VERTEX_BIT
+            let descriptorPool = mkDescriptorPool device images.Length
+            let pipelineLayout = mkPipelineLayout device [|descriptorSetLayout|]
             let framebuffers = mkFramebuffers device renderPass extent imageViews
             let commandBuffers = mkCommandBuffers device commandPool framebuffers
 
@@ -762,6 +787,8 @@ type SwapChain private (physicalDevice, device, surface, sync, graphicsFamily, g
                     swapChain = swapChain
                     imageViews = imageViews
                     renderPass = renderPass
+                    descriptorSetLayout = descriptorSetLayout
+                    descriptorPool = descriptorPool
                     pipelineLayout = pipelineLayout
                     framebuffers = framebuffers
                     commandBuffers = commandBuffers
@@ -860,8 +887,6 @@ type SwapChain private (physicalDevice, device, surface, sync, graphicsFamily, g
                     destroy ()
                 )
 
-                vkDestroyDescriptorSetLayout(device, layout, vkNullPtr)
-
                 sync.inFlightFences
                 |> Array.rev
                 |> Array.iter (fun f ->
@@ -884,8 +909,6 @@ type SwapChain private (physicalDevice, device, surface, sync, graphicsFamily, g
         let sync = mkSync device
         let graphicsQueue = mkQueue device graphicsFamily
         let presentQueue = mkQueue device presentFamily
-        let layout = mkDescriptorSetLayout device VkShaderStageFlags.VK_SHADER_STAGE_VERTEX_BIT
-
-        let swapChain = new SwapChain(physicalDevice, device, surface, sync, graphicsFamily, graphicsQueue, presentFamily, presentQueue, commandPool, layout)
+        let swapChain = new SwapChain(physicalDevice, device, surface, sync, graphicsFamily, graphicsQueue, presentFamily, presentQueue, commandPool)
         swapChain.Recreate ()
         swapChain
