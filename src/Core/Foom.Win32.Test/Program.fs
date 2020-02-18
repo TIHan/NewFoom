@@ -50,26 +50,9 @@ type Vertex =
         color: Vector3
     }
 
-[<EntryPoint>]
-let main argv =
-    let title = "F# Vulkan"
-    let width = 1280
-    let height = 720
-
-    // Add dispose
-    let windowState = Win32WindowState (title, width, height)
-    windowState.Show ()
-
-    let hwnd = windowState.Hwnd
-    let hinstance = windowState.Hinstance
-
-    use device = FalDevice.CreateWin32Surface(hwnd, hinstance, "App", "Engine", ["VK_LAYER_KHRONOS_validation"], [VK_KHR_SWAPCHAIN_EXTENSION_NAME])
-    use instance = FalGraphics.Create device
-    let windowEvents = EmptyWindowEvents instance :> IWindowEvents
-    windowState.WindowClosing.Add(windowEvents.OnWindowClosing)
-
-    let window = Window (title, 30., width, height, windowEvents, windowState)
-
+let setRender (instance: FalGraphics) =
+    let mvpBindings = [||]
+    let mvpUniform = instance.CreateBuffer<ModelViewProjection>(sizeof<ModelViewProjection>, BufferFlags.None, BufferKind.Uniform)
     let vertices =
         [|
             { position = Vector2 (0.f, -0.5f); color = Vector3 (1.f, 0.f, 0.f) }
@@ -84,14 +67,15 @@ let main argv =
     let vertex =
         <@
             let vertex = Variable<Vertex> [Decoration.Location 0u] StorageClass.Input
-            let position = Variable<Vector2> [Decoration.Location 0u] StorageClass.Input
-            let color = Variable<Vector3> [Decoration.Location 1u] StorageClass.Input
+            let _position = Variable<Vector2> [Decoration.Location 0u] StorageClass.Input
+            let _color = Variable<Vector3> [Decoration.Location 1u] StorageClass.Input
             let mutable gl_Position  = Variable<Vector4> [Decoration.BuiltIn BuiltIn.Position] StorageClass.Output
             let mutable fragColor = Variable<Vector3> [Decoration.Location 0u] StorageClass.Output
 
             let mvp = Variable<ModelViewProjection> [Decoration.Uniform] StorageClass.Uniform
 
             fun () ->
+                let stuff = mvp.proj * mvp.view * mvp.model
                 gl_Position <- Vector4(vertex.position, 0.f, 1.f)
                 fragColor <- vertex.color
         @>
@@ -131,6 +115,28 @@ let main argv =
 
     let pipelineIndex = instance.AddShader(verticesBindings, verticesAttributes, ReadOnlySpan vertexBytes, ReadOnlySpan fragmentBytes)
     instance.RecordDraw(pipelineIndex, [|verticesBuffer.Buffer|], vertices.Length, 1)
+
+[<EntryPoint>]
+let main argv =
+    let title = "F# Vulkan"
+    let width = 1280
+    let height = 720
+
+    // Add dispose
+    let windowState = Win32WindowState (title, width, height)
+    windowState.Show ()
+
+    let hwnd = windowState.Hwnd
+    let hinstance = windowState.Hinstance
+
+    use device = FalDevice.CreateWin32Surface(hwnd, hinstance, "App", "Engine", ["VK_LAYER_KHRONOS_validation"], [VK_KHR_SWAPCHAIN_EXTENSION_NAME])
+    use instance = FalGraphics.Create device
+    let windowEvents = EmptyWindowEvents instance :> IWindowEvents
+    windowState.WindowClosing.Add(windowEvents.OnWindowClosing)
+
+    let window = Window (title, 30., width, height, windowEvents, windowState)
+
+    setRender instance
 
     window.Start ()
 
