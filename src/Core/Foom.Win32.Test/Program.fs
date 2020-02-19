@@ -112,7 +112,6 @@ let setRender (instance: FalGraphics) =
         ms.Read(bytes, 0, bytes.Length) |> ignore
         bytes
    // let fragmentBytes = System.IO.File.ReadAllBytes("triangle_fragment.spv")
-
     let pipelineIndex = instance.AddShader(verticesBindings, verticesAttributes, ReadOnlySpan vertexBytes, ReadOnlySpan fragmentBytes)
     instance.RecordDraw(pipelineIndex, [|verticesBuffer.Buffer|], vertices.Length, 1)
 

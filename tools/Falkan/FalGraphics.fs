@@ -19,7 +19,7 @@ type DeviceMemory =
     }
 
 [<Sealed>]
-type DeviceMemoryBucket private (raw: VkDeviceMemory, bucketSize: int) =
+type DeviceMemoryBucket private (device: VkDevice, raw: VkDeviceMemory, bucketSize: int) =
 
     let gate = obj ()
     let blocks = ResizeArray<struct(DeviceMemory * bool)> 100 // TODO: We could do better here. Could allocate on the LOH if it gets big enough.
@@ -167,6 +167,11 @@ type DeviceMemoryBucket private (raw: VkDeviceMemory, bucketSize: int) =
 
             freeBlock
 
+    interface IDisposable with
+
+        member _.Dispose() =
+            vkFreeMemory(device, raw, vkNullPtr)
+
     static member Create(device, memTypeIndex, bucketSize) =
         let allocInfo =
             VkMemoryAllocateInfo (
@@ -177,7 +182,7 @@ type DeviceMemoryBucket private (raw: VkDeviceMemory, bucketSize: int) =
 
         let raw = VkDeviceMemory ()
         vkAllocateMemory(device, &&allocInfo, vkNullPtr, &&raw) |> checkResult
-        DeviceMemoryBucket(raw, bucketSize)
+        new DeviceMemoryBucket(device, raw, bucketSize)
 
 let getMemoryRequirements device buffer =
     let memRequirements = VkMemoryRequirements ()
@@ -353,7 +358,6 @@ let fillBuffer<'T when 'T : unmanaged> physicalDevice device commandPool transfe
         copyBuffer device commandPool stagingBuffer buffer.buffer size transferQueue
 
         vkDestroyBuffer(device, stagingBuffer, vkNullPtr)
-        vkFreeMemory(device, stagingMemory.raw, vkNullPtr)
 
 type PipelineIndex = int
 
@@ -385,7 +389,6 @@ type FalGraphics
 
     let destroyBuffer (buffer: Buffer) =
         vkDestroyBuffer(device, buffer.buffer, vkNullPtr)
-        vkFreeMemory(device, buffer.memory.raw, vkNullPtr)
 
     member __.AddShader (vertexBindings, vertexAttributes, vertexBytes, fragmentBytes) : PipelineIndex =
         checkDispose ()
@@ -443,6 +446,11 @@ type FalGraphics
 
                     buffers.Clear()
                 )
+
+                buckets.Values
+                |> Seq.iter (fun x -> 
+                    if x.IsValueCreated then
+                        (x.Value :> IDisposable).Dispose())
 
                 vkDestroyCommandPool(device, commandPool, vkNullPtr)
 
