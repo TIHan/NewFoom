@@ -51,7 +51,11 @@ type Window (title: string, updateInterval: float, width: int, height: int, even
     member __.Start () =
         GameLoop.start
             updateInterval
-            (fun () -> events.OnInputEvents (state.PollInput ()))
+            (fun () -> 
+                try 
+                    events.OnInputEvents (state.PollInput ())
+                with
+                | ex -> Console.WriteLine(ex.Message))
             (fun ticks intervalTicks ->
                 let time = TimeSpan.FromTicks ticks
                 let interval = TimeSpan.FromTicks intervalTicks
@@ -61,6 +65,6 @@ type Window (title: string, updateInterval: float, width: int, height: int, even
             (fun ticks delta ->
                 let time = TimeSpan.FromTicks ticks
 
-                events.OnRenderFrame (time.TotalMilliseconds, delta, width, height)
+                events.OnRenderFrame (time.TotalMilliseconds, float delta, width, height)
             )
     

@@ -26,7 +26,7 @@ let getInstanceExtension<'T when 'T :> Delegate> instance =
     |> vkDelegateOfFunctionPointer<'T>
 
 let getInstanceExtensions() =
-    let extensionCount = 0u
+    let mutable extensionCount = 0u
 
     vkEnumerateInstanceExtensionProperties(vkNullPtr, &&extensionCount, vkNullPtr) |> checkResult
 
@@ -36,7 +36,7 @@ let getInstanceExtensions() =
     extensions
 
 let getInstanceLayers validationLayers =
-    let layerCount = 0u
+    let mutable layerCount = 0u
 
     vkEnumerateInstanceLayerProperties(&&layerCount, vkNullPtr) |> checkResult
 
@@ -60,7 +60,7 @@ let mkInstance appName engineName validationLayers =
     use appNamePtr = fixed vkBytesOfString appName
     use engineNamePtr = fixed vkBytesOfString engineName
    
-    let appInfo = mkApplicationInfo appNamePtr engineNamePtr
+    let mutable appInfo = mkApplicationInfo appNamePtr engineNamePtr
     let extensions = getInstanceExtensions () |> Array.map (fun x -> x.extensionName.ToString())
     let layers = getInstanceLayers validationLayers |> Array.map (fun x -> x.layerName.ToString())
     
@@ -68,7 +68,7 @@ let mkInstance appName engineName validationLayers =
     use layersHandle = vkFixedStringArray layers
     let createInfo = mkInstanceCreateInfo &&appInfo (uint32 extensions.Length) extensionsHandle.PtrPtr (uint32 layers.Length) layersHandle.PtrPtr
 
-    let instance = VkInstance()
+    let mutable instance = VkInstance()
     vkCreateInstance(&&createInfo, vkNullPtr, &&instance) |> checkResult
     instance
 
@@ -86,10 +86,10 @@ let mkDebugMessengerCreateInfo debugCallback =
     )
 
 let mkDebugMessenger instance debugCallback =
-    let createInfo = mkDebugMessengerCreateInfo debugCallback
+    let mutable createInfo = mkDebugMessengerCreateInfo debugCallback
 
     let createDebugUtilsMessenger = getInstanceExtension<vkCreateDebugUtilsMessengerEXT> instance
-    let debugMessenger = VkDebugUtilsMessengerEXT ()
+    let mutable debugMessenger = VkDebugUtilsMessengerEXT ()
     createDebugUtilsMessenger.Invoke(instance, &&createInfo, vkNullPtr, &&debugMessenger) |> checkResult
     debugMessenger
 
@@ -103,7 +103,7 @@ let isIntegratedGpu (deviceProperties: VkPhysicalDeviceProperties) =
     deviceProperties.deviceType = VkPhysicalDeviceType.VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU
 
 let getSuitablePhysicalDevice instance =
-    let deviceCount = 0u
+    let mutable deviceCount = 0u
 
     vkEnumeratePhysicalDevices(instance, &&deviceCount, vkNullPtr) |> checkResult
 
@@ -111,16 +111,16 @@ let getSuitablePhysicalDevice instance =
         failwith "Unable to find GPUs with Vulkan support."
 
     let devices = Array.zeroCreate (int deviceCount)
-    let pDevices = fixed devices
+    use pDevices = fixed devices
     vkEnumeratePhysicalDevices(instance, &&deviceCount, pDevices) |> checkResult
 
     let deviceOpt =
         devices
         |> Array.map (fun device ->
-            let deviceProperties = VkPhysicalDeviceProperties()
+            let mutable deviceProperties = VkPhysicalDeviceProperties()
             vkGetPhysicalDeviceProperties(device, &&deviceProperties)
 
-            let deviceFeatures = VkPhysicalDeviceFeatures()
+            let mutable deviceFeatures = VkPhysicalDeviceFeatures()
             vkGetPhysicalDeviceFeatures(device, &&deviceFeatures)
 
             (device, deviceProperties, deviceFeatures)
@@ -154,7 +154,7 @@ type QueueFamilyIndices =
     member x.HasTransfer = x.transferFamily.IsSome
 
 let getPhysicalDeviceQueueFamilies physicalDevice (surfaceOpt: VkSurfaceKHR option) =
-    let queueFamilyCount = 0u
+    let mutable queueFamilyCount = 0u
 
     vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &&queueFamilyCount, vkNullPtr)
 
@@ -169,7 +169,7 @@ let getPhysicalDeviceQueueFamilies physicalDevice (surfaceOpt: VkSurfaceKHR opti
             if x.queueFlags &&& VkQueueFlags.VK_QUEUE_GRAPHICS_BIT = VkQueueFlags.VK_QUEUE_GRAPHICS_BIT && surfaceOpt.IsSome then
 
                 let indices =
-                    let presentSupport = VK_FALSE      
+                    let mutable presentSupport = VK_FALSE      
                     vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, uint32 i, surfaceOpt.Value, &&presentSupport) |> checkResult
                     if presentSupport = VK_TRUE then
                         { indices with presentFamily = Some (uint32 i) }
@@ -208,7 +208,7 @@ let mkDeviceCreateInfo pQueueCreateInfos queueCreateInfoCount pEnabledFeatures e
     )
 
 let getDeviceExtensions physicalDevice deviceExtensions =
-    let extensionCount = 0u
+    let mutable extensionCount = 0u
 
     vkEnumerateDeviceExtensionProperties(physicalDevice, vkNullPtr, &&extensionCount, vkNullPtr) |> checkResult
 
@@ -226,7 +226,7 @@ let getDeviceExtensions physicalDevice deviceExtensions =
     |> Array.filter (fun x -> deviceExtensions |> Array.exists (fun y -> x.extensionName.ToString() = y))
 
 let getDeviceLayers physicalDevice validationLayers =
-    let layerCount = 0u
+    let mutable layerCount = 0u
 
     vkEnumerateDeviceLayerProperties(physicalDevice, &&layerCount, vkNullPtr) |> checkResult
 
@@ -248,26 +248,26 @@ let mkLogicalDevice physicalDevice indices validationLayers deviceExtensions =
         [|indices.graphicsFamily.Value; indices.presentFamily.Value|]
         |> Array.distinct // we need to be distinct so we do not create duplicate create infos
         |> Array.map (fun familyIndex ->
-            let queuePriority = 1.f
+            let mutable queuePriority = 1.f
             mkDeviceQueueCreateInfo familyIndex &&queuePriority
         )
     let extensions = getDeviceExtensions physicalDevice deviceExtensions |> Array.map (fun x -> x.extensionName.ToString())
     let layers = getDeviceLayers physicalDevice validationLayers |> Array.map (fun x -> x.layerName.ToString())
 
-    let deviceFeatures = VkPhysicalDeviceFeatures()
+    let mutable deviceFeatures = VkPhysicalDeviceFeatures()
     vkGetPhysicalDeviceFeatures(physicalDevice, &&deviceFeatures)
 
     use pQueueCreateInfos = fixed queueCreateInfos
     use extensionsHandle = vkFixedStringArray extensions
     use layersHandle = vkFixedStringArray layers
-    let createInfo = 
+    let mutable createInfo = 
         mkDeviceCreateInfo 
             pQueueCreateInfos (uint32 queueCreateInfos.Length)
             &&deviceFeatures 
             (uint32 extensions.Length) extensionsHandle.PtrPtr
             (uint32 layers.Length) layersHandle.PtrPtr
 
-    let device = VkDevice()
+    let mutable device = VkDevice()
     vkCreateDevice(physicalDevice, &&createInfo, vkNullPtr, &&device) |> checkResult
     device
 
@@ -349,13 +349,13 @@ type FalDevice private
     static member CreateWin32Surface (hwnd, hinstance, appName, engineName, validationLayers, deviceExtensions) =
         let mkSurface =
             fun instance ->
-                let createInfo = 
+                let mutable createInfo = 
                     VkWin32SurfaceCreateInfoKHR (
                         sType = VkStructureType.VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR,
                         hwnd = hwnd,
                         hinstance = hinstance
                     )
-                let surface = VkSurfaceKHR ()
+                let mutable surface = VkSurfaceKHR ()
                 vkCreateWin32SurfaceKHR(instance, &&createInfo, vkNullPtr, &&surface) |> checkResult
                 surface
         FalDevice.Create (appName, engineName, validationLayers, deviceExtensions, mkSurface = mkSurface)

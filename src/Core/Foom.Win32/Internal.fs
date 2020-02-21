@@ -181,13 +181,13 @@ extern UINT GetLastError();
 extern nativeint DefWindowProc(nativeint hWnd, uint32 msg, nativeint wParam, nativeint lParam)
 
 [<DllImport("user32.dll")>]
-extern BOOL GetMessage(MSG& lpMsg, HWND hWnd, UINT wMsgFilterMin, UINT uMsgFilterMax)
+extern BOOL GetMessage(MSG* lpMsg, HWND hWnd, UINT wMsgFilterMin, UINT uMsgFilterMax)
 
 [<DllImport("user32.dll")>]
-extern BOOL TranslateMessage(MSG& lpMsg)
+extern BOOL TranslateMessage(MSG* lpMsg)
 
 [<DllImport("user32.dll")>]
-extern LRESULT DispatchMessage(MSG& lpmsg)
+extern LRESULT DispatchMessage(MSG* lpmsg)
 
 [<DllImport("user32.dll")>]
 extern BOOL PeekMessage(LPMSG lpMsg, HWND hWnd, UINT wMsgFilterMin, UINT wMsgFilterMax, UINT wRemoveMsg)

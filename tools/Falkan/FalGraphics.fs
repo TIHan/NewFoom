@@ -173,24 +173,24 @@ type DeviceMemoryBucket private (device: VkDevice, raw: VkDeviceMemory, bucketSi
             vkFreeMemory(device, raw, vkNullPtr)
 
     static member Create(device, memTypeIndex, bucketSize) =
-        let allocInfo =
+        let mutable allocInfo =
             VkMemoryAllocateInfo (
                 sType = VkStructureType.VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
                 allocationSize = uint64 bucketSize,
                 memoryTypeIndex = memTypeIndex
             )
 
-        let raw = VkDeviceMemory ()
+        let mutable raw = VkDeviceMemory ()
         vkAllocateMemory(device, &&allocInfo, vkNullPtr, &&raw) |> checkResult
         new DeviceMemoryBucket(device, raw, bucketSize)
 
 let getMemoryRequirements device buffer =
-    let memRequirements = VkMemoryRequirements ()
+    let mutable memRequirements = VkMemoryRequirements ()
     vkGetBufferMemoryRequirements(device, buffer, &&memRequirements)
     memRequirements
 
 let getSuitableMemoryTypeIndex physicalDevice typeFilter properties =
-    let memProperties = VkPhysicalDeviceMemoryProperties ()
+    let mutable memProperties = VkPhysicalDeviceMemoryProperties ()
     vkGetPhysicalDeviceMemoryProperties(physicalDevice, &&memProperties)
 
     [| for i = 0 to int memProperties.memoryTypeCount - 1 do
@@ -215,7 +215,7 @@ let allocateMemory physicalDevice device (memRequirements: VkMemoryRequirements)
     bucket.Value.Allocate(int memRequirements.size)
 
 let mkBuffer<'T when 'T : unmanaged> device count usage =
-    let bufferInfo =
+    let mutable bufferInfo =
         VkBufferCreateInfo (
             sType = VkStructureType.VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
             size = uint64 (sizeof<'T> * count),
@@ -223,7 +223,7 @@ let mkBuffer<'T when 'T : unmanaged> device count usage =
             sharingMode = VkSharingMode.VK_SHARING_MODE_EXCLUSIVE
         )
     
-    let vertexBuffer = VkBuffer ()
+    let mutable vertexBuffer = VkBuffer ()
     vkCreateBuffer(device, &&bufferInfo, vkNullPtr, &&vertexBuffer) |> checkResult
     vertexBuffer
 
@@ -234,7 +234,7 @@ let bindMemory physicalDevice device buffer properties =
     memory
 
 let mapBuffer<'T when 'T : unmanaged> device memory (data: ReadOnlySpan<'T>) =
-    let deviceData = nativeint 0
+    let mutable deviceData = nativeint 0
     let pDeviceData = &&deviceData |> NativePtr.toNativeInt
 
     vkMapMemory(device, memory, 0UL, uint64 (sizeof<'T> * data.Length), VkMemoryMapFlags.MinValue, pDeviceData) |> checkResult
@@ -245,7 +245,7 @@ let mapBuffer<'T when 'T : unmanaged> device memory (data: ReadOnlySpan<'T>) =
     vkUnmapMemory(device, memory)
 
 let recordCopyBuffer (commandBuffer: VkCommandBuffer) src dst size =
-    let beginInfo =
+    let mutable beginInfo =
         VkCommandBufferBeginInfo (
             sType = VkStructureType.VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
             flags = VkCommandBufferUsageFlags.VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
@@ -254,7 +254,7 @@ let recordCopyBuffer (commandBuffer: VkCommandBuffer) src dst size =
 
     vkBeginCommandBuffer(commandBuffer, &&beginInfo) |> checkResult
 
-    let copyRegion =
+    let mutable copyRegion =
         VkBufferCopy (
             srcOffset = 0UL, // Optional
             dstOffset = 0UL, // Optional
@@ -266,7 +266,7 @@ let recordCopyBuffer (commandBuffer: VkCommandBuffer) src dst size =
     vkEndCommandBuffer(commandBuffer) |> checkResult
 
 let copyBuffer device commandPool srcBuffer dstBuffer size queue =
-    let allocInfo =
+    let mutable allocInfo =
         VkCommandBufferAllocateInfo (
             sType = VkStructureType.VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
             level = VkCommandBufferLevel.VK_COMMAND_BUFFER_LEVEL_PRIMARY,
@@ -274,12 +274,12 @@ let copyBuffer device commandPool srcBuffer dstBuffer size queue =
             commandBufferCount = 1u
         )
 
-    let commandBuffer = VkCommandBuffer()
+    let mutable commandBuffer = VkCommandBuffer()
     vkAllocateCommandBuffers(device, &&allocInfo, &&commandBuffer) |> checkResult
     
     recordCopyBuffer commandBuffer srcBuffer dstBuffer size
 
-    let submitInfo =
+    let mutable submitInfo =
         VkSubmitInfo (
             sType = VkStructureType.VK_STRUCTURE_TYPE_SUBMIT_INFO,
             commandBufferCount = 1u,

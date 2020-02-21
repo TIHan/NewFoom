@@ -42,7 +42,7 @@ let recordDraw extent (framebuffers: VkFramebuffer []) (commandBuffers: VkComman
 
         // Begin command buffer
 
-        let beginInfo =
+        let mutable beginInfo =
             VkCommandBufferBeginInfo (
                 sType = VkStructureType.VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
                 flags = VkCommandBufferUsageFlags (), // Optional
@@ -53,12 +53,12 @@ let recordDraw extent (framebuffers: VkFramebuffer []) (commandBuffers: VkComman
 
         // Begin Render pass
 
-        let clearColor = 
+        let mutable clearColor = 
             let colorValue = VkFixedArray_float32_4 (_0 = 0.f, _1 = 0.f, _2 = 0.f, _3 = 1.f)
             let color = VkClearColorValue (float32 = colorValue)
             VkClearValue (color = color)
 
-        let beginInfo =
+        let mutable beginInfo =
             VkRenderPassBeginInfo (
                 sType = VkStructureType.VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
                 renderPass = renderPass,
@@ -77,7 +77,7 @@ let recordDraw extent (framebuffers: VkFramebuffer []) (commandBuffers: VkComman
         // Bind vertex buffers
 
         if vertexBuffers |> Array.isEmpty |> not then          
-            let offsets = 0UL
+            let mutable offsets = 0UL
             use pVertexBuffers = fixed vertexBuffers
             vkCmdBindVertexBuffers(commandBuffer, 0u, uint32 vertexBuffers.Length, pVertexBuffers, &&offsets)
 
@@ -215,14 +215,14 @@ type Shader =
     }
 
 let mkShaderModule device (code: nativeptr<byte>) (codeSize: uint32) =
-    let createInfo = 
+    let mutable createInfo = 
         VkShaderModuleCreateInfo (
             sType = VkStructureType.VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
             codeSize = unativeint codeSize,
             pCode = vkCastPtr code
         )
 
-    let shaderModule = VkShaderModule ()
+    let mutable shaderModule = VkShaderModule ()
     vkCreateShaderModule(device, &&createInfo, vkNullPtr, &&shaderModule) |> checkResult
     shaderModule
 
@@ -261,23 +261,23 @@ let mkGraphicsPipeline device extent pipelineLayout renderPass group =
             pVertexAttributeDescriptions = pVertexAttributeDescriptions
         )
 
-    let inputAssemblyCreateInfo = mkInputAssemblyCreateInfo ()
+    let mutable inputAssemblyCreateInfo = mkInputAssemblyCreateInfo ()
 
-    let viewport = mkViewport extent
-    let scissor = mkScissor extent
-    let viewportStateCreateInfo = mkViewportStateCreateInfo &&viewport &&scissor
+    let mutable viewport = mkViewport extent
+    let mutable scissor = mkScissor extent
+    let mutable viewportStateCreateInfo = mkViewportStateCreateInfo &&viewport &&scissor
 
-    let rasterizerCreateInfo = mkRasterizerCreateInfo ()
-    let multisampleCreateInfo = mkMultisampleCreateInfo ()
+    let mutable rasterizerCreateInfo = mkRasterizerCreateInfo ()
+    let mutable multisampleCreateInfo = mkMultisampleCreateInfo ()
     // TODO: depth stencil state
 
-    let colorBlendAttachment = mkColorBlendAttachment ()
-    let colorBlendCreateInfo = mkColorBlendCreateInfo &&colorBlendAttachment 1u
+    let mutable colorBlendAttachment = mkColorBlendAttachment ()
+    let mutable colorBlendCreateInfo = mkColorBlendCreateInfo &&colorBlendAttachment 1u
 
     // TODO: dynamic state
 
     use pStages = fixed stages
-    let createInfo =
+    let mutable createInfo =
         VkGraphicsPipelineCreateInfo (
             sType = VkStructureType.VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
             stageCount = uint32 stages.Length,
@@ -299,7 +299,7 @@ let mkGraphicsPipeline device extent pipelineLayout renderPass group =
             basePipelineIndex = -1 // Optional
         )
 
-    let graphicsPipeline = VkPipeline ()
+    let mutable graphicsPipeline = VkPipeline ()
     vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1u, &&createInfo, vkNullPtr, &&graphicsPipeline) |> checkResult
     graphicsPipeline
 
@@ -312,17 +312,17 @@ type SwapChainSupportDetails =
     }
 
 let querySwapChainSupport physicalDevice surface =
-    let capabilities = VkSurfaceCapabilitiesKHR ()
+    let mutable capabilities = VkSurfaceCapabilitiesKHR ()
     vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &&capabilities) |> checkResult
 
-    let formatCount = 0u
+    let mutable formatCount = 0u
     vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &&formatCount, vkNullPtr) |> checkResult
 
     let formats = Array.zeroCreate (int formatCount)
     use pFormats = fixed formats
     vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &&formatCount, pFormats) |> checkResult
 
-    let presentModeCount = 0u
+    let mutable presentModeCount = 0u
     vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &&presentModeCount, vkNullPtr) |> checkResult
 
     let presentModes = Array.zeroCreate (int presentModeCount)
@@ -382,7 +382,7 @@ let mkSwapChain physicalDevice device surface graphicsFamily presentFamily =
     let queueFamilyIndices = [|graphicsFamily;presentFamily|]
     let isConcurrent = graphicsFamily <> presentFamily
     use pQueueFamilyIndices = fixed queueFamilyIndices
-    let createInfo = 
+    let mutable createInfo = 
         VkSwapchainCreateInfoKHR (
             sType = VkStructureType.VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
             surface = surface,
@@ -402,12 +402,12 @@ let mkSwapChain physicalDevice device surface graphicsFamily presentFamily =
             oldSwapchain = VK_NULL_HANDLE
         )
 
-    let swapChain = VkSwapchainKHR ()
+    let mutable swapChain = VkSwapchainKHR ()
     vkCreateSwapchainKHR(device, &&createInfo, vkNullPtr, &&swapChain) |> checkResult
 
     // get images too
 
-    let imageCount = 0u
+    let mutable imageCount = 0u
     vkGetSwapchainImagesKHR(device, swapChain, &&imageCount, vkNullPtr) |> checkResult
 
     let images = Array.zeroCreate (int imageCount)
@@ -444,8 +444,8 @@ let mkImageViewCreateInfo format image =
     )
 
 let mkImageView device format image =
-    let createInfo = mkImageViewCreateInfo format image
-    let imageView = VkImageView()
+    let mutable createInfo = mkImageViewCreateInfo format image
+    let mutable imageView = VkImageView()
     vkCreateImageView(device, &&createInfo, vkNullPtr, &&imageView) |> checkResult
     imageView
     
@@ -481,11 +481,11 @@ let mkSubpass pColorAttachmentRefs colorAttachmentRefCount =
     )
 
 let mkRenderPass device format =
-    let colorAttachment = mkColorAttachment format
-    let colorAttachmentRef = mkColorAttachmentRef
-    let subpass = mkSubpass &&colorAttachmentRef 1u
+    let mutable colorAttachment = mkColorAttachment format
+    let mutable colorAttachmentRef = mkColorAttachmentRef
+    let mutable subpass = mkSubpass &&colorAttachmentRef 1u
 
-    let dependency = 
+    let mutable dependency = 
         VkSubpassDependency (
             srcSubpass = VK_SUBPASS_EXTERNAL,
             dstSubpass = 0u,
@@ -495,7 +495,7 @@ let mkRenderPass device format =
             dstAccessMask = (VkAccessFlags.VK_ACCESS_COLOR_ATTACHMENT_READ_BIT ||| VkAccessFlags.VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT)
         )
 
-    let createInfo =
+    let mutable createInfo =
         VkRenderPassCreateInfo (
             sType = VkStructureType.VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
             attachmentCount = 1u,
@@ -506,13 +506,13 @@ let mkRenderPass device format =
             pDependencies = &&dependency
         )
 
-    let renderPass = VkRenderPass ()
+    let mutable renderPass = VkRenderPass ()
     vkCreateRenderPass(device, &&createInfo, vkNullPtr, &&renderPass) |> checkResult
     renderPass
 
 let mkPipelineLayout device (layouts: VkDescriptorSetLayout []) =
     use pSetLayouts = fixed layouts
-    let createInfo =
+    let mutable createInfo =
         VkPipelineLayoutCreateInfo (
             sType = VkStructureType.VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
             setLayoutCount = uint32 layouts.Length,
@@ -521,14 +521,14 @@ let mkPipelineLayout device (layouts: VkDescriptorSetLayout []) =
             pPushConstantRanges = vkNullPtr // Optional
         )
 
-    let pipelineLayout = VkPipelineLayout ()
+    let mutable pipelineLayout = VkPipelineLayout ()
     vkCreatePipelineLayout(device, &&createInfo, vkNullPtr, &&pipelineLayout) |> checkResult
     pipelineLayout
 
 let mkFramebuffers device renderPass (extent: VkExtent2D) imageViews =
     imageViews
     |> Array.map (fun imageView ->
-        let framebufferCreateInfo = 
+        let mutable framebufferCreateInfo = 
             VkFramebufferCreateInfo (
                 sType = VkStructureType.VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
                 renderPass = renderPass,
@@ -539,7 +539,7 @@ let mkFramebuffers device renderPass (extent: VkExtent2D) imageViews =
                 layers = 1u
             )
 
-        let framebuffer = VkFramebuffer ()
+        let mutable framebuffer = VkFramebuffer ()
         vkCreateFramebuffer(device, &&framebufferCreateInfo, vkNullPtr, &&framebuffer) |> checkResult
         framebuffer)
 
@@ -555,26 +555,26 @@ type Sync =
 let MaxFramesInFlight = 2
 
 let mkSync device =
-    let semaphoreCreateInfo =
+    let mutable semaphoreCreateInfo =
         VkSemaphoreCreateInfo (
             sType = VkStructureType.VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO
         )
 
     let imageAvailableSemaphores =
         Array.init MaxFramesInFlight (fun _ ->
-            let imageAvailableSemaphore = VkSemaphore ()
+            let mutable imageAvailableSemaphore = VkSemaphore ()
             vkCreateSemaphore(device, &&semaphoreCreateInfo, vkNullPtr, &&imageAvailableSemaphore) |> checkResult
             imageAvailableSemaphore
         )
 
     let renderFinishedSemaphores =
         Array.init MaxFramesInFlight (fun _ ->
-            let renderFinishedSemaphore = VkSemaphore ()
+            let mutable renderFinishedSemaphore = VkSemaphore ()
             vkCreateSemaphore(device, &&semaphoreCreateInfo, vkNullPtr, &&renderFinishedSemaphore) |> checkResult
             renderFinishedSemaphore
         )
 
-    let fenceCreateInfo =
+    let mutable fenceCreateInfo =
         VkFenceCreateInfo (
             sType = VkStructureType.VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
             flags = VkFenceCreateFlags.VK_FENCE_CREATE_SIGNALED_BIT // we need this so we do not lock up on the first 'drawFrame'
@@ -582,7 +582,7 @@ let mkSync device =
 
     let inFlightFences = 
         Array.init MaxFramesInFlight (fun _ ->
-            let fence = VkFence ()
+            let mutable fence = VkFence ()
             vkCreateFence(device, &&fenceCreateInfo, vkNullPtr, &&fence) |> checkResult
             fence
         )
@@ -598,7 +598,7 @@ let drawFrame device swapChain sync (commandBuffers: VkCommandBuffer []) graphic
     vkWaitForFences(device, 1u, pFences, VK_TRUE, UInt64.MaxValue) |> checkResult
     vkResetFences(device, 1u, pFences) |> checkResult
 
-    let imageIndex = 0u
+    let mutable imageIndex = 0u
     vkAcquireNextImageKHR(device, swapChain, UInt64.MaxValue, sync.imageAvailableSemaphores.[currentFrame], VK_NULL_HANDLE, &&imageIndex) |> checkResult
 
     let waitSemaphores = [|sync.imageAvailableSemaphores.[currentFrame]|]
@@ -610,7 +610,7 @@ let drawFrame device swapChain sync (commandBuffers: VkCommandBuffer []) graphic
     use waitStages = fixed waitStages
     use pSignalSemaphores = fixed signalSemaphores
     use pCommandBuffers = fixed &commandBuffers.[int imageIndex]
-    let submitInfo =
+    let mutable submitInfo =
         VkSubmitInfo (
             sType = VkStructureType.VK_STRUCTURE_TYPE_SUBMIT_INFO,
             waitSemaphoreCount = uint32 waitSemaphores.Length,
@@ -629,7 +629,7 @@ let drawFrame device swapChain sync (commandBuffers: VkCommandBuffer []) graphic
     let swapChains = [|swapChain|]
 
     use pSwapChains = fixed swapChains
-    let presentInfo =
+    let mutable presentInfo =
         VkPresentInfoKHR (
             sType = VkStructureType.VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
             waitSemaphoreCount = uint32 signalSemaphores.Length,
@@ -645,7 +645,7 @@ let drawFrame device swapChain sync (commandBuffers: VkCommandBuffer []) graphic
     (currentFrame + 1) % MaxFramesInFlight, res
 
 let mkDescriptorSetLayout device stageFlags =
-    let binding =
+    let mutable binding =
         VkDescriptorSetLayoutBinding (
             binding = 0u,
             descriptorType = VkDescriptorType.VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
@@ -654,31 +654,31 @@ let mkDescriptorSetLayout device stageFlags =
             pImmutableSamplers = vkNullPtr // Optional, for image samplers
         )
 
-    let layoutInfo =
+    let mutable layoutInfo =
         VkDescriptorSetLayoutCreateInfo (
             sType = VkStructureType.VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
             bindingCount = 1u,
             pBindings = &&binding
         )
 
-    let descriptorSetLayout = VkDescriptorSetLayout ()
+    let mutable descriptorSetLayout = VkDescriptorSetLayout ()
     vkCreateDescriptorSetLayout(device, &&layoutInfo, vkNullPtr, &&descriptorSetLayout) |> checkResult
     descriptorSetLayout
 
 let mkDescriptorPool device size =
-    let poolSize =
+    let mutable poolSize =
         VkDescriptorPoolSize(
             typ = VkDescriptorType.VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
             descriptorCount = uint32 size)
 
-    let poolInfo =
+    let mutable poolInfo =
         VkDescriptorPoolCreateInfo(
             sType = VkStructureType.VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
             poolSizeCount = 1u,
             pPoolSizes = &&poolSize,
             maxSets = uint32 size)
 
-    let descriptorPool = VkDescriptorPool()
+    let mutable descriptorPool = VkDescriptorPool()
     vkCreateDescriptorPool(device, &&poolInfo, vkNullPtr, &&descriptorPool) |> checkResult
     descriptorPool
 

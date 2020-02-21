@@ -1,5 +1,5 @@
 ﻿// http://gafferongames.com/game-physics/fix-your-timestep/
-module internal GameLoop
+module GameLoop
 
     open System.Diagnostics
     open System.Threading
@@ -55,7 +55,7 @@ module internal GameLoop
             TargetUpdateInterval = targetUpdateInterval
         }
 
-    let tick (alwaysUpdate: unit -> unit) (update: int64 -> int64 -> bool) (render: int64 -> float -> unit) gl =
+    let tick (alwaysUpdate: unit -> unit) (update: int64 -> int64 -> bool) (render: int64 -> float32 -> unit) gl =
         let ctx = gl.Context
         let stopwatch = gl.Stopwatch
         let skip = gl.Skip
@@ -87,7 +87,7 @@ module internal GameLoop
                 gl
 
         let processRender gl =
-            render currentTime (float gl.UpdateAccumulator / float targetUpdateInterval)
+            render currentTime (single gl.UpdateAccumulator / single targetUpdateInterval)
 
             { gl with 
                 LastTime = currentTime
@@ -97,7 +97,7 @@ module internal GameLoop
         |> processUpdate
         |> processRender
 
-    let start updateInterval (alwaysUpdate: unit -> unit) (update: int64 -> int64 -> bool) (render: int64 -> float -> unit) : unit =
+    let start updateInterval (alwaysUpdate: unit -> unit) (update: int64 -> int64 -> bool) (render: int64 -> float32 -> unit) : unit =
         let gl = create updateInterval
 
         let rec loop gl =

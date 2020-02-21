@@ -8,6 +8,7 @@ open Foom.Game.Input
 open Foom.Win32Internal
 
 #nowarn "9"
+#nowarn "51"
 
 open System.Collections.Generic
 
@@ -85,8 +86,8 @@ type Win32Game (windowTitle: string, svGame: AbstractServerGame, clGame: Abstrac
         let hashKey = HashSet()
         while not gl.WillQuit do
             while PeekMessage(&&msg, nativeint 0, 0u, 0u, 0x0001u) <> 0uy do
-                TranslateMessage(&msg) |> ignore
-                DispatchMessage(&msg) |> ignore
+                TranslateMessage(&&msg) |> ignore
+                DispatchMessage(&&msg) |> ignore
 
                 match msg.message with
                 | x when int x = WM_KEYDOWN ->
@@ -144,12 +145,13 @@ type Win32WindowState (title: string, width: int, weight: int) as this =
             DefWindowProc(hWnd, msg, wParam, lParam)
 
     // Store this so it doesn't get collected cause a System.ExecutionEngineException.
-    member val private WndProcDelegate = del
+    member private _.WndProcDelegate = del
 
     member __.WindowClosing = windowClosing.Publish
 
     member __.Show () =
         del <- WndProcDelegate(this.WndProc)
+
         let hwnd2, hinstance2 = createWin32Window title del
         hwnd <- hwnd2
         hinstance <- hinstance2
@@ -168,8 +170,8 @@ type Win32WindowState (title: string, width: int, weight: int) as this =
             let hashKey = HashSet ()
 
             while PeekMessage(&&msg, hwnd, 0u, 0u, PM_REMOVE) <> 0uy do
-                TranslateMessage(&msg) |> ignore
-                DispatchMessage(&msg) |> ignore
+                TranslateMessage(&&msg) |> ignore
+                DispatchMessage(&&msg) |> ignore
 
                 match int msg.message with
                 | x when x = WM_KEYDOWN || x = WM_SYSKEYDOWN ->
@@ -184,5 +186,4 @@ type Win32WindowState (title: string, width: int, weight: int) as this =
                     CloseWindow(hwnd) |> ignore
 
                 | _ -> ()
-            inputs
-            |> List.ofSeq          
+            inputs |> List.ofSeq 
