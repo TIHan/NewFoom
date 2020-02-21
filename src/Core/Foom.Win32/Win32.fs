@@ -165,11 +165,12 @@ type Win32WindowState (title: string, width: int, weight: int) as this =
         member __.ShowWindow () = () // TODO:
 
         member __.PollInput () =
-            let mutable msg = MSG ()
+
             let inputs = ResizeArray ()
             let hashKey = HashSet ()
 
-            while PeekMessage(&&msg, hwnd, 0u, 0u, PM_REMOVE) <> 0uy do
+            let mutable msg = MSG ()
+            while PeekMessage(&&msg, nativeint 0, 0u, 0u, PM_REMOVE) <> 0uy do
                 TranslateMessage(&&msg) |> ignore
                 DispatchMessage(&&msg) |> ignore
 
@@ -186,4 +187,4 @@ type Win32WindowState (title: string, width: int, weight: int) as this =
                     CloseWindow(hwnd) |> ignore
 
                 | _ -> ()
-            inputs |> List.ofSeq 
+            inputs |> List.ofSeq

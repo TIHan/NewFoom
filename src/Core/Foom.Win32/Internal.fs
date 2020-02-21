@@ -104,8 +104,8 @@ type HBRUSH = nativeint
 type ATOM = int
 type BOOL = byte
 type WPARAM = UINT
-type LPARAM = int
-type LONG = int
+type LPARAM = nativeint
+type LONG = nativeint
 type LRESULT = nativeint
 type HANDLE = nativeint
 

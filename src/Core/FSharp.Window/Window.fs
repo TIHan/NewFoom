@@ -51,11 +51,7 @@ type Window (title: string, updateInterval: float, width: int, height: int, even
     member __.Start () =
         GameLoop.start
             updateInterval
-            (fun () -> 
-                try 
-                    events.OnInputEvents (state.PollInput ())
-                with
-                | ex -> Console.WriteLine(ex.Message))
+            (fun () -> events.OnInputEvents (state.PollInput ()))
             (fun ticks intervalTicks ->
                 let time = TimeSpan.FromTicks ticks
                 let interval = TimeSpan.FromTicks intervalTicks
