@@ -252,7 +252,7 @@ let mkGraphicsPipeline device extent pipelineLayout renderPass group =
     use pVertexBindingDescriptions = fixed group.vertexBindings
     use pVertexAttributeDescriptions = fixed group.vertexAttributes
         
-    let vertexInputCreateInfo =
+    let mutable vertexInputCreateInfo =
         VkPipelineVertexInputStateCreateInfo (
             sType = VkStructureType.VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
             vertexBindingDescriptionCount = uint32 group.vertexBindings.Length,
