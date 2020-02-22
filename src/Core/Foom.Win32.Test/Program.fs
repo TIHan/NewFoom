@@ -72,7 +72,7 @@ let setRender (instance: FalGraphics) =
             let mutable gl_Position  = Variable<Vector4> [Decoration.BuiltIn BuiltIn.Position] StorageClass.Output
             let mutable fragColor = Variable<Vector3> [Decoration.Location 0u] StorageClass.Output
 
-            let mvp = Variable<ModelViewProjection> [Decoration.Binding 0u] StorageClass.Uniform
+            let mvp = Variable<ModelViewProjection> [Decoration.Binding 0u; Decoration.DescriptorSet 0u] StorageClass.Uniform
 
             fun () ->
                 let stuff = mvp.proj * mvp.view
