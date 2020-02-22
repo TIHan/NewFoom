@@ -20,6 +20,7 @@ type SwapChainState =
         renderPass: VkRenderPass
         descriptorSetLayout: VkDescriptorSetLayout
         descriptorPool: VkDescriptorPool
+        descriptorSets: VkDescriptorSet []
         pipelineLayout: VkPipelineLayout
         framebuffers: VkFramebuffer []
         commandBuffers: VkCommandBuffer []
@@ -682,6 +683,43 @@ let mkDescriptorPool device size =
     vkCreateDescriptorPool(device, &&poolInfo, vkNullPtr, &&descriptorPool) |> checkResult
     descriptorPool
 
+let mkDescriptorSets device size descriptorPool (setLayouts: VkDescriptorSetLayout []) =
+    use pSetLayouts = fixed setLayouts
+    let mutable allocInfo =
+        VkDescriptorSetAllocateInfo(
+            sType = VkStructureType.VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+            descriptorPool = descriptorPool,
+            descriptorSetCount = uint32 size,
+            pSetLayouts = pSetLayouts)
+
+    let descriptorSets = Array.zeroCreate size
+    use pDescriptorSets = fixed descriptorSets
+    vkAllocateDescriptorSets(device, &&allocInfo, pDescriptorSets) |> checkResult
+    descriptorSets
+
+let mkDescriptorBufferInfo uniformBuffer size =
+    let mutable bufferInfo =
+        VkDescriptorBufferInfo(
+            buffer = uniformBuffer,
+            offset = 0UL,
+            range = uint64 size)
+    bufferInfo
+
+let updateDescriptorSets device descriptorSet pBufferInfo =
+    let mutable descriptorWrite =
+        VkWriteDescriptorSet(
+            sType = VkStructureType.VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+            dstSet = descriptorSet,
+            dstBinding = 0u,
+            dstArrayElement = 0u,
+            descriptorType = VkDescriptorType.VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            descriptorCount = 1u,
+            pBufferInfo = pBufferInfo,
+            pImageInfo = vkNullPtr, // optional
+            pTexelBufferView = vkNullPtr (* optional *))
+
+    vkUpdateDescriptorSets(device, 1u, &&descriptorWrite, 0u, vkNullPtr)
+
 [<Sealed>]
 type SwapChain private (physicalDevice, device, surface, sync, graphicsFamily, graphicsQueue, presentFamily, presentQueue, commandPool) =
 
@@ -777,7 +815,9 @@ type SwapChain private (physicalDevice, device, surface, sync, graphicsFamily, g
             let renderPass = mkRenderPass device surfaceFormat.format
             let descriptorSetLayout = mkDescriptorSetLayout device VkShaderStageFlags.VK_SHADER_STAGE_VERTEX_BIT
             let descriptorPool = mkDescriptorPool device images.Length
-            let pipelineLayout = mkPipelineLayout device [|descriptorSetLayout|]
+            let descriptorSetLayouts = Array.init imageViews.Length (fun _ -> descriptorSetLayout)
+            let descriptorSets = mkDescriptorSets device imageViews.Length descriptorPool descriptorSetLayouts
+            let pipelineLayout = mkPipelineLayout device descriptorSetLayouts
             let framebuffers = mkFramebuffers device renderPass extent imageViews
             let commandBuffers = mkCommandBuffers device commandPool framebuffers
 
@@ -788,6 +828,7 @@ type SwapChain private (physicalDevice, device, surface, sync, graphicsFamily, g
                     imageViews = imageViews
                     renderPass = renderPass
                     descriptorSetLayout = descriptorSetLayout
+                    descriptorSets = descriptorSets
                     descriptorPool = descriptorPool
                     pipelineLayout = pipelineLayout
                     framebuffers = framebuffers
