@@ -52,7 +52,8 @@ type Vertex =
 
 let setRender (instance: FalGraphics) =
     //let mvpBindings = [||]
-    //let mvpUniform = instance.CreateBuffer<ModelViewProjection>(sizeof<ModelViewProjection>, BufferFlags.None, BufferKind.Uniform)
+    let mvpUniform = instance.CreateBuffer<ModelViewProjection>(sizeof<ModelViewProjection>, BufferFlags.None, BufferKind.Uniform)
+    instance.SetUniformBuffer(mvpUniform)
     let vertices =
         [|
             { position = Vector2 (0.f, -0.5f); color = Vector3 (1.f, 0.f, 0.f) }

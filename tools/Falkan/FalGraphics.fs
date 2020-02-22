@@ -431,6 +431,13 @@ type FalGraphics
         | _ ->
             failwith "Buffer is not in the vulkan instance."
 
+    member _.SetUniformBuffer<'T when 'T : unmanaged>(buffer: FalBuffer<'T>) =
+        lock gate <| fun _ ->
+            
+        checkDispose ()
+
+        swapChain.SetUniformBuffer(buffer.Buffer, sizeof<'T>)
+
     interface IDisposable with
         member x.Dispose () =
             if Interlocked.CompareExchange(&isDisposed, 1, 0) = 1 then

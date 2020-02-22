@@ -43,4 +43,6 @@ type FalGraphics =
 
     member DestroyBuffer : FalBuffer<_> -> unit
 
+    member SetUniformBuffer: FalBuffer<_> -> unit
+
     static member Create : FalDevice -> FalGraphics

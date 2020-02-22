@@ -711,7 +711,7 @@ let mkDescriptorBufferInfo uniformBuffer size =
             range = uint64 size)
     bufferInfo
 
-let updateDescriptorSets device descriptorSet pBufferInfo =
+let updateDescriptorSet device descriptorSet pBufferInfo =
     let mutable descriptorWrite =
         VkWriteDescriptorSet(
             sType = VkStructureType.VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
@@ -823,7 +823,7 @@ type SwapChain private (physicalDevice, device, surface, sync, graphicsFamily, g
             let descriptorPool = mkDescriptorPool device images.Length
             let descriptorSetLayouts = Array.init imageViews.Length (fun _ -> descriptorSetLayout)
             let descriptorSets = mkDescriptorSets device imageViews.Length descriptorPool descriptorSetLayouts
-            let pipelineLayout = mkPipelineLayout device descriptorSetLayouts
+            let pipelineLayout = mkPipelineLayout device [|descriptorSetLayout|]
             let framebuffers = mkFramebuffers device renderPass extent imageViews
             let commandBuffers = mkCommandBuffers device commandPool framebuffers
 
@@ -873,7 +873,7 @@ type SwapChain private (physicalDevice, device, surface, sync, graphicsFamily, g
             shaders.Add shader
             addPipeline shader
             pipelineIndex
-        finally
+        finally 
             Monitor.Exit gate
 
     member x.RecordDraw(pipelineIndex, vertexBuffers, vertexCount, instanceCount) =
@@ -893,6 +893,17 @@ type SwapChain private (physicalDevice, device, surface, sync, graphicsFamily, g
             record recording
         else
             failwith "Pipeline index is invalid."
+
+    member x.SetUniformBuffer(buffer, size) =
+        lock gate |> fun _ ->
+
+        check ()
+
+        let state = state.Value
+        state.descriptorSets
+        |> Array.iter (fun descriptorSet ->
+            let mutable bufferInfo = mkDescriptorBufferInfo buffer size
+            updateDescriptorSet device descriptorSet &&bufferInfo)
 
     member x.DrawFrame () =
         lock gate |> fun _ ->
