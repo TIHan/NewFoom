@@ -450,8 +450,8 @@ let rec GenExpr cenv (env: env) expr =
             resultId
 
         | Multiply__Matrix4x4_Matrix4x4__Matrix4x4 (arg1, arg2) ->
-            let arg1 = GenExpr cenv env arg1
-            let arg2 = GenExpr cenv env arg2
+            let arg1 = GenExpr cenv env arg1 |> emitLoad cenv
+            let arg2 = GenExpr cenv env arg2 |> emitLoad cenv
 
             let resultId = nextResultId cenv
             addInstructions cenv [OpMatrixTimesMatrix(retTy, resultId, arg1, arg2)]
@@ -482,10 +482,10 @@ let rec GenExpr cenv (env: env) expr =
         let receiverId = GenExpr cenv env receiver
 
         let resultType = getAccessChainResultType cenv receiverId index
-        let tyId = 
-            match getTypePointerInstruction cenv resultType with
-            | OpTypePointer(_, _, tyId) -> tyId
-            | _ -> failwith "Invalid pointer."
+
+        match getTypePointerInstruction cenv resultType with
+        | OpTypePointer _ -> ()
+        | _ -> failwith "Invalid pointer."
 
         let indexId = GenExpr cenv env (SpirvConst (SpirvConstInt(index, [])))
         let accessChainPointerId = nextResultId cenv
@@ -493,6 +493,7 @@ let rec GenExpr cenv (env: env) expr =
         addInstructions cenv [op]
         cenv.locals.[accessChainPointerId] <- op
         accessChainPointerId
+        // TODO: Do an emit load?
 
 and GenVector cenv env retTy args =
     let constituents =
