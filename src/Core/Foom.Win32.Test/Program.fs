@@ -67,13 +67,13 @@ let setRender (instance: FalGraphics) =
 
     let vertex =
         <@
+            let mvp = Variable<ModelViewProjection> [Decoration.Uniform; Decoration.Binding 0u] StorageClass.Private
+
             let vertex = Variable<Vertex> [Decoration.Location 0u] StorageClass.Input
             let _position = Variable<Vector2> [Decoration.Location 0u] StorageClass.Input
             let _color = Variable<Vector3> [Decoration.Location 1u] StorageClass.Input
             let mutable gl_Position  = Variable<Vector4> [Decoration.BuiltIn BuiltIn.Position] StorageClass.Output
             let mutable fragColor = Variable<Vector3> [Decoration.Location 0u] StorageClass.Output
-
-            let mvp = Variable<ModelViewProjection> [Decoration.Binding 0u; Decoration.DescriptorSet 0u] StorageClass.Uniform
 
             fun () ->
                 let stuff = mvp.proj * mvp.view

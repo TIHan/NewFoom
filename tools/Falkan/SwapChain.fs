@@ -77,17 +77,17 @@ let recordDraw extent (framebuffers: VkFramebuffer []) (commandBuffers: VkComman
 
         vkCmdBindPipeline(commandBuffer, VkPipelineBindPoint.VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline)
 
+        // Bind descriptor sets
+
+        let mutable descriptorSet = descriptorSet
+        vkCmdBindDescriptorSets(commandBuffer, VkPipelineBindPoint.VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0u, 1u, &&descriptorSet, 0u, vkNullPtr)
+
         // Bind vertex buffers
 
         if vertexBuffers |> Array.isEmpty |> not then          
             let mutable offsets = 0UL
             use pVertexBuffers = fixed vertexBuffers
             vkCmdBindVertexBuffers(commandBuffer, 0u, uint32 vertexBuffers.Length, pVertexBuffers, &&offsets)
-
-        // Bind descriptor sets
-
-        let mutable descriptorSet = descriptorSet
-        vkCmdBindDescriptorSets(commandBuffer, VkPipelineBindPoint.VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0u, 1u, &&descriptorSet, 0u, vkNullPtr)
 
         // Draw
 
