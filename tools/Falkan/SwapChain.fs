@@ -37,9 +37,11 @@ type DrawRecording =
 
 type PipelineIndex = int
 
-let recordDraw extent (framebuffers: VkFramebuffer []) (commandBuffers: VkCommandBuffer []) renderPass graphicsPipeline (vertexBuffers: VkBuffer []) vertexCount instanceCount =
-    (framebuffers, commandBuffers)
-    ||> Array.iter2 (fun framebuffer commandBuffer ->
+let recordDraw extent (framebuffers: VkFramebuffer []) (commandBuffers: VkCommandBuffer []) (descriptorSets: VkDescriptorSet []) pipelineLayout renderPass graphicsPipeline (vertexBuffers: VkBuffer []) vertexCount instanceCount =
+    for i = 0 to framebuffers.Length - 1 do
+        let framebuffer = framebuffers.[i]
+        let commandBuffer = commandBuffers.[i]
+        let descriptorSet = descriptorSets.[i]
 
         // Begin command buffer
 
@@ -82,6 +84,11 @@ let recordDraw extent (framebuffers: VkFramebuffer []) (commandBuffers: VkComman
             use pVertexBuffers = fixed vertexBuffers
             vkCmdBindVertexBuffers(commandBuffer, 0u, uint32 vertexBuffers.Length, pVertexBuffers, &&offsets)
 
+        // Bind descriptor sets
+
+        let mutable descriptorSet = descriptorSet
+        vkCmdBindDescriptorSets(commandBuffer, VkPipelineBindPoint.VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0u, 1u, &&descriptorSet, 0u, vkNullPtr)
+
         // Draw
 
         vkCmdDraw(commandBuffer, vertexCount, instanceCount, 0u, 0u)
@@ -93,7 +100,6 @@ let recordDraw extent (framebuffers: VkFramebuffer []) (commandBuffers: VkComman
         // Finish recording
 
         vkEndCommandBuffer(commandBuffer) |> checkResult
-    )
 
 let mkShaderStageInfo stage pName shaderModule =
     VkPipelineShaderStageCreateInfo (
@@ -799,7 +805,7 @@ type SwapChain private (physicalDevice, device, surface, sync, graphicsFamily, g
     let record recording =
         let state = state.Value
         recordDraw 
-            state.extent state.framebuffers state.commandBuffers state.renderPass 
+            state.extent state.framebuffers state.commandBuffers state.descriptorSets state.pipelineLayout state.renderPass 
             pipelines.[recording.pipelineIndex] recording.vertexBuffers recording.vertexCount recording.instanceCount
 
     member x.Recreate () =
