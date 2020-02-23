@@ -733,6 +733,7 @@ type SwapChain private (physicalDevice, device, surface, sync, graphicsFamily, g
     let mutable state = None
     let mutable currentFrame = 0
     let mutable isDisposed = 0
+    let mutable uniformBuffer = None
 
     let recordings = Collections.Generic.Dictionary<int, DrawRecording>()
     let shaders = ResizeArray ()
@@ -808,6 +809,17 @@ type SwapChain private (physicalDevice, device, surface, sync, graphicsFamily, g
             state.extent state.framebuffers state.commandBuffers state.descriptorSets state.pipelineLayout state.renderPass 
             pipelines.[recording.pipelineIndex] recording.vertexBuffers recording.vertexCount recording.instanceCount
 
+    let setUniformBuffer () =
+        match uniformBuffer with
+        | Some(buffer, size) ->
+            let state = state.Value
+            state.descriptorSets
+            |> Array.iter (fun descriptorSet ->
+                let mutable bufferInfo = mkDescriptorBufferInfo buffer size
+                updateDescriptorSet device descriptorSet &&bufferInfo)
+        | _ ->
+            ()
+
     member x.Recreate () =
         if not (Monitor.IsEntered gate) then
             Monitor.Enter gate
@@ -820,7 +832,7 @@ type SwapChain private (physicalDevice, device, surface, sync, graphicsFamily, g
             let imageViews = mkImageViews device surfaceFormat.format images
             let renderPass = mkRenderPass device surfaceFormat.format
             let descriptorSetLayout = mkDescriptorSetLayout device VkShaderStageFlags.VK_SHADER_STAGE_VERTEX_BIT
-            let descriptorPool = mkDescriptorPool device images.Length
+            let descriptorPool = mkDescriptorPool device imageViews.Length
             let descriptorSetLayouts = Array.init imageViews.Length (fun _ -> descriptorSetLayout)
             let descriptorSets = mkDescriptorSets device imageViews.Length descriptorPool descriptorSetLayouts
             let pipelineLayout = mkPipelineLayout device [|descriptorSetLayout|]
@@ -841,6 +853,8 @@ type SwapChain private (physicalDevice, device, surface, sync, graphicsFamily, g
                     commandBuffers = commandBuffers
                 }
                 |> Some
+
+            setUniformBuffer ()
 
             shaders
             |> Seq.iter (fun shader ->
@@ -899,11 +913,9 @@ type SwapChain private (physicalDevice, device, surface, sync, graphicsFamily, g
 
         check ()
 
-        let state = state.Value
-        state.descriptorSets
-        |> Array.iter (fun descriptorSet ->
-            let mutable bufferInfo = mkDescriptorBufferInfo buffer size
-            updateDescriptorSet device descriptorSet &&bufferInfo)
+        uniformBuffer <- Some(buffer, size)
+
+        setUniformBuffer ()
 
     member x.DrawFrame () =
         lock gate |> fun _ ->
