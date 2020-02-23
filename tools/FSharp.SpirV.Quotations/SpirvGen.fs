@@ -445,8 +445,18 @@ let rec GenExpr cenv (env: env) expr =
             let arg1 = GenExpr cenv env arg1
             let arg2 = GenExpr cenv env arg2
 
+            let arg1 =
+                match tryEmitLoad cenv arg1 with
+                | Some pointer -> pointer
+                | _ -> arg1
+
+            let arg2 =
+                match tryEmitLoad cenv arg2 with
+                | Some pointer -> pointer
+                | _ -> arg2
+
             let resultId = nextResultId cenv
-            addInstructions cenv [OpMatrixTimesVector(retTy, resultId, arg1, arg2)]
+            addInstructions cenv [OpMatrixTimesVector(retTy, resultId, arg2, arg1)]
             resultId
 
         | Multiply__Matrix4x4_Matrix4x4__Matrix4x4 (arg1, arg2) ->
