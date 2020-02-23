@@ -8,6 +8,9 @@ open FSharp.Spirv.Specification
 open FSharp.Spirv.Quotations
 open System
 open System.Numerics
+open System.Drawing
+open System.Drawing.Imaging
+open FSharp.NativeInterop
 
 [<Struct>]
 type ModelViewProjection =
@@ -27,6 +30,14 @@ type Vertex =
 let radians (degrees) = degrees * MathF.PI / 180.f
 
 let setRender (instance: FalGraphics) =
+    use bmp = new Bitmap(Bitmap.FromFile("texture.jpg"))
+    let rect = Rectangle(0, 0, bmp.Width, bmp.Height)
+    let data = bmp.LockBits(rect, ImageLockMode.ReadWrite, bmp.PixelFormat)
+
+    let image = instance.CreateImage(bmp.Width, bmp.Height)
+    let ptr = data.Scan0 |> NativePtr.ofNativeInt<byte> |> NativePtr.toVoidPtr
+    instance.FillImage(image, ReadOnlySpan(ptr, data.Width * data.Height))
+    bmp.UnlockBits(data)
     //let mvpBindings = [||]
     let mvpUniform = instance.CreateBuffer<ModelViewProjection>(1, BufferFlags.None, BufferKind.Uniform)
     let mvp =

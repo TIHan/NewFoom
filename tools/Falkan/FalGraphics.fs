@@ -405,7 +405,7 @@ let mkBoundImage physicalDevice device width height format tiling usage properti
     let memory = bindImage physicalDevice device image properties
     { image = image; memory = memory; width = width; height = height }
 
-let recordTransitionImageLayout (commandBuffer: VkCommandBuffer) image (format: VkFormat) oldLayout newLayout =
+let transitionImageLayout (commandBuffer: VkCommandBuffer) image (format: VkFormat) oldLayout newLayout =
     let barrier =
         VkImageMemoryBarrier(
             sType = VkStructureType.VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
@@ -430,6 +430,8 @@ let recordCopyImage (commandBuffer: VkCommandBuffer) width height srcBuffer dstI
 
     vkBeginCommandBuffer(commandBuffer, &&beginInfo) |> checkResult
 
+    transitionImageLayout commandBuffer dstImage VkFormat.VK_FORMAT_R8G8B8A8_SRGB VkImageLayout.VK_IMAGE_LAYOUT_UNDEFINED VkImageLayout.VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
+
     let mutable copyRegion =
         VkBufferImageCopy (
             bufferOffset = 0UL,
@@ -440,6 +442,8 @@ let recordCopyImage (commandBuffer: VkCommandBuffer) width height srcBuffer dstI
             imageExtent = VkExtent3D(width = uint32 width, height = uint32 height, depth = 1u))
 
     vkCmdCopyBufferToImage(commandBuffer, srcBuffer, dstImage, VkImageLayout.VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1u, &&copyRegion)
+
+    transitionImageLayout commandBuffer dstImage VkFormat.VK_FORMAT_R8G8B8A8_SRGB VkImageLayout.VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL VkImageLayout.VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
 
     vkEndCommandBuffer(commandBuffer) |> checkResult
 
@@ -454,10 +458,7 @@ let copyImage device commandPool width height srcBuffer dstImage queue =
 
     let mutable commandBuffer = VkCommandBuffer()
     vkAllocateCommandBuffers(device, &&allocInfo, &&commandBuffer) |> checkResult
-    
-    recordTransitionImageLayout commandBuffer dstImage VkFormat.VK_FORMAT_R8G8B8A8_SRGB VkImageLayout.VK_IMAGE_LAYOUT_UNDEFINED VkImageLayout.VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
     recordCopyImage commandBuffer width height srcBuffer dstImage
-    recordTransitionImageLayout commandBuffer dstImage VkFormat.VK_FORMAT_R8G8B8A8_SRGB VkImageLayout.VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL VkImageLayout.VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
 
     let mutable submitInfo =
         VkSubmitInfo (

@@ -23,7 +23,9 @@
     <Compile Include="Program.fs" />
   </ItemGroup>
 
-  <ItemGroup />
+  <ItemGroup>
+    <PackageReference Include="System.Drawing.Common" Version="4.7.0" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\tools\Falkan\Falkan.fsproj" />
