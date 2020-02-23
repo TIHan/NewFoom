@@ -41,8 +41,8 @@ let setRender (instance: FalGraphics) =
     let vertices =
         [|
             { position = Vector2 (0.f, -0.5f); color = Vector3 (1.f, 0.f, 0.f) }
-            { position = Vector2 (0.5f, 0.5f); color = Vector3 (1.f, 0.f, 0.f) }
-            { position = Vector2 (-0.5f, 0.5f); color = Vector3 (1.f, 0.f, 0.f) }
+            { position = Vector2 (0.5f, 0.5f); color = Vector3 (0.f, 1.f, 0.f) }
+            { position = Vector2 (-0.5f, 0.5f); color = Vector3 (0.f, 0.f, 1.f) }
         |]
     let verticesBindings = [|mkVertexInputBinding<Vertex> 0u VkVertexInputRate.VK_VERTEX_INPUT_RATE_VERTEX|]
     let verticesAttributes = mkVertexAttributeDescriptions<Vertex> 0u 0u
