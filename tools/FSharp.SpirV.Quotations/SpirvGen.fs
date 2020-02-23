@@ -165,7 +165,7 @@ let emitTypeAux cenv ty f =
                 offset <- offset + uint32 fieldTy.Size)
         | _ -> ()
 
-      //  addInitInstructions cenv [OpDecorate(resultId, Decoration.Block); OpDecorate(resultId, Decoration.MatrixStride 64u)]
+     //   addInitInstructions cenv [OpDecorate(resultId, Decoration.Block); OpDecorate(resultId, Decoration.MatrixStride 0u)]
 
         resultId
 
