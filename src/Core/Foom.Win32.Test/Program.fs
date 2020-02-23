@@ -32,8 +32,8 @@ let setRender (instance: FalGraphics) =
     let mvp =
         {
             model = Matrix4x4.Identity //Matrix4x4.CreateRotationX(radians -90.f) |> Matrix4x4.Transpose
-            view = Matrix4x4.Identity //Matrix4x4.CreateLookAt(Vector3(2.0f, 2.0f, 2.0f), Vector3(0.f), Vector3(0.f, 0.f, 1.0f)) |> Matrix4x4.Transpose
-            proj = Matrix4x4.Identity //Matrix4x4.CreatePerspectiveFieldOfView(radians 45.f, 1280.f / 720.f, 0.1f, 10.f) |> Matrix4x4.Transpose
+            view = Matrix4x4.CreateLookAt(Vector3(2.0f, 2.0f, 2.0f), Vector3(0.f), Vector3(0.f, 0.f, 1.0f)) |> Matrix4x4.Transpose
+            proj = Matrix4x4.CreatePerspectiveFieldOfView(radians 45.f, 1280.f / 720.f, 0.1f, 10.f) |> Matrix4x4.Transpose
         }
     instance.FillBuffer(mvpUniform, ReadOnlySpan [|mvp|])
     instance.SetUniformBuffer(mvpUniform)
