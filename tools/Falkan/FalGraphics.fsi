@@ -11,10 +11,10 @@ type BufferFlags =
     | SharedMemory = 0b1uy
 
 type BufferKind =
-    | Unspecified = 0uy
-    | Vertex = 1uy
-    | Index = 2uy
-    | Uniform = 3uy
+    | Unspecified
+    | Vertex
+    | Index
+    | Uniform
 
 type PipelineIndex = int
 
@@ -24,6 +24,11 @@ type FalBuffer<'T when 'T : unmanaged> =
     member Buffer: VkBuffer
 
     member IsShared: bool
+
+[<Struct;NoComparison;NoEquality>]
+type FalImage =
+
+    member Image: VkImage
 
 [<Sealed>]
 type FalGraphics =
@@ -42,6 +47,10 @@ type FalGraphics =
     member FillBuffer<'T when 'T : unmanaged> : FalBuffer<'T> * ReadOnlySpan<'T> -> unit
 
     member DestroyBuffer : FalBuffer<_> -> unit
+
+    member CreateImage : width: int * height: int -> FalImage
+
+    member FillImage : FalImage * ReadOnlySpan<byte> -> unit
 
     member SetUniformBuffer: FalBuffer<_> -> unit
 

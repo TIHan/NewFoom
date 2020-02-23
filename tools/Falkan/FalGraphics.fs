@@ -233,7 +233,7 @@ let bindMemory physicalDevice device buffer properties =
     vkBindBufferMemory(device, buffer, memory.raw, uint64 memory.offset) |> checkResult
     memory
 
-let mapBuffer<'T when 'T : unmanaged> device memory offset (data: ReadOnlySpan<'T>) =
+let mapMemory<'T when 'T : unmanaged> device memory offset (data: ReadOnlySpan<'T>) =
     let mutable deviceData = nativeint 0
     let pDeviceData = &&deviceData |> NativePtr.toNativeInt
 
@@ -300,10 +300,10 @@ let inline hasSharedMemoryFlag flags =
     flags &&& BufferFlags.SharedMemory = BufferFlags.SharedMemory
 
 type BufferKind =
-    | Unspecified = 0uy
-    | Vertex = 1uy
-    | Index = 2uy
-    | Uniform = 3uy
+    | Unspecified
+    | Vertex
+    | Index
+    | Uniform
 
 [<Struct;NoComparison>]
 type Buffer =
@@ -339,7 +339,7 @@ let mkBoundBuffer<'T when 'T : unmanaged> physicalDevice device count flags kind
 
 let fillBuffer<'T when 'T : unmanaged> physicalDevice device commandPool transferQueue (buffer: Buffer) data =
     if buffer.IsShared then
-        mapBuffer<'T> device buffer.memory.raw buffer.memory.offset data
+        mapMemory<'T> device buffer.memory.raw buffer.memory.offset data
     else
         // Memory that is not shared can not be written directly to from the CPU.
         // In order to set it from the CPU, a temporary shared memory buffer is used as a staging buffer to transfer the data.
@@ -352,12 +352,140 @@ let fillBuffer<'T when 'T : unmanaged> physicalDevice device commandPool transfe
                 VkMemoryPropertyFlags.VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
         let stagingMemory = bindMemory physicalDevice device stagingBuffer stagingProperties
 
-        mapBuffer device stagingMemory.raw stagingMemory.offset data
+        mapMemory device stagingMemory.raw stagingMemory.offset data
 
         let size = uint64 (sizeof<'T> * count)
         copyBuffer device commandPool stagingBuffer buffer.buffer size transferQueue
 
         vkDestroyBuffer(device, stagingBuffer, vkNullPtr)
+
+// Image
+
+[<Struct;NoComparison>]
+type Image =
+    {
+        image: VkImage
+        memory: DeviceMemory
+        width: int
+        height: int
+    }
+
+let getImageMemoryRequirements device image =
+    let mutable memRequirements = VkMemoryRequirements ()
+    vkGetImageMemoryRequirements(device, image, &&memRequirements)
+    memRequirements
+
+let bindImage physicalDevice device image properties =
+    let memRequirements = getImageMemoryRequirements device image
+    let memory = allocateMemory physicalDevice device memRequirements properties
+    vkBindImageMemory(device, image, memory.raw, uint64 memory.offset) |> checkResult
+    memory
+
+let mkImage device width height format tiling usage =
+    let mutable imageInfo =
+        VkImageCreateInfo(
+            sType = VkStructureType.VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+            imageType = VkImageType.VK_IMAGE_TYPE_2D,
+            extent = VkExtent3D(width = uint32 width, height = uint32 height, depth = 1u),
+            mipLevels = 1u,
+            arrayLayers = 1u,
+            format = format,
+            tiling = tiling,
+            initialLayout = VkImageLayout.VK_IMAGE_LAYOUT_UNDEFINED,
+            usage = usage,
+            samples = VkSampleCountFlags.VK_SAMPLE_COUNT_1_BIT,
+            sharingMode = VkSharingMode.VK_SHARING_MODE_EXCLUSIVE)
+
+    let mutable image = VkImage()
+    vkCreateImage(device, &&imageInfo, vkNullPtr, &&image) |> checkResult
+    image
+
+let mkBoundImage physicalDevice device width height format tiling usage properties =
+    let image = mkImage device width height format tiling usage
+    let memory = bindImage physicalDevice device image properties
+    { image = image; memory = memory; width = width; height = height }
+
+let recordTransitionImageLayout (commandBuffer: VkCommandBuffer) image (format: VkFormat) oldLayout newLayout =
+    let barrier =
+        VkImageMemoryBarrier(
+            sType = VkStructureType.VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+            oldLayout = oldLayout,
+            newLayout = newLayout,
+            srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            image = image,
+            subresourceRange = VkImageSubresourceRange(aspectMask = VkImageAspectFlags.VK_IMAGE_ASPECT_COLOR_BIT, baseMipLevel = 0u, levelCount = 1u, baseArrayLayer = 0u, layerCount = 1u),
+            srcAccessMask = Unchecked.defaultof<_> (* TODO *),
+            dstAccessMask = Unchecked.defaultof<_> (* TODO *))
+
+    vkCmdPipelineBarrier(commandBuffer, Unchecked.defaultof<_> (* TODO *), Unchecked.defaultof<_> (* TODO *), Unchecked.defaultof<_>, 0u, vkNullPtr, 0u, vkNullPtr, 1u, &&barrier)
+
+let recordCopyImage (commandBuffer: VkCommandBuffer) width height srcBuffer dstImage =
+    let mutable beginInfo =
+        VkCommandBufferBeginInfo (
+            sType = VkStructureType.VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+            flags = VkCommandBufferUsageFlags.VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+            pInheritanceInfo = vkNullPtr
+        )
+
+    vkBeginCommandBuffer(commandBuffer, &&beginInfo) |> checkResult
+
+    let mutable copyRegion =
+        VkBufferImageCopy (
+            bufferOffset = 0UL,
+            bufferRowLength = 0u,
+            bufferImageHeight = 0u,
+            imageSubresource = VkImageSubresourceLayers(aspectMask = VkImageAspectFlags.VK_IMAGE_ASPECT_COLOR_BIT, mipLevel = 0u, baseArrayLayer = 0u, layerCount = 1u),
+            imageOffset = VkOffset3D(),
+            imageExtent = VkExtent3D(width = uint32 width, height = uint32 height, depth = 1u))
+
+    vkCmdCopyBufferToImage(commandBuffer, srcBuffer, dstImage, VkImageLayout.VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1u, &&copyRegion)
+
+    vkEndCommandBuffer(commandBuffer) |> checkResult
+
+let copyImage device commandPool width height srcBuffer dstImage queue =
+    let mutable allocInfo =
+        VkCommandBufferAllocateInfo (
+            sType = VkStructureType.VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+            level = VkCommandBufferLevel.VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+            commandPool = commandPool,
+            commandBufferCount = 1u
+        )
+
+    let mutable commandBuffer = VkCommandBuffer()
+    vkAllocateCommandBuffers(device, &&allocInfo, &&commandBuffer) |> checkResult
+    
+    recordTransitionImageLayout commandBuffer dstImage VkFormat.VK_FORMAT_R8G8B8A8_SRGB VkImageLayout.VK_IMAGE_LAYOUT_UNDEFINED VkImageLayout.VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
+    recordCopyImage commandBuffer width height srcBuffer dstImage
+    recordTransitionImageLayout commandBuffer dstImage VkFormat.VK_FORMAT_R8G8B8A8_SRGB VkImageLayout.VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL VkImageLayout.VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+
+    let mutable submitInfo =
+        VkSubmitInfo (
+            sType = VkStructureType.VK_STRUCTURE_TYPE_SUBMIT_INFO,
+            commandBufferCount = 1u,
+            pCommandBuffers = &&commandBuffer
+        )
+
+    vkQueueSubmit(queue, 1u, &&submitInfo, VK_NULL_HANDLE) |> checkResult
+    vkQueueWaitIdle(queue) |> checkResult
+
+    vkFreeCommandBuffers(device, commandPool, 1u, &&commandBuffer)
+
+let fillImage physicalDevice device commandPool transferQueue (image: Image) (data: ReadOnlySpan<byte>) =
+    // Memory that is not shared can not be written directly to from the CPU.
+    // In order to set it from the CPU, a temporary shared memory buffer is used as a staging buffer to transfer the data.
+    // This means that write times to local memory is more expensive but is highly-performant when read from the GPU.
+    // Effectively, local memory is great for static data and shared memory is great for dynamic data.
+    let stagingBuffer = mkBuffer<byte> device data.Length VkBufferUsageFlags.VK_BUFFER_USAGE_TRANSFER_SRC_BIT
+    let stagingProperties = 
+            VkMemoryPropertyFlags.VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT ||| 
+            VkMemoryPropertyFlags.VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+    let stagingMemory = bindMemory physicalDevice device stagingBuffer stagingProperties
+
+    mapMemory device stagingMemory.raw stagingMemory.offset data
+    copyImage device commandPool image.width image.height stagingBuffer image.image transferQueue
+
+    vkDestroyBuffer(device, stagingBuffer, vkNullPtr)
 
 type PipelineIndex = int
 
@@ -370,6 +498,13 @@ type FalBuffer<'T when 'T : unmanaged>(buffer: Buffer) =
 
     member this.IsShared = buffer.IsShared
 
+[<Struct;NoComparison;NoEquality>]
+type FalImage(image: Image) =
+
+    member this.Internal = image
+
+    member this.Image = image.image
+
 [<Sealed>]
 type FalGraphics
     private
@@ -381,6 +516,7 @@ type FalGraphics
 
     let gate = obj ()
     let buffers = Collections.Generic.Dictionary<VkBuffer, Buffer> ()
+    let images = Collections.Generic.Dictionary<VkImage, Image> ()
     let mutable isDisposed = 0
 
     let checkDispose () =
@@ -389,6 +525,9 @@ type FalGraphics
 
     let destroyBuffer (buffer: Buffer) =
         vkDestroyBuffer(device, buffer.buffer, vkNullPtr)
+
+    let destroyImage (image: Image) =
+        vkDestroyImage(device, image.image, vkNullPtr)
 
     member __.AddShader (vertexBindings, vertexAttributes, vertexBytes, fragmentBytes) : PipelineIndex =
         checkDispose ()
@@ -431,6 +570,25 @@ type FalGraphics
         | _ ->
             failwith "Buffer is not in the vulkan instance."
 
+    member _.CreateImage (width, height)  =
+        lock gate <| fun _ ->
+
+        checkDispose ()   
+
+        let image = 
+            mkBoundImage physicalDevice device width height 
+                VkFormat.VK_FORMAT_R8G8B8A8_SRGB 
+                VkImageTiling.VK_IMAGE_TILING_OPTIMAL 
+                (VkImageUsageFlags.VK_IMAGE_USAGE_TRANSFER_DST_BIT ||| VkImageUsageFlags.VK_IMAGE_USAGE_SAMPLED_BIT) 
+                VkMemoryPropertyFlags.VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+        images.Add (image.image, image)
+        FalImage image
+
+    member _.FillImage (buffer: FalImage, data) =
+        checkDispose ()
+
+        fillImage physicalDevice device commandPool transferQueue buffer.Internal data
+
     member _.SetUniformBuffer<'T when 'T : unmanaged>(buffer: FalBuffer<'T>) =
         lock gate <| fun _ ->
             
@@ -452,6 +610,13 @@ type FalGraphics
                     |> Seq.iter destroyBuffer
 
                     buffers.Clear()
+                )
+
+                lock gate (fun () ->
+                    images.Values
+                    |> Seq.iter destroyImage
+
+                    images.Clear()
                 )
 
                 buckets.Values
