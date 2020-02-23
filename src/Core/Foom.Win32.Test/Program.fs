@@ -28,14 +28,14 @@ let radians (degrees) = degrees * MathF.PI / 180.f
 
 let setRender (instance: FalGraphics) =
     //let mvpBindings = [||]
-    let mvpUniform = instance.CreateBuffer<ModelViewProjection>(1, BufferFlags.None, BufferKind.Uniform)
+    let mvpUniform = instance.CreateBuffer<Matrix4x4>(1, BufferFlags.None, BufferKind.Uniform)
     let mvp =
         {
             model = Matrix4x4.Identity //Matrix4x4.CreateRotationX(radians -90.f) |> Matrix4x4.Transpose
             view = Matrix4x4.CreateLookAt(Vector3(2.0f, 2.0f, 2.0f), Vector3(0.f), Vector3(0.f, 0.f, 1.0f)) |> Matrix4x4.Transpose
             proj = Matrix4x4.CreatePerspectiveFieldOfView(radians 45.f, 1280.f / 720.f, 0.1f, 10.f) |> Matrix4x4.Transpose
         }
-    instance.FillBuffer(mvpUniform, ReadOnlySpan [|mvp|])
+    instance.FillBuffer(mvpUniform, ReadOnlySpan [|Matrix4x4.Identity|])
     instance.SetUniformBuffer(mvpUniform)
 
     let vertices =
@@ -51,7 +51,7 @@ let setRender (instance: FalGraphics) =
 
     let vertex =
         <@
-            let mvp = Variable<ModelViewProjection> [Decoration.Uniform; Decoration.Binding 0u; Decoration.DescriptorSet 0u] StorageClass.Uniform
+            let mvp = Variable<ModelViewProjection> [Decoration.Binding 0u; Decoration.DescriptorSet 0u] StorageClass.Uniform
            // let m = Variable<Matrix4x4> [Decoration.Uniform] StorageClass.Uniform
             let vertex = Variable<Vertex> [Decoration.Location 0u] StorageClass.Input
             let _position = Variable<Vector2> [Decoration.Location 0u] StorageClass.Input
@@ -60,8 +60,8 @@ let setRender (instance: FalGraphics) =
             let mutable fragColor = Variable<Vector3> [Decoration.Location 0u] StorageClass.Output
 
             fun () ->
-                let stuff = Vector4.Transform(Vector4(vertex.position, 0.f, 1.f), mvp.proj)
-                gl_Position <- stuff //Vector4.Transform(Vector4(vertex.position, 0.f, 1.f), mvp.proj)
+              //  let stuff = Vector4.Transform(Vector4(vertex.position, 0.f, 1.f), mvp.proj)
+                gl_Position <- Vector4(vertex.position, 0.f, 1.f) //Vector4.Transform(Vector4(vertex.position, 0.f, 1.f), mvp.proj)
                 fragColor <- vertex.color
         @>
     let spvVertexInfo = SpirvGenInfo.Create(AddressingModel.Logical, MemoryModel.GLSL450, ExecutionModel.Vertex, [Capability.Shader], [])

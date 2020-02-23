@@ -3,6 +3,7 @@ module FSharp.Spirv.Quotations.SpirvGen
 
 open System
 open System.Collections.Generic
+open System.Numerics
 open FSharp.NativeInterop
 open FSharp.Spirv
 open Tast
@@ -23,6 +24,10 @@ type cenv =
         globalVariablesByVar: Dictionary<SpirvVar, IdResult>
         constants: Dictionary<SpirvConst, IdResult * Instruction>
         constantComposites: Dictionary<IdRef list, IdResult * Instruction>
+
+        //
+
+        initInstructions: ResizeArray<Instruction>
 
         // Functions
 
@@ -53,6 +58,7 @@ type cenv =
             globalVariablesByVar = Dictionary ()
             constants = Dictionary ()
             constantComposites = Dictionary ()
+            initInstructions = ResizeArray 100
             functions = Dictionary ()
             mainInitInstructions = ResizeArray 100
             localVariables = Dictionary ()
@@ -79,6 +85,9 @@ let nextResultId cenv =
 
 let addInstructions cenv instrs =
     cenv.currentInstructions.AddRange instrs
+
+let addInitInstructions cenv instrs =
+    cenv.initInstructions.AddRange instrs
 
 let addMainInitInstructions cenv instrs =
     cenv.mainInitInstructions.AddRange instrs
@@ -249,7 +258,24 @@ and emitStructType cenv ty fields =
         |> List.map (fun (SpirvField(_, fieldTy, _)) -> 
             emitType cenv fieldTy
         )
-    emitTypeAux cenv ty (fun resultId -> OpTypeStruct(resultId, idRefs))
+
+    let tyId = emitTypeAux cenv ty (fun resultId -> OpTypeStruct(resultId, idRefs))
+    let mutable offset = 0u
+    fields
+    |> List.iteri (fun i (SpirvField(_, fieldTy, _)) ->
+        let i = uint32 i
+        match fieldTy with
+        | SpirvTypeInt -> addInitInstructions cenv [OpMemberDecorate(tyId, i, Decoration.Offset offset)]
+        | SpirvTypeUInt32 -> addInitInstructions cenv [OpMemberDecorate(tyId, i, Decoration.Offset offset)]
+        | SpirvTypeSingle -> addInitInstructions cenv [OpMemberDecorate(tyId, i, Decoration.Offset offset)]
+        | SpirvTypeVector2 -> addInitInstructions cenv [OpMemberDecorate(tyId, i, Decoration.Offset offset)]
+        | SpirvTypeVector3 -> addInitInstructions cenv [OpMemberDecorate(tyId, i, Decoration.Offset offset)]
+        | SpirvTypeVector4 -> addInitInstructions cenv [OpMemberDecorate(tyId, i, Decoration.Offset offset)]
+        | SpirvTypeMatrix4x4 -> addInitInstructions cenv [OpMemberDecorate(tyId, i, Decoration.Offset offset)]
+        | _ -> failwithf "Invalid field type, %A." fieldTy // TODO
+        offset <- offset + uint32 fieldTy.Size
+    )
+    tyId
 
 let emitTypeFunction cenv paramTys retTy =
     let paramTyIds =
@@ -670,7 +696,11 @@ let GenModule (info: SpirvGenInfo) expr =
          |> Seq.map (fun (name, id) -> OpName (id, name))
          |> List.ofSeq)
         @
-        annotations @ typesAndConstants @ variables
+        annotations 
+        @
+        (cenv.initInstructions |> List.ofSeq)
+        @
+        typesAndConstants @ variables 
         @
         (cenv.currentInstructions |> List.ofSeq)
 

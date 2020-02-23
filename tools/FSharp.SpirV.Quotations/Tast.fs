@@ -35,9 +35,24 @@ type SpirvType =
         | SpirvTypeArray (elementTy, length) -> elementTy.Name + "[" + string length + "]"
         | SpirvTypeStruct (name=name) -> name
 
+    member x.Size: int =
+        match x with
+        | SpirvTypeVoid -> 0
+        | SpirvTypeInt -> sizeof<int>
+        | SpirvTypeUInt32 -> sizeof<uint32>
+        | SpirvTypeSingle -> sizeof<single>
+        | SpirvTypeVector2 -> sizeof<Vector2>
+        | SpirvTypeVector3 -> sizeof<Vector3>
+        | SpirvTypeVector4 -> sizeof<Vector4>
+        | SpirvTypeMatrix4x4 -> sizeof<Matrix4x4>
+        | SpirvTypeArray(ty, length) -> ty.Size * length
+        | SpirvTypeStruct(_, fields) ->
+            fields
+            |> List.sumBy(fun (field: SpirvField) -> field.Type.Size)
+
 and SpirvField = SpirvField of name: string * fieldType: SpirvType * Decorations with
 
-    member x.Type =
+    member x.Type: SpirvType =
         match x with
         | SpirvField (fieldType=typ) -> typ
 
