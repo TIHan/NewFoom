@@ -576,11 +576,13 @@ let rec GenTopLevelExpr cenv env expr =
         GenDecl cenv decl
 
     | SpirvTopLevelLambda (var, body) ->
-        GenGlobalVar cenv var |> ignore
+        if not var.Type.IsVoid then
+            GenGlobalVar cenv var |> ignore
         GenTopLevelExpr cenv env body
 
     | SpirvTopLevelLambdaBody (var, body) ->
-        GenGlobalVar cenv var |> ignore
+        if not var.Type.IsVoid then
+            GenGlobalVar cenv var |> ignore
         GenExpr cenv env body |> ignore
 
 and GenMain cenv env expr =

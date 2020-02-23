@@ -50,6 +50,8 @@ type SpirvType =
             fields
             |> List.sumBy(fun (field: SpirvField) -> field.Type.Size)
 
+    member x.IsVoid = match x with SpirvTypeVoid -> true | _ -> false
+
 and SpirvField = SpirvField of name: string * fieldType: SpirvType * Decorations with
 
     member x.Type: SpirvType =
