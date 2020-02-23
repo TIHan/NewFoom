@@ -27,7 +27,7 @@ type cenv =
 
         //
 
-        initInstructions: ResizeArray<Instruction>
+        decorationInstructions: ResizeArray<Instruction>
 
         // Functions
 
@@ -58,7 +58,7 @@ type cenv =
             globalVariablesByVar = Dictionary ()
             constants = Dictionary ()
             constantComposites = Dictionary ()
-            initInstructions = ResizeArray 100
+            decorationInstructions = ResizeArray 100
             functions = Dictionary ()
             mainInitInstructions = ResizeArray 100
             localVariables = Dictionary ()
@@ -86,8 +86,8 @@ let nextResultId cenv =
 let addInstructions cenv instrs =
     cenv.currentInstructions.AddRange instrs
 
-let addInitInstructions cenv instrs =
-    cenv.initInstructions.AddRange instrs
+let addDecorationInstructions cenv instrs =
+    cenv.decorationInstructions.AddRange instrs
 
 let addMainInitInstructions cenv instrs =
     cenv.mainInitInstructions.AddRange instrs
@@ -154,18 +154,19 @@ let emitTypeAux cenv ty f =
             |> List.iteri (fun i (SpirvField(_, fieldTy, _)) ->
                 let i = uint32 i
                 match fieldTy with
-                | SpirvTypeInt -> addInitInstructions cenv [OpMemberDecorate(resultId, i, Decoration.Offset offset)]
-                | SpirvTypeUInt32 -> addInitInstructions cenv [OpMemberDecorate(resultId, i, Decoration.Offset offset)]
-                | SpirvTypeSingle -> addInitInstructions cenv [OpMemberDecorate(resultId, i, Decoration.Offset offset)]
-                | SpirvTypeVector2 -> addInitInstructions cenv [OpMemberDecorate(resultId, i, Decoration.Offset offset)]
-                | SpirvTypeVector3 -> addInitInstructions cenv [OpMemberDecorate(resultId, i, Decoration.Offset offset)]
-                | SpirvTypeVector4 -> addInitInstructions cenv [OpMemberDecorate(resultId, i, Decoration.Offset offset)]
-                | SpirvTypeMatrix4x4 -> addInitInstructions cenv [OpMemberDecorate(resultId, i, Decoration.Offset offset)]
+                | SpirvTypeInt -> addDecorationInstructions cenv [OpMemberDecorate(resultId, i, Decoration.Offset offset)]
+                | SpirvTypeUInt32 -> addDecorationInstructions cenv [OpMemberDecorate(resultId, i, Decoration.Offset offset)]
+                | SpirvTypeSingle -> addDecorationInstructions cenv [OpMemberDecorate(resultId, i, Decoration.Offset offset)]
+                | SpirvTypeVector2 -> addDecorationInstructions cenv [OpMemberDecorate(resultId, i, Decoration.Offset offset)]
+                | SpirvTypeVector3 -> addDecorationInstructions cenv [OpMemberDecorate(resultId, i, Decoration.Offset offset)]
+                | SpirvTypeVector4 -> addDecorationInstructions cenv [OpMemberDecorate(resultId, i, Decoration.Offset offset)]
+                | SpirvTypeMatrix4x4 -> addDecorationInstructions cenv [OpMemberDecorate(resultId, i, Decoration.Offset offset)]
                 | _ -> failwithf "Invalid field type, %A." fieldTy // TODO
                 offset <- offset + uint32 fieldTy.Size)
-        | _ -> ()
-
-     //   addInitInstructions cenv [OpDecorate(resultId, Decoration.Block); OpDecorate(resultId, Decoration.MatrixStride 0u)]
+            addDecorationInstructions cenv [OpDecorate(resultId, Decoration.Block)]
+        | SpirvType.SpirvTypeMatrix4x4 ->
+            addDecorationInstructions cenv [OpDecorate(resultId, Decoration.MatrixStride 0u)]
+        | _ -> ()       
 
         resultId
 
@@ -703,7 +704,7 @@ let GenModule (info: SpirvGenInfo) expr =
         @
         annotations 
         @
-        (cenv.initInstructions |> List.ofSeq)
+        (cenv.decorationInstructions |> List.ofSeq)
         @
         typesAndConstants @ variables 
         @
