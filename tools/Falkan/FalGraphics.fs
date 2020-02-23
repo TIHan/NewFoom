@@ -365,6 +365,7 @@ let fillBuffer<'T when 'T : unmanaged> physicalDevice device commandPool transfe
 type Image =
     {
         image: VkImage
+        sampler: VkSampler
         memory: DeviceMemory
         width: int
         height: int
@@ -400,10 +401,48 @@ let mkImage device width height format tiling usage =
     vkCreateImage(device, &&imageInfo, vkNullPtr, &&image) |> checkResult
     image
 
+//let mkImageView device format image =
+//    let mutable viewInfo =
+//        VkImageViewCreateInfo(
+//            sType = VkStructureType.VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+//            image = image,
+//            viewType = VkImageViewType.VK_IMAGE_VIEW_TYPE_2D,
+//            format = format,
+//            subresourceRange = VkImageSubresourceRange(aspectMask = VkImageAspectFlags.VK_IMAGE_ASPECT_COLOR_BIT, baseMipLevel = 0u, levelCount = 1u, baseArrayLayer = 0u, layerCount = 1u))
+        
+//    let mutable imageView = VkImageView()
+//    vkCreateImageView(device, &&viewInfo, vkNullPtr, &&imageView) |> checkResult
+//    imageView
+
+let mkSampler device =
+    let mutable samplerInfo = 
+        VkSamplerCreateInfo(
+            sType = VkStructureType.VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+            magFilter = VkFilter.VK_FILTER_LINEAR,
+            minFilter = VkFilter.VK_FILTER_LINEAR,
+            addressModeU = VkSamplerAddressMode.VK_SAMPLER_ADDRESS_MODE_REPEAT,
+            addressModeV = VkSamplerAddressMode.VK_SAMPLER_ADDRESS_MODE_REPEAT,
+            addressModeW = VkSamplerAddressMode.VK_SAMPLER_ADDRESS_MODE_REPEAT,
+            anisotropyEnable = VK_TRUE,
+            maxAnisotropy = 16.f,
+            borderColor = VkBorderColor.VK_BORDER_COLOR_INT_OPAQUE_BLACK,
+            unnormalizedCoordinates = VK_FALSE,
+            compareEnable = VK_FALSE,
+            compareOp = VkCompareOp.VK_COMPARE_OP_ALWAYS,
+            mipmapMode = VkSamplerMipmapMode.VK_SAMPLER_MIPMAP_MODE_LINEAR,
+            mipLodBias = 0.f,
+            minLod = 0.f,
+            maxLod = 0.f)
+
+    let mutable sampler = VkSampler()
+    vkCreateSampler(device, &&samplerInfo, vkNullPtr, &&sampler) |> checkResult
+    sampler
+
 let mkBoundImage physicalDevice device width height format tiling usage properties =
     let image = mkImage device width height format tiling usage
     let memory = bindImage physicalDevice device image properties
-    { image = image; memory = memory; width = width; height = height }
+    let sampler = mkSampler device
+    { image = image; sampler = sampler; memory = memory; width = width; height = height }
 
 let transitionImageLayout (commandBuffer: VkCommandBuffer) image (format: VkFormat) oldLayout newLayout =
     let srcAccessMask, dstAccessMask, srcStage, dstStage =
@@ -541,6 +580,7 @@ type FalGraphics
         vkDestroyBuffer(device, buffer.buffer, vkNullPtr)
 
     let destroyImage (image: Image) =
+        vkDestroySampler(device, image.sampler, vkNullPtr)
         vkDestroyImage(device, image.image, vkNullPtr)
 
     member __.AddShader (vertexBindings, vertexAttributes, vertexBytes, fragmentBytes) : PipelineIndex =
