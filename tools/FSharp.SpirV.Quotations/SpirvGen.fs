@@ -146,6 +146,25 @@ let emitTypeAux cenv ty f =
         cenv.typesByType.[ty] <- resultId
         cenv.types.[resultId] <- f resultId
         cenv.debugNames.Add("type_" + ty.Name, resultId)
+
+        match ty with
+        | SpirvType.SpirvTypeStruct(_, fields) ->
+            let mutable offset = 0u
+            fields
+            |> List.iteri (fun i (SpirvField(_, fieldTy, _)) ->
+                let i = uint32 i
+                match fieldTy with
+                | SpirvTypeInt -> addInitInstructions cenv [OpMemberDecorate(resultId, i, Decoration.Offset offset)]
+                | SpirvTypeUInt32 -> addInitInstructions cenv [OpMemberDecorate(resultId, i, Decoration.Offset offset)]
+                | SpirvTypeSingle -> addInitInstructions cenv [OpMemberDecorate(resultId, i, Decoration.Offset offset)]
+                | SpirvTypeVector2 -> addInitInstructions cenv [OpMemberDecorate(resultId, i, Decoration.Offset offset)]
+                | SpirvTypeVector3 -> addInitInstructions cenv [OpMemberDecorate(resultId, i, Decoration.Offset offset)]
+                | SpirvTypeVector4 -> addInitInstructions cenv [OpMemberDecorate(resultId, i, Decoration.Offset offset)]
+                | SpirvTypeMatrix4x4 -> addInitInstructions cenv [OpMemberDecorate(resultId, i, Decoration.Offset offset)]
+                | _ -> failwithf "Invalid field type, %A." fieldTy // TODO
+                offset <- offset + uint32 fieldTy.Size)
+        | _ -> ()
+
         resultId
 
 let emitTypeVoid cenv =
@@ -259,23 +278,7 @@ and emitStructType cenv ty fields =
             emitType cenv fieldTy
         )
 
-    let tyId = emitTypeAux cenv ty (fun resultId -> OpTypeStruct(resultId, idRefs))
-    let mutable offset = 0u
-    fields
-    |> List.iteri (fun i (SpirvField(_, fieldTy, _)) ->
-        let i = uint32 i
-        match fieldTy with
-        | SpirvTypeInt -> addInitInstructions cenv [OpMemberDecorate(tyId, i, Decoration.Offset offset)]
-        | SpirvTypeUInt32 -> addInitInstructions cenv [OpMemberDecorate(tyId, i, Decoration.Offset offset)]
-        | SpirvTypeSingle -> addInitInstructions cenv [OpMemberDecorate(tyId, i, Decoration.Offset offset)]
-        | SpirvTypeVector2 -> addInitInstructions cenv [OpMemberDecorate(tyId, i, Decoration.Offset offset)]
-        | SpirvTypeVector3 -> addInitInstructions cenv [OpMemberDecorate(tyId, i, Decoration.Offset offset)]
-        | SpirvTypeVector4 -> addInitInstructions cenv [OpMemberDecorate(tyId, i, Decoration.Offset offset)]
-        | SpirvTypeMatrix4x4 -> addInitInstructions cenv [OpMemberDecorate(tyId, i, Decoration.Offset offset)]
-        | _ -> failwithf "Invalid field type, %A." fieldTy // TODO
-        offset <- offset + uint32 fieldTy.Size
-    )
-    tyId
+    emitTypeAux cenv ty (fun resultId -> OpTypeStruct(resultId, idRefs))
 
 let emitTypeFunction cenv paramTys retTy =
     let paramTyIds =
