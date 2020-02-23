@@ -52,7 +52,13 @@ type SpirvType =
 
     member x.IsVoid = match x with SpirvTypeVoid -> true | _ -> false
 
+    member x.IsStruct = match x with SpirvTypeStruct _ -> true | _ -> false
+
 and SpirvField = SpirvField of name: string * fieldType: SpirvType * Decorations with
+
+    member x.Name =
+        match x with
+        | SpirvField (name=name) -> name
 
     member x.Type: SpirvType =
         match x with

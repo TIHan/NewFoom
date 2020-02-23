@@ -674,13 +674,13 @@ let GenModule (info: SpirvGenInfo) expr =
         |> List.ofSeq
 
     let interfaces =
-        cenv.globalVariables
+        cenv.globalVariablesByVar
         |> Seq.choose (fun pair ->
-            let resultId = pair.Key
-            let instr = fst pair.Value
-            match instr with
-            | OpVariable (_, _, StorageClass.Input, _)
-            | OpVariable (_, _, StorageClass.Output, _) -> Some resultId
+            let var = pair.Key
+            let resultId = pair.Value
+            match var.StorageClass with
+            | StorageClass.Input
+            | StorageClass.Output -> Some resultId
             | _ -> None
         )
         |> List.ofSeq
