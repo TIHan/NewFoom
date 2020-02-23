@@ -406,6 +406,19 @@ let mkBoundImage physicalDevice device width height format tiling usage properti
     { image = image; memory = memory; width = width; height = height }
 
 let transitionImageLayout (commandBuffer: VkCommandBuffer) image (format: VkFormat) oldLayout newLayout =
+    let srcAccessMask, dstAccessMask, srcStage, dstStage =
+        if oldLayout = VkImageLayout.VK_IMAGE_LAYOUT_UNDEFINED && newLayout = VkImageLayout.VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL then
+            Unchecked.defaultof<_>, 
+            VkAccessFlags.VK_ACCESS_TRANSFER_WRITE_BIT, 
+            VkPipelineStageFlags.VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+            VkPipelineStageFlags.VK_PIPELINE_STAGE_TRANSFER_BIT
+        elif oldLayout = VkImageLayout.VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && newLayout = VkImageLayout.VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL then
+            VkAccessFlags.VK_ACCESS_TRANSFER_WRITE_BIT, 
+            VkAccessFlags.VK_ACCESS_SHADER_READ_BIT, 
+            VkPipelineStageFlags.VK_PIPELINE_STAGE_TRANSFER_BIT,
+            VkPipelineStageFlags.VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT
+        else
+            failwith "Unsupported layout transition."
     let barrier =
         VkImageMemoryBarrier(
             sType = VkStructureType.VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
@@ -415,10 +428,10 @@ let transitionImageLayout (commandBuffer: VkCommandBuffer) image (format: VkForm
             dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
             image = image,
             subresourceRange = VkImageSubresourceRange(aspectMask = VkImageAspectFlags.VK_IMAGE_ASPECT_COLOR_BIT, baseMipLevel = 0u, levelCount = 1u, baseArrayLayer = 0u, layerCount = 1u),
-            srcAccessMask = Unchecked.defaultof<_> (* TODO *),
-            dstAccessMask = Unchecked.defaultof<_> (* TODO *))
+            srcAccessMask = srcAccessMask,
+            dstAccessMask = dstAccessMask)
 
-    vkCmdPipelineBarrier(commandBuffer, Unchecked.defaultof<_> (* TODO *), Unchecked.defaultof<_> (* TODO *), Unchecked.defaultof<_>, 0u, vkNullPtr, 0u, vkNullPtr, 1u, &&barrier)
+    vkCmdPipelineBarrier(commandBuffer, srcStage, dstStage, Unchecked.defaultof<_>, 0u, vkNullPtr, 0u, vkNullPtr, 1u, &&barrier)
 
 let recordCopyImage (commandBuffer: VkCommandBuffer) width height srcBuffer dstImage =
     let mutable beginInfo =

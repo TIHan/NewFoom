@@ -36,7 +36,7 @@ let setRender (instance: FalGraphics) =
 
     let image = instance.CreateImage(bmp.Width, bmp.Height)
     let ptr = data.Scan0 |> NativePtr.ofNativeInt<byte> |> NativePtr.toVoidPtr
-    instance.FillImage(image, ReadOnlySpan(ptr, data.Width * data.Height))
+    instance.FillImage(image, ReadOnlySpan(ptr, data.Width * data.Height * 4))
     bmp.UnlockBits(data)
     //let mvpBindings = [||]
     let mvpUniform = instance.CreateBuffer<ModelViewProjection>(1, BufferFlags.None, BufferKind.Uniform)
