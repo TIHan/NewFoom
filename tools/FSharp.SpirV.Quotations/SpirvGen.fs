@@ -450,8 +450,8 @@ let rec GenExpr cenv (env: env) expr =
             resultId
 
         | Multiply__Matrix4x4_Matrix4x4__Matrix4x4 (arg1, arg2) ->
-            let arg1 = GenExpr cenv env arg1 |> emitLoad cenv
-            let arg2 = GenExpr cenv env arg2 |> emitLoad cenv
+            let arg1 = GenExpr cenv env arg1
+            let arg2 = GenExpr cenv env arg2
 
             let resultId = nextResultId cenv
             addInstructions cenv [OpMatrixTimesMatrix(retTy, resultId, arg1, arg2)]
@@ -492,8 +492,7 @@ let rec GenExpr cenv (env: env) expr =
         let op = OpAccessChain(resultType, accessChainPointerId, receiverId, [indexId])
         addInstructions cenv [op]
         cenv.locals.[accessChainPointerId] <- op
-        accessChainPointerId
-        // TODO: Do an emit load?
+        emitLoad cenv accessChainPointerId
 
 and GenVector cenv env retTy args =
     let constituents =
