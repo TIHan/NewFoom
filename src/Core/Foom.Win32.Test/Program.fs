@@ -60,7 +60,7 @@ let setRender (instance: FalGraphics) =
             let mutable fragColor = Variable<Vector3> [Decoration.Location 0u] StorageClass.Output
 
             fun () ->
-                let stuff = Vector4.Transform(Vector4(vertex.position, 0.f, 1.f), mvp.view)
+                let stuff = Vector4.Transform(Vector4(vertex.position, 0.f, 1.f), mvp.proj)
                 gl_Position <- stuff //Vector4.Transform(Vector4(vertex.position, 0.f, 1.f), mvp.proj)
                 fragColor <- vertex.color
         @>
