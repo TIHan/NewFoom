@@ -496,7 +496,7 @@ let rec GenExpr cenv (env: env) expr =
             let arg2 = GenExpr cenv env arg2
 
             let resultId = nextResultId cenv
-            addInstructions cenv [OpMatrixTimesMatrix(retTy, resultId, arg1, arg2)]
+            addInstructions cenv [OpMatrixTimesMatrix(retTy, resultId, arg2, arg1)]
             resultId
 
     | SpirvIntrinsicFieldGet fieldGet ->
