@@ -51,7 +51,7 @@ let setRender (instance: FalGraphics) =
 
     let vertex =
         <@
-            let mvp = Variable<ModelViewProjection> [Decoration.Binding 0u; Decoration.DescriptorSet 0u] StorageClass.Uniform
+            let mvp = Variable<ModelViewProjection> [Decoration.Binding 0u; Decoration.DescriptorSet 0u; Decoration.Block] StorageClass.Uniform
            // let m = Variable<Matrix4x4> [Decoration.Uniform] StorageClass.Uniform
             let vertex = Variable<Vertex> [Decoration.Location 0u] StorageClass.Input
             let _position = Variable<Vector2> [Decoration.Location 0u] StorageClass.Input
