@@ -839,12 +839,12 @@ type SwapChain private (physicalDevice, device, surface, sync, graphicsFamily, g
             let uboSetLayouts = Array.init imageViews.Length (fun _ -> uboSetLayout)
             let uboSets = mkDescriptorSets device imageViews.Length uboPool uboSetLayouts
 
-            //let samplerSetLayout = //mkDescriptorSetLayout device 1u VkDescriptorType.VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER VkShaderStageFlags.VK_SHADER_STAGE_VERTEX_BIT
-            //let samplerPool = uboPool //mkDescriptorPool device VkDescriptorType.VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER imageViews.Length
-            //let samplerSetLayouts = Array.init imageViews.Length (fun _ -> samplerSetLayout)
-            //let samplerSets = mkDescriptorSets device imageViews.Length uboPool samplerSetLayouts
+            let samplerSetLayout = mkDescriptorSetLayout device 1u VkDescriptorType.VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER VkShaderStageFlags.VK_SHADER_STAGE_VERTEX_BIT
+            let samplerPool = mkDescriptorPool device VkDescriptorType.VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER imageViews.Length
+            let samplerSetLayouts = Array.init imageViews.Length (fun _ -> samplerSetLayout)
+            let samplerSets = mkDescriptorSets device imageViews.Length samplerPool samplerSetLayouts
 
-            let pipelineLayout = mkPipelineLayout device [|uboSetLayout|]
+            let pipelineLayout = mkPipelineLayout device [|uboSetLayout;samplerSetLayout|]
             let framebuffers = mkFramebuffers device renderPass extent imageViews
             let commandBuffers = mkCommandBuffers device commandPool framebuffers
 
@@ -854,9 +854,9 @@ type SwapChain private (physicalDevice, device, surface, sync, graphicsFamily, g
                     swapChain = swapChain
                     imageViews = imageViews
                     renderPass = renderPass
-                    descriptorSetLayout = [|uboSetLayout|]
-                    descriptorSets = [|uboSets|]
-                    descriptorPool = [|uboPool|]
+                    descriptorSetLayout = [|uboSetLayout;samplerSetLayout|]
+                    descriptorSets = [|uboSets;samplerSets|]
+                    descriptorPool = [|uboPool;samplerPool|]
                     pipelineLayout = pipelineLayout
                     framebuffers = framebuffers
                     commandBuffers = commandBuffers
