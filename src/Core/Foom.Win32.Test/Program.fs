@@ -28,7 +28,7 @@ let radians (degrees) = degrees * MathF.PI / 180.f
 
 let setRender (instance: FalGraphics) =
     //let mvpBindings = [||]
-    let mvpUniform = instance.CreateBuffer<ModelViewProjection>(1, BufferFlags.None, BufferKind.Vertex)
+    let mvpUniform = instance.CreateBuffer<ModelViewProjection>(1, BufferFlags.None, BufferKind.Uniform)
     let mvp =
         {
             model = Matrix4x4.Identity //Matrix4x4.CreateRotationX(radians -90.f) |> Matrix4x4.Transpose
@@ -36,7 +36,8 @@ let setRender (instance: FalGraphics) =
             proj = Matrix4x4.Identity //Matrix4x4.CreatePerspectiveFieldOfView(radians 45.f, 1280.f / 720.f, 0.1f, 10.f) |> Matrix4x4.Transpose
         }
     instance.FillBuffer(mvpUniform, ReadOnlySpan [|mvp|])
-   // instance.SetUniformBuffer(mvpUniform)
+    instance.SetUniformBuffer(mvpUniform)
+
     let vertices =
         [|
             { position = Vector2 (0.f, -0.5f); color = Vector3 (1.f, 0.f, 0.f) }
@@ -50,7 +51,7 @@ let setRender (instance: FalGraphics) =
 
     let vertex =
         <@
-        //    let mvp = Variable<ModelViewProjection> [Decoration.Uniform; Decoration.Binding 0u] StorageClass.Private
+            let mvp = Variable<ModelViewProjection> [Decoration.Uniform; Decoration.Binding 0u] StorageClass.Private
 
             let vertex = Variable<Vertex> [Decoration.Location 0u] StorageClass.Input
             let _position = Variable<Vector2> [Decoration.Location 0u] StorageClass.Input
