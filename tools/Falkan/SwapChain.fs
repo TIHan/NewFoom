@@ -18,9 +18,9 @@ type SwapChainState =
         swapChain: VkSwapchainKHR
         imageViews: VkImageView []
         renderPass: VkRenderPass
-        descriptorSetLayout: VkDescriptorSetLayout
-        descriptorPool: VkDescriptorPool
-        descriptorSets: VkDescriptorSet []
+        descriptorSetLayout: VkDescriptorSetLayout[]
+        descriptorPool: VkDescriptorPool[]
+        descriptorSets: VkDescriptorSet [][]
         pipelineLayout: VkPipelineLayout
         framebuffers: VkFramebuffer []
         commandBuffers: VkCommandBuffer []
@@ -651,11 +651,11 @@ let drawFrame device swapChain sync (commandBuffers: VkCommandBuffer []) graphic
 
     (currentFrame + 1) % MaxFramesInFlight, res
 
-let mkDescriptorSetLayout device stageFlags =
+let mkDescriptorSetLayout device binding typ stageFlags =
     let mutable binding =
         VkDescriptorSetLayoutBinding (
-            binding = 0u,
-            descriptorType = VkDescriptorType.VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            binding = binding,
+            descriptorType = typ,
             descriptorCount = 1u,
             stageFlags = stageFlags,
             pImmutableSamplers = vkNullPtr // Optional, for image samplers
@@ -672,10 +672,10 @@ let mkDescriptorSetLayout device stageFlags =
     vkCreateDescriptorSetLayout(device, &&layoutInfo, vkNullPtr, &&descriptorSetLayout) |> checkResult
     descriptorSetLayout
 
-let mkDescriptorPool device size =
+let mkDescriptorPool device typ size =
     let mutable poolSize =
         VkDescriptorPoolSize(
-            typ = VkDescriptorType.VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            typ = typ,
             descriptorCount = uint32 size)
 
     let mutable poolInfo =
@@ -784,8 +784,10 @@ type SwapChain private (physicalDevice, device, surface, sync, graphicsFamily, g
         )
 
         vkDestroyPipelineLayout(device, pipelineLayout, vkNullPtr)
-        vkDestroyDescriptorPool(device, descriptorPool, vkNullPtr)
-        vkDestroyDescriptorSetLayout(device, descriptorSetLayout, vkNullPtr)
+        descriptorPool
+        |> Array.iter (fun descriptorPool -> vkDestroyDescriptorPool(device, descriptorPool, vkNullPtr))
+        descriptorSetLayout
+        |> Array.iter (fun descriptorSetLayout -> vkDestroyDescriptorSetLayout(device, descriptorSetLayout, vkNullPtr))
         vkDestroyRenderPass(device, renderPass, vkNullPtr)
 
         imageViews
@@ -806,14 +808,14 @@ type SwapChain private (physicalDevice, device, surface, sync, graphicsFamily, g
     let record recording =
         let state = state.Value
         recordDraw 
-            state.extent state.framebuffers state.commandBuffers state.descriptorSets state.pipelineLayout state.renderPass 
+            state.extent state.framebuffers state.commandBuffers (Array.concat state.descriptorSets) state.pipelineLayout state.renderPass 
             pipelines.[recording.pipelineIndex] recording.vertexBuffers recording.vertexCount recording.instanceCount
 
     let setUniformBuffer () =
         match uniformBuffer with
         | Some(buffer, size) ->
             let state = state.Value
-            state.descriptorSets
+            state.descriptorSets.[0]
             |> Array.iter (fun descriptorSet ->
                 let mutable bufferInfo = mkDescriptorBufferInfo buffer size
                 updateDescriptorSet device descriptorSet &&bufferInfo)
@@ -831,11 +833,18 @@ type SwapChain private (physicalDevice, device, surface, sync, graphicsFamily, g
             let swapChain, surfaceFormat, extent, images = mkSwapChain physicalDevice device surface graphicsFamily presentFamily
             let imageViews = mkImageViews device surfaceFormat.format images
             let renderPass = mkRenderPass device surfaceFormat.format
-            let descriptorSetLayout = mkDescriptorSetLayout device VkShaderStageFlags.VK_SHADER_STAGE_VERTEX_BIT
-            let descriptorPool = mkDescriptorPool device imageViews.Length
-            let descriptorSetLayouts = Array.init imageViews.Length (fun _ -> descriptorSetLayout)
-            let descriptorSets = mkDescriptorSets device imageViews.Length descriptorPool descriptorSetLayouts
-            let pipelineLayout = mkPipelineLayout device [|descriptorSetLayout|]
+
+            let uboSetLayout = mkDescriptorSetLayout device 0u VkDescriptorType.VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER VkShaderStageFlags.VK_SHADER_STAGE_VERTEX_BIT
+            let uboPool = mkDescriptorPool device VkDescriptorType.VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER imageViews.Length
+            let uboSetLayouts = Array.init imageViews.Length (fun _ -> uboSetLayout)
+            let uboSets = mkDescriptorSets device imageViews.Length uboPool uboSetLayouts
+
+            //let samplerSetLayout = //mkDescriptorSetLayout device 1u VkDescriptorType.VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER VkShaderStageFlags.VK_SHADER_STAGE_VERTEX_BIT
+            //let samplerPool = uboPool //mkDescriptorPool device VkDescriptorType.VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER imageViews.Length
+            //let samplerSetLayouts = Array.init imageViews.Length (fun _ -> samplerSetLayout)
+            //let samplerSets = mkDescriptorSets device imageViews.Length uboPool samplerSetLayouts
+
+            let pipelineLayout = mkPipelineLayout device [|uboSetLayout|]
             let framebuffers = mkFramebuffers device renderPass extent imageViews
             let commandBuffers = mkCommandBuffers device commandPool framebuffers
 
@@ -845,9 +854,9 @@ type SwapChain private (physicalDevice, device, surface, sync, graphicsFamily, g
                     swapChain = swapChain
                     imageViews = imageViews
                     renderPass = renderPass
-                    descriptorSetLayout = descriptorSetLayout
-                    descriptorSets = descriptorSets
-                    descriptorPool = descriptorPool
+                    descriptorSetLayout = [|uboSetLayout|]
+                    descriptorSets = [|uboSets|]
+                    descriptorPool = [|uboPool|]
                     pipelineLayout = pipelineLayout
                     framebuffers = framebuffers
                     commandBuffers = commandBuffers
