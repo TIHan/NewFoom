@@ -9,32 +9,6 @@ open FSharp.Spirv.Quotations
 open System
 open System.Numerics
 
-type EmptyWindowEvents (graphics: FalGraphics) =
-
-    let gate = obj ()
-    let mutable quit = false
-
-    interface IWindowEvents with
-
-        member __.OnWindowClosing () =
-            lock gate (fun () ->
-                quit <- true
-                graphics.WaitIdle ()
-            )
-
-        member __.OnInputEvents events = 
-            if not events.IsEmpty then
-                printfn "%A" events
-
-        member __.OnUpdateFrame (_, _) = 
-            quit
-
-        member __.OnRenderFrame (_, _, _, _) =
-            lock gate (fun () ->
-                if not quit then
-                    graphics.DrawFrame ()
-            )
-
 [<Struct>]
 type ModelViewProjection =
     {
@@ -50,9 +24,18 @@ type Vertex =
         color: Vector3
     }
 
+let radians (degrees) = degrees * MathF.PI / 180.f
+
 let setRender (instance: FalGraphics) =
     //let mvpBindings = [||]
     let mvpUniform = instance.CreateBuffer<ModelViewProjection>(sizeof<ModelViewProjection>, BufferFlags.None, BufferKind.Uniform)
+    let mvp =
+        {
+            model = Matrix4x4.Identity //Matrix4x4.CreateRotationX(radians -90.f) |> Matrix4x4.Transpose
+            view = Matrix4x4.Identity //Matrix4x4.CreateLookAt(Vector3(2.0f, 2.0f, 2.0f), Vector3(0.f), Vector3(0.f, 0.f, 1.0f)) |> Matrix4x4.Transpose
+            proj = Matrix4x4.Identity //Matrix4x4.CreatePerspectiveFieldOfView(radians 45.f, 1280.f / 720.f, 0.1f, 10.f) |> Matrix4x4.Transpose
+        }
+   // instance.FillBuffer(mvpUniform, ReadOnlySpan [|mvp|])
     instance.SetUniformBuffer(mvpUniform)
     let vertices =
         [|
@@ -76,8 +59,7 @@ let setRender (instance: FalGraphics) =
             let mutable fragColor = Variable<Vector3> [Decoration.Location 0u] StorageClass.Output
 
             fun () ->
-                let stuff = mvp.proj * mvp.view * mvp.model
-                gl_Position <- Vector4(vertex.position, 0.f, 1.f)
+                gl_Position <- Vector4(vertex.position, 0.f, 1.f) //Vector4.Transform(Vector4(vertex.position, 0.f, 1.f), mvp.proj * mvp.view * mvp.model)
                 fragColor <- vertex.color
         @>
     let spvVertexInfo = SpirvGenInfo.Create(AddressingModel.Logical, MemoryModel.GLSL450, ExecutionModel.Vertex, [Capability.Shader], [])
@@ -115,6 +97,7 @@ let setRender (instance: FalGraphics) =
    // let fragmentBytes = System.IO.File.ReadAllBytes("triangle_fragment.spv")
     let pipelineIndex = instance.AddShader(verticesBindings, verticesAttributes, ReadOnlySpan vertexBytes, ReadOnlySpan fragmentBytes)
     instance.RecordDraw(pipelineIndex, [|verticesBuffer.Buffer|], vertices.Length, 1)
+    mvp, mvpUniform
 
 [<EntryPoint>]
 let main argv =
@@ -131,13 +114,39 @@ let main argv =
 
     use device = FalDevice.CreateWin32Surface(hwnd, hinstance, "App", "Engine", ["VK_LAYER_KHRONOS_validation"], [VK_KHR_SWAPCHAIN_EXTENSION_NAME])
     use instance = FalGraphics.Create device
-    let windowEvents = EmptyWindowEvents instance :> IWindowEvents
+    let mvp, mvpUniform = setRender instance
+
+    let windowEvents = 
+        let gate = obj ()
+        let mutable quit = false
+
+        { new IWindowEvents with
+
+            member __.OnWindowClosing () =
+                lock gate (fun () ->
+                    quit <- true
+                    instance.WaitIdle ()
+                )
+
+            member __.OnInputEvents events = 
+                if not events.IsEmpty then
+                    printfn "%A" events
+
+            member __.OnUpdateFrame (time, interval) =
+               // let mvp =
+               //     { mvp with model = Matrix4x4.CreateRotationY(radians (float32 time))}
+             //   instance.FillBuffer(mvpUniform, ReadOnlySpan[|mvp|])
+            //    instance.SetUniformBuffer(mvpUniform)
+                quit
+
+            member __.OnRenderFrame (_, _, _, _) =
+                lock gate (fun () ->
+                    if not quit then
+                        instance.DrawFrame ()
+                ) }
     windowState.WindowClosing.Add(windowEvents.OnWindowClosing)
 
     let window = Window (title, 30., width, height, windowEvents, windowState)
-
-    setRender instance
-
     window.Start ()
 
     printfn "F# Vulkan ended...."
