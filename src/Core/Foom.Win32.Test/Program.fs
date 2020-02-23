@@ -38,11 +38,10 @@ let setRender (instance: FalGraphics) =
     //instance.FillBuffer(mvpUniform, ReadOnlySpan [|mvp|])
     //instance.SetUniformBuffer(mvpUniform)\
 
-    let mvp = Matrix4x4.Identity
+    let mvp = Matrix4x4.Identity |> Matrix4x4.Transpose
     let mvpUniform = instance.CreateBuffer<Matrix4x4>(1, BufferFlags.None, BufferKind.Uniform)
     instance.FillBuffer(mvpUniform, ReadOnlySpan[|mvp|])
     instance.SetUniformBuffer(mvpUniform)
-
 
     let vertices =
         [|
@@ -67,7 +66,7 @@ let setRender (instance: FalGraphics) =
 
             fun () ->
                 let stuff = Vector4.Transform(Vector4(vertex.position, 0.f, 1.f), m)
-                gl_Position <- stuff //Vector4.Transform(Vector4(vertex.position, 0.f, 1.f), mvp.proj)
+                gl_Position <- Vector4(vertex.position, 0.f, 1.f) //Vector4.Transform(Vector4(vertex.position, 0.f, 1.f), mvp.proj)
                 fragColor <- vertex.color
         @>
     let spvVertexInfo = SpirvGenInfo.Create(AddressingModel.Logical, MemoryModel.GLSL450, ExecutionModel.Vertex, [Capability.Shader], [])
