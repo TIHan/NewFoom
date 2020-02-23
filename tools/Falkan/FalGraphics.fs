@@ -233,11 +233,11 @@ let bindMemory physicalDevice device buffer properties =
     vkBindBufferMemory(device, buffer, memory.raw, uint64 memory.offset) |> checkResult
     memory
 
-let mapBuffer<'T when 'T : unmanaged> device memory (data: ReadOnlySpan<'T>) =
+let mapBuffer<'T when 'T : unmanaged> device memory offset (data: ReadOnlySpan<'T>) =
     let mutable deviceData = nativeint 0
     let pDeviceData = &&deviceData |> NativePtr.toNativeInt
 
-    vkMapMemory(device, memory, 0UL, uint64 (sizeof<'T> * data.Length), VkMemoryMapFlags.MinValue, pDeviceData) |> checkResult
+    vkMapMemory(device, memory, uint64 offset, uint64 (sizeof<'T> * data.Length), VkMemoryMapFlags.MinValue, pDeviceData) |> checkResult
 
     let deviceDataSpan = Span<'T>(deviceData |> NativePtr.ofNativeInt<'T> |> NativePtr.toVoidPtr, data.Length)
     data.CopyTo deviceDataSpan
@@ -339,7 +339,7 @@ let mkBoundBuffer<'T when 'T : unmanaged> physicalDevice device count flags kind
 
 let fillBuffer<'T when 'T : unmanaged> physicalDevice device commandPool transferQueue (buffer: Buffer) data =
     if buffer.IsShared then
-        mapBuffer<'T> device buffer.memory.raw data
+        mapBuffer<'T> device buffer.memory.raw buffer.memory.offset data
     else
         // Memory that is not shared can not be written directly to from the CPU.
         // In order to set it from the CPU, a temporary shared memory buffer is used as a staging buffer to transfer the data.
@@ -352,7 +352,7 @@ let fillBuffer<'T when 'T : unmanaged> physicalDevice device commandPool transfe
                 VkMemoryPropertyFlags.VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
         let stagingMemory = bindMemory physicalDevice device stagingBuffer stagingProperties
 
-        mapBuffer device stagingMemory.raw data
+        mapBuffer device stagingMemory.raw stagingMemory.offset data
 
         let size = uint64 (sizeof<'T> * count)
         copyBuffer device commandPool stagingBuffer buffer.buffer size transferQueue
