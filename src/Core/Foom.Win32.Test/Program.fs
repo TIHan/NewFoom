@@ -27,6 +27,7 @@ type Vertex =
     {
         position: Vector2
         color: Vector3
+        texCoord: Vector2
     }
 
 let radians (degrees) = degrees * MathF.PI / 180.f
@@ -54,24 +55,15 @@ let setRender (instance: FalGraphics) =
 
     let vertices =
         [|
-            { position = Vector2 (0.f, -0.5f); color = Vector3 (1.f, 0.f, 0.f) }
-            { position = Vector2 (0.5f, 0.5f); color = Vector3 (0.f, 1.f, 0.f) }
-            { position = Vector2 (-0.5f, 0.5f); color = Vector3 (0.f, 0.f, 1.f) }
+            { position = Vector2 (-0.5f, -0.5f); color = Vector3 (1.f, 0.f, 0.f); texCoord = Vector2(1.f, 0.f) }
+            { position = Vector2 (0.5f, -0.5f); color = Vector3 (0.f, 1.f, 0.f); texCoord = Vector2(0.f, 0.f) }
+            { position = Vector2 (0.5f, 0.5f); color = Vector3 (0.f, 0.f, 1.f); texCoord = Vector2(0.f, 1.f) }
+            { position = Vector2 (-0.5f, 0.5f); color = Vector3 (1.f, 1.f, 1.f); texCoord = Vector2(1.f, 1.f) }
         |]
     let verticesBindings = [|mkVertexInputBinding<Vertex> 0u VkVertexInputRate.VK_VERTEX_INPUT_RATE_VERTEX|]
     let verticesAttributes = mkVertexAttributeDescriptions<Vertex> 0u 0u
     let verticesBuffer = instance.CreateBuffer<Vertex> (vertices.Length, BufferFlags.None, BufferKind.Vertex)
     instance.FillBuffer(verticesBuffer, ReadOnlySpan vertices)
-
-    let tests =
-        vertices
-        |> Array.map (fun vertex ->
-            Vector4.Transform(Vector4(vertex.position, 0.f, 1.f), mvp.model * mvp.view * mvp.proj)
-        )
-    let testsBindings = [|mkVertexInputBinding<Vector4> 1u VkVertexInputRate.VK_VERTEX_INPUT_RATE_VERTEX|]
-    let testsAttributes = mkVertexAttributeDescriptions<Vector4> 2u 1u
-    let testsBuffer = instance.CreateBuffer<Vector4> (tests.Length, BufferFlags.None, BufferKind.Vertex)
-    instance.FillBuffer(testsBuffer, ReadOnlySpan tests)
 
     let vertex =
         <@
@@ -79,13 +71,15 @@ let setRender (instance: FalGraphics) =
             let vertex = Variable<Vertex> [Decoration.Location 0u] StorageClass.Input
             let _position = Variable<Vector2> [Decoration.Location 0u] StorageClass.Input
             let _color = Variable<Vector3> [Decoration.Location 1u] StorageClass.Input
-            let test = Variable<Vector4> [Decoration.Location 2u] StorageClass.Input
+            let _texCoord = Variable<Vector2> [Decoration.Location 2u] StorageClass.Input
             let mutable gl_Position  = Variable<Vector4> [Decoration.BuiltIn BuiltIn.Position] StorageClass.Output
             let mutable fragColor = Variable<Vector3> [Decoration.Location 0u] StorageClass.Output
+            let mutable fragTexCoord = Variable<Vector2> [Decoration.Location 1u] StorageClass.Output
 
             fun () ->
                 gl_Position <- Vector4.Transform(Vector4(vertex.position, 0.f, 1.f), mvp.model * mvp.view * mvp.proj)
                 fragColor <- vertex.color
+                fragTexCoord <- vertex.texCoord
         @>
     let spvVertexInfo = SpirvGenInfo.Create(AddressingModel.Logical, MemoryModel.GLSL450, ExecutionModel.Vertex, [Capability.Shader], [])
     let spvVertex =
@@ -95,9 +89,10 @@ let setRender (instance: FalGraphics) =
     let fragment =
         <@ 
             let fragColor = Variable<Vector3> [Decoration.Location 0u] StorageClass.Input
+            let fragTexCoord = Variable<Vector2> [Decoration.Location 1u] StorageClass.Input
             let mutable outColor = Variable<Vector4> [Decoration.Location 0u] StorageClass.Output
 
-            fun () -> outColor <- Vector4(fragColor, 1.f)
+            fun () -> outColor <- Vector4(fragTexCoord, 0.f, 1.f)
         @>
     let spvFragmentInfo = SpirvGenInfo.Create(AddressingModel.Logical, MemoryModel.GLSL450, ExecutionModel.Fragment, [Capability.Shader], ["GLSL.std.450"], ExecutionMode.OriginUpperLeft)
     let spvFragment = 
@@ -120,8 +115,8 @@ let setRender (instance: FalGraphics) =
         ms.Read(bytes, 0, bytes.Length) |> ignore
         bytes
    // let fragmentBytes = System.IO.File.ReadAllBytes("triangle_fragment.spv")
-    let pipelineIndex = instance.AddShader(Array.append verticesBindings testsBindings, Array.append verticesAttributes testsAttributes, ReadOnlySpan vertexBytes, ReadOnlySpan fragmentBytes)
-    instance.RecordDraw(pipelineIndex, [|verticesBuffer.Buffer;testsBuffer.Buffer|], vertices.Length, 1)
+    let pipelineIndex = instance.AddShader(verticesBindings, verticesAttributes, ReadOnlySpan vertexBytes, ReadOnlySpan fragmentBytes)
+    instance.RecordDraw(pipelineIndex, [|verticesBuffer.Buffer|], vertices.Length, 1)
     mvp, mvpUniform
 
 [<EntryPoint>]
