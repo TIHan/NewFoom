@@ -12,6 +12,8 @@ open System.Drawing
 open System.Drawing.Imaging
 open FSharp.NativeInterop
 
+#nowarn "9"
+
 [<Struct>]
 type ModelViewProjection =
     {
@@ -48,6 +50,7 @@ let setRender (instance: FalGraphics) =
         }
     instance.FillBuffer(mvpUniform, ReadOnlySpan [|mvp|])
     instance.SetUniformBuffer(mvpUniform)
+    instance.SetSampler image
 
     let vertices =
         [|

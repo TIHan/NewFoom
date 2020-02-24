@@ -653,6 +653,13 @@ type FalGraphics
 
         swapChain.SetUniformBuffer(buffer.Buffer, sizeof<'T>)
 
+    member _.SetSampler(image: FalImage) =
+        lock gate <| fun _ ->
+            
+        checkDispose ()
+
+        swapChain.SetSampler(image.Internal.imageView, image.Internal.sampler)
+
     interface IDisposable with
         member x.Dispose () =
             if Interlocked.CompareExchange(&isDisposed, 1, 0) = 1 then

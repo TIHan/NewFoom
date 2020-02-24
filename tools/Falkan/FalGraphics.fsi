@@ -54,4 +54,6 @@ type FalGraphics =
 
     member SetUniformBuffer: FalBuffer<_> -> unit
 
+    member SetSampler: FalImage -> unit
+
     static member Create : FalDevice -> FalGraphics

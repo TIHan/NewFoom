@@ -704,7 +704,7 @@ let updateDescriptorImageSet device descriptorSet pImageInfo =
             dstSet = descriptorSet,
             dstBinding = 1u,
             dstArrayElement = 0u,
-            descriptorType = VkDescriptorType.VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            descriptorType = VkDescriptorType.VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
             descriptorCount = 1u,
             pImageInfo = pImageInfo)
 
@@ -835,7 +835,7 @@ type SwapChain private (physicalDevice, device, surface, sync, graphicsFamily, g
             let uboSetLayouts = Array.init imageViews.Length (fun _ -> uboSetLayout)
             let uboSets = mkDescriptorSets device imageViews.Length uboPool uboSetLayouts
 
-            let samplerSetLayout = mkDescriptorSetLayout device 1u VkDescriptorType.VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER VkShaderStageFlags.VK_SHADER_STAGE_VERTEX_BIT
+            let samplerSetLayout = mkDescriptorSetLayout device 1u VkDescriptorType.VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER VkShaderStageFlags.VK_SHADER_STAGE_FRAGMENT_BIT
             let samplerPool = mkDescriptorPool device VkDescriptorType.VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER imageViews.Length
             let samplerSetLayouts = Array.init imageViews.Length (fun _ -> samplerSetLayout)
             let samplerSets = mkDescriptorSets device imageViews.Length samplerPool samplerSetLayouts
