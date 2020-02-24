@@ -102,9 +102,9 @@ let setRender (instance: FalGraphics) =
               // outColor <- Vector4(fragColor, 1.f)
                // let s = sampler.Gather<Vector4> fragTexCoord
                 let coord = Vector2Int(int fragTexCoord.X, int fragTexCoord.Y)
-               // let image = sampler.Image
-                outColor <- Vector4(fragColor, 1.f)
-              //  outColor <- image.Fetch coord
+                let image = sampler.Image
+               // outColor <- Vector4(fragColor, 1.f)
+                outColor <- image.Fetch coord
         @>
     let spvFragmentInfo = SpirvGenInfo.Create(AddressingModel.Logical, MemoryModel.GLSL450, ExecutionModel.Fragment, [Capability.Shader], ["GLSL.std.450"], ExecutionMode.OriginUpperLeft)
     let spvFragment = 

@@ -353,7 +353,7 @@ and CheckIntrinsicCall env checkedArgs expr =
         | _ ->
             failwithf "Call not supported: %A" expr
 
-    | SpecificCall <@ Unchecked.defaultof<Image<_, _, _, _, _, _, _, _>>.Fetch @> _, _, [arg1;arg2] ->
+    | Call(_, methInfo, _), _, [arg1;arg2] when methInfo.DeclaringType.FullName.StartsWith(typedefof<Image<_, _, _, _, _, _, _, _>>.FullName) && methInfo.Name = "Fetch" ->
         env, ImageFetch (arg1, arg2, mkSpirvType expr.Type) |> SpirvIntrinsicCall
 
     | _ ->
