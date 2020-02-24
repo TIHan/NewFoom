@@ -15,3 +15,8 @@ let private ErrorMessage = "Do not call outside the code quotation."
 
 [<RequiresExplicitTypeArguments>]
 let Variable<'T> (_decorations: Decoration list) (_storageClass: StorageClass) : 'T = failwith ErrorMessage
+
+[<Struct;NoComparison;NoEquality>]
+type Sampler2d = private Sampler2d of unit
+
+

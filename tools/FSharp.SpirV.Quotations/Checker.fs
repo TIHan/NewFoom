@@ -59,6 +59,8 @@ let rec mkSpirvType ty =
         SpirvTypeVoid
     | _ when ty = typeof<Matrix4x4> ->
         SpirvTypeMatrix4x4
+    | _ when ty = typeof<Sampler2d> ->
+        SpirvTypeSampler
     | _ when ty.IsArray ->
         failwith "Array can not be made here as it needs a specific length."
     | _ when ty.IsValueType ->

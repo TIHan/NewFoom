@@ -88,6 +88,7 @@ let setRender (instance: FalGraphics) =
 
     let fragment =
         <@ 
+            let sampler = Variable<Sampler2d> [Decoration.Binding 1u; Decoration.DescriptorSet 1u] StorageClass.Image
             let fragColor = Variable<Vector3> [Decoration.Location 0u] StorageClass.Input
             let fragTexCoord = Variable<Vector2> [Decoration.Location 1u] StorageClass.Input
             let mutable outColor = Variable<Vector4> [Decoration.Location 0u] StorageClass.Output

@@ -21,6 +21,7 @@ type SpirvType =
     | SpirvTypeMatrix4x4
     | SpirvTypeArray of SpirvType * length: int
     | SpirvTypeStruct of name: string * fields: SpirvField list
+    | SpirvTypeSampler
 
     member x.Name =
         match x with
@@ -34,6 +35,7 @@ type SpirvType =
         | SpirvTypeMatrix4x4 -> "Matrix4x4"
         | SpirvTypeArray (elementTy, length) -> elementTy.Name + "[" + string length + "]"
         | SpirvTypeStruct (name=name) -> name
+        | SpirvTypeSampler -> "Sampler"
 
     member x.Size: int =
         match x with
@@ -49,6 +51,7 @@ type SpirvType =
         | SpirvTypeStruct(_, fields) ->
             fields
             |> List.sumBy(fun (field: SpirvField) -> field.Type.Size)
+        | SpirvTypeSampler -> 0
 
     member x.IsVoid = match x with SpirvTypeVoid -> true | _ -> false
 

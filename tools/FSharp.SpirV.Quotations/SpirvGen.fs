@@ -253,6 +253,9 @@ let emitTypeMatrix4x4 cenv =
 let emitConstantMatrix4x4 cenv (constituents: IdRef list) =
     emitConstantComposite cenv (emitTypeMatrix4x4 cenv) "Matrix4x4" constituents
 
+let emitTypeSampler cenv =
+    emitTypeAux cenv SpirvTypeSampler (fun resultId -> OpTypeSampler resultId)
+
 let rec emitType cenv ty =
     match ty with
     | SpirvTypeVoid -> emitTypeVoid cenv
@@ -265,6 +268,7 @@ let rec emitType cenv ty =
     | SpirvTypeMatrix4x4 -> emitTypeMatrix4x4 cenv
     | SpirvTypeArray (elementTy, length) -> emitArrayType cenv elementTy length
     | SpirvTypeStruct (_, fields) -> emitStructType cenv ty fields
+    | SpirvTypeSampler -> emitTypeSampler cenv
 
 and emitArrayType cenv elementTy length =
     match elementTy with
@@ -634,7 +638,8 @@ let GenModule (info: SpirvGenInfo) expr =
             | OpVariable (_, _, StorageClass.Input, _)
             | OpVariable (_, _, StorageClass.Output, _) 
             | OpVariable (_, _, StorageClass.Private, _)
-            | OpVariable (_, _, StorageClass.Uniform, _) ->
+            | OpVariable (_, _, StorageClass.Uniform, _) 
+            | OpVariable (_, _, StorageClass.Image, _) ->
                 decorations
                 |> List.iter (fun decoration ->
                     OpDecorate(resultId, decoration)
