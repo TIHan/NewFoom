@@ -30,7 +30,7 @@ type Vertex =
         texCoord: Vector2
     }
 
-type Sampler2d = SampledImage<single, DimKind.Two, ImageDepthKind.Depth, ImageArrayedKind.NonArrayed, ImageMultisampleKind.Single, ImageSampleKind.Sampler, ImageFormatKind.Rgba32f, AccessQualifierKind.None>
+type Sampler2d = SampledImage<single, DimKind.Two, ImageDepthKind.Depth, ImageArrayedKind.NonArrayed, ImageMultisampleKind.Single, ImageSampleKind.Sampler, ImageFormatKind.Rgba8, AccessQualifierKind.None>
 
 let radians (degrees) = degrees * MathF.PI / 180.f
 
@@ -102,10 +102,18 @@ let setRender (instance: FalGraphics) =
               // outColor <- Vector4(fragColor, 1.f)
                // let s = sampler.Gather<Vector4> fragTexCoord
               //  let coord = Vector2Int(fragTexCoord)
-                let coord = Vector2Int(int fragTexCoord.X, int fragTexCoord.Y)
+              //  let x = int fragTexCoord.X
+              //  let y = int fragTexCoord.Y
+              //  let x = float32 x
+              //  let y = float32 y
+                let coord = Vector2Int(int fragColor.X, int fragColor.Y)
                 let redo = Vector2(float32 coord.X, float32 coord.Y)
               //  let image = sampler.Image
-                outColor <- sampler.Gather(fragTexCoord, 1) //image.Fetch coord
+             //   let x = sampler.Gather(fragTexCoord, 0).X
+            //    let y = sampler.Gather(fragTexCoord, 1).Y
+             //   let z = sampler.Gather(fragTexCoord, 2).Z
+             //   let w = sampler.Gather(fragTexCoord, 3).W
+                outColor <- Vector4(Vector3(redo.X, redo.Y, fragColor.Z), 1.f) //Vector4(x, y, z, w) //sampler.Gather(Vector2(x, y), 0) //image.Fetch coord
             //    outColor <- sampler.Image.Fetch coord
                // outColor <- 
         @>
