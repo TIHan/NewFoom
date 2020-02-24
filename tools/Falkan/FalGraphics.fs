@@ -460,7 +460,7 @@ let transitionImageLayout (commandBuffer: VkCommandBuffer) image (format: VkForm
             VkPipelineStageFlags.VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT
         else
             failwith "Unsupported layout transition."
-    let barrier =
+    let mutable barrier =
         VkImageMemoryBarrier(
             sType = VkStructureType.VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
             oldLayout = oldLayout,

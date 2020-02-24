@@ -110,6 +110,7 @@ let isAggregateType ty =
 let isCompositeType ty =
     match ty with
     | SpirvTypeVector2
+    | SpirvTypeVector2Int
     | SpirvTypeVector3
     | SpirvTypeVector4 -> true
     | _ -> isAggregateType ty
@@ -457,6 +458,7 @@ let rec GenExpr cenv (env: env) expr =
         GenExpr cenv env expr2
 
     | SpirvNewVector2 args
+    | SpirvNewVector2Int args
     | SpirvNewVector3 args 
     | SpirvNewVector4 args ->
         GenVector cenv env expr.Type args
@@ -506,30 +508,31 @@ let rec GenExpr cenv (env: env) expr =
             addInstructions cenv [OpMatrixTimesMatrix(retTy, resultId, arg2, arg1)]
             resultId
 
-        | SampledImage_T___Fetch__SampledImage_T__Single__T (_, arg1, arg2) ->
-            let arg1Ty = arg1.Type
+        | ConvertAnyFloatToAnySInt arg ->
+            let arg = GenExpr cenv env arg |> deref cenv
+
+            let resultId = nextResultId cenv
+            addInstructions cenv [OpConvertFToS(retTy, resultId, arg)]
+            resultId
+            
+        | GetImage arg ->
+            let arg = GenExpr cenv env arg |> deref cenv
+
+            let resultId = nextResultId cenv
+            addInstructions cenv [OpImage(retTy, resultId, arg)]
+            resultId
+
+        | ImageFetch (arg1, arg2, _) ->
             let arg1 = GenExpr cenv env arg1 |> deref cenv
-
-            let imageResultId =
-                let resultId = nextResultId cenv
-                let ty =
-                    match arg1Ty with
-                    | SpirvTypeSampledImage imageTy -> SpirvTypeImage imageTy
-                    | _ -> call.ReturnType
-                    |> emitType cenv
-                addInstructions cenv [OpImage(ty, resultId, arg1)]
-                resultId
-
             let arg2 = GenExpr cenv env arg2 |> deref cenv
 
             let resultId = nextResultId cenv
-            addInstructions cenv [OpImageFetch(retTy, resultId, imageResultId, arg2, None)]
+            addInstructions cenv [OpImageFetch(retTy, resultId, arg1, arg2, None)]
             resultId
-            
 
     | SpirvIntrinsicFieldGet fieldGet ->
         let getComponent receiver fieldTy n =
-            let receiverId = GenExpr cenv env receiver
+            let receiverId = GenExpr cenv env receiver |> deref cenv
             let fieldTyId = emitType cenv fieldTy
             addCompositeExtractInstruction cenv fieldTyId receiverId [n]
             
@@ -568,12 +571,7 @@ and GenVector cenv env retTy args =
     let constituents =
         args
         |> List.map (fun arg ->
-            let id = GenExpr cenv env arg
-            let id =
-                match tryEmitLoad cenv id with
-                | Some id -> id
-                | _ -> id
-
+            let id = GenExpr cenv env arg |> deref cenv
             match tryAddCompositeExtractInstructions cenv arg.Type id with
             | [] -> [id]
             | ids -> ids

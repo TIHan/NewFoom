@@ -197,7 +197,9 @@ type Image<'SampledType, 'Dim, 'Depth, 'Arrayed, 'Multisampled, 'Sampled, 'Forma
     and  'Sampled :> ImageSampleKind
     and  'Format :> ImageFormatKind
     and  'AccessQualifier :> AccessQualifierKind
-    > = class end
+    > =
+
+    member _.Fetch(_coordinate: Vector2Int) : Vector4 = failwith ErrorMessage
 
 [<Sealed>]
 type SampledImage<'SampledType, 'Dim, 'Depth, 'Arrayed, 'Multisampled, 'Sampled, 'Format, 'AccessQualifier
@@ -210,4 +212,4 @@ type SampledImage<'SampledType, 'Dim, 'Depth, 'Arrayed, 'Multisampled, 'Sampled,
     and  'AccessQualifier :> AccessQualifierKind
     > =
 
-    member _.Gather<'T when 'T : unmanaged>(_coordinate: Vector2Int) : 'T = failwith ErrorMessage
+    member _.Image: Image<'SampledType, 'Dim, 'Depth, 'Arrayed, 'Multisampled, 'Sampled, 'Format, 'AccessQualifier> = failwith ErrorMessage

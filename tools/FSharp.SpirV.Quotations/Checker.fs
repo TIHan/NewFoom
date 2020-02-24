@@ -322,7 +322,12 @@ and CheckPropertyGet env receiver propInfo args =
         | _ ->
             failwithf "Property get '%s' does not use backing field." propInfo.Name
     else
-        failwithf "Property get '%s' not supported." propInfo.Name
+        let env, checkedArgs = CheckExprs env ([receiver] @ args)
+        match checkedArgs with
+        | [arg] when propInfo.DeclaringType.FullName.StartsWith(typedefof<SampledImage<_, _, _, _, _, _, _, _>>.FullName) && propInfo.Name = "Image" ->
+            env, GetImage arg |> SpirvIntrinsicCall
+        | _ ->
+            failwithf "Property get '%s' not supported." propInfo.Name
 
 /// Check for intrinsic calls.
 and CheckIntrinsicCall env checkedArgs expr =
@@ -332,6 +337,9 @@ and CheckIntrinsicCall env checkedArgs expr =
         | _ -> failwithf "Expr is not a call: %A" expr
 
     match expr, tyArgs, checkedArgs with
+    | SpecificCall <@ int @> _, _, [arg] ->
+        env, ConvertAnyFloatToAnySInt arg |> SpirvIntrinsicCall
+
     | SpecificCall <@ Unchecked.defaultof<_[]>.[0] @> _, _, [receiver;arg] ->
         env, SpirvArrayIndexerGet (receiver, arg)
 
@@ -345,8 +353,8 @@ and CheckIntrinsicCall env checkedArgs expr =
         | _ ->
             failwithf "Call not supported: %A" expr
 
-    | Call (_, methInfo, _), [|tyArg|], [receiver;arg] when methInfo.DeclaringType.FullName.StartsWith(typedefof<SampledImage<_, _, _, _, _, _, _, _>>.FullName) && methInfo.Name = "Gather" ->
-        env, SampledImage_T___Fetch__SampledImage_T__Single__T(mkSpirvType tyArg, receiver, arg) |> SpirvIntrinsicCall
+    | SpecificCall <@ Unchecked.defaultof<Image<_, _, _, _, _, _, _, _>>.Fetch @> _, _, [arg1;arg2] ->
+        env, ImageFetch (arg1, arg2, mkSpirvType expr.Type) |> SpirvIntrinsicCall
 
     | _ ->
         failwithf "Call not supported: %A" expr

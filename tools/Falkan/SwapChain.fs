@@ -500,6 +500,7 @@ let mkPipelineLayout device (layouts: VkDescriptorSetLayout []) =
 let mkFramebuffers device renderPass (extent: VkExtent2D) imageViews =
     imageViews
     |> Array.map (fun imageView ->
+        let mutable imageView = imageView
         let mutable framebufferCreateInfo = 
             VkFramebufferCreateInfo (
                 sType = VkStructureType.VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
@@ -805,7 +806,8 @@ type SwapChain private (physicalDevice, device, surface, sync, graphicsFamily, g
             state.descriptorSets.[0]
             |> Array.iter (fun descriptorSet ->
                 let mutable bufferInfo = mkDescriptorBufferInfo buffer size
-                updateDescriptorSet device descriptorSet &&bufferInfo)
+                updateDescriptorSet device descriptorSet &&bufferInfo
+                () (* prevent tail-call *))
         | _ ->
             ()
 
@@ -816,7 +818,8 @@ type SwapChain private (physicalDevice, device, surface, sync, graphicsFamily, g
             state.descriptorSets.[1]
             |> Array.iter (fun descriptorSet ->
                 let mutable imageInfo = mkDescriptorImageInfo imageView sampler
-                updateDescriptorImageSet device descriptorSet &&imageInfo)
+                updateDescriptorImageSet device descriptorSet &&imageInfo
+                () (* prevent tail-call *))
         | _ ->
             ()
 

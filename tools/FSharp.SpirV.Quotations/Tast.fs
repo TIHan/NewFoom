@@ -174,7 +174,7 @@ type SpirvExpr =
             | SpirvNewVector2 _ ->
                 SpirvTypeVector2
             | SpirvNewVector2Int _ ->
-                SpirvTypeVector2
+                SpirvTypeVector2Int
             | SpirvNewVector3 _ ->
                 SpirvTypeVector3
             | SpirvNewVector4 _ ->
@@ -199,14 +199,14 @@ and SpirvIntrinsicCall =
     // TODO: Fix transform and multiply names
     | Transform__Vector4_Matrix4x4__Vector4 of vector4: SpirvExpr * matrix4x4: SpirvExpr
     | Multiply__Matrix4x4_Matrix4x4__Matrix4x4 of matrix4x4_1: SpirvExpr * matrix4x4_2: SpirvExpr
-    | SampledImage_T___Fetch__SampledImage_T__Single__T of tyArg: SpirvType * receiver: SpirvExpr * arg: SpirvExpr
     | ConvertAnyFloatToAnySInt of arg: SpirvExpr
+    | GetImage of arg: SpirvExpr
+    | ImageFetch of sampledImage: SpirvExpr * coordinate: SpirvExpr * retTy: SpirvType
 
     member x.ReturnType =
         match x with
         | Transform__Vector4_Matrix4x4__Vector4 _ -> SpirvTypeVector4
         | Multiply__Matrix4x4_Matrix4x4__Matrix4x4 _ -> SpirvTypeMatrix4x4
-        | SampledImage_T___Fetch__SampledImage_T__Single__T (tyArg, _, _) -> tyArg
         | ConvertAnyFloatToAnySInt arg ->
             match arg.Type with
             | SpirvTypeFloat width -> 
@@ -215,13 +215,22 @@ and SpirvIntrinsicCall =
                 else
                     SpirvTypeInt (width, true)
             | _ -> failwith "ConvertAnyFloatToAnySInt: Expected SpirvTypeFloat."
+        | GetImage arg ->
+            match arg.Type with
+            | SpirvTypeSampledImage imageTy -> SpirvTypeImage imageTy
+            | _ -> failwith "GetImage: Expected SpirvTypeSampledImage."
+        | ImageFetch (_, _, retTy) ->
+            match retTy with
+            | SpirvTypeVector4 _ -> retTy
+            | _ -> failwith "ImageFetch: Expected SpirvTypeVector4."
 
     member x.Arguments =
         match x with
         | Transform__Vector4_Matrix4x4__Vector4 (arg1, arg2)
         | Multiply__Matrix4x4_Matrix4x4__Matrix4x4 (arg1, arg2) -> [arg1;arg2]
-        | SampledImage_T___Fetch__SampledImage_T__Single__T (_, receiver, arg) -> [receiver;arg]
         | ConvertAnyFloatToAnySInt arg -> [arg]
+        | GetImage arg -> [arg]
+        | ImageFetch (arg1, arg2, _) -> [arg1;arg2]
 
 
 and SpirvIntrinsicFieldGet =
