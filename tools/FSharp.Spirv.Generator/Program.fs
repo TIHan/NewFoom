@@ -55,7 +55,7 @@ let rec getType (name: string) (category: string) (bases: string []) (pars: Disc
             OperandType.String name
         | _ ->
             OperandType.UInt32 name
-    | "ValueEnum" when pars.Length > 0 ->
+    | "ValueEnum" | "BitEnum" when pars.Length > 0 ->
         OperandType.DiscriminatedUnion (name, pars)
     | "ValueEnum" | "BitEnum" ->
         OperandType.Enum name
@@ -97,13 +97,21 @@ let createDiscriminatedUnionCases (e: SpirvSpec.Enumerant []) =
     )
     |> List.ofArray
 
+let genDuMemberValue (instr: SpirvSpec.Enumerant) =
+    match instr.Value.Number with
+    | Some v -> string v
+    | _ ->
+        match instr.Value.String with
+        | Some v -> v
+        | _ -> string instr.Value
+
 let genDuMemberValueCase (instr: SpirvSpec.Enumerant) =
     let underscore () =
         if Array.isEmpty instr.Parameters then
             String.Empty
         else
             " _"
-    "       | " + instr.Enumerant + underscore () + " -> " + string instr.Value + "u"
+    "       | " + instr.Enumerant + underscore () + " -> " + genDuMemberValue instr + "u"
 
 let genDuMemberValueMember enumerants =
     "    member x.Value =
@@ -142,7 +150,7 @@ let genKind (kind: SpirvSpec.OperandKind) =
             | _ -> 
                 "uint32"
         "type " + kind.Kind + " = " + tyName + "\n"
-    | "ValueEnum" when isDu ->
+    | "ValueEnum" | "BitEnum" when isDu ->
         "[<RequireQualifiedAccess>]\ntype " + kind.Kind + " =\n" +
         (cases 
          |> List.map (genDiscriminatedUnionCase)

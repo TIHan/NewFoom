@@ -229,6 +229,10 @@ let emitTypeVector2 cenv =
     let componentType = emitTypeSingle cenv
     emitTypeAux cenv SpirvTypeVector2 (fun resultId -> OpTypeVector(resultId, componentType, 2u))
 
+let emitTypeVector2Int cenv =
+    let componentType = emitTypeInt cenv
+    emitTypeAux cenv SpirvTypeVector2Int (fun resultId -> OpTypeVector(resultId, componentType, 2u))
+
 let emitTypeVector3 cenv =
     let componentType = emitTypeSingle cenv
     emitTypeAux cenv SpirvTypeVector3 (fun resultId -> OpTypeVector(resultId, componentType, 3u))
@@ -239,6 +243,9 @@ let emitTypeVector4 cenv =
 
 let emitConstantVector2 cenv (constituents: IdRef list) =
     emitConstantComposite cenv (emitTypeVector2 cenv) "Vector2" constituents
+
+let emitConstantVector2Int cenv (constituents: IdRef list) =
+    emitConstantComposite cenv (emitTypeVector2Int cenv) "Vector2<int>" constituents
 
 let emitConstantVector3 cenv (constituents: IdRef list) =
     emitConstantComposite cenv (emitTypeVector3 cenv) "Vector3" constituents
@@ -263,6 +270,7 @@ let rec emitType cenv ty =
     | SpirvTypeUInt32 -> emitTypeUInt32 cenv
     | SpirvTypeSingle -> emitTypeSingle cenv
     | SpirvTypeVector2 -> emitTypeVector2 cenv
+    | SpirvTypeVector2Int -> emitTypeVector2Int cenv
     | SpirvTypeVector3 -> emitTypeVector3 cenv
     | SpirvTypeVector4 -> emitTypeVector4 cenv
     | SpirvTypeMatrix4x4 -> emitTypeMatrix4x4 cenv
@@ -334,6 +342,9 @@ let rec GenConst cenv spvConst =
 
     | SpirvConstVector2 (n1, n2, decorations) ->
         emitConstantVector2 cenv ([n1;n2] |> List.map (emitConstantSingle cenv))
+
+    | SpirvConstVector2Int (n1, n2, decorations) ->
+        emitConstantVector2Int cenv ([n1;n2] |> List.map (emitConstantInt cenv))
 
     | SpirvConstVector3 (n1, n2, n3, decorations) ->
         emitConstantVector3 cenv ([n1;n2;n3] |> List.map (emitConstantSingle cenv))
@@ -506,8 +517,6 @@ let rec GenExpr cenv (env: env) expr =
         | SampledImage_T__Single_T (_, receiver, arg) ->
             let receiverTy = receiver.Type
             let receiver = GenExpr cenv env receiver |> deref cenv
-            let arg1 = GenExpr cenv env arg |> deref cenv
-           // let arg2 = GenExpr cenv env (SpirvConst(SpirvConstInt(1, []))) |> deref cenv
 
             let imageResultId =
                 let resultId = nextResultId cenv
@@ -519,8 +528,11 @@ let rec GenExpr cenv (env: env) expr =
                 addInstructions cenv [OpImage(ty, resultId, receiver)]
                 resultId
 
+           // let arg1 = GenExpr cenv env arg |> deref cenv
+            let arg1 = GenExpr cenv env (SpirvConst(SpirvConstVector2Int(0, 0, [])))
+
             let resultId = nextResultId cenv
-            addInstructions cenv [OpImageFetch(retTy, resultId, imageResultId, arg1, Some ImageOperands.Sample)]
+            addInstructions cenv [OpImageFetch(retTy, resultId, imageResultId, arg1, None)]
             resultId
             
 

@@ -30,7 +30,7 @@ type Vertex =
         texCoord: Vector2
     }
 
-type Sampler2d = SampledImage<single, DimKind.Two, ImageDepthKind.Depth, ImageArrayedKind.NonArrayed, ImageMultisampleKind.Multi, ImageSampleKind.RuntimeOnly, ImageFormatKind.Rgba32f, AccessQualifierKind.None>
+type Sampler2d = SampledImage<single, DimKind.Two, ImageDepthKind.Depth, ImageArrayedKind.NonArrayed, ImageMultisampleKind.Single, ImageSampleKind.Sampler, ImageFormatKind.Rgba32f, AccessQualifierKind.None>
 
 let radians (degrees) = degrees * MathF.PI / 180.f
 

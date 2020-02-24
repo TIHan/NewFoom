@@ -11,22 +11,41 @@ open InternalHelpers
 [<Literal>] 
 let MagicNumber = 0x07230203u
 
+[<RequireQualifiedAccess>]
 type ImageOperands =
-   | None = 0x0000u
-   | Bias = 0x0001u
-   | Lod = 0x0002u
-   | Grad = 0x0004u
-   | ConstOffset = 0x0008u
-   | Offset = 0x0010u
-   | ConstOffsets = 0x0020u
-   | Sample = 0x0040u
-   | MinLod = 0x0080u
-   | MakeTexelAvailable = 0x0100u
-   | MakeTexelVisible = 0x0200u
-   | NonPrivateTexel = 0x0400u
-   | VolatileTexel = 0x0800u
-   | SignExtend = 0x1000u
-   | ZeroExtend = 0x2000u
+    | None
+    | Bias of IdRef
+    | Lod of IdRef
+    | Grad of IdRef * IdRef
+    | ConstOffset of IdRef
+    | Offset of IdRef
+    | ConstOffsets of IdRef
+    | Sample of IdRef
+    | MinLod of IdRef
+    | MakeTexelAvailable of IdScope
+    | MakeTexelVisible of IdScope
+    | NonPrivateTexel
+    | VolatileTexel
+    | SignExtend
+    | ZeroExtend
+
+    member x.Value =
+       match x with
+       | None -> 0x0000u
+       | Bias _ -> 0x0001u
+       | Lod _ -> 0x0002u
+       | Grad _ -> 0x0004u
+       | ConstOffset _ -> 0x0008u
+       | Offset _ -> 0x0010u
+       | ConstOffsets _ -> 0x0020u
+       | Sample _ -> 0x0040u
+       | MinLod _ -> 0x0080u
+       | MakeTexelAvailable _ -> 0x0100u
+       | MakeTexelVisible _ -> 0x0200u
+       | NonPrivateTexel -> 0x0400u
+       | VolatileTexel -> 0x0800u
+       | SignExtend -> 0x1000u
+       | ZeroExtend -> 0x2000u
 
 type FPFastMathMode =
    | None = 0x0000u
@@ -41,17 +60,31 @@ type SelectionControl =
    | Flatten = 0x0001u
    | DontFlatten = 0x0002u
 
+[<RequireQualifiedAccess>]
 type LoopControl =
-   | None = 0x0000u
-   | Unroll = 0x0001u
-   | DontUnroll = 0x0002u
-   | DependencyInfinite = 0x0004u
-   | DependencyLength = 0x0008u
-   | MinIterations = 0x0010u
-   | MaxIterations = 0x0020u
-   | IterationMultiple = 0x0040u
-   | PeelCount = 0x0080u
-   | PartialCount = 0x0100u
+    | None
+    | Unroll
+    | DontUnroll
+    | DependencyInfinite
+    | DependencyLength of LiteralInteger
+    | MinIterations of LiteralInteger
+    | MaxIterations of LiteralInteger
+    | IterationMultiple of LiteralInteger
+    | PeelCount of LiteralInteger
+    | PartialCount of LiteralInteger
+
+    member x.Value =
+       match x with
+       | None -> 0x0000u
+       | Unroll -> 0x0001u
+       | DontUnroll -> 0x0002u
+       | DependencyInfinite -> 0x0004u
+       | DependencyLength _ -> 0x0008u
+       | MinIterations _ -> 0x0010u
+       | MaxIterations _ -> 0x0020u
+       | IterationMultiple _ -> 0x0040u
+       | PeelCount _ -> 0x0080u
+       | PartialCount _ -> 0x0100u
 
 type FunctionControl =
    | None = 0x0000u
@@ -77,14 +110,25 @@ type MemorySemantics =
    | MakeVisible = 0x4000u
    | Volatile = 0x8000u
 
+[<RequireQualifiedAccess>]
 type MemoryAccess =
-   | None = 0x0000u
-   | Volatile = 0x0001u
-   | Aligned = 0x0002u
-   | Nontemporal = 0x0004u
-   | MakePointerAvailable = 0x0008u
-   | MakePointerVisible = 0x0010u
-   | NonPrivatePointer = 0x0020u
+    | None
+    | Volatile
+    | Aligned of LiteralInteger
+    | Nontemporal
+    | MakePointerAvailable of IdScope
+    | MakePointerVisible of IdScope
+    | NonPrivatePointer
+
+    member x.Value =
+       match x with
+       | None -> 0x0000u
+       | Volatile -> 0x0001u
+       | Aligned _ -> 0x0002u
+       | Nontemporal -> 0x0004u
+       | MakePointerAvailable _ -> 0x0008u
+       | MakePointerVisible _ -> 0x0010u
+       | NonPrivatePointer -> 0x0020u
 
 type KernelProfilingInfo =
    | None = 0x0000u
@@ -2653,22 +2697,64 @@ type Instruction =
             stream.WriteUInt32(arg0)
             stream.WriteUInt32(arg1)
             stream.WriteUInt32(arg2)
-            stream.WriteOption(arg3, fun v -> stream.WriteEnum(v))
+            stream.WriteOption(arg3, fun v -> match v with
+            | MemoryAccess.None _ -> stream.WriteUInt32(v.Value)
+            | MemoryAccess.Volatile _ -> stream.WriteUInt32(v.Value)
+            | MemoryAccess.Aligned(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | MemoryAccess.Nontemporal _ -> stream.WriteUInt32(v.Value)
+            | MemoryAccess.MakePointerAvailable(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | MemoryAccess.MakePointerVisible(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | MemoryAccess.NonPrivatePointer _ -> stream.WriteUInt32(v.Value))
         | OpStore(arg0, arg1, arg2) ->
             stream.WriteUInt32(arg0)
             stream.WriteUInt32(arg1)
-            stream.WriteOption(arg2, fun v -> stream.WriteEnum(v))
+            stream.WriteOption(arg2, fun v -> match v with
+            | MemoryAccess.None _ -> stream.WriteUInt32(v.Value)
+            | MemoryAccess.Volatile _ -> stream.WriteUInt32(v.Value)
+            | MemoryAccess.Aligned(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | MemoryAccess.Nontemporal _ -> stream.WriteUInt32(v.Value)
+            | MemoryAccess.MakePointerAvailable(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | MemoryAccess.MakePointerVisible(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | MemoryAccess.NonPrivatePointer _ -> stream.WriteUInt32(v.Value))
         | OpCopyMemory(arg0, arg1, arg2, arg3) ->
             stream.WriteUInt32(arg0)
             stream.WriteUInt32(arg1)
-            stream.WriteOption(arg2, fun v -> stream.WriteEnum(v))
-            stream.WriteOption(arg3, fun v -> stream.WriteEnum(v))
+            stream.WriteOption(arg2, fun v -> match v with
+            | MemoryAccess.None _ -> stream.WriteUInt32(v.Value)
+            | MemoryAccess.Volatile _ -> stream.WriteUInt32(v.Value)
+            | MemoryAccess.Aligned(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | MemoryAccess.Nontemporal _ -> stream.WriteUInt32(v.Value)
+            | MemoryAccess.MakePointerAvailable(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | MemoryAccess.MakePointerVisible(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | MemoryAccess.NonPrivatePointer _ -> stream.WriteUInt32(v.Value))
+            stream.WriteOption(arg3, fun v -> match v with
+            | MemoryAccess.None _ -> stream.WriteUInt32(v.Value)
+            | MemoryAccess.Volatile _ -> stream.WriteUInt32(v.Value)
+            | MemoryAccess.Aligned(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | MemoryAccess.Nontemporal _ -> stream.WriteUInt32(v.Value)
+            | MemoryAccess.MakePointerAvailable(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | MemoryAccess.MakePointerVisible(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | MemoryAccess.NonPrivatePointer _ -> stream.WriteUInt32(v.Value))
         | OpCopyMemorySized(arg0, arg1, arg2, arg3, arg4) ->
             stream.WriteUInt32(arg0)
             stream.WriteUInt32(arg1)
             stream.WriteUInt32(arg2)
-            stream.WriteOption(arg3, fun v -> stream.WriteEnum(v))
-            stream.WriteOption(arg4, fun v -> stream.WriteEnum(v))
+            stream.WriteOption(arg3, fun v -> match v with
+            | MemoryAccess.None _ -> stream.WriteUInt32(v.Value)
+            | MemoryAccess.Volatile _ -> stream.WriteUInt32(v.Value)
+            | MemoryAccess.Aligned(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | MemoryAccess.Nontemporal _ -> stream.WriteUInt32(v.Value)
+            | MemoryAccess.MakePointerAvailable(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | MemoryAccess.MakePointerVisible(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | MemoryAccess.NonPrivatePointer _ -> stream.WriteUInt32(v.Value))
+            stream.WriteOption(arg4, fun v -> match v with
+            | MemoryAccess.None _ -> stream.WriteUInt32(v.Value)
+            | MemoryAccess.Volatile _ -> stream.WriteUInt32(v.Value)
+            | MemoryAccess.Aligned(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | MemoryAccess.Nontemporal _ -> stream.WriteUInt32(v.Value)
+            | MemoryAccess.MakePointerAvailable(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | MemoryAccess.MakePointerVisible(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | MemoryAccess.NonPrivatePointer _ -> stream.WriteUInt32(v.Value))
         | OpAccessChain(arg0, arg1, arg2, arg3) ->
             stream.WriteUInt32(arg0)
             stream.WriteUInt32(arg1)
@@ -2893,84 +2979,279 @@ type Instruction =
             stream.WriteUInt32(arg1)
             stream.WriteUInt32(arg2)
             stream.WriteUInt32(arg3)
-            stream.WriteOption(arg4, fun v -> stream.WriteEnum(v))
+            stream.WriteOption(arg4, fun v -> match v with
+            | ImageOperands.None _ -> stream.WriteUInt32(v.Value)
+            | ImageOperands.Bias(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.Lod(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.Grad(v_arg0, v_arg1) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0);stream.WriteUInt32(v_arg1)
+            | ImageOperands.ConstOffset(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.Offset(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.ConstOffsets(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.Sample(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.MinLod(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.MakeTexelAvailable(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.MakeTexelVisible(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.NonPrivateTexel _ -> stream.WriteUInt32(v.Value)
+            | ImageOperands.VolatileTexel _ -> stream.WriteUInt32(v.Value)
+            | ImageOperands.SignExtend _ -> stream.WriteUInt32(v.Value)
+            | ImageOperands.ZeroExtend _ -> stream.WriteUInt32(v.Value))
         | OpImageSampleExplicitLod(arg0, arg1, arg2, arg3, arg4) ->
             stream.WriteUInt32(arg0)
             stream.WriteUInt32(arg1)
             stream.WriteUInt32(arg2)
             stream.WriteUInt32(arg3)
-            stream.WriteEnum(arg4)
+            match arg4 with
+            | ImageOperands.None _ -> stream.WriteUInt32(arg4.Value)
+            | ImageOperands.Bias(arg4_arg0) -> stream.WriteUInt32(arg4.Value);stream.WriteUInt32(arg4_arg0)
+            | ImageOperands.Lod(arg4_arg0) -> stream.WriteUInt32(arg4.Value);stream.WriteUInt32(arg4_arg0)
+            | ImageOperands.Grad(arg4_arg0, arg4_arg1) -> stream.WriteUInt32(arg4.Value);stream.WriteUInt32(arg4_arg0);stream.WriteUInt32(arg4_arg1)
+            | ImageOperands.ConstOffset(arg4_arg0) -> stream.WriteUInt32(arg4.Value);stream.WriteUInt32(arg4_arg0)
+            | ImageOperands.Offset(arg4_arg0) -> stream.WriteUInt32(arg4.Value);stream.WriteUInt32(arg4_arg0)
+            | ImageOperands.ConstOffsets(arg4_arg0) -> stream.WriteUInt32(arg4.Value);stream.WriteUInt32(arg4_arg0)
+            | ImageOperands.Sample(arg4_arg0) -> stream.WriteUInt32(arg4.Value);stream.WriteUInt32(arg4_arg0)
+            | ImageOperands.MinLod(arg4_arg0) -> stream.WriteUInt32(arg4.Value);stream.WriteUInt32(arg4_arg0)
+            | ImageOperands.MakeTexelAvailable(arg4_arg0) -> stream.WriteUInt32(arg4.Value);stream.WriteUInt32(arg4_arg0)
+            | ImageOperands.MakeTexelVisible(arg4_arg0) -> stream.WriteUInt32(arg4.Value);stream.WriteUInt32(arg4_arg0)
+            | ImageOperands.NonPrivateTexel _ -> stream.WriteUInt32(arg4.Value)
+            | ImageOperands.VolatileTexel _ -> stream.WriteUInt32(arg4.Value)
+            | ImageOperands.SignExtend _ -> stream.WriteUInt32(arg4.Value)
+            | ImageOperands.ZeroExtend _ -> stream.WriteUInt32(arg4.Value)
         | OpImageSampleDrefImplicitLod(arg0, arg1, arg2, arg3, arg4, arg5) ->
             stream.WriteUInt32(arg0)
             stream.WriteUInt32(arg1)
             stream.WriteUInt32(arg2)
             stream.WriteUInt32(arg3)
             stream.WriteUInt32(arg4)
-            stream.WriteOption(arg5, fun v -> stream.WriteEnum(v))
+            stream.WriteOption(arg5, fun v -> match v with
+            | ImageOperands.None _ -> stream.WriteUInt32(v.Value)
+            | ImageOperands.Bias(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.Lod(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.Grad(v_arg0, v_arg1) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0);stream.WriteUInt32(v_arg1)
+            | ImageOperands.ConstOffset(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.Offset(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.ConstOffsets(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.Sample(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.MinLod(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.MakeTexelAvailable(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.MakeTexelVisible(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.NonPrivateTexel _ -> stream.WriteUInt32(v.Value)
+            | ImageOperands.VolatileTexel _ -> stream.WriteUInt32(v.Value)
+            | ImageOperands.SignExtend _ -> stream.WriteUInt32(v.Value)
+            | ImageOperands.ZeroExtend _ -> stream.WriteUInt32(v.Value))
         | OpImageSampleDrefExplicitLod(arg0, arg1, arg2, arg3, arg4, arg5) ->
             stream.WriteUInt32(arg0)
             stream.WriteUInt32(arg1)
             stream.WriteUInt32(arg2)
             stream.WriteUInt32(arg3)
             stream.WriteUInt32(arg4)
-            stream.WriteEnum(arg5)
+            match arg5 with
+            | ImageOperands.None _ -> stream.WriteUInt32(arg5.Value)
+            | ImageOperands.Bias(arg5_arg0) -> stream.WriteUInt32(arg5.Value);stream.WriteUInt32(arg5_arg0)
+            | ImageOperands.Lod(arg5_arg0) -> stream.WriteUInt32(arg5.Value);stream.WriteUInt32(arg5_arg0)
+            | ImageOperands.Grad(arg5_arg0, arg5_arg1) -> stream.WriteUInt32(arg5.Value);stream.WriteUInt32(arg5_arg0);stream.WriteUInt32(arg5_arg1)
+            | ImageOperands.ConstOffset(arg5_arg0) -> stream.WriteUInt32(arg5.Value);stream.WriteUInt32(arg5_arg0)
+            | ImageOperands.Offset(arg5_arg0) -> stream.WriteUInt32(arg5.Value);stream.WriteUInt32(arg5_arg0)
+            | ImageOperands.ConstOffsets(arg5_arg0) -> stream.WriteUInt32(arg5.Value);stream.WriteUInt32(arg5_arg0)
+            | ImageOperands.Sample(arg5_arg0) -> stream.WriteUInt32(arg5.Value);stream.WriteUInt32(arg5_arg0)
+            | ImageOperands.MinLod(arg5_arg0) -> stream.WriteUInt32(arg5.Value);stream.WriteUInt32(arg5_arg0)
+            | ImageOperands.MakeTexelAvailable(arg5_arg0) -> stream.WriteUInt32(arg5.Value);stream.WriteUInt32(arg5_arg0)
+            | ImageOperands.MakeTexelVisible(arg5_arg0) -> stream.WriteUInt32(arg5.Value);stream.WriteUInt32(arg5_arg0)
+            | ImageOperands.NonPrivateTexel _ -> stream.WriteUInt32(arg5.Value)
+            | ImageOperands.VolatileTexel _ -> stream.WriteUInt32(arg5.Value)
+            | ImageOperands.SignExtend _ -> stream.WriteUInt32(arg5.Value)
+            | ImageOperands.ZeroExtend _ -> stream.WriteUInt32(arg5.Value)
         | OpImageSampleProjImplicitLod(arg0, arg1, arg2, arg3, arg4) ->
             stream.WriteUInt32(arg0)
             stream.WriteUInt32(arg1)
             stream.WriteUInt32(arg2)
             stream.WriteUInt32(arg3)
-            stream.WriteOption(arg4, fun v -> stream.WriteEnum(v))
+            stream.WriteOption(arg4, fun v -> match v with
+            | ImageOperands.None _ -> stream.WriteUInt32(v.Value)
+            | ImageOperands.Bias(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.Lod(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.Grad(v_arg0, v_arg1) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0);stream.WriteUInt32(v_arg1)
+            | ImageOperands.ConstOffset(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.Offset(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.ConstOffsets(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.Sample(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.MinLod(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.MakeTexelAvailable(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.MakeTexelVisible(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.NonPrivateTexel _ -> stream.WriteUInt32(v.Value)
+            | ImageOperands.VolatileTexel _ -> stream.WriteUInt32(v.Value)
+            | ImageOperands.SignExtend _ -> stream.WriteUInt32(v.Value)
+            | ImageOperands.ZeroExtend _ -> stream.WriteUInt32(v.Value))
         | OpImageSampleProjExplicitLod(arg0, arg1, arg2, arg3, arg4) ->
             stream.WriteUInt32(arg0)
             stream.WriteUInt32(arg1)
             stream.WriteUInt32(arg2)
             stream.WriteUInt32(arg3)
-            stream.WriteEnum(arg4)
+            match arg4 with
+            | ImageOperands.None _ -> stream.WriteUInt32(arg4.Value)
+            | ImageOperands.Bias(arg4_arg0) -> stream.WriteUInt32(arg4.Value);stream.WriteUInt32(arg4_arg0)
+            | ImageOperands.Lod(arg4_arg0) -> stream.WriteUInt32(arg4.Value);stream.WriteUInt32(arg4_arg0)
+            | ImageOperands.Grad(arg4_arg0, arg4_arg1) -> stream.WriteUInt32(arg4.Value);stream.WriteUInt32(arg4_arg0);stream.WriteUInt32(arg4_arg1)
+            | ImageOperands.ConstOffset(arg4_arg0) -> stream.WriteUInt32(arg4.Value);stream.WriteUInt32(arg4_arg0)
+            | ImageOperands.Offset(arg4_arg0) -> stream.WriteUInt32(arg4.Value);stream.WriteUInt32(arg4_arg0)
+            | ImageOperands.ConstOffsets(arg4_arg0) -> stream.WriteUInt32(arg4.Value);stream.WriteUInt32(arg4_arg0)
+            | ImageOperands.Sample(arg4_arg0) -> stream.WriteUInt32(arg4.Value);stream.WriteUInt32(arg4_arg0)
+            | ImageOperands.MinLod(arg4_arg0) -> stream.WriteUInt32(arg4.Value);stream.WriteUInt32(arg4_arg0)
+            | ImageOperands.MakeTexelAvailable(arg4_arg0) -> stream.WriteUInt32(arg4.Value);stream.WriteUInt32(arg4_arg0)
+            | ImageOperands.MakeTexelVisible(arg4_arg0) -> stream.WriteUInt32(arg4.Value);stream.WriteUInt32(arg4_arg0)
+            | ImageOperands.NonPrivateTexel _ -> stream.WriteUInt32(arg4.Value)
+            | ImageOperands.VolatileTexel _ -> stream.WriteUInt32(arg4.Value)
+            | ImageOperands.SignExtend _ -> stream.WriteUInt32(arg4.Value)
+            | ImageOperands.ZeroExtend _ -> stream.WriteUInt32(arg4.Value)
         | OpImageSampleProjDrefImplicitLod(arg0, arg1, arg2, arg3, arg4, arg5) ->
             stream.WriteUInt32(arg0)
             stream.WriteUInt32(arg1)
             stream.WriteUInt32(arg2)
             stream.WriteUInt32(arg3)
             stream.WriteUInt32(arg4)
-            stream.WriteOption(arg5, fun v -> stream.WriteEnum(v))
+            stream.WriteOption(arg5, fun v -> match v with
+            | ImageOperands.None _ -> stream.WriteUInt32(v.Value)
+            | ImageOperands.Bias(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.Lod(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.Grad(v_arg0, v_arg1) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0);stream.WriteUInt32(v_arg1)
+            | ImageOperands.ConstOffset(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.Offset(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.ConstOffsets(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.Sample(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.MinLod(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.MakeTexelAvailable(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.MakeTexelVisible(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.NonPrivateTexel _ -> stream.WriteUInt32(v.Value)
+            | ImageOperands.VolatileTexel _ -> stream.WriteUInt32(v.Value)
+            | ImageOperands.SignExtend _ -> stream.WriteUInt32(v.Value)
+            | ImageOperands.ZeroExtend _ -> stream.WriteUInt32(v.Value))
         | OpImageSampleProjDrefExplicitLod(arg0, arg1, arg2, arg3, arg4, arg5) ->
             stream.WriteUInt32(arg0)
             stream.WriteUInt32(arg1)
             stream.WriteUInt32(arg2)
             stream.WriteUInt32(arg3)
             stream.WriteUInt32(arg4)
-            stream.WriteEnum(arg5)
+            match arg5 with
+            | ImageOperands.None _ -> stream.WriteUInt32(arg5.Value)
+            | ImageOperands.Bias(arg5_arg0) -> stream.WriteUInt32(arg5.Value);stream.WriteUInt32(arg5_arg0)
+            | ImageOperands.Lod(arg5_arg0) -> stream.WriteUInt32(arg5.Value);stream.WriteUInt32(arg5_arg0)
+            | ImageOperands.Grad(arg5_arg0, arg5_arg1) -> stream.WriteUInt32(arg5.Value);stream.WriteUInt32(arg5_arg0);stream.WriteUInt32(arg5_arg1)
+            | ImageOperands.ConstOffset(arg5_arg0) -> stream.WriteUInt32(arg5.Value);stream.WriteUInt32(arg5_arg0)
+            | ImageOperands.Offset(arg5_arg0) -> stream.WriteUInt32(arg5.Value);stream.WriteUInt32(arg5_arg0)
+            | ImageOperands.ConstOffsets(arg5_arg0) -> stream.WriteUInt32(arg5.Value);stream.WriteUInt32(arg5_arg0)
+            | ImageOperands.Sample(arg5_arg0) -> stream.WriteUInt32(arg5.Value);stream.WriteUInt32(arg5_arg0)
+            | ImageOperands.MinLod(arg5_arg0) -> stream.WriteUInt32(arg5.Value);stream.WriteUInt32(arg5_arg0)
+            | ImageOperands.MakeTexelAvailable(arg5_arg0) -> stream.WriteUInt32(arg5.Value);stream.WriteUInt32(arg5_arg0)
+            | ImageOperands.MakeTexelVisible(arg5_arg0) -> stream.WriteUInt32(arg5.Value);stream.WriteUInt32(arg5_arg0)
+            | ImageOperands.NonPrivateTexel _ -> stream.WriteUInt32(arg5.Value)
+            | ImageOperands.VolatileTexel _ -> stream.WriteUInt32(arg5.Value)
+            | ImageOperands.SignExtend _ -> stream.WriteUInt32(arg5.Value)
+            | ImageOperands.ZeroExtend _ -> stream.WriteUInt32(arg5.Value)
         | OpImageFetch(arg0, arg1, arg2, arg3, arg4) ->
             stream.WriteUInt32(arg0)
             stream.WriteUInt32(arg1)
             stream.WriteUInt32(arg2)
             stream.WriteUInt32(arg3)
-            stream.WriteOption(arg4, fun v -> stream.WriteEnum(v))
+            stream.WriteOption(arg4, fun v -> match v with
+            | ImageOperands.None _ -> stream.WriteUInt32(v.Value)
+            | ImageOperands.Bias(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.Lod(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.Grad(v_arg0, v_arg1) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0);stream.WriteUInt32(v_arg1)
+            | ImageOperands.ConstOffset(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.Offset(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.ConstOffsets(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.Sample(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.MinLod(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.MakeTexelAvailable(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.MakeTexelVisible(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.NonPrivateTexel _ -> stream.WriteUInt32(v.Value)
+            | ImageOperands.VolatileTexel _ -> stream.WriteUInt32(v.Value)
+            | ImageOperands.SignExtend _ -> stream.WriteUInt32(v.Value)
+            | ImageOperands.ZeroExtend _ -> stream.WriteUInt32(v.Value))
         | OpImageGather(arg0, arg1, arg2, arg3, arg4, arg5) ->
             stream.WriteUInt32(arg0)
             stream.WriteUInt32(arg1)
             stream.WriteUInt32(arg2)
             stream.WriteUInt32(arg3)
             stream.WriteUInt32(arg4)
-            stream.WriteOption(arg5, fun v -> stream.WriteEnum(v))
+            stream.WriteOption(arg5, fun v -> match v with
+            | ImageOperands.None _ -> stream.WriteUInt32(v.Value)
+            | ImageOperands.Bias(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.Lod(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.Grad(v_arg0, v_arg1) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0);stream.WriteUInt32(v_arg1)
+            | ImageOperands.ConstOffset(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.Offset(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.ConstOffsets(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.Sample(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.MinLod(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.MakeTexelAvailable(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.MakeTexelVisible(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.NonPrivateTexel _ -> stream.WriteUInt32(v.Value)
+            | ImageOperands.VolatileTexel _ -> stream.WriteUInt32(v.Value)
+            | ImageOperands.SignExtend _ -> stream.WriteUInt32(v.Value)
+            | ImageOperands.ZeroExtend _ -> stream.WriteUInt32(v.Value))
         | OpImageDrefGather(arg0, arg1, arg2, arg3, arg4, arg5) ->
             stream.WriteUInt32(arg0)
             stream.WriteUInt32(arg1)
             stream.WriteUInt32(arg2)
             stream.WriteUInt32(arg3)
             stream.WriteUInt32(arg4)
-            stream.WriteOption(arg5, fun v -> stream.WriteEnum(v))
+            stream.WriteOption(arg5, fun v -> match v with
+            | ImageOperands.None _ -> stream.WriteUInt32(v.Value)
+            | ImageOperands.Bias(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.Lod(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.Grad(v_arg0, v_arg1) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0);stream.WriteUInt32(v_arg1)
+            | ImageOperands.ConstOffset(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.Offset(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.ConstOffsets(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.Sample(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.MinLod(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.MakeTexelAvailable(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.MakeTexelVisible(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.NonPrivateTexel _ -> stream.WriteUInt32(v.Value)
+            | ImageOperands.VolatileTexel _ -> stream.WriteUInt32(v.Value)
+            | ImageOperands.SignExtend _ -> stream.WriteUInt32(v.Value)
+            | ImageOperands.ZeroExtend _ -> stream.WriteUInt32(v.Value))
         | OpImageRead(arg0, arg1, arg2, arg3, arg4) ->
             stream.WriteUInt32(arg0)
             stream.WriteUInt32(arg1)
             stream.WriteUInt32(arg2)
             stream.WriteUInt32(arg3)
-            stream.WriteOption(arg4, fun v -> stream.WriteEnum(v))
+            stream.WriteOption(arg4, fun v -> match v with
+            | ImageOperands.None _ -> stream.WriteUInt32(v.Value)
+            | ImageOperands.Bias(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.Lod(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.Grad(v_arg0, v_arg1) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0);stream.WriteUInt32(v_arg1)
+            | ImageOperands.ConstOffset(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.Offset(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.ConstOffsets(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.Sample(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.MinLod(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.MakeTexelAvailable(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.MakeTexelVisible(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.NonPrivateTexel _ -> stream.WriteUInt32(v.Value)
+            | ImageOperands.VolatileTexel _ -> stream.WriteUInt32(v.Value)
+            | ImageOperands.SignExtend _ -> stream.WriteUInt32(v.Value)
+            | ImageOperands.ZeroExtend _ -> stream.WriteUInt32(v.Value))
         | OpImageWrite(arg0, arg1, arg2, arg3) ->
             stream.WriteUInt32(arg0)
             stream.WriteUInt32(arg1)
             stream.WriteUInt32(arg2)
-            stream.WriteOption(arg3, fun v -> stream.WriteEnum(v))
+            stream.WriteOption(arg3, fun v -> match v with
+            | ImageOperands.None _ -> stream.WriteUInt32(v.Value)
+            | ImageOperands.Bias(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.Lod(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.Grad(v_arg0, v_arg1) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0);stream.WriteUInt32(v_arg1)
+            | ImageOperands.ConstOffset(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.Offset(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.ConstOffsets(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.Sample(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.MinLod(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.MakeTexelAvailable(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.MakeTexelVisible(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.NonPrivateTexel _ -> stream.WriteUInt32(v.Value)
+            | ImageOperands.VolatileTexel _ -> stream.WriteUInt32(v.Value)
+            | ImageOperands.SignExtend _ -> stream.WriteUInt32(v.Value)
+            | ImageOperands.ZeroExtend _ -> stream.WriteUInt32(v.Value))
         | OpImage(arg0, arg1, arg2) ->
             stream.WriteUInt32(arg0)
             stream.WriteUInt32(arg1)
@@ -3616,7 +3897,17 @@ type Instruction =
         | OpLoopMerge(arg0, arg1, arg2) ->
             stream.WriteUInt32(arg0)
             stream.WriteUInt32(arg1)
-            stream.WriteEnum(arg2)
+            match arg2 with
+            | LoopControl.None _ -> stream.WriteUInt32(arg2.Value)
+            | LoopControl.Unroll _ -> stream.WriteUInt32(arg2.Value)
+            | LoopControl.DontUnroll _ -> stream.WriteUInt32(arg2.Value)
+            | LoopControl.DependencyInfinite _ -> stream.WriteUInt32(arg2.Value)
+            | LoopControl.DependencyLength(arg2_arg0) -> stream.WriteUInt32(arg2.Value);stream.WriteUInt32(arg2_arg0)
+            | LoopControl.MinIterations(arg2_arg0) -> stream.WriteUInt32(arg2.Value);stream.WriteUInt32(arg2_arg0)
+            | LoopControl.MaxIterations(arg2_arg0) -> stream.WriteUInt32(arg2.Value);stream.WriteUInt32(arg2_arg0)
+            | LoopControl.IterationMultiple(arg2_arg0) -> stream.WriteUInt32(arg2.Value);stream.WriteUInt32(arg2_arg0)
+            | LoopControl.PeelCount(arg2_arg0) -> stream.WriteUInt32(arg2.Value);stream.WriteUInt32(arg2_arg0)
+            | LoopControl.PartialCount(arg2_arg0) -> stream.WriteUInt32(arg2.Value);stream.WriteUInt32(arg2_arg0)
         | OpSelectionMerge(arg0, arg1) ->
             stream.WriteUInt32(arg0)
             stream.WriteEnum(arg1)
@@ -3907,73 +4198,238 @@ type Instruction =
             stream.WriteUInt32(arg1)
             stream.WriteUInt32(arg2)
             stream.WriteUInt32(arg3)
-            stream.WriteOption(arg4, fun v -> stream.WriteEnum(v))
+            stream.WriteOption(arg4, fun v -> match v with
+            | ImageOperands.None _ -> stream.WriteUInt32(v.Value)
+            | ImageOperands.Bias(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.Lod(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.Grad(v_arg0, v_arg1) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0);stream.WriteUInt32(v_arg1)
+            | ImageOperands.ConstOffset(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.Offset(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.ConstOffsets(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.Sample(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.MinLod(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.MakeTexelAvailable(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.MakeTexelVisible(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.NonPrivateTexel _ -> stream.WriteUInt32(v.Value)
+            | ImageOperands.VolatileTexel _ -> stream.WriteUInt32(v.Value)
+            | ImageOperands.SignExtend _ -> stream.WriteUInt32(v.Value)
+            | ImageOperands.ZeroExtend _ -> stream.WriteUInt32(v.Value))
         | OpImageSparseSampleExplicitLod(arg0, arg1, arg2, arg3, arg4) ->
             stream.WriteUInt32(arg0)
             stream.WriteUInt32(arg1)
             stream.WriteUInt32(arg2)
             stream.WriteUInt32(arg3)
-            stream.WriteEnum(arg4)
+            match arg4 with
+            | ImageOperands.None _ -> stream.WriteUInt32(arg4.Value)
+            | ImageOperands.Bias(arg4_arg0) -> stream.WriteUInt32(arg4.Value);stream.WriteUInt32(arg4_arg0)
+            | ImageOperands.Lod(arg4_arg0) -> stream.WriteUInt32(arg4.Value);stream.WriteUInt32(arg4_arg0)
+            | ImageOperands.Grad(arg4_arg0, arg4_arg1) -> stream.WriteUInt32(arg4.Value);stream.WriteUInt32(arg4_arg0);stream.WriteUInt32(arg4_arg1)
+            | ImageOperands.ConstOffset(arg4_arg0) -> stream.WriteUInt32(arg4.Value);stream.WriteUInt32(arg4_arg0)
+            | ImageOperands.Offset(arg4_arg0) -> stream.WriteUInt32(arg4.Value);stream.WriteUInt32(arg4_arg0)
+            | ImageOperands.ConstOffsets(arg4_arg0) -> stream.WriteUInt32(arg4.Value);stream.WriteUInt32(arg4_arg0)
+            | ImageOperands.Sample(arg4_arg0) -> stream.WriteUInt32(arg4.Value);stream.WriteUInt32(arg4_arg0)
+            | ImageOperands.MinLod(arg4_arg0) -> stream.WriteUInt32(arg4.Value);stream.WriteUInt32(arg4_arg0)
+            | ImageOperands.MakeTexelAvailable(arg4_arg0) -> stream.WriteUInt32(arg4.Value);stream.WriteUInt32(arg4_arg0)
+            | ImageOperands.MakeTexelVisible(arg4_arg0) -> stream.WriteUInt32(arg4.Value);stream.WriteUInt32(arg4_arg0)
+            | ImageOperands.NonPrivateTexel _ -> stream.WriteUInt32(arg4.Value)
+            | ImageOperands.VolatileTexel _ -> stream.WriteUInt32(arg4.Value)
+            | ImageOperands.SignExtend _ -> stream.WriteUInt32(arg4.Value)
+            | ImageOperands.ZeroExtend _ -> stream.WriteUInt32(arg4.Value)
         | OpImageSparseSampleDrefImplicitLod(arg0, arg1, arg2, arg3, arg4, arg5) ->
             stream.WriteUInt32(arg0)
             stream.WriteUInt32(arg1)
             stream.WriteUInt32(arg2)
             stream.WriteUInt32(arg3)
             stream.WriteUInt32(arg4)
-            stream.WriteOption(arg5, fun v -> stream.WriteEnum(v))
+            stream.WriteOption(arg5, fun v -> match v with
+            | ImageOperands.None _ -> stream.WriteUInt32(v.Value)
+            | ImageOperands.Bias(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.Lod(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.Grad(v_arg0, v_arg1) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0);stream.WriteUInt32(v_arg1)
+            | ImageOperands.ConstOffset(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.Offset(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.ConstOffsets(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.Sample(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.MinLod(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.MakeTexelAvailable(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.MakeTexelVisible(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.NonPrivateTexel _ -> stream.WriteUInt32(v.Value)
+            | ImageOperands.VolatileTexel _ -> stream.WriteUInt32(v.Value)
+            | ImageOperands.SignExtend _ -> stream.WriteUInt32(v.Value)
+            | ImageOperands.ZeroExtend _ -> stream.WriteUInt32(v.Value))
         | OpImageSparseSampleDrefExplicitLod(arg0, arg1, arg2, arg3, arg4, arg5) ->
             stream.WriteUInt32(arg0)
             stream.WriteUInt32(arg1)
             stream.WriteUInt32(arg2)
             stream.WriteUInt32(arg3)
             stream.WriteUInt32(arg4)
-            stream.WriteEnum(arg5)
+            match arg5 with
+            | ImageOperands.None _ -> stream.WriteUInt32(arg5.Value)
+            | ImageOperands.Bias(arg5_arg0) -> stream.WriteUInt32(arg5.Value);stream.WriteUInt32(arg5_arg0)
+            | ImageOperands.Lod(arg5_arg0) -> stream.WriteUInt32(arg5.Value);stream.WriteUInt32(arg5_arg0)
+            | ImageOperands.Grad(arg5_arg0, arg5_arg1) -> stream.WriteUInt32(arg5.Value);stream.WriteUInt32(arg5_arg0);stream.WriteUInt32(arg5_arg1)
+            | ImageOperands.ConstOffset(arg5_arg0) -> stream.WriteUInt32(arg5.Value);stream.WriteUInt32(arg5_arg0)
+            | ImageOperands.Offset(arg5_arg0) -> stream.WriteUInt32(arg5.Value);stream.WriteUInt32(arg5_arg0)
+            | ImageOperands.ConstOffsets(arg5_arg0) -> stream.WriteUInt32(arg5.Value);stream.WriteUInt32(arg5_arg0)
+            | ImageOperands.Sample(arg5_arg0) -> stream.WriteUInt32(arg5.Value);stream.WriteUInt32(arg5_arg0)
+            | ImageOperands.MinLod(arg5_arg0) -> stream.WriteUInt32(arg5.Value);stream.WriteUInt32(arg5_arg0)
+            | ImageOperands.MakeTexelAvailable(arg5_arg0) -> stream.WriteUInt32(arg5.Value);stream.WriteUInt32(arg5_arg0)
+            | ImageOperands.MakeTexelVisible(arg5_arg0) -> stream.WriteUInt32(arg5.Value);stream.WriteUInt32(arg5_arg0)
+            | ImageOperands.NonPrivateTexel _ -> stream.WriteUInt32(arg5.Value)
+            | ImageOperands.VolatileTexel _ -> stream.WriteUInt32(arg5.Value)
+            | ImageOperands.SignExtend _ -> stream.WriteUInt32(arg5.Value)
+            | ImageOperands.ZeroExtend _ -> stream.WriteUInt32(arg5.Value)
         | OpImageSparseSampleProjImplicitLod(arg0, arg1, arg2, arg3, arg4) ->
             stream.WriteUInt32(arg0)
             stream.WriteUInt32(arg1)
             stream.WriteUInt32(arg2)
             stream.WriteUInt32(arg3)
-            stream.WriteOption(arg4, fun v -> stream.WriteEnum(v))
+            stream.WriteOption(arg4, fun v -> match v with
+            | ImageOperands.None _ -> stream.WriteUInt32(v.Value)
+            | ImageOperands.Bias(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.Lod(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.Grad(v_arg0, v_arg1) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0);stream.WriteUInt32(v_arg1)
+            | ImageOperands.ConstOffset(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.Offset(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.ConstOffsets(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.Sample(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.MinLod(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.MakeTexelAvailable(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.MakeTexelVisible(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.NonPrivateTexel _ -> stream.WriteUInt32(v.Value)
+            | ImageOperands.VolatileTexel _ -> stream.WriteUInt32(v.Value)
+            | ImageOperands.SignExtend _ -> stream.WriteUInt32(v.Value)
+            | ImageOperands.ZeroExtend _ -> stream.WriteUInt32(v.Value))
         | OpImageSparseSampleProjExplicitLod(arg0, arg1, arg2, arg3, arg4) ->
             stream.WriteUInt32(arg0)
             stream.WriteUInt32(arg1)
             stream.WriteUInt32(arg2)
             stream.WriteUInt32(arg3)
-            stream.WriteEnum(arg4)
+            match arg4 with
+            | ImageOperands.None _ -> stream.WriteUInt32(arg4.Value)
+            | ImageOperands.Bias(arg4_arg0) -> stream.WriteUInt32(arg4.Value);stream.WriteUInt32(arg4_arg0)
+            | ImageOperands.Lod(arg4_arg0) -> stream.WriteUInt32(arg4.Value);stream.WriteUInt32(arg4_arg0)
+            | ImageOperands.Grad(arg4_arg0, arg4_arg1) -> stream.WriteUInt32(arg4.Value);stream.WriteUInt32(arg4_arg0);stream.WriteUInt32(arg4_arg1)
+            | ImageOperands.ConstOffset(arg4_arg0) -> stream.WriteUInt32(arg4.Value);stream.WriteUInt32(arg4_arg0)
+            | ImageOperands.Offset(arg4_arg0) -> stream.WriteUInt32(arg4.Value);stream.WriteUInt32(arg4_arg0)
+            | ImageOperands.ConstOffsets(arg4_arg0) -> stream.WriteUInt32(arg4.Value);stream.WriteUInt32(arg4_arg0)
+            | ImageOperands.Sample(arg4_arg0) -> stream.WriteUInt32(arg4.Value);stream.WriteUInt32(arg4_arg0)
+            | ImageOperands.MinLod(arg4_arg0) -> stream.WriteUInt32(arg4.Value);stream.WriteUInt32(arg4_arg0)
+            | ImageOperands.MakeTexelAvailable(arg4_arg0) -> stream.WriteUInt32(arg4.Value);stream.WriteUInt32(arg4_arg0)
+            | ImageOperands.MakeTexelVisible(arg4_arg0) -> stream.WriteUInt32(arg4.Value);stream.WriteUInt32(arg4_arg0)
+            | ImageOperands.NonPrivateTexel _ -> stream.WriteUInt32(arg4.Value)
+            | ImageOperands.VolatileTexel _ -> stream.WriteUInt32(arg4.Value)
+            | ImageOperands.SignExtend _ -> stream.WriteUInt32(arg4.Value)
+            | ImageOperands.ZeroExtend _ -> stream.WriteUInt32(arg4.Value)
         | OpImageSparseSampleProjDrefImplicitLod(arg0, arg1, arg2, arg3, arg4, arg5) ->
             stream.WriteUInt32(arg0)
             stream.WriteUInt32(arg1)
             stream.WriteUInt32(arg2)
             stream.WriteUInt32(arg3)
             stream.WriteUInt32(arg4)
-            stream.WriteOption(arg5, fun v -> stream.WriteEnum(v))
+            stream.WriteOption(arg5, fun v -> match v with
+            | ImageOperands.None _ -> stream.WriteUInt32(v.Value)
+            | ImageOperands.Bias(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.Lod(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.Grad(v_arg0, v_arg1) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0);stream.WriteUInt32(v_arg1)
+            | ImageOperands.ConstOffset(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.Offset(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.ConstOffsets(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.Sample(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.MinLod(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.MakeTexelAvailable(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.MakeTexelVisible(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.NonPrivateTexel _ -> stream.WriteUInt32(v.Value)
+            | ImageOperands.VolatileTexel _ -> stream.WriteUInt32(v.Value)
+            | ImageOperands.SignExtend _ -> stream.WriteUInt32(v.Value)
+            | ImageOperands.ZeroExtend _ -> stream.WriteUInt32(v.Value))
         | OpImageSparseSampleProjDrefExplicitLod(arg0, arg1, arg2, arg3, arg4, arg5) ->
             stream.WriteUInt32(arg0)
             stream.WriteUInt32(arg1)
             stream.WriteUInt32(arg2)
             stream.WriteUInt32(arg3)
             stream.WriteUInt32(arg4)
-            stream.WriteEnum(arg5)
+            match arg5 with
+            | ImageOperands.None _ -> stream.WriteUInt32(arg5.Value)
+            | ImageOperands.Bias(arg5_arg0) -> stream.WriteUInt32(arg5.Value);stream.WriteUInt32(arg5_arg0)
+            | ImageOperands.Lod(arg5_arg0) -> stream.WriteUInt32(arg5.Value);stream.WriteUInt32(arg5_arg0)
+            | ImageOperands.Grad(arg5_arg0, arg5_arg1) -> stream.WriteUInt32(arg5.Value);stream.WriteUInt32(arg5_arg0);stream.WriteUInt32(arg5_arg1)
+            | ImageOperands.ConstOffset(arg5_arg0) -> stream.WriteUInt32(arg5.Value);stream.WriteUInt32(arg5_arg0)
+            | ImageOperands.Offset(arg5_arg0) -> stream.WriteUInt32(arg5.Value);stream.WriteUInt32(arg5_arg0)
+            | ImageOperands.ConstOffsets(arg5_arg0) -> stream.WriteUInt32(arg5.Value);stream.WriteUInt32(arg5_arg0)
+            | ImageOperands.Sample(arg5_arg0) -> stream.WriteUInt32(arg5.Value);stream.WriteUInt32(arg5_arg0)
+            | ImageOperands.MinLod(arg5_arg0) -> stream.WriteUInt32(arg5.Value);stream.WriteUInt32(arg5_arg0)
+            | ImageOperands.MakeTexelAvailable(arg5_arg0) -> stream.WriteUInt32(arg5.Value);stream.WriteUInt32(arg5_arg0)
+            | ImageOperands.MakeTexelVisible(arg5_arg0) -> stream.WriteUInt32(arg5.Value);stream.WriteUInt32(arg5_arg0)
+            | ImageOperands.NonPrivateTexel _ -> stream.WriteUInt32(arg5.Value)
+            | ImageOperands.VolatileTexel _ -> stream.WriteUInt32(arg5.Value)
+            | ImageOperands.SignExtend _ -> stream.WriteUInt32(arg5.Value)
+            | ImageOperands.ZeroExtend _ -> stream.WriteUInt32(arg5.Value)
         | OpImageSparseFetch(arg0, arg1, arg2, arg3, arg4) ->
             stream.WriteUInt32(arg0)
             stream.WriteUInt32(arg1)
             stream.WriteUInt32(arg2)
             stream.WriteUInt32(arg3)
-            stream.WriteOption(arg4, fun v -> stream.WriteEnum(v))
+            stream.WriteOption(arg4, fun v -> match v with
+            | ImageOperands.None _ -> stream.WriteUInt32(v.Value)
+            | ImageOperands.Bias(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.Lod(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.Grad(v_arg0, v_arg1) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0);stream.WriteUInt32(v_arg1)
+            | ImageOperands.ConstOffset(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.Offset(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.ConstOffsets(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.Sample(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.MinLod(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.MakeTexelAvailable(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.MakeTexelVisible(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.NonPrivateTexel _ -> stream.WriteUInt32(v.Value)
+            | ImageOperands.VolatileTexel _ -> stream.WriteUInt32(v.Value)
+            | ImageOperands.SignExtend _ -> stream.WriteUInt32(v.Value)
+            | ImageOperands.ZeroExtend _ -> stream.WriteUInt32(v.Value))
         | OpImageSparseGather(arg0, arg1, arg2, arg3, arg4, arg5) ->
             stream.WriteUInt32(arg0)
             stream.WriteUInt32(arg1)
             stream.WriteUInt32(arg2)
             stream.WriteUInt32(arg3)
             stream.WriteUInt32(arg4)
-            stream.WriteOption(arg5, fun v -> stream.WriteEnum(v))
+            stream.WriteOption(arg5, fun v -> match v with
+            | ImageOperands.None _ -> stream.WriteUInt32(v.Value)
+            | ImageOperands.Bias(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.Lod(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.Grad(v_arg0, v_arg1) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0);stream.WriteUInt32(v_arg1)
+            | ImageOperands.ConstOffset(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.Offset(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.ConstOffsets(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.Sample(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.MinLod(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.MakeTexelAvailable(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.MakeTexelVisible(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.NonPrivateTexel _ -> stream.WriteUInt32(v.Value)
+            | ImageOperands.VolatileTexel _ -> stream.WriteUInt32(v.Value)
+            | ImageOperands.SignExtend _ -> stream.WriteUInt32(v.Value)
+            | ImageOperands.ZeroExtend _ -> stream.WriteUInt32(v.Value))
         | OpImageSparseDrefGather(arg0, arg1, arg2, arg3, arg4, arg5) ->
             stream.WriteUInt32(arg0)
             stream.WriteUInt32(arg1)
             stream.WriteUInt32(arg2)
             stream.WriteUInt32(arg3)
             stream.WriteUInt32(arg4)
-            stream.WriteOption(arg5, fun v -> stream.WriteEnum(v))
+            stream.WriteOption(arg5, fun v -> match v with
+            | ImageOperands.None _ -> stream.WriteUInt32(v.Value)
+            | ImageOperands.Bias(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.Lod(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.Grad(v_arg0, v_arg1) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0);stream.WriteUInt32(v_arg1)
+            | ImageOperands.ConstOffset(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.Offset(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.ConstOffsets(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.Sample(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.MinLod(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.MakeTexelAvailable(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.MakeTexelVisible(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.NonPrivateTexel _ -> stream.WriteUInt32(v.Value)
+            | ImageOperands.VolatileTexel _ -> stream.WriteUInt32(v.Value)
+            | ImageOperands.SignExtend _ -> stream.WriteUInt32(v.Value)
+            | ImageOperands.ZeroExtend _ -> stream.WriteUInt32(v.Value))
         | OpImageSparseTexelsResident(arg0, arg1, arg2) ->
             stream.WriteUInt32(arg0)
             stream.WriteUInt32(arg1)
@@ -3995,7 +4451,22 @@ type Instruction =
             stream.WriteUInt32(arg1)
             stream.WriteUInt32(arg2)
             stream.WriteUInt32(arg3)
-            stream.WriteOption(arg4, fun v -> stream.WriteEnum(v))
+            stream.WriteOption(arg4, fun v -> match v with
+            | ImageOperands.None _ -> stream.WriteUInt32(v.Value)
+            | ImageOperands.Bias(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.Lod(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.Grad(v_arg0, v_arg1) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0);stream.WriteUInt32(v_arg1)
+            | ImageOperands.ConstOffset(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.Offset(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.ConstOffsets(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.Sample(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.MinLod(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.MakeTexelAvailable(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.MakeTexelVisible(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.NonPrivateTexel _ -> stream.WriteUInt32(v.Value)
+            | ImageOperands.VolatileTexel _ -> stream.WriteUInt32(v.Value)
+            | ImageOperands.SignExtend _ -> stream.WriteUInt32(v.Value)
+            | ImageOperands.ZeroExtend _ -> stream.WriteUInt32(v.Value))
         | OpSizeOf(arg0, arg1, arg2) ->
             stream.WriteUInt32(arg0)
             stream.WriteUInt32(arg1)
@@ -4489,7 +4960,22 @@ type Instruction =
             stream.WriteUInt32(arg3)
             stream.WriteUInt32(arg4)
             stream.WriteUInt32(arg5)
-            stream.WriteOption(arg6, fun v -> stream.WriteEnum(v))
+            stream.WriteOption(arg6, fun v -> match v with
+            | ImageOperands.None _ -> stream.WriteUInt32(v.Value)
+            | ImageOperands.Bias(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.Lod(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.Grad(v_arg0, v_arg1) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0);stream.WriteUInt32(v_arg1)
+            | ImageOperands.ConstOffset(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.Offset(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.ConstOffsets(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.Sample(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.MinLod(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.MakeTexelAvailable(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.MakeTexelVisible(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | ImageOperands.NonPrivateTexel _ -> stream.WriteUInt32(v.Value)
+            | ImageOperands.VolatileTexel _ -> stream.WriteUInt32(v.Value)
+            | ImageOperands.SignExtend _ -> stream.WriteUInt32(v.Value)
+            | ImageOperands.ZeroExtend _ -> stream.WriteUInt32(v.Value))
         | OpGroupNonUniformPartitionNV(arg0, arg1, arg2) ->
             stream.WriteUInt32(arg0)
             stream.WriteUInt32(arg1)
@@ -4535,13 +5021,27 @@ type Instruction =
             stream.WriteUInt32(arg2)
             stream.WriteUInt32(arg3)
             stream.WriteUInt32(arg4)
-            stream.WriteOption(arg5, fun v -> stream.WriteEnum(v))
+            stream.WriteOption(arg5, fun v -> match v with
+            | MemoryAccess.None _ -> stream.WriteUInt32(v.Value)
+            | MemoryAccess.Volatile _ -> stream.WriteUInt32(v.Value)
+            | MemoryAccess.Aligned(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | MemoryAccess.Nontemporal _ -> stream.WriteUInt32(v.Value)
+            | MemoryAccess.MakePointerAvailable(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | MemoryAccess.MakePointerVisible(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | MemoryAccess.NonPrivatePointer _ -> stream.WriteUInt32(v.Value))
         | OpCooperativeMatrixStoreNV(arg0, arg1, arg2, arg3, arg4) ->
             stream.WriteUInt32(arg0)
             stream.WriteUInt32(arg1)
             stream.WriteUInt32(arg2)
             stream.WriteUInt32(arg3)
-            stream.WriteOption(arg4, fun v -> stream.WriteEnum(v))
+            stream.WriteOption(arg4, fun v -> match v with
+            | MemoryAccess.None _ -> stream.WriteUInt32(v.Value)
+            | MemoryAccess.Volatile _ -> stream.WriteUInt32(v.Value)
+            | MemoryAccess.Aligned(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | MemoryAccess.Nontemporal _ -> stream.WriteUInt32(v.Value)
+            | MemoryAccess.MakePointerAvailable(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | MemoryAccess.MakePointerVisible(v_arg0) -> stream.WriteUInt32(v.Value);stream.WriteUInt32(v_arg0)
+            | MemoryAccess.NonPrivatePointer _ -> stream.WriteUInt32(v.Value))
         | OpCooperativeMatrixMulAddNV(arg0, arg1, arg2, arg3, arg4) ->
             stream.WriteUInt32(arg0)
             stream.WriteUInt32(arg1)
@@ -5500,13 +6000,13 @@ type Instruction =
         | 60us ->
             OpImageTexelPointer(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
         | 61us ->
-            OpLoad(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadOption(fun () -> stream.ReadEnum()))
+            OpLoad(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadOption(fun () -> match stream.ReadUInt32() with | 0x0000u -> MemoryAccess.None | 0x0001u -> MemoryAccess.Volatile | 0x0002u -> MemoryAccess.Aligned(stream.ReadUInt32()) | 0x0004u -> MemoryAccess.Nontemporal | 0x0008u -> MemoryAccess.MakePointerAvailable(stream.ReadUInt32()) | 0x0010u -> MemoryAccess.MakePointerVisible(stream.ReadUInt32()) | 0x0020u -> MemoryAccess.NonPrivatePointer | _ -> failwith "invalid" ))
         | 62us ->
-            OpStore(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadOption(fun () -> stream.ReadEnum()))
+            OpStore(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadOption(fun () -> match stream.ReadUInt32() with | 0x0000u -> MemoryAccess.None | 0x0001u -> MemoryAccess.Volatile | 0x0002u -> MemoryAccess.Aligned(stream.ReadUInt32()) | 0x0004u -> MemoryAccess.Nontemporal | 0x0008u -> MemoryAccess.MakePointerAvailable(stream.ReadUInt32()) | 0x0010u -> MemoryAccess.MakePointerVisible(stream.ReadUInt32()) | 0x0020u -> MemoryAccess.NonPrivatePointer | _ -> failwith "invalid" ))
         | 63us ->
-            OpCopyMemory(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadOption(fun () -> stream.ReadEnum()), stream.ReadOption(fun () -> stream.ReadEnum()))
+            OpCopyMemory(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadOption(fun () -> match stream.ReadUInt32() with | 0x0000u -> MemoryAccess.None | 0x0001u -> MemoryAccess.Volatile | 0x0002u -> MemoryAccess.Aligned(stream.ReadUInt32()) | 0x0004u -> MemoryAccess.Nontemporal | 0x0008u -> MemoryAccess.MakePointerAvailable(stream.ReadUInt32()) | 0x0010u -> MemoryAccess.MakePointerVisible(stream.ReadUInt32()) | 0x0020u -> MemoryAccess.NonPrivatePointer | _ -> failwith "invalid" ), stream.ReadOption(fun () -> match stream.ReadUInt32() with | 0x0000u -> MemoryAccess.None | 0x0001u -> MemoryAccess.Volatile | 0x0002u -> MemoryAccess.Aligned(stream.ReadUInt32()) | 0x0004u -> MemoryAccess.Nontemporal | 0x0008u -> MemoryAccess.MakePointerAvailable(stream.ReadUInt32()) | 0x0010u -> MemoryAccess.MakePointerVisible(stream.ReadUInt32()) | 0x0020u -> MemoryAccess.NonPrivatePointer | _ -> failwith "invalid" ))
         | 64us ->
-            OpCopyMemorySized(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadOption(fun () -> stream.ReadEnum()), stream.ReadOption(fun () -> stream.ReadEnum()))
+            OpCopyMemorySized(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadOption(fun () -> match stream.ReadUInt32() with | 0x0000u -> MemoryAccess.None | 0x0001u -> MemoryAccess.Volatile | 0x0002u -> MemoryAccess.Aligned(stream.ReadUInt32()) | 0x0004u -> MemoryAccess.Nontemporal | 0x0008u -> MemoryAccess.MakePointerAvailable(stream.ReadUInt32()) | 0x0010u -> MemoryAccess.MakePointerVisible(stream.ReadUInt32()) | 0x0020u -> MemoryAccess.NonPrivatePointer | _ -> failwith "invalid" ), stream.ReadOption(fun () -> match stream.ReadUInt32() with | 0x0000u -> MemoryAccess.None | 0x0001u -> MemoryAccess.Volatile | 0x0002u -> MemoryAccess.Aligned(stream.ReadUInt32()) | 0x0004u -> MemoryAccess.Nontemporal | 0x0008u -> MemoryAccess.MakePointerAvailable(stream.ReadUInt32()) | 0x0010u -> MemoryAccess.MakePointerVisible(stream.ReadUInt32()) | 0x0020u -> MemoryAccess.NonPrivatePointer | _ -> failwith "invalid" ))
         | 65us ->
             OpAccessChain(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadList(fun () -> stream.ReadUInt32()))
         | 66us ->
@@ -5548,31 +6048,31 @@ type Instruction =
         | 86us ->
             OpSampledImage(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
         | 87us ->
-            OpImageSampleImplicitLod(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadOption(fun () -> stream.ReadEnum()))
+            OpImageSampleImplicitLod(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadOption(fun () -> match stream.ReadUInt32() with | 0x0000u -> ImageOperands.None | 0x0001u -> ImageOperands.Bias(stream.ReadUInt32()) | 0x0002u -> ImageOperands.Lod(stream.ReadUInt32()) | 0x0004u -> ImageOperands.Grad(stream.ReadUInt32(), stream.ReadUInt32()) | 0x0008u -> ImageOperands.ConstOffset(stream.ReadUInt32()) | 0x0010u -> ImageOperands.Offset(stream.ReadUInt32()) | 0x0020u -> ImageOperands.ConstOffsets(stream.ReadUInt32()) | 0x0040u -> ImageOperands.Sample(stream.ReadUInt32()) | 0x0080u -> ImageOperands.MinLod(stream.ReadUInt32()) | 0x0100u -> ImageOperands.MakeTexelAvailable(stream.ReadUInt32()) | 0x0200u -> ImageOperands.MakeTexelVisible(stream.ReadUInt32()) | 0x0400u -> ImageOperands.NonPrivateTexel | 0x0800u -> ImageOperands.VolatileTexel | 0x1000u -> ImageOperands.SignExtend | 0x2000u -> ImageOperands.ZeroExtend | _ -> failwith "invalid" ))
         | 88us ->
-            OpImageSampleExplicitLod(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadEnum())
+            OpImageSampleExplicitLod(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), match stream.ReadUInt32() with | 0x0000u -> ImageOperands.None | 0x0001u -> ImageOperands.Bias(stream.ReadUInt32()) | 0x0002u -> ImageOperands.Lod(stream.ReadUInt32()) | 0x0004u -> ImageOperands.Grad(stream.ReadUInt32(), stream.ReadUInt32()) | 0x0008u -> ImageOperands.ConstOffset(stream.ReadUInt32()) | 0x0010u -> ImageOperands.Offset(stream.ReadUInt32()) | 0x0020u -> ImageOperands.ConstOffsets(stream.ReadUInt32()) | 0x0040u -> ImageOperands.Sample(stream.ReadUInt32()) | 0x0080u -> ImageOperands.MinLod(stream.ReadUInt32()) | 0x0100u -> ImageOperands.MakeTexelAvailable(stream.ReadUInt32()) | 0x0200u -> ImageOperands.MakeTexelVisible(stream.ReadUInt32()) | 0x0400u -> ImageOperands.NonPrivateTexel | 0x0800u -> ImageOperands.VolatileTexel | 0x1000u -> ImageOperands.SignExtend | 0x2000u -> ImageOperands.ZeroExtend | _ -> failwith "invalid" )
         | 89us ->
-            OpImageSampleDrefImplicitLod(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadOption(fun () -> stream.ReadEnum()))
+            OpImageSampleDrefImplicitLod(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadOption(fun () -> match stream.ReadUInt32() with | 0x0000u -> ImageOperands.None | 0x0001u -> ImageOperands.Bias(stream.ReadUInt32()) | 0x0002u -> ImageOperands.Lod(stream.ReadUInt32()) | 0x0004u -> ImageOperands.Grad(stream.ReadUInt32(), stream.ReadUInt32()) | 0x0008u -> ImageOperands.ConstOffset(stream.ReadUInt32()) | 0x0010u -> ImageOperands.Offset(stream.ReadUInt32()) | 0x0020u -> ImageOperands.ConstOffsets(stream.ReadUInt32()) | 0x0040u -> ImageOperands.Sample(stream.ReadUInt32()) | 0x0080u -> ImageOperands.MinLod(stream.ReadUInt32()) | 0x0100u -> ImageOperands.MakeTexelAvailable(stream.ReadUInt32()) | 0x0200u -> ImageOperands.MakeTexelVisible(stream.ReadUInt32()) | 0x0400u -> ImageOperands.NonPrivateTexel | 0x0800u -> ImageOperands.VolatileTexel | 0x1000u -> ImageOperands.SignExtend | 0x2000u -> ImageOperands.ZeroExtend | _ -> failwith "invalid" ))
         | 90us ->
-            OpImageSampleDrefExplicitLod(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadEnum())
+            OpImageSampleDrefExplicitLod(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), match stream.ReadUInt32() with | 0x0000u -> ImageOperands.None | 0x0001u -> ImageOperands.Bias(stream.ReadUInt32()) | 0x0002u -> ImageOperands.Lod(stream.ReadUInt32()) | 0x0004u -> ImageOperands.Grad(stream.ReadUInt32(), stream.ReadUInt32()) | 0x0008u -> ImageOperands.ConstOffset(stream.ReadUInt32()) | 0x0010u -> ImageOperands.Offset(stream.ReadUInt32()) | 0x0020u -> ImageOperands.ConstOffsets(stream.ReadUInt32()) | 0x0040u -> ImageOperands.Sample(stream.ReadUInt32()) | 0x0080u -> ImageOperands.MinLod(stream.ReadUInt32()) | 0x0100u -> ImageOperands.MakeTexelAvailable(stream.ReadUInt32()) | 0x0200u -> ImageOperands.MakeTexelVisible(stream.ReadUInt32()) | 0x0400u -> ImageOperands.NonPrivateTexel | 0x0800u -> ImageOperands.VolatileTexel | 0x1000u -> ImageOperands.SignExtend | 0x2000u -> ImageOperands.ZeroExtend | _ -> failwith "invalid" )
         | 91us ->
-            OpImageSampleProjImplicitLod(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadOption(fun () -> stream.ReadEnum()))
+            OpImageSampleProjImplicitLod(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadOption(fun () -> match stream.ReadUInt32() with | 0x0000u -> ImageOperands.None | 0x0001u -> ImageOperands.Bias(stream.ReadUInt32()) | 0x0002u -> ImageOperands.Lod(stream.ReadUInt32()) | 0x0004u -> ImageOperands.Grad(stream.ReadUInt32(), stream.ReadUInt32()) | 0x0008u -> ImageOperands.ConstOffset(stream.ReadUInt32()) | 0x0010u -> ImageOperands.Offset(stream.ReadUInt32()) | 0x0020u -> ImageOperands.ConstOffsets(stream.ReadUInt32()) | 0x0040u -> ImageOperands.Sample(stream.ReadUInt32()) | 0x0080u -> ImageOperands.MinLod(stream.ReadUInt32()) | 0x0100u -> ImageOperands.MakeTexelAvailable(stream.ReadUInt32()) | 0x0200u -> ImageOperands.MakeTexelVisible(stream.ReadUInt32()) | 0x0400u -> ImageOperands.NonPrivateTexel | 0x0800u -> ImageOperands.VolatileTexel | 0x1000u -> ImageOperands.SignExtend | 0x2000u -> ImageOperands.ZeroExtend | _ -> failwith "invalid" ))
         | 92us ->
-            OpImageSampleProjExplicitLod(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadEnum())
+            OpImageSampleProjExplicitLod(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), match stream.ReadUInt32() with | 0x0000u -> ImageOperands.None | 0x0001u -> ImageOperands.Bias(stream.ReadUInt32()) | 0x0002u -> ImageOperands.Lod(stream.ReadUInt32()) | 0x0004u -> ImageOperands.Grad(stream.ReadUInt32(), stream.ReadUInt32()) | 0x0008u -> ImageOperands.ConstOffset(stream.ReadUInt32()) | 0x0010u -> ImageOperands.Offset(stream.ReadUInt32()) | 0x0020u -> ImageOperands.ConstOffsets(stream.ReadUInt32()) | 0x0040u -> ImageOperands.Sample(stream.ReadUInt32()) | 0x0080u -> ImageOperands.MinLod(stream.ReadUInt32()) | 0x0100u -> ImageOperands.MakeTexelAvailable(stream.ReadUInt32()) | 0x0200u -> ImageOperands.MakeTexelVisible(stream.ReadUInt32()) | 0x0400u -> ImageOperands.NonPrivateTexel | 0x0800u -> ImageOperands.VolatileTexel | 0x1000u -> ImageOperands.SignExtend | 0x2000u -> ImageOperands.ZeroExtend | _ -> failwith "invalid" )
         | 93us ->
-            OpImageSampleProjDrefImplicitLod(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadOption(fun () -> stream.ReadEnum()))
+            OpImageSampleProjDrefImplicitLod(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadOption(fun () -> match stream.ReadUInt32() with | 0x0000u -> ImageOperands.None | 0x0001u -> ImageOperands.Bias(stream.ReadUInt32()) | 0x0002u -> ImageOperands.Lod(stream.ReadUInt32()) | 0x0004u -> ImageOperands.Grad(stream.ReadUInt32(), stream.ReadUInt32()) | 0x0008u -> ImageOperands.ConstOffset(stream.ReadUInt32()) | 0x0010u -> ImageOperands.Offset(stream.ReadUInt32()) | 0x0020u -> ImageOperands.ConstOffsets(stream.ReadUInt32()) | 0x0040u -> ImageOperands.Sample(stream.ReadUInt32()) | 0x0080u -> ImageOperands.MinLod(stream.ReadUInt32()) | 0x0100u -> ImageOperands.MakeTexelAvailable(stream.ReadUInt32()) | 0x0200u -> ImageOperands.MakeTexelVisible(stream.ReadUInt32()) | 0x0400u -> ImageOperands.NonPrivateTexel | 0x0800u -> ImageOperands.VolatileTexel | 0x1000u -> ImageOperands.SignExtend | 0x2000u -> ImageOperands.ZeroExtend | _ -> failwith "invalid" ))
         | 94us ->
-            OpImageSampleProjDrefExplicitLod(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadEnum())
+            OpImageSampleProjDrefExplicitLod(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), match stream.ReadUInt32() with | 0x0000u -> ImageOperands.None | 0x0001u -> ImageOperands.Bias(stream.ReadUInt32()) | 0x0002u -> ImageOperands.Lod(stream.ReadUInt32()) | 0x0004u -> ImageOperands.Grad(stream.ReadUInt32(), stream.ReadUInt32()) | 0x0008u -> ImageOperands.ConstOffset(stream.ReadUInt32()) | 0x0010u -> ImageOperands.Offset(stream.ReadUInt32()) | 0x0020u -> ImageOperands.ConstOffsets(stream.ReadUInt32()) | 0x0040u -> ImageOperands.Sample(stream.ReadUInt32()) | 0x0080u -> ImageOperands.MinLod(stream.ReadUInt32()) | 0x0100u -> ImageOperands.MakeTexelAvailable(stream.ReadUInt32()) | 0x0200u -> ImageOperands.MakeTexelVisible(stream.ReadUInt32()) | 0x0400u -> ImageOperands.NonPrivateTexel | 0x0800u -> ImageOperands.VolatileTexel | 0x1000u -> ImageOperands.SignExtend | 0x2000u -> ImageOperands.ZeroExtend | _ -> failwith "invalid" )
         | 95us ->
-            OpImageFetch(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadOption(fun () -> stream.ReadEnum()))
+            OpImageFetch(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadOption(fun () -> match stream.ReadUInt32() with | 0x0000u -> ImageOperands.None | 0x0001u -> ImageOperands.Bias(stream.ReadUInt32()) | 0x0002u -> ImageOperands.Lod(stream.ReadUInt32()) | 0x0004u -> ImageOperands.Grad(stream.ReadUInt32(), stream.ReadUInt32()) | 0x0008u -> ImageOperands.ConstOffset(stream.ReadUInt32()) | 0x0010u -> ImageOperands.Offset(stream.ReadUInt32()) | 0x0020u -> ImageOperands.ConstOffsets(stream.ReadUInt32()) | 0x0040u -> ImageOperands.Sample(stream.ReadUInt32()) | 0x0080u -> ImageOperands.MinLod(stream.ReadUInt32()) | 0x0100u -> ImageOperands.MakeTexelAvailable(stream.ReadUInt32()) | 0x0200u -> ImageOperands.MakeTexelVisible(stream.ReadUInt32()) | 0x0400u -> ImageOperands.NonPrivateTexel | 0x0800u -> ImageOperands.VolatileTexel | 0x1000u -> ImageOperands.SignExtend | 0x2000u -> ImageOperands.ZeroExtend | _ -> failwith "invalid" ))
         | 96us ->
-            OpImageGather(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadOption(fun () -> stream.ReadEnum()))
+            OpImageGather(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadOption(fun () -> match stream.ReadUInt32() with | 0x0000u -> ImageOperands.None | 0x0001u -> ImageOperands.Bias(stream.ReadUInt32()) | 0x0002u -> ImageOperands.Lod(stream.ReadUInt32()) | 0x0004u -> ImageOperands.Grad(stream.ReadUInt32(), stream.ReadUInt32()) | 0x0008u -> ImageOperands.ConstOffset(stream.ReadUInt32()) | 0x0010u -> ImageOperands.Offset(stream.ReadUInt32()) | 0x0020u -> ImageOperands.ConstOffsets(stream.ReadUInt32()) | 0x0040u -> ImageOperands.Sample(stream.ReadUInt32()) | 0x0080u -> ImageOperands.MinLod(stream.ReadUInt32()) | 0x0100u -> ImageOperands.MakeTexelAvailable(stream.ReadUInt32()) | 0x0200u -> ImageOperands.MakeTexelVisible(stream.ReadUInt32()) | 0x0400u -> ImageOperands.NonPrivateTexel | 0x0800u -> ImageOperands.VolatileTexel | 0x1000u -> ImageOperands.SignExtend | 0x2000u -> ImageOperands.ZeroExtend | _ -> failwith "invalid" ))
         | 97us ->
-            OpImageDrefGather(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadOption(fun () -> stream.ReadEnum()))
+            OpImageDrefGather(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadOption(fun () -> match stream.ReadUInt32() with | 0x0000u -> ImageOperands.None | 0x0001u -> ImageOperands.Bias(stream.ReadUInt32()) | 0x0002u -> ImageOperands.Lod(stream.ReadUInt32()) | 0x0004u -> ImageOperands.Grad(stream.ReadUInt32(), stream.ReadUInt32()) | 0x0008u -> ImageOperands.ConstOffset(stream.ReadUInt32()) | 0x0010u -> ImageOperands.Offset(stream.ReadUInt32()) | 0x0020u -> ImageOperands.ConstOffsets(stream.ReadUInt32()) | 0x0040u -> ImageOperands.Sample(stream.ReadUInt32()) | 0x0080u -> ImageOperands.MinLod(stream.ReadUInt32()) | 0x0100u -> ImageOperands.MakeTexelAvailable(stream.ReadUInt32()) | 0x0200u -> ImageOperands.MakeTexelVisible(stream.ReadUInt32()) | 0x0400u -> ImageOperands.NonPrivateTexel | 0x0800u -> ImageOperands.VolatileTexel | 0x1000u -> ImageOperands.SignExtend | 0x2000u -> ImageOperands.ZeroExtend | _ -> failwith "invalid" ))
         | 98us ->
-            OpImageRead(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadOption(fun () -> stream.ReadEnum()))
+            OpImageRead(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadOption(fun () -> match stream.ReadUInt32() with | 0x0000u -> ImageOperands.None | 0x0001u -> ImageOperands.Bias(stream.ReadUInt32()) | 0x0002u -> ImageOperands.Lod(stream.ReadUInt32()) | 0x0004u -> ImageOperands.Grad(stream.ReadUInt32(), stream.ReadUInt32()) | 0x0008u -> ImageOperands.ConstOffset(stream.ReadUInt32()) | 0x0010u -> ImageOperands.Offset(stream.ReadUInt32()) | 0x0020u -> ImageOperands.ConstOffsets(stream.ReadUInt32()) | 0x0040u -> ImageOperands.Sample(stream.ReadUInt32()) | 0x0080u -> ImageOperands.MinLod(stream.ReadUInt32()) | 0x0100u -> ImageOperands.MakeTexelAvailable(stream.ReadUInt32()) | 0x0200u -> ImageOperands.MakeTexelVisible(stream.ReadUInt32()) | 0x0400u -> ImageOperands.NonPrivateTexel | 0x0800u -> ImageOperands.VolatileTexel | 0x1000u -> ImageOperands.SignExtend | 0x2000u -> ImageOperands.ZeroExtend | _ -> failwith "invalid" ))
         | 99us ->
-            OpImageWrite(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadOption(fun () -> stream.ReadEnum()))
+            OpImageWrite(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadOption(fun () -> match stream.ReadUInt32() with | 0x0000u -> ImageOperands.None | 0x0001u -> ImageOperands.Bias(stream.ReadUInt32()) | 0x0002u -> ImageOperands.Lod(stream.ReadUInt32()) | 0x0004u -> ImageOperands.Grad(stream.ReadUInt32(), stream.ReadUInt32()) | 0x0008u -> ImageOperands.ConstOffset(stream.ReadUInt32()) | 0x0010u -> ImageOperands.Offset(stream.ReadUInt32()) | 0x0020u -> ImageOperands.ConstOffsets(stream.ReadUInt32()) | 0x0040u -> ImageOperands.Sample(stream.ReadUInt32()) | 0x0080u -> ImageOperands.MinLod(stream.ReadUInt32()) | 0x0100u -> ImageOperands.MakeTexelAvailable(stream.ReadUInt32()) | 0x0200u -> ImageOperands.MakeTexelVisible(stream.ReadUInt32()) | 0x0400u -> ImageOperands.NonPrivateTexel | 0x0800u -> ImageOperands.VolatileTexel | 0x1000u -> ImageOperands.SignExtend | 0x2000u -> ImageOperands.ZeroExtend | _ -> failwith "invalid" ))
         | 100us ->
             OpImage(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
         | 101us ->
@@ -5840,7 +6340,7 @@ type Instruction =
         | 245us ->
             OpPhi(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadList(fun () -> PairIdRefIdRef(stream.ReadUInt32(), stream.ReadUInt32())))
         | 246us ->
-            OpLoopMerge(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadEnum())
+            OpLoopMerge(stream.ReadUInt32(), stream.ReadUInt32(), match stream.ReadUInt32() with | 0x0000u -> LoopControl.None | 0x0001u -> LoopControl.Unroll | 0x0002u -> LoopControl.DontUnroll | 0x0004u -> LoopControl.DependencyInfinite | 0x0008u -> LoopControl.DependencyLength(stream.ReadUInt32()) | 0x0010u -> LoopControl.MinIterations(stream.ReadUInt32()) | 0x0020u -> LoopControl.MaxIterations(stream.ReadUInt32()) | 0x0040u -> LoopControl.IterationMultiple(stream.ReadUInt32()) | 0x0080u -> LoopControl.PeelCount(stream.ReadUInt32()) | 0x0100u -> LoopControl.PartialCount(stream.ReadUInt32()) | _ -> failwith "invalid" )
         | 247us ->
             OpSelectionMerge(stream.ReadUInt32(), stream.ReadEnum())
         | 248us ->
@@ -5948,27 +6448,27 @@ type Instruction =
         | 304us ->
             OpBuildNDRange(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
         | 305us ->
-            OpImageSparseSampleImplicitLod(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadOption(fun () -> stream.ReadEnum()))
+            OpImageSparseSampleImplicitLod(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadOption(fun () -> match stream.ReadUInt32() with | 0x0000u -> ImageOperands.None | 0x0001u -> ImageOperands.Bias(stream.ReadUInt32()) | 0x0002u -> ImageOperands.Lod(stream.ReadUInt32()) | 0x0004u -> ImageOperands.Grad(stream.ReadUInt32(), stream.ReadUInt32()) | 0x0008u -> ImageOperands.ConstOffset(stream.ReadUInt32()) | 0x0010u -> ImageOperands.Offset(stream.ReadUInt32()) | 0x0020u -> ImageOperands.ConstOffsets(stream.ReadUInt32()) | 0x0040u -> ImageOperands.Sample(stream.ReadUInt32()) | 0x0080u -> ImageOperands.MinLod(stream.ReadUInt32()) | 0x0100u -> ImageOperands.MakeTexelAvailable(stream.ReadUInt32()) | 0x0200u -> ImageOperands.MakeTexelVisible(stream.ReadUInt32()) | 0x0400u -> ImageOperands.NonPrivateTexel | 0x0800u -> ImageOperands.VolatileTexel | 0x1000u -> ImageOperands.SignExtend | 0x2000u -> ImageOperands.ZeroExtend | _ -> failwith "invalid" ))
         | 306us ->
-            OpImageSparseSampleExplicitLod(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadEnum())
+            OpImageSparseSampleExplicitLod(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), match stream.ReadUInt32() with | 0x0000u -> ImageOperands.None | 0x0001u -> ImageOperands.Bias(stream.ReadUInt32()) | 0x0002u -> ImageOperands.Lod(stream.ReadUInt32()) | 0x0004u -> ImageOperands.Grad(stream.ReadUInt32(), stream.ReadUInt32()) | 0x0008u -> ImageOperands.ConstOffset(stream.ReadUInt32()) | 0x0010u -> ImageOperands.Offset(stream.ReadUInt32()) | 0x0020u -> ImageOperands.ConstOffsets(stream.ReadUInt32()) | 0x0040u -> ImageOperands.Sample(stream.ReadUInt32()) | 0x0080u -> ImageOperands.MinLod(stream.ReadUInt32()) | 0x0100u -> ImageOperands.MakeTexelAvailable(stream.ReadUInt32()) | 0x0200u -> ImageOperands.MakeTexelVisible(stream.ReadUInt32()) | 0x0400u -> ImageOperands.NonPrivateTexel | 0x0800u -> ImageOperands.VolatileTexel | 0x1000u -> ImageOperands.SignExtend | 0x2000u -> ImageOperands.ZeroExtend | _ -> failwith "invalid" )
         | 307us ->
-            OpImageSparseSampleDrefImplicitLod(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadOption(fun () -> stream.ReadEnum()))
+            OpImageSparseSampleDrefImplicitLod(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadOption(fun () -> match stream.ReadUInt32() with | 0x0000u -> ImageOperands.None | 0x0001u -> ImageOperands.Bias(stream.ReadUInt32()) | 0x0002u -> ImageOperands.Lod(stream.ReadUInt32()) | 0x0004u -> ImageOperands.Grad(stream.ReadUInt32(), stream.ReadUInt32()) | 0x0008u -> ImageOperands.ConstOffset(stream.ReadUInt32()) | 0x0010u -> ImageOperands.Offset(stream.ReadUInt32()) | 0x0020u -> ImageOperands.ConstOffsets(stream.ReadUInt32()) | 0x0040u -> ImageOperands.Sample(stream.ReadUInt32()) | 0x0080u -> ImageOperands.MinLod(stream.ReadUInt32()) | 0x0100u -> ImageOperands.MakeTexelAvailable(stream.ReadUInt32()) | 0x0200u -> ImageOperands.MakeTexelVisible(stream.ReadUInt32()) | 0x0400u -> ImageOperands.NonPrivateTexel | 0x0800u -> ImageOperands.VolatileTexel | 0x1000u -> ImageOperands.SignExtend | 0x2000u -> ImageOperands.ZeroExtend | _ -> failwith "invalid" ))
         | 308us ->
-            OpImageSparseSampleDrefExplicitLod(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadEnum())
+            OpImageSparseSampleDrefExplicitLod(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), match stream.ReadUInt32() with | 0x0000u -> ImageOperands.None | 0x0001u -> ImageOperands.Bias(stream.ReadUInt32()) | 0x0002u -> ImageOperands.Lod(stream.ReadUInt32()) | 0x0004u -> ImageOperands.Grad(stream.ReadUInt32(), stream.ReadUInt32()) | 0x0008u -> ImageOperands.ConstOffset(stream.ReadUInt32()) | 0x0010u -> ImageOperands.Offset(stream.ReadUInt32()) | 0x0020u -> ImageOperands.ConstOffsets(stream.ReadUInt32()) | 0x0040u -> ImageOperands.Sample(stream.ReadUInt32()) | 0x0080u -> ImageOperands.MinLod(stream.ReadUInt32()) | 0x0100u -> ImageOperands.MakeTexelAvailable(stream.ReadUInt32()) | 0x0200u -> ImageOperands.MakeTexelVisible(stream.ReadUInt32()) | 0x0400u -> ImageOperands.NonPrivateTexel | 0x0800u -> ImageOperands.VolatileTexel | 0x1000u -> ImageOperands.SignExtend | 0x2000u -> ImageOperands.ZeroExtend | _ -> failwith "invalid" )
         | 309us ->
-            OpImageSparseSampleProjImplicitLod(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadOption(fun () -> stream.ReadEnum()))
+            OpImageSparseSampleProjImplicitLod(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadOption(fun () -> match stream.ReadUInt32() with | 0x0000u -> ImageOperands.None | 0x0001u -> ImageOperands.Bias(stream.ReadUInt32()) | 0x0002u -> ImageOperands.Lod(stream.ReadUInt32()) | 0x0004u -> ImageOperands.Grad(stream.ReadUInt32(), stream.ReadUInt32()) | 0x0008u -> ImageOperands.ConstOffset(stream.ReadUInt32()) | 0x0010u -> ImageOperands.Offset(stream.ReadUInt32()) | 0x0020u -> ImageOperands.ConstOffsets(stream.ReadUInt32()) | 0x0040u -> ImageOperands.Sample(stream.ReadUInt32()) | 0x0080u -> ImageOperands.MinLod(stream.ReadUInt32()) | 0x0100u -> ImageOperands.MakeTexelAvailable(stream.ReadUInt32()) | 0x0200u -> ImageOperands.MakeTexelVisible(stream.ReadUInt32()) | 0x0400u -> ImageOperands.NonPrivateTexel | 0x0800u -> ImageOperands.VolatileTexel | 0x1000u -> ImageOperands.SignExtend | 0x2000u -> ImageOperands.ZeroExtend | _ -> failwith "invalid" ))
         | 310us ->
-            OpImageSparseSampleProjExplicitLod(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadEnum())
+            OpImageSparseSampleProjExplicitLod(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), match stream.ReadUInt32() with | 0x0000u -> ImageOperands.None | 0x0001u -> ImageOperands.Bias(stream.ReadUInt32()) | 0x0002u -> ImageOperands.Lod(stream.ReadUInt32()) | 0x0004u -> ImageOperands.Grad(stream.ReadUInt32(), stream.ReadUInt32()) | 0x0008u -> ImageOperands.ConstOffset(stream.ReadUInt32()) | 0x0010u -> ImageOperands.Offset(stream.ReadUInt32()) | 0x0020u -> ImageOperands.ConstOffsets(stream.ReadUInt32()) | 0x0040u -> ImageOperands.Sample(stream.ReadUInt32()) | 0x0080u -> ImageOperands.MinLod(stream.ReadUInt32()) | 0x0100u -> ImageOperands.MakeTexelAvailable(stream.ReadUInt32()) | 0x0200u -> ImageOperands.MakeTexelVisible(stream.ReadUInt32()) | 0x0400u -> ImageOperands.NonPrivateTexel | 0x0800u -> ImageOperands.VolatileTexel | 0x1000u -> ImageOperands.SignExtend | 0x2000u -> ImageOperands.ZeroExtend | _ -> failwith "invalid" )
         | 311us ->
-            OpImageSparseSampleProjDrefImplicitLod(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadOption(fun () -> stream.ReadEnum()))
+            OpImageSparseSampleProjDrefImplicitLod(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadOption(fun () -> match stream.ReadUInt32() with | 0x0000u -> ImageOperands.None | 0x0001u -> ImageOperands.Bias(stream.ReadUInt32()) | 0x0002u -> ImageOperands.Lod(stream.ReadUInt32()) | 0x0004u -> ImageOperands.Grad(stream.ReadUInt32(), stream.ReadUInt32()) | 0x0008u -> ImageOperands.ConstOffset(stream.ReadUInt32()) | 0x0010u -> ImageOperands.Offset(stream.ReadUInt32()) | 0x0020u -> ImageOperands.ConstOffsets(stream.ReadUInt32()) | 0x0040u -> ImageOperands.Sample(stream.ReadUInt32()) | 0x0080u -> ImageOperands.MinLod(stream.ReadUInt32()) | 0x0100u -> ImageOperands.MakeTexelAvailable(stream.ReadUInt32()) | 0x0200u -> ImageOperands.MakeTexelVisible(stream.ReadUInt32()) | 0x0400u -> ImageOperands.NonPrivateTexel | 0x0800u -> ImageOperands.VolatileTexel | 0x1000u -> ImageOperands.SignExtend | 0x2000u -> ImageOperands.ZeroExtend | _ -> failwith "invalid" ))
         | 312us ->
-            OpImageSparseSampleProjDrefExplicitLod(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadEnum())
+            OpImageSparseSampleProjDrefExplicitLod(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), match stream.ReadUInt32() with | 0x0000u -> ImageOperands.None | 0x0001u -> ImageOperands.Bias(stream.ReadUInt32()) | 0x0002u -> ImageOperands.Lod(stream.ReadUInt32()) | 0x0004u -> ImageOperands.Grad(stream.ReadUInt32(), stream.ReadUInt32()) | 0x0008u -> ImageOperands.ConstOffset(stream.ReadUInt32()) | 0x0010u -> ImageOperands.Offset(stream.ReadUInt32()) | 0x0020u -> ImageOperands.ConstOffsets(stream.ReadUInt32()) | 0x0040u -> ImageOperands.Sample(stream.ReadUInt32()) | 0x0080u -> ImageOperands.MinLod(stream.ReadUInt32()) | 0x0100u -> ImageOperands.MakeTexelAvailable(stream.ReadUInt32()) | 0x0200u -> ImageOperands.MakeTexelVisible(stream.ReadUInt32()) | 0x0400u -> ImageOperands.NonPrivateTexel | 0x0800u -> ImageOperands.VolatileTexel | 0x1000u -> ImageOperands.SignExtend | 0x2000u -> ImageOperands.ZeroExtend | _ -> failwith "invalid" )
         | 313us ->
-            OpImageSparseFetch(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadOption(fun () -> stream.ReadEnum()))
+            OpImageSparseFetch(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadOption(fun () -> match stream.ReadUInt32() with | 0x0000u -> ImageOperands.None | 0x0001u -> ImageOperands.Bias(stream.ReadUInt32()) | 0x0002u -> ImageOperands.Lod(stream.ReadUInt32()) | 0x0004u -> ImageOperands.Grad(stream.ReadUInt32(), stream.ReadUInt32()) | 0x0008u -> ImageOperands.ConstOffset(stream.ReadUInt32()) | 0x0010u -> ImageOperands.Offset(stream.ReadUInt32()) | 0x0020u -> ImageOperands.ConstOffsets(stream.ReadUInt32()) | 0x0040u -> ImageOperands.Sample(stream.ReadUInt32()) | 0x0080u -> ImageOperands.MinLod(stream.ReadUInt32()) | 0x0100u -> ImageOperands.MakeTexelAvailable(stream.ReadUInt32()) | 0x0200u -> ImageOperands.MakeTexelVisible(stream.ReadUInt32()) | 0x0400u -> ImageOperands.NonPrivateTexel | 0x0800u -> ImageOperands.VolatileTexel | 0x1000u -> ImageOperands.SignExtend | 0x2000u -> ImageOperands.ZeroExtend | _ -> failwith "invalid" ))
         | 314us ->
-            OpImageSparseGather(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadOption(fun () -> stream.ReadEnum()))
+            OpImageSparseGather(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadOption(fun () -> match stream.ReadUInt32() with | 0x0000u -> ImageOperands.None | 0x0001u -> ImageOperands.Bias(stream.ReadUInt32()) | 0x0002u -> ImageOperands.Lod(stream.ReadUInt32()) | 0x0004u -> ImageOperands.Grad(stream.ReadUInt32(), stream.ReadUInt32()) | 0x0008u -> ImageOperands.ConstOffset(stream.ReadUInt32()) | 0x0010u -> ImageOperands.Offset(stream.ReadUInt32()) | 0x0020u -> ImageOperands.ConstOffsets(stream.ReadUInt32()) | 0x0040u -> ImageOperands.Sample(stream.ReadUInt32()) | 0x0080u -> ImageOperands.MinLod(stream.ReadUInt32()) | 0x0100u -> ImageOperands.MakeTexelAvailable(stream.ReadUInt32()) | 0x0200u -> ImageOperands.MakeTexelVisible(stream.ReadUInt32()) | 0x0400u -> ImageOperands.NonPrivateTexel | 0x0800u -> ImageOperands.VolatileTexel | 0x1000u -> ImageOperands.SignExtend | 0x2000u -> ImageOperands.ZeroExtend | _ -> failwith "invalid" ))
         | 315us ->
-            OpImageSparseDrefGather(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadOption(fun () -> stream.ReadEnum()))
+            OpImageSparseDrefGather(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadOption(fun () -> match stream.ReadUInt32() with | 0x0000u -> ImageOperands.None | 0x0001u -> ImageOperands.Bias(stream.ReadUInt32()) | 0x0002u -> ImageOperands.Lod(stream.ReadUInt32()) | 0x0004u -> ImageOperands.Grad(stream.ReadUInt32(), stream.ReadUInt32()) | 0x0008u -> ImageOperands.ConstOffset(stream.ReadUInt32()) | 0x0010u -> ImageOperands.Offset(stream.ReadUInt32()) | 0x0020u -> ImageOperands.ConstOffsets(stream.ReadUInt32()) | 0x0040u -> ImageOperands.Sample(stream.ReadUInt32()) | 0x0080u -> ImageOperands.MinLod(stream.ReadUInt32()) | 0x0100u -> ImageOperands.MakeTexelAvailable(stream.ReadUInt32()) | 0x0200u -> ImageOperands.MakeTexelVisible(stream.ReadUInt32()) | 0x0400u -> ImageOperands.NonPrivateTexel | 0x0800u -> ImageOperands.VolatileTexel | 0x1000u -> ImageOperands.SignExtend | 0x2000u -> ImageOperands.ZeroExtend | _ -> failwith "invalid" ))
         | 316us ->
             OpImageSparseTexelsResident(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
         | 317us ->
@@ -5978,7 +6478,7 @@ type Instruction =
         | 319us ->
             OpAtomicFlagClear(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
         | 320us ->
-            OpImageSparseRead(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadOption(fun () -> stream.ReadEnum()))
+            OpImageSparseRead(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadOption(fun () -> match stream.ReadUInt32() with | 0x0000u -> ImageOperands.None | 0x0001u -> ImageOperands.Bias(stream.ReadUInt32()) | 0x0002u -> ImageOperands.Lod(stream.ReadUInt32()) | 0x0004u -> ImageOperands.Grad(stream.ReadUInt32(), stream.ReadUInt32()) | 0x0008u -> ImageOperands.ConstOffset(stream.ReadUInt32()) | 0x0010u -> ImageOperands.Offset(stream.ReadUInt32()) | 0x0020u -> ImageOperands.ConstOffsets(stream.ReadUInt32()) | 0x0040u -> ImageOperands.Sample(stream.ReadUInt32()) | 0x0080u -> ImageOperands.MinLod(stream.ReadUInt32()) | 0x0100u -> ImageOperands.MakeTexelAvailable(stream.ReadUInt32()) | 0x0200u -> ImageOperands.MakeTexelVisible(stream.ReadUInt32()) | 0x0400u -> ImageOperands.NonPrivateTexel | 0x0800u -> ImageOperands.VolatileTexel | 0x1000u -> ImageOperands.SignExtend | 0x2000u -> ImageOperands.ZeroExtend | _ -> failwith "invalid" ))
         | 321us ->
             OpSizeOf(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
         | 322us ->
@@ -6114,7 +6614,7 @@ type Instruction =
         | 5056us ->
             OpReadClockKHR(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
         | 5283us ->
-            OpImageSampleFootprintNV(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadOption(fun () -> stream.ReadEnum()))
+            OpImageSampleFootprintNV(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadOption(fun () -> match stream.ReadUInt32() with | 0x0000u -> ImageOperands.None | 0x0001u -> ImageOperands.Bias(stream.ReadUInt32()) | 0x0002u -> ImageOperands.Lod(stream.ReadUInt32()) | 0x0004u -> ImageOperands.Grad(stream.ReadUInt32(), stream.ReadUInt32()) | 0x0008u -> ImageOperands.ConstOffset(stream.ReadUInt32()) | 0x0010u -> ImageOperands.Offset(stream.ReadUInt32()) | 0x0020u -> ImageOperands.ConstOffsets(stream.ReadUInt32()) | 0x0040u -> ImageOperands.Sample(stream.ReadUInt32()) | 0x0080u -> ImageOperands.MinLod(stream.ReadUInt32()) | 0x0100u -> ImageOperands.MakeTexelAvailable(stream.ReadUInt32()) | 0x0200u -> ImageOperands.MakeTexelVisible(stream.ReadUInt32()) | 0x0400u -> ImageOperands.NonPrivateTexel | 0x0800u -> ImageOperands.VolatileTexel | 0x1000u -> ImageOperands.SignExtend | 0x2000u -> ImageOperands.ZeroExtend | _ -> failwith "invalid" ))
         | 5296us ->
             OpGroupNonUniformPartitionNV(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
         | 5299us ->
@@ -6134,9 +6634,9 @@ type Instruction =
         | 5358us ->
             OpTypeCooperativeMatrixNV(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
         | 5359us ->
-            OpCooperativeMatrixLoadNV(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadOption(fun () -> stream.ReadEnum()))
+            OpCooperativeMatrixLoadNV(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadOption(fun () -> match stream.ReadUInt32() with | 0x0000u -> MemoryAccess.None | 0x0001u -> MemoryAccess.Volatile | 0x0002u -> MemoryAccess.Aligned(stream.ReadUInt32()) | 0x0004u -> MemoryAccess.Nontemporal | 0x0008u -> MemoryAccess.MakePointerAvailable(stream.ReadUInt32()) | 0x0010u -> MemoryAccess.MakePointerVisible(stream.ReadUInt32()) | 0x0020u -> MemoryAccess.NonPrivatePointer | _ -> failwith "invalid" ))
         | 5360us ->
-            OpCooperativeMatrixStoreNV(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadOption(fun () -> stream.ReadEnum()))
+            OpCooperativeMatrixStoreNV(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadOption(fun () -> match stream.ReadUInt32() with | 0x0000u -> MemoryAccess.None | 0x0001u -> MemoryAccess.Volatile | 0x0002u -> MemoryAccess.Aligned(stream.ReadUInt32()) | 0x0004u -> MemoryAccess.Nontemporal | 0x0008u -> MemoryAccess.MakePointerAvailable(stream.ReadUInt32()) | 0x0010u -> MemoryAccess.MakePointerVisible(stream.ReadUInt32()) | 0x0020u -> MemoryAccess.NonPrivatePointer | _ -> failwith "invalid" ))
         | 5361us ->
             OpCooperativeMatrixMulAddNV(stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32(), stream.ReadUInt32())
         | 5362us ->

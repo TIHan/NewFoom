@@ -18,6 +18,7 @@ and SpirvType =
     | SpirvTypeUInt32
     | SpirvTypeSingle
     | SpirvTypeVector2
+    | SpirvTypeVector2Int
     | SpirvTypeVector3
     | SpirvTypeVector4
     | SpirvTypeMatrix4x4
@@ -27,16 +28,6 @@ and SpirvType =
     | SpirvTypeSampler
     | SpirvTypeSampledImage of SpirvImageType
 
-    member x.ComponentNumber =
-        match x with
-        | SpirvTypeInt
-        | SpirvTypeUInt32
-        | SpirvTypeSingle -> 1
-        | SpirvTypeVector2 -> 2
-        | SpirvTypeVector3 -> 3
-        | SpirvTypeVector4 -> 4
-        | _ -> failwithf "Unable to get component number of type, %A." x
-
     member x.Name =
         match x with
         | SpirvTypeVoid -> "void"
@@ -44,6 +35,7 @@ and SpirvType =
         | SpirvTypeUInt32 -> "uint32"
         | SpirvTypeSingle -> "single"
         | SpirvTypeVector2 -> "Vector2"
+        | SpirvTypeVector2Int -> "Vector2<int>"
         | SpirvTypeVector3 -> "Vector3"
         | SpirvTypeVector4 -> "Vector4"
         | SpirvTypeMatrix4x4 -> "Matrix4x4"
@@ -59,7 +51,8 @@ and SpirvType =
         | SpirvTypeInt -> sizeof<int>
         | SpirvTypeUInt32 -> sizeof<uint32>
         | SpirvTypeSingle -> sizeof<single>
-        | SpirvTypeVector2 -> sizeof<Vector2>
+        | SpirvTypeVector2
+        | SpirvTypeVector2Int -> sizeof<Vector2>
         | SpirvTypeVector3 -> sizeof<Vector3>
         | SpirvTypeVector4 -> sizeof<Vector4>
         | SpirvTypeMatrix4x4 -> sizeof<Matrix4x4>
@@ -118,6 +111,7 @@ type SpirvConst =
     | SpirvConstUInt32 of uint32 * decorations: Decorations
     | SpirvConstSingle of single * decorations: Decorations
     | SpirvConstVector2 of single * single * decorations: Decorations
+    | SpirvConstVector2Int of int * int * decorations: Decorations
     | SpirvConstVector3 of single * single * single * decorations: Decorations
     | SpirvConstVector4 of single * single * single * single * decorations: Decorations
     | SpirvConstMatrix4x4 of single * single * single * single *
@@ -133,6 +127,7 @@ type SpirvConst =
         | SpirvConstUInt32 (decorations=decorations)
         | SpirvConstSingle (decorations=decorations)
         | SpirvConstVector2 (decorations=decorations)
+        | SpirvConstVector2Int (decorations=decorations)
         | SpirvConstVector3 (decorations=decorations)
         | SpirvConstVector4 (decorations=decorations)
         | SpirvConstMatrix4x4 (decorations=decorations)
@@ -164,6 +159,7 @@ type SpirvExpr =
                 | SpirvConstUInt32 _ -> SpirvTypeUInt32
                 | SpirvConstSingle _ -> SpirvTypeSingle
                 | SpirvConstVector2 _ -> SpirvTypeVector2
+                | SpirvConstVector2Int _ -> SpirvTypeVector2Int
                 | SpirvConstVector3 _ -> SpirvTypeVector3
                 | SpirvConstVector4 _ -> SpirvTypeVector4
                 | SpirvConstMatrix4x4 _ -> SpirvTypeMatrix4x4
