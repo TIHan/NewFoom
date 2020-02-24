@@ -356,6 +356,9 @@ and CheckIntrinsicCall env checkedArgs expr =
     | Call(_, methInfo, _), _, [arg1;arg2] when methInfo.DeclaringType.FullName.StartsWith(typedefof<Image<_, _, _, _, _, _, _, _>>.FullName) && methInfo.Name = "Fetch" ->
         env, ImageFetch (arg1, arg2, mkSpirvType expr.Type) |> SpirvIntrinsicCall
 
+    | Call(_, methInfo, _), _, [arg1;arg2;arg3] when methInfo.DeclaringType.FullName.StartsWith(typedefof<SampledImage<_, _, _, _, _, _, _, _>>.FullName) && methInfo.Name = "Gather" ->
+        env, ImageGather (arg1, arg2, arg3, mkSpirvType expr.Type) |> SpirvIntrinsicCall
+
     | _ ->
         failwithf "Call not supported: %A" expr
 

@@ -530,6 +530,15 @@ let rec GenExpr cenv (env: env) expr =
             addInstructions cenv [OpImageFetch(retTy, resultId, arg1, arg2, None)]
             resultId
 
+        | ImageGather (arg1, arg2, arg3, _) ->
+            let arg1 = GenExpr cenv env arg1 |> deref cenv
+            let arg2 = GenExpr cenv env arg2 |> deref cenv
+            let arg3 = GenExpr cenv env arg3 |> deref cenv
+
+            let resultId = nextResultId cenv
+            addInstructions cenv [OpImageGather(retTy, resultId, arg1, arg2, arg3, None)]
+            resultId
+
     | SpirvIntrinsicFieldGet fieldGet ->
         let getComponent receiver fieldTy n =
             let receiverId = GenExpr cenv env receiver |> deref cenv

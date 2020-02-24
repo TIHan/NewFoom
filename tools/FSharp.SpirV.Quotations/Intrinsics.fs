@@ -213,3 +213,5 @@ type SampledImage<'SampledType, 'Dim, 'Depth, 'Arrayed, 'Multisampled, 'Sampled,
     > =
 
     member _.Image: Image<'SampledType, 'Dim, 'Depth, 'Arrayed, 'Multisampled, 'Sampled, 'Format, 'AccessQualifier> = failwith ErrorMessage
+
+    member _.Gather(_coordinate: Vector2, _comp: int): Vector4 = failwith ErrorMessage

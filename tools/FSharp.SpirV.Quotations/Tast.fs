@@ -201,7 +201,8 @@ and SpirvIntrinsicCall =
     | Multiply__Matrix4x4_Matrix4x4__Matrix4x4 of matrix4x4_1: SpirvExpr * matrix4x4_2: SpirvExpr
     | ConvertAnyFloatToAnySInt of arg: SpirvExpr
     | GetImage of arg: SpirvExpr
-    | ImageFetch of sampledImage: SpirvExpr * coordinate: SpirvExpr * retTy: SpirvType
+    | ImageFetch of image: SpirvExpr * coordinate: SpirvExpr * retTy: SpirvType
+    | ImageGather of sampledImage: SpirvExpr * coordinate: SpirvExpr * comp: SpirvExpr * retTy: SpirvType
 
     member x.ReturnType =
         match x with
@@ -223,6 +224,7 @@ and SpirvIntrinsicCall =
             match retTy with
             | SpirvTypeVector4 _ -> retTy
             | _ -> failwith "ImageFetch: Expected SpirvTypeVector4."
+        | ImageGather (_, _, _, retTy) -> retTy
 
     member x.Arguments =
         match x with
@@ -231,6 +233,7 @@ and SpirvIntrinsicCall =
         | ConvertAnyFloatToAnySInt arg -> [arg]
         | GetImage arg -> [arg]
         | ImageFetch (arg1, arg2, _) -> [arg1;arg2]
+        | ImageGather (arg1, arg2, arg3, _) -> [arg1;arg2;arg3]
 
 
 and SpirvIntrinsicFieldGet =
