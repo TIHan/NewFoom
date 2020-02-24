@@ -154,9 +154,8 @@ let emitTypeAux cenv ty f =
             |> List.iteri (fun i (SpirvField(_, fieldTy, _)) ->
                 let i = uint32 i
                 match fieldTy with
-                | SpirvTypeInt -> addDecorationInstructions cenv [OpMemberDecorate(resultId, i, Decoration.Offset offset)]
-                | SpirvTypeUInt32 -> addDecorationInstructions cenv [OpMemberDecorate(resultId, i, Decoration.Offset offset)]
-                | SpirvTypeSingle -> addDecorationInstructions cenv [OpMemberDecorate(resultId, i, Decoration.Offset offset)]
+                | SpirvTypeInt _ -> addDecorationInstructions cenv [OpMemberDecorate(resultId, i, Decoration.Offset offset)]
+                | SpirvTypeFloat _ -> addDecorationInstructions cenv [OpMemberDecorate(resultId, i, Decoration.Offset offset)]
                 | SpirvTypeVector2 -> addDecorationInstructions cenv [OpMemberDecorate(resultId, i, Decoration.Offset offset)]
                 | SpirvTypeVector3 -> addDecorationInstructions cenv [OpMemberDecorate(resultId, i, Decoration.Offset offset)]
                 | SpirvTypeVector4 -> addDecorationInstructions cenv [OpMemberDecorate(resultId, i, Decoration.Offset offset)]
@@ -172,12 +171,6 @@ let emitTypeAux cenv ty f =
 
 let emitTypeVoid cenv =
     emitTypeAux cenv SpirvTypeVoid (fun resultId -> OpTypeVoid resultId)
-
-let emitTypeSingle cenv =
-    emitTypeAux cenv SpirvTypeSingle (fun resultId -> OpTypeFloat(resultId, 32u))
-
-let emitTypeInt cenv =
-    emitTypeAux cenv SpirvTypeInt (fun resultId -> OpTypeInt(resultId, 32u, 1u))
 
 let emitTypeUInt32 cenv =
     emitTypeAux cenv SpirvTypeUInt32 (fun resultId -> OpTypeInt(resultId, 32u, 0u))
@@ -207,15 +200,6 @@ let emitConstantAux cenv resultType debugName literal =
         cenv.debugNames.Add(string resultId + "_const_" + debugName, resultId)
         resultId
 
-let emitConstantInt cenv (n: int) =
-    emitConstantAux cenv (emitTypeInt cenv) "int" (SpirvConstInt(n, []))
-
-let emitConstantUInt32 cenv (n: uint32) =
-    emitConstantAux cenv (emitTypeInt cenv) "uint32" (SpirvConstUInt32(n, []))
-
-let emitConstantSingle cenv (n: single) =
-    emitConstantAux cenv (emitTypeSingle cenv) "single" (SpirvConstSingle(n, []))
-
 let emitConstantComposite cenv resultType debugName constituents =
     match cenv.constantComposites.TryGetValue constituents with
     | true, (resultId, _) -> resultId
@@ -225,50 +209,11 @@ let emitConstantComposite cenv resultType debugName constituents =
         cenv.debugNames.Add(string resultId + "_const_" + debugName, resultId)
         resultId
 
-let emitTypeVector2 cenv =
-    let componentType = emitTypeSingle cenv
-    emitTypeAux cenv SpirvTypeVector2 (fun resultId -> OpTypeVector(resultId, componentType, 2u))
-
-let emitTypeVector2Int cenv =
-    let componentType = emitTypeInt cenv
-    emitTypeAux cenv SpirvTypeVector2Int (fun resultId -> OpTypeVector(resultId, componentType, 2u))
-
-let emitTypeVector3 cenv =
-    let componentType = emitTypeSingle cenv
-    emitTypeAux cenv SpirvTypeVector3 (fun resultId -> OpTypeVector(resultId, componentType, 3u))
-
-let emitTypeVector4 cenv =
-    let componentType = emitTypeSingle cenv
-    emitTypeAux cenv SpirvTypeVector4 (fun resultId -> OpTypeVector(resultId, componentType, 4u))
-
-let emitConstantVector2 cenv (constituents: IdRef list) =
-    emitConstantComposite cenv (emitTypeVector2 cenv) "Vector2" constituents
-
-let emitConstantVector2Int cenv (constituents: IdRef list) =
-    emitConstantComposite cenv (emitTypeVector2Int cenv) "Vector2<int>" constituents
-
-let emitConstantVector3 cenv (constituents: IdRef list) =
-    emitConstantComposite cenv (emitTypeVector3 cenv) "Vector3" constituents
-
-let emitConstantVector4 cenv (constituents: IdRef list) =
-    emitConstantComposite cenv (emitTypeVector4 cenv) "Vector4" constituents
-
-let emitTypeMatrix4x4 cenv =
-    let columnType = emitTypeVector4 cenv
-    emitTypeAux cenv SpirvTypeMatrix4x4 (fun resultId -> OpTypeMatrix(resultId, columnType, 4u))
-
-let emitConstantMatrix4x4 cenv (constituents: IdRef list) =
-    emitConstantComposite cenv (emitTypeMatrix4x4 cenv) "Matrix4x4" constituents
-
-let emitTypeSampler cenv =
-    emitTypeAux cenv SpirvTypeSampler (fun resultId -> OpTypeSampler resultId)
-
 let rec emitType cenv ty =
     match ty with
     | SpirvTypeVoid -> emitTypeVoid cenv
-    | SpirvTypeInt -> emitTypeInt cenv
-    | SpirvTypeUInt32 -> emitTypeUInt32 cenv
-    | SpirvTypeSingle -> emitTypeSingle cenv
+    | SpirvTypeInt (width, sign) -> emitTypeAux cenv ty (fun resultId -> OpTypeInt(resultId, uint32 width, if sign then 1u else 0u))
+    | SpirvTypeFloat width -> emitTypeAux cenv ty (fun resultId -> OpTypeFloat(resultId, uint32 width))
     | SpirvTypeVector2 -> emitTypeVector2 cenv
     | SpirvTypeVector2Int -> emitTypeVector2Int cenv
     | SpirvTypeVector3 -> emitTypeVector3 cenv
@@ -279,6 +224,29 @@ let rec emitType cenv ty =
     | SpirvTypeImage imageTy -> emitTypeImage cenv imageTy
     | SpirvTypeSampler -> emitTypeSampler cenv
     | SpirvTypeSampledImage imageTy -> emitTypeSampledImage cenv imageTy
+
+and emitTypeVector2 cenv =
+    let componentType = emitType cenv SpirvTypeFloat32
+    emitTypeAux cenv SpirvTypeVector2 (fun resultId -> OpTypeVector(resultId, componentType, 2u))
+
+and emitTypeVector2Int cenv =
+    let componentType = emitType cenv SpirvTypeInt32
+    emitTypeAux cenv SpirvTypeVector2Int (fun resultId -> OpTypeVector(resultId, componentType, 2u))
+
+and emitTypeVector3 cenv =
+    let componentType = emitType cenv SpirvTypeFloat32
+    emitTypeAux cenv SpirvTypeVector3 (fun resultId -> OpTypeVector(resultId, componentType, 3u))
+
+and emitTypeVector4 cenv =
+    let componentType = emitType cenv SpirvTypeFloat32
+    emitTypeAux cenv SpirvTypeVector4 (fun resultId -> OpTypeVector(resultId, componentType, 4u))
+
+and emitTypeMatrix4x4 cenv =
+    let columnType = emitTypeVector4 cenv
+    emitTypeAux cenv SpirvTypeMatrix4x4 (fun resultId -> OpTypeMatrix(resultId, columnType, 4u))
+
+and emitTypeSampler cenv =
+    emitTypeAux cenv SpirvTypeSampler (fun resultId -> OpTypeSampler resultId)
 
 and emitArrayType cenv elementTy length =
     match elementTy with
@@ -308,7 +276,7 @@ and emitTypeSampledImage cenv imageTy =
     let imageTyId = emitTypeImage cenv imageTy
     emitTypeAux cenv (SpirvTypeSampledImage imageTy) (fun resultId -> OpTypeSampledImage(resultId, imageTyId))
 
-let emitTypeFunction cenv paramTys retTy =
+and emitTypeFunction cenv paramTys retTy =
     let paramTyIds =
         paramTys
         |> List.filter (fun x -> x <> SpirvTypeVoid)
@@ -323,6 +291,30 @@ let emitTypeFunction cenv paramTys retTy =
         let resultId = nextResultId cenv
         cenv.typeFunctions.[tys] <- (resultId, [OpTypeFunction(resultId, retTyId, paramTyIds)])
         resultId
+
+and emitConstantInt cenv (n: int) =
+    emitConstantAux cenv (emitType cenv SpirvTypeInt32) "int" (SpirvConstInt(n, []))
+
+and emitConstantUInt32 cenv (n: uint32) =
+    emitConstantAux cenv (emitType cenv SpirvTypeInt32) "uint32" (SpirvConstUInt32(n, []))
+
+let emitConstantSingle cenv (n: single) =
+    emitConstantAux cenv (emitType cenv SpirvTypeFloat32) "single" (SpirvConstSingle(n, []))
+
+let emitConstantVector2 cenv (constituents: IdRef list) =
+    emitConstantComposite cenv (emitTypeVector2 cenv) "Vector2" constituents
+
+let emitConstantVector2Int cenv (constituents: IdRef list) =
+    emitConstantComposite cenv (emitTypeVector2Int cenv) "Vector2<int>" constituents
+
+let emitConstantVector3 cenv (constituents: IdRef list) =
+    emitConstantComposite cenv (emitTypeVector3 cenv) "Vector3" constituents
+
+let emitConstantVector4 cenv (constituents: IdRef list) =
+    emitConstantComposite cenv (emitTypeVector4 cenv) "Vector4" constituents
+
+let emitConstantMatrix4x4 cenv (constituents: IdRef list) =
+    emitConstantComposite cenv (emitTypeMatrix4x4 cenv) "Matrix4x4" constituents
 
 let rec isConstant expr =
     match expr with
@@ -514,25 +506,24 @@ let rec GenExpr cenv (env: env) expr =
             addInstructions cenv [OpMatrixTimesMatrix(retTy, resultId, arg2, arg1)]
             resultId
 
-        | SampledImage_T__Single_T (_, receiver, arg) ->
-            let receiverTy = receiver.Type
-            let receiver = GenExpr cenv env receiver |> deref cenv
+        | SampledImage_T___Fetch__SampledImage_T__Single__T (_, arg1, arg2) ->
+            let arg1Ty = arg1.Type
+            let arg1 = GenExpr cenv env arg1 |> deref cenv
 
             let imageResultId =
                 let resultId = nextResultId cenv
                 let ty =
-                    match receiverTy with
+                    match arg1Ty with
                     | SpirvTypeSampledImage imageTy -> SpirvTypeImage imageTy
                     | _ -> call.ReturnType
                     |> emitType cenv
-                addInstructions cenv [OpImage(ty, resultId, receiver)]
+                addInstructions cenv [OpImage(ty, resultId, arg1)]
                 resultId
 
-           // let arg1 = GenExpr cenv env arg |> deref cenv
-            let arg1 = GenExpr cenv env (SpirvConst(SpirvConstVector2Int(0, 0, [])))
+            let arg2 = GenExpr cenv env arg2 |> deref cenv
 
             let resultId = nextResultId cenv
-            addInstructions cenv [OpImageFetch(retTy, resultId, imageResultId, arg1, None)]
+            addInstructions cenv [OpImageFetch(retTy, resultId, imageResultId, arg2, None)]
             resultId
             
 

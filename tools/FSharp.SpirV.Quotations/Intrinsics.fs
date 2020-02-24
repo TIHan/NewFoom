@@ -16,6 +16,13 @@ let private ErrorMessage = "Do not call outside the code quotation."
 [<RequiresExplicitTypeArguments>]
 let Variable<'T> (_decorations: Decoration list) (_storageClass: StorageClass) : 'T = failwith ErrorMessage
 
+[<Struct;NoComparison>]
+type Vector2Int =
+    val mutable X: int
+    val mutable Y: int
+
+    new (x, y) = { X = x; Y = y }
+
 [<Sealed>]
 type Sampler = class end
 
@@ -203,6 +210,4 @@ type SampledImage<'SampledType, 'Dim, 'Depth, 'Arrayed, 'Multisampled, 'Sampled,
     and  'AccessQualifier :> AccessQualifierKind
     > =
 
-    member _.Gather<'T when 'T : unmanaged>(_coordinate: single) : 'T = failwith ErrorMessage
-
-    member _.Gather<'T when 'T : unmanaged>(_coordinate: Vector2) : 'T = failwith ErrorMessage
+    member _.Gather<'T when 'T : unmanaged>(_coordinate: Vector2Int) : 'T = failwith ErrorMessage

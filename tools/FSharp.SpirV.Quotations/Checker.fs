@@ -46,11 +46,13 @@ let tryGetIndexForBackingField (propInfo: PropertyInfo) =
 let rec mkSpirvType ty =
     match ty with
     | _ when ty = typeof<int> -> 
-        SpirvTypeInt
-    | _ when ty = typeof<single> ->
-        SpirvTypeSingle
+        SpirvTypeInt32
+    | _ when ty = typeof<float32> ->
+        SpirvTypeFloat32
     | _ when ty = typeof<Vector2> ->
         SpirvTypeVector2
+    | _ when ty = typeof<Vector2Int> ->
+        SpirvTypeVector2Int
     | _ when ty = typeof<Vector3> ->
         SpirvTypeVector3
     | _ when ty = typeof<Vector4> ->
@@ -278,6 +280,10 @@ let rec CheckExpr env isReturnable expr =
             let env, spvArgs = CheckExprs env args
             env, SpirvNewVector2 spvArgs
 
+        | SpirvTypeVector2Int, args -> 
+            let env, spvArgs = CheckExprs env args
+            env, SpirvNewVector2Int spvArgs
+
         | SpirvTypeVector3, args -> 
             let env, spvArgs = CheckExprs env args
             env, SpirvNewVector3 spvArgs
@@ -340,7 +346,7 @@ and CheckIntrinsicCall env checkedArgs expr =
             failwithf "Call not supported: %A" expr
 
     | Call (_, methInfo, _), [|tyArg|], [receiver;arg] when methInfo.DeclaringType.FullName.StartsWith(typedefof<SampledImage<_, _, _, _, _, _, _, _>>.FullName) && methInfo.Name = "Gather" ->
-        env, SampledImage_T__Single_T(mkSpirvType tyArg, receiver, arg) |> SpirvIntrinsicCall
+        env, SampledImage_T___Fetch__SampledImage_T__Single__T(mkSpirvType tyArg, receiver, arg) |> SpirvIntrinsicCall
 
     | _ ->
         failwithf "Call not supported: %A" expr
@@ -349,23 +355,23 @@ and CheckIntrinsicField env receiver fieldInfo =
     let env, spvReceiver = CheckExpr env false receiver
     match fieldInfo.Name with
     | "X" when receiver.Type = typeof<Vector2> ->
-        env, Vector2_Get_X(spvReceiver, SpirvTypeSingle)
+        env, Vector2_Get_X(spvReceiver, SpirvTypeFloat32)
     | "Y" when receiver.Type = typeof<Vector2> ->
-        env, Vector2_Get_Y(spvReceiver, SpirvTypeSingle)
+        env, Vector2_Get_Y(spvReceiver, SpirvTypeFloat32)
     | "X" when receiver.Type = typeof<Vector3> ->
-        env, Vector3_Get_X(spvReceiver, SpirvTypeSingle)
+        env, Vector3_Get_X(spvReceiver, SpirvTypeFloat32)
     | "Y" when receiver.Type = typeof<Vector3> ->
-        env, Vector3_Get_Y(spvReceiver, SpirvTypeSingle)
+        env, Vector3_Get_Y(spvReceiver, SpirvTypeFloat32)
     | "Z" when receiver.Type = typeof<Vector3> ->
-        env, Vector3_Get_Z(spvReceiver, SpirvTypeSingle)
+        env, Vector3_Get_Z(spvReceiver, SpirvTypeFloat32)
     | "X" when receiver.Type = typeof<Vector4> ->
-        env, Vector4_Get_X(spvReceiver, SpirvTypeSingle)
+        env, Vector4_Get_X(spvReceiver, SpirvTypeFloat32)
     | "Y" when receiver.Type = typeof<Vector4> ->
-        env, Vector4_Get_Y(spvReceiver, SpirvTypeSingle)
+        env, Vector4_Get_Y(spvReceiver, SpirvTypeFloat32)
     | "Z" when receiver.Type = typeof<Vector4> ->
-        env, Vector4_Get_Z(spvReceiver, SpirvTypeSingle)
+        env, Vector4_Get_Z(spvReceiver, SpirvTypeFloat32)
     | "W" when receiver.Type = typeof<Vector4> ->
-        env, Vector4_Get_W(spvReceiver, SpirvTypeSingle)
+        env, Vector4_Get_W(spvReceiver, SpirvTypeFloat32)
     | x ->
         failwithf "Invalid field: %A" x
 

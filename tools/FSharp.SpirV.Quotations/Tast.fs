@@ -14,9 +14,8 @@ type SpirvImageType = SpirvImageType of sampledType: SpirvType * dim: Dim * dept
 
 and SpirvType =
     | SpirvTypeVoid
-    | SpirvTypeInt
-    | SpirvTypeUInt32
-    | SpirvTypeSingle
+    | SpirvTypeInt of width: int * sign: bool
+    | SpirvTypeFloat of width: int
     | SpirvTypeVector2
     | SpirvTypeVector2Int
     | SpirvTypeVector3
@@ -31,9 +30,8 @@ and SpirvType =
     member x.Name =
         match x with
         | SpirvTypeVoid -> "void"
-        | SpirvTypeInt -> "int"
-        | SpirvTypeUInt32 -> "uint32"
-        | SpirvTypeSingle -> "single"
+        | SpirvTypeInt (width, sign) -> "int" + string width + "(" + string sign + ")"
+        | SpirvTypeFloat width -> "float" + string width
         | SpirvTypeVector2 -> "Vector2"
         | SpirvTypeVector2Int -> "Vector2<int>"
         | SpirvTypeVector3 -> "Vector3"
@@ -48,9 +46,8 @@ and SpirvType =
     member x.Size: int =
         match x with
         | SpirvTypeVoid -> failwith "Unable to get size of void type."
-        | SpirvTypeInt -> sizeof<int>
-        | SpirvTypeUInt32 -> sizeof<uint32>
-        | SpirvTypeSingle -> sizeof<single>
+        | SpirvTypeInt (width, _) -> width / sizeof<byte>
+        | SpirvTypeFloat width -> width / sizeof<byte>
         | SpirvTypeVector2
         | SpirvTypeVector2Int -> sizeof<Vector2>
         | SpirvTypeVector3 -> sizeof<Vector3>
@@ -106,6 +103,10 @@ let mkSpirvVar (name, ty, decorations, storageClass, isMutable) =
         IsMutable = isMutable
     }
 
+let SpirvTypeInt32 = SpirvTypeInt (32, true)
+let SpirvTypeUInt32 = SpirvTypeInt (32, false)
+let SpirvTypeFloat32 = SpirvTypeFloat 32
+
 type SpirvConst =
     | SpirvConstInt of int * decorations: Decorations
     | SpirvConstUInt32 of uint32 * decorations: Decorations
@@ -139,6 +140,7 @@ type SpirvExpr =
     | SpirvLet of SpirvVar * rhs: SpirvExpr * body: SpirvExpr
     | SpirvSequential of SpirvExpr * SpirvExpr
     | SpirvNewVector2 of args: SpirvExpr list
+    | SpirvNewVector2Int of args: SpirvExpr list
     | SpirvNewVector3 of args: SpirvExpr list
     | SpirvNewVector4 of args: SpirvExpr list
     | SpirvArrayIndexerGet of receiver: SpirvExpr * arg: SpirvExpr
@@ -155,9 +157,9 @@ type SpirvExpr =
                 SpirvTypeVoid
             | SpirvConst spvConst ->
                 match spvConst with
-                | SpirvConstInt _ -> SpirvTypeInt
+                | SpirvConstInt _ -> SpirvTypeInt32
                 | SpirvConstUInt32 _ -> SpirvTypeUInt32
-                | SpirvConstSingle _ -> SpirvTypeSingle
+                | SpirvConstSingle _ -> SpirvTypeFloat 32
                 | SpirvConstVector2 _ -> SpirvTypeVector2
                 | SpirvConstVector2Int _ -> SpirvTypeVector2Int
                 | SpirvConstVector3 _ -> SpirvTypeVector3
@@ -170,6 +172,8 @@ type SpirvExpr =
             | SpirvSequential (_, expr2) ->
                 getType expr2
             | SpirvNewVector2 _ ->
+                SpirvTypeVector2
+            | SpirvNewVector2Int _ ->
                 SpirvTypeVector2
             | SpirvNewVector3 _ ->
                 SpirvTypeVector3
@@ -195,19 +199,30 @@ and SpirvIntrinsicCall =
     // TODO: Fix transform and multiply names
     | Transform__Vector4_Matrix4x4__Vector4 of vector4: SpirvExpr * matrix4x4: SpirvExpr
     | Multiply__Matrix4x4_Matrix4x4__Matrix4x4 of matrix4x4_1: SpirvExpr * matrix4x4_2: SpirvExpr
-    | SampledImage_T__Single_T of tyArg: SpirvType * receiver: SpirvExpr * arg: SpirvExpr
+    | SampledImage_T___Fetch__SampledImage_T__Single__T of tyArg: SpirvType * receiver: SpirvExpr * arg: SpirvExpr
+    | ConvertAnyFloatToAnySInt of arg: SpirvExpr
 
     member x.ReturnType =
         match x with
         | Transform__Vector4_Matrix4x4__Vector4 _ -> SpirvTypeVector4
         | Multiply__Matrix4x4_Matrix4x4__Matrix4x4 _ -> SpirvTypeMatrix4x4
-        | SampledImage_T__Single_T (tyArg, _, _) -> tyArg
+        | SampledImage_T___Fetch__SampledImage_T__Single__T (tyArg, _, _) -> tyArg
+        | ConvertAnyFloatToAnySInt arg ->
+            match arg.Type with
+            | SpirvTypeFloat width -> 
+                if width = 32 then
+                    SpirvTypeInt32
+                else
+                    SpirvTypeInt (width, true)
+            | _ -> failwith "ConvertAnyFloatToAnySInt: Expected SpirvTypeFloat."
 
     member x.Arguments =
         match x with
         | Transform__Vector4_Matrix4x4__Vector4 (arg1, arg2)
         | Multiply__Matrix4x4_Matrix4x4__Matrix4x4 (arg1, arg2) -> [arg1;arg2]
-        | SampledImage_T__Single_T (_, receiver, arg) -> [receiver;arg]
+        | SampledImage_T___Fetch__SampledImage_T__Single__T (_, receiver, arg) -> [receiver;arg]
+        | ConvertAnyFloatToAnySInt arg -> [arg]
+
 
 and SpirvIntrinsicFieldGet =
     | Vector2_Get_X of receiver: SpirvExpr * typ: SpirvType
