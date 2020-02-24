@@ -23,6 +23,14 @@ type Vector2Int =
 
     new (x, y) = { X = x; Y = y }
 
+type Vector2 with
+
+    member x.ToInt() = Vector2Int(int x.X, int x.Y) 
+
+type Vector2Int with
+
+    member x.ToFloat() = Vector2(float32 x.X, float32 x.Y)
+
 [<Sealed>]
 type Sampler = class end
 

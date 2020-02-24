@@ -282,7 +282,11 @@ let rec CheckExpr env isReturnable expr =
 
         | SpirvTypeVector2Int, args -> 
             let env, spvArgs = CheckExprs env args
-            env, SpirvNewVector2Int spvArgs
+            match spvArgs with
+            | [spvArg] when spvArg.Type = SpirvTypeVector2 ->
+                env, ConvertAnyFloatToAnySInt spvArg |> SpirvIntrinsicCall
+            | _ ->
+                env, SpirvNewVector2Int spvArgs
 
         | SpirvTypeVector3, args -> 
             let env, spvArgs = CheckExprs env args
@@ -339,6 +343,9 @@ and CheckIntrinsicCall env checkedArgs expr =
     match expr, tyArgs, checkedArgs with
     | SpecificCall <@ int @> _, _, [arg] ->
         env, ConvertAnyFloatToAnySInt arg |> SpirvIntrinsicCall
+
+    | SpecificCall <@ float32 @> _, _, [arg] ->
+        env, ConvertSIntToFloat arg |> SpirvIntrinsicCall
 
     | SpecificCall <@ Unchecked.defaultof<_[]>.[0] @> _, _, [receiver;arg] ->
         env, SpirvArrayIndexerGet (receiver, arg)

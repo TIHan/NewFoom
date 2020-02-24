@@ -200,6 +200,7 @@ and SpirvIntrinsicCall =
     | Transform__Vector4_Matrix4x4__Vector4 of vector4: SpirvExpr * matrix4x4: SpirvExpr
     | Multiply__Matrix4x4_Matrix4x4__Matrix4x4 of matrix4x4_1: SpirvExpr * matrix4x4_2: SpirvExpr
     | ConvertAnyFloatToAnySInt of arg: SpirvExpr
+    | ConvertSIntToFloat of arg: SpirvExpr
     | GetImage of arg: SpirvExpr
     | ImageFetch of image: SpirvExpr * coordinate: SpirvExpr * retTy: SpirvType
     | ImageGather of sampledImage: SpirvExpr * coordinate: SpirvExpr * comp: SpirvExpr * retTy: SpirvType
@@ -215,6 +216,16 @@ and SpirvIntrinsicCall =
                     SpirvTypeInt32
                 else
                     SpirvTypeInt (width, true)
+            | SpirvTypeVector2 -> SpirvTypeVector2Int
+            | _ -> failwith "ConvertAnyFloatToAnySInt: Expected SpirvTypeFloat."
+        | ConvertSIntToFloat arg ->
+            match arg.Type with
+            | SpirvTypeInt (width, true) -> 
+                if width = 32 then
+                    SpirvTypeFloat32
+                else
+                    SpirvTypeFloat width
+            | SpirvTypeVector2Int -> SpirvTypeVector2
             | _ -> failwith "ConvertAnyFloatToAnySInt: Expected SpirvTypeFloat."
         | GetImage arg ->
             match arg.Type with
@@ -231,6 +242,7 @@ and SpirvIntrinsicCall =
         | Transform__Vector4_Matrix4x4__Vector4 (arg1, arg2)
         | Multiply__Matrix4x4_Matrix4x4__Matrix4x4 (arg1, arg2) -> [arg1;arg2]
         | ConvertAnyFloatToAnySInt arg -> [arg]
+        | ConvertSIntToFloat arg -> [arg]
         | GetImage arg -> [arg]
         | ImageFetch (arg1, arg2, _) -> [arg1;arg2]
         | ImageGather (arg1, arg2, arg3, _) -> [arg1;arg2;arg3]
