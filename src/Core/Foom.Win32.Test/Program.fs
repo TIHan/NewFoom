@@ -30,6 +30,8 @@ type Vertex =
         texCoord: Vector2
     }
 
+type Sampler2d = SampledImage<single, DimKind.Two, ImageDepthKind.Depth, ImageArrayedKind.NonArrayed, ImageMultisampleKind.Multi, ImageSampleKind.RuntimeOnly, ImageFormatKind.Rgba32f, AccessQualifierKind.None>
+
 let radians (degrees) = degrees * MathF.PI / 180.f
 
 let setRender (instance: FalGraphics) =
@@ -59,6 +61,8 @@ let setRender (instance: FalGraphics) =
             { position = Vector2 (0.5f, -0.5f); color = Vector3 (0.f, 1.f, 0.f); texCoord = Vector2(0.f, 0.f) }
             { position = Vector2 (0.5f, 0.5f); color = Vector3 (0.f, 0.f, 1.f); texCoord = Vector2(0.f, 1.f) }
             { position = Vector2 (-0.5f, 0.5f); color = Vector3 (1.f, 1.f, 1.f); texCoord = Vector2(1.f, 1.f) }
+            { position = Vector2 (-0.5f, -0.5f); color = Vector3 (1.f, 0.f, 0.f); texCoord = Vector2(1.f, 0.f) }
+            { position = Vector2 (0.5f, 0.5f); color = Vector3 (0.f, 0.f, 1.f); texCoord = Vector2(0.f, 1.f) }
         |]
     let verticesBindings = [|mkVertexInputBinding<Vertex> 0u VkVertexInputRate.VK_VERTEX_INPUT_RATE_VERTEX|]
     let verticesAttributes = mkVertexAttributeDescriptions<Vertex> 0u 0u
@@ -88,12 +92,15 @@ let setRender (instance: FalGraphics) =
 
     let fragment =
         <@ 
-            let sampler = Variable<Sampler2d> [Decoration.Binding 1u; Decoration.DescriptorSet 1u] StorageClass.Image
+            let sampler = Variable<Sampler2d> [Decoration.Binding 1u; Decoration.DescriptorSet 1u] StorageClass.UniformConstant
             let fragColor = Variable<Vector3> [Decoration.Location 0u] StorageClass.Input
             let fragTexCoord = Variable<Vector2> [Decoration.Location 1u] StorageClass.Input
             let mutable outColor = Variable<Vector4> [Decoration.Location 0u] StorageClass.Output
 
-            fun () -> outColor <- Vector4(fragTexCoord, 0.f, 1.f)
+            fun () ->
+               //outColor <- Vector4(fragColor, 1.f)
+               // let s = sampler.Gather<Vector4> fragTexCoord
+                outColor <- sampler.Gather<Vector4> fragTexCoord
         @>
     let spvFragmentInfo = SpirvGenInfo.Create(AddressingModel.Logical, MemoryModel.GLSL450, ExecutionModel.Fragment, [Capability.Shader], ["GLSL.std.450"], ExecutionMode.OriginUpperLeft)
     let spvFragment = 

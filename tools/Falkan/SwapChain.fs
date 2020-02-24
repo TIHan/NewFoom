@@ -37,11 +37,12 @@ type DrawRecording =
 
 type PipelineIndex = int
 
-let recordDraw extent (framebuffers: VkFramebuffer []) (commandBuffers: VkCommandBuffer []) (descriptorSets: VkDescriptorSet []) pipelineLayout renderPass graphicsPipeline (vertexBuffers: VkBuffer []) vertexCount instanceCount =
+let recordDraw extent (framebuffers: VkFramebuffer []) (commandBuffers: VkCommandBuffer []) (descriptorSets: VkDescriptorSet [][]) pipelineLayout renderPass graphicsPipeline (vertexBuffers: VkBuffer []) vertexCount instanceCount =
     for i = 0 to framebuffers.Length - 1 do
         let framebuffer = framebuffers.[i]
         let commandBuffer = commandBuffers.[i]
-        let descriptorSet = descriptorSets.[i]
+        let uboSet = descriptorSets.[0].[i]
+        let samplerSet = descriptorSets.[1].[i]
 
         // Begin command buffer
 
@@ -79,8 +80,9 @@ let recordDraw extent (framebuffers: VkFramebuffer []) (commandBuffers: VkComman
 
         // Bind descriptor sets
 
-        let mutable descriptorSet = descriptorSet
-        vkCmdBindDescriptorSets(commandBuffer, VkPipelineBindPoint.VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0u, 1u, &&descriptorSet, 0u, vkNullPtr)
+        let sets = [|uboSet;samplerSet|]
+        use pDescriptorSet = fixed sets
+        vkCmdBindDescriptorSets(commandBuffer, VkPipelineBindPoint.VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0u, uint32 sets.Length, pDescriptorSet, 0u, vkNullPtr)
 
         // Bind vertex buffers
 
@@ -793,7 +795,7 @@ type SwapChain private (physicalDevice, device, surface, sync, graphicsFamily, g
     let record recording =
         let state = state.Value
         recordDraw 
-            state.extent state.framebuffers state.commandBuffers (Array.concat state.descriptorSets) state.pipelineLayout state.renderPass 
+            state.extent state.framebuffers state.commandBuffers state.descriptorSets state.pipelineLayout state.renderPass 
             pipelines.[recording.pipelineIndex] recording.vertexBuffers recording.vertexCount recording.instanceCount
 
     let setUniformBuffer () =

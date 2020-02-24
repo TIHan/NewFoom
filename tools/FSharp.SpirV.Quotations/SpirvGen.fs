@@ -268,7 +268,9 @@ let rec emitType cenv ty =
     | SpirvTypeMatrix4x4 -> emitTypeMatrix4x4 cenv
     | SpirvTypeArray (elementTy, length) -> emitArrayType cenv elementTy length
     | SpirvTypeStruct (_, fields) -> emitStructType cenv ty fields
+    | SpirvTypeImage imageTy -> emitTypeImage cenv imageTy
     | SpirvTypeSampler -> emitTypeSampler cenv
+    | SpirvTypeSampledImage imageTy -> emitTypeSampledImage cenv imageTy
 
 and emitArrayType cenv elementTy length =
     match elementTy with
@@ -286,6 +288,17 @@ and emitStructType cenv ty fields =
         )
 
     emitTypeAux cenv ty (fun resultId -> OpTypeStruct(resultId, idRefs))
+
+and emitTypeImage cenv imageTy =
+    match imageTy with
+    | SpirvImageType(sampledType, dim, depth, arrayed, ms, sampled, format, accessQualifier) ->
+        let sampledTypeId = emitType cenv sampledType
+        emitTypeAux cenv (SpirvTypeImage imageTy) (fun resultId ->
+            OpTypeImage(resultId, sampledTypeId, dim, depth, arrayed, ms, sampled, format, accessQualifier))
+
+and emitTypeSampledImage cenv imageTy =
+    let imageTyId = emitTypeImage cenv imageTy
+    emitTypeAux cenv (SpirvTypeSampledImage imageTy) (fun resultId -> OpTypeSampledImage(resultId, imageTyId))
 
 let emitTypeFunction cenv paramTys retTy =
     let paramTyIds =
@@ -409,6 +422,11 @@ let tryEmitLoad cenv pointer =
     | _ ->
         None
 
+let deref cenv (resultId: IdResult) =
+    match tryEmitLoad cenv resultId with
+    | Some resultId -> resultId
+    | _ -> resultId
+
 //let tryEmitCopyObject cenv pointer  =
     
 
@@ -427,12 +445,8 @@ let rec GenExpr cenv (env: env) expr =
 
     | SpirvLet(spvVar, rhs, body) ->
         let spvVarId = GenLocalVar cenv spvVar
-        let rhsId = GenExpr cenv env rhs
-        let object =
-            match tryEmitLoad cenv rhsId with
-            | Some object -> object
-            | _ -> rhsId
-        addInstructions cenv [OpStore(spvVarId, object, None)]
+        let rhsId = GenExpr cenv env rhs |> deref cenv
+        addInstructions cenv [OpStore(spvVarId, rhsId, None)]
         GenExpr cenv env body
 
     | SpirvSequential(expr1, expr2) ->
@@ -465,43 +479,50 @@ let rec GenExpr cenv (env: env) expr =
         if not var.IsMutable then
             failwithf "'%s' is not mutable." var.Name
 
-        let rhsId = GenExpr cenv env rhs
-        let pointer = 
-            match tryEmitLoad cenv rhsId with
-            | Some pointer -> pointer
-            | _ -> rhsId
+        let rhsId = GenExpr cenv env rhs |> deref cenv
         let id = GenGlobalVar cenv var
-        addInstructions cenv [OpStore(id, pointer, None)]
+        addInstructions cenv [OpStore(id, rhsId, None)]
         id
 
     | SpirvIntrinsicCall call ->
         let retTy = emitType cenv call.ReturnType
         match call with
         | Transform__Vector4_Matrix4x4__Vector4 (arg1, arg2) ->
-            let arg1 = GenExpr cenv env arg1
-            let arg2 = GenExpr cenv env arg2
-
-            let arg1 =
-                match tryEmitLoad cenv arg1 with
-                | Some pointer -> pointer
-                | _ -> arg1
-
-            let arg2 =
-                match tryEmitLoad cenv arg2 with
-                | Some pointer -> pointer
-                | _ -> arg2
+            let arg1 = GenExpr cenv env arg1 |> deref cenv
+            let arg2 = GenExpr cenv env arg2 |> deref cenv
 
             let resultId = nextResultId cenv
             addInstructions cenv [OpMatrixTimesVector(retTy, resultId, arg2, arg1)]
             resultId
 
         | Multiply__Matrix4x4_Matrix4x4__Matrix4x4 (arg1, arg2) ->
-            let arg1 = GenExpr cenv env arg1
-            let arg2 = GenExpr cenv env arg2
+            let arg1 = GenExpr cenv env arg1 |> deref cenv
+            let arg2 = GenExpr cenv env arg2 |> deref cenv
 
             let resultId = nextResultId cenv
             addInstructions cenv [OpMatrixTimesMatrix(retTy, resultId, arg2, arg1)]
             resultId
+
+        | SampledImage_T__Single_T (_, receiver, arg) ->
+            let receiverTy = receiver.Type
+            let receiver = GenExpr cenv env receiver |> deref cenv
+            let arg1 = GenExpr cenv env arg |> deref cenv
+           // let arg2 = GenExpr cenv env (SpirvConst(SpirvConstInt(1, []))) |> deref cenv
+
+            let imageResultId =
+                let resultId = nextResultId cenv
+                let ty =
+                    match receiverTy with
+                    | SpirvTypeSampledImage imageTy -> SpirvTypeImage imageTy
+                    | _ -> call.ReturnType
+                    |> emitType cenv
+                addInstructions cenv [OpImage(ty, resultId, receiver)]
+                resultId
+
+            let resultId = nextResultId cenv
+            addInstructions cenv [OpImageFetch(retTy, resultId, imageResultId, arg1, Some ImageOperands.Sample)]
+            resultId
+            
 
     | SpirvIntrinsicFieldGet fieldGet ->
         let getComponent receiver fieldTy n =
@@ -639,6 +660,7 @@ let GenModule (info: SpirvGenInfo) expr =
             | OpVariable (_, _, StorageClass.Output, _) 
             | OpVariable (_, _, StorageClass.Private, _)
             | OpVariable (_, _, StorageClass.Uniform, _) 
+            | OpVariable (_, _, StorageClass.UniformConstant, _) 
             | OpVariable (_, _, StorageClass.Image, _) ->
                 decorations
                 |> List.iter (fun decoration ->

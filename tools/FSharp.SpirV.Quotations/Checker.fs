@@ -59,8 +59,16 @@ let rec mkSpirvType ty =
         SpirvTypeVoid
     | _ when ty = typeof<Matrix4x4> ->
         SpirvTypeMatrix4x4
-    | _ when ty = typeof<Sampler2d> ->
+    | _ when ty.IsGenericType && ty.FullName.StartsWith(typedefof<Image<_, _, _, _, _, _, _, _>>.FullName) ->
+        let tyArgs = ty.GenericTypeArguments
+        let imageTy = mkSpirvImageType tyArgs.[0] tyArgs.[1] tyArgs.[2] tyArgs.[3] tyArgs.[4] tyArgs.[5] tyArgs.[6] tyArgs.[7]
+        SpirvTypeImage imageTy
+    | _ when ty = typeof<Sampler> ->
         SpirvTypeSampler
+    | _ when ty.IsGenericType && ty.FullName.StartsWith(typedefof<SampledImage<_, _, _, _, _, _, _, _>>.FullName) ->
+        let tyArgs = ty.GenericTypeArguments
+        let imageTy = mkSpirvImageType tyArgs.[0] tyArgs.[1] tyArgs.[2] tyArgs.[3] tyArgs.[4] tyArgs.[5] tyArgs.[6] tyArgs.[7]
+        SpirvTypeSampledImage imageTy
     | _ when ty.IsArray ->
         failwith "Array can not be made here as it needs a specific length."
     | _ when ty.IsValueType ->
@@ -73,6 +81,89 @@ let rec mkSpirvType ty =
         SpirvTypeStruct (ty.FullName, fields)
     | _ -> 
         failwithf "Unable to make SpirvType from Type: %A" ty
+
+and mkSpirvImageType (sampledType: Type) (dim: Type) (depth: Type) (arrayed: Type) (multisampled: Type) (sampled: Type) (format: Type) (accessQualifier: Type) =
+    let sampledType = mkSpirvType sampledType
+    let dim =
+        if dim = typeof<DimKind.One> then
+            Dim.One
+        elif dim = typeof<DimKind.Two> then
+            Dim.Two
+        elif dim = typeof<DimKind.Three> then
+            Dim.Three
+        elif dim = typeof<DimKind.Cube> then
+            Dim.Cube
+        elif dim = typeof<DimKind.Rect> then
+            Dim.Rect
+        elif dim = typeof<DimKind.Buffer> then
+            Dim.Buffer
+        elif dim = typeof<DimKind.SubpassData> then
+            Dim.SubpassData
+        else
+            failwithf "Invalid DimKind: %s" dim.Name
+    let depth =
+        if depth = typeof<ImageDepthKind.NoDepth> then
+            0u
+        elif depth = typeof<ImageDepthKind.Depth> then
+            1u
+        elif depth = typeof<ImageDepthKind.Unknown> then
+            2u
+        else
+            failwithf "Invalid ImageDepthKind: %s" depth.Name
+    let arrayed =
+        if arrayed = typeof<ImageArrayedKind.NonArrayed> then
+            0u
+        elif arrayed = typeof<ImageArrayedKind.Arrayed> then
+            1u
+        else
+            failwithf "Invalid ImageArrayedKind: %s" arrayed.Name
+    let multisampled =
+        if multisampled = typeof<ImageMultisampleKind.Single> then
+            0u
+        elif multisampled = typeof<ImageMultisampleKind.Multi> then
+            1u
+        else
+            failwithf "Invalid ImageMultisampleKind: %s" multisampled.Name
+    let sampled =
+        if sampled = typeof<ImageSampleKind.RuntimeOnly> then
+            0u
+        elif sampled = typeof<ImageSampleKind.Sampler> then
+            1u
+        elif sampled = typeof<ImageSampleKind.NoSampler> then
+            2u
+        else
+            failwithf "Invalid ImageSampleKind: %s" sampled.Name
+    let format =
+        if format = typeof<ImageFormatKind.Unknown> then
+            ImageFormat.Unknown
+        elif format = typeof<ImageFormatKind.Rgba32f> then
+            ImageFormat.Rgba32f
+        elif format = typeof<ImageFormatKind.Rgba16f> then
+            ImageFormat.Rgba16f
+        elif format = typeof<ImageFormatKind.R32f> then
+            ImageFormat.R32f
+        elif format = typeof<ImageFormatKind.Rgba8> then
+            ImageFormat.Rgba8
+        elif format = typeof<ImageFormatKind.Rgba8Snorm> then
+            ImageFormat.Rgba16Snorm
+        else
+            failwithf "Invalid ImageFormatKind: %s" format.Name
+    let accessQualifier =
+        if accessQualifier = typeof<AccessQualifierKind.None> then
+            None
+        else
+            let accessQualifier =
+                if accessQualifier = typeof<AccessQualifierKind.ReadOnly> then
+                    AccessQualifier.ReadOnly
+                elif accessQualifier = typeof<AccessQualifierKind.WriteOnly> then
+                    AccessQualifier.WriteOnly
+                elif accessQualifier = typeof<AccessQualifierKind.ReadWrite> then
+                    AccessQualifier.ReadWrite
+                else
+                    failwithf "Invalid AccessQualifierKind: %s" accessQualifier.Name
+            Some accessQualifier
+
+    SpirvImageType(sampledType, dim, depth, arrayed, multisampled, sampled, format, accessQualifier)
 
 let mkSpirvArrayType elementSpvTy length =
     SpirvTypeArray (elementSpvTy, length)
@@ -172,7 +263,11 @@ let rec CheckExpr env isReturnable expr =
         let env, spvExpr2 = CheckExpr env true expr2 
         env, SpirvSequential (spvExpr1, spvExpr2)
 
-    | Call (None, _, args) ->
+    | Call (receiver, _, args) ->
+        let args =
+            match receiver with
+            | Some receiver -> [receiver] @ args
+            | _ -> args
         let env, checkedArgs = CheckExprs env args
         CheckIntrinsicCall env checkedArgs expr
 
@@ -225,19 +320,27 @@ and CheckPropertyGet env receiver propInfo args =
 
 /// Check for intrinsic calls.
 and CheckIntrinsicCall env checkedArgs expr =
-    match expr, checkedArgs with
-    | SpecificCall <@ Unchecked.defaultof<_[]>.[0] @> _, [receiver;arg] ->
+    let tyArgs =
+        match expr with
+        | Call (_, methInfo, _) -> methInfo.GetGenericArguments()
+        | _ -> failwithf "Expr is not a call: %A" expr
+
+    match expr, tyArgs, checkedArgs with
+    | SpecificCall <@ Unchecked.defaultof<_[]>.[0] @> _, _, [receiver;arg] ->
         env, SpirvArrayIndexerGet (receiver, arg)
 
-    | SpecificCall <@ Vector4.Transform(Unchecked.defaultof<Vector4>, Unchecked.defaultof<Matrix4x4>) @> _, [arg1;arg2] ->
+    | SpecificCall <@ Vector4.Transform(Unchecked.defaultof<Vector4>, Unchecked.defaultof<Matrix4x4>) @> _, _, [arg1;arg2] ->
         env, Transform__Vector4_Matrix4x4__Vector4 (arg1, arg2) |> SpirvIntrinsicCall
 
-    | SpecificCall <@ (*) @> (_, tyArgs, _), [arg1;arg2] ->
+    | SpecificCall <@ (*) @> (_, tyArgs, _), _, [arg1;arg2] ->
         match tyArgs with
         | _ when tyArgs = [typeof<Matrix4x4>;typeof<Matrix4x4>;typeof<Matrix4x4>] ->
             env, Multiply__Matrix4x4_Matrix4x4__Matrix4x4 (arg1, arg2) |> SpirvIntrinsicCall
         | _ ->
             failwithf "Call not supported: %A" expr
+
+    | Call (_, methInfo, _), [|tyArg|], [receiver;arg] when methInfo.DeclaringType.FullName.StartsWith(typedefof<SampledImage<_, _, _, _, _, _, _, _>>.FullName) && methInfo.Name = "Gather" ->
+        env, SampledImage_T__Single_T(mkSpirvType tyArg, receiver, arg) |> SpirvIntrinsicCall
 
     | _ ->
         failwithf "Call not supported: %A" expr

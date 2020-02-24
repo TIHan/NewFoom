@@ -10,7 +10,9 @@ let newStamp () =
 
 type Decorations = Decoration list
 
-type SpirvType =
+type SpirvImageType = SpirvImageType of sampledType: SpirvType * dim: Dim * depth: uint32 * arrayed: uint32 * ms: uint32 * sampled: uint32 * format: ImageFormat * AccessQualifier option
+
+and SpirvType =
     | SpirvTypeVoid
     | SpirvTypeInt
     | SpirvTypeUInt32
@@ -21,7 +23,19 @@ type SpirvType =
     | SpirvTypeMatrix4x4
     | SpirvTypeArray of SpirvType * length: int
     | SpirvTypeStruct of name: string * fields: SpirvField list
+    | SpirvTypeImage of SpirvImageType
     | SpirvTypeSampler
+    | SpirvTypeSampledImage of SpirvImageType
+
+    member x.ComponentNumber =
+        match x with
+        | SpirvTypeInt
+        | SpirvTypeUInt32
+        | SpirvTypeSingle -> 1
+        | SpirvTypeVector2 -> 2
+        | SpirvTypeVector3 -> 3
+        | SpirvTypeVector4 -> 4
+        | _ -> failwithf "Unable to get component number of type, %A." x
 
     member x.Name =
         match x with
@@ -35,11 +49,13 @@ type SpirvType =
         | SpirvTypeMatrix4x4 -> "Matrix4x4"
         | SpirvTypeArray (elementTy, length) -> elementTy.Name + "[" + string length + "]"
         | SpirvTypeStruct (name=name) -> name
+        | SpirvTypeImage _ -> "Image"
         | SpirvTypeSampler -> "Sampler"
+        | SpirvTypeSampledImage _ -> "SampledImage"
 
     member x.Size: int =
         match x with
-        | SpirvTypeVoid -> 0
+        | SpirvTypeVoid -> failwith "Unable to get size of void type."
         | SpirvTypeInt -> sizeof<int>
         | SpirvTypeUInt32 -> sizeof<uint32>
         | SpirvTypeSingle -> sizeof<single>
@@ -51,11 +67,20 @@ type SpirvType =
         | SpirvTypeStruct(_, fields) ->
             fields
             |> List.sumBy(fun (field: SpirvField) -> field.Type.Size)
-        | SpirvTypeSampler -> 0
+        | SpirvTypeImage _
+        | SpirvTypeSampler
+        | SpirvTypeSampledImage _ -> failwith "Unable to get size of opaque type."
 
     member x.IsVoid = match x with SpirvTypeVoid -> true | _ -> false
 
     member x.IsStruct = match x with SpirvTypeStruct _ -> true | _ -> false
+
+    member x.IsOpaque =
+        match x with
+        | SpirvTypeImage _
+        | SpirvTypeSampler
+        | SpirvTypeSampledImage _ -> true
+        | _ -> false
 
 and SpirvField = SpirvField of name: string * fieldType: SpirvType * Decorations with
 
@@ -171,18 +196,22 @@ type SpirvExpr =
         getType x
 
 and SpirvIntrinsicCall =
+    // TODO: Fix transform and multiply names
     | Transform__Vector4_Matrix4x4__Vector4 of vector4: SpirvExpr * matrix4x4: SpirvExpr
     | Multiply__Matrix4x4_Matrix4x4__Matrix4x4 of matrix4x4_1: SpirvExpr * matrix4x4_2: SpirvExpr
+    | SampledImage_T__Single_T of tyArg: SpirvType * receiver: SpirvExpr * arg: SpirvExpr
 
     member x.ReturnType =
         match x with
         | Transform__Vector4_Matrix4x4__Vector4 _ -> SpirvTypeVector4
         | Multiply__Matrix4x4_Matrix4x4__Matrix4x4 _ -> SpirvTypeMatrix4x4
+        | SampledImage_T__Single_T (tyArg, _, _) -> tyArg
 
     member x.Arguments =
         match x with
         | Transform__Vector4_Matrix4x4__Vector4 (arg1, arg2)
         | Multiply__Matrix4x4_Matrix4x4__Matrix4x4 (arg1, arg2) -> [arg1;arg2]
+        | SampledImage_T__Single_T (_, receiver, arg) -> [receiver;arg]
 
 and SpirvIntrinsicFieldGet =
     | Vector2_Get_X of receiver: SpirvExpr * typ: SpirvType
