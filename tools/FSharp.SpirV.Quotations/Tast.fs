@@ -252,6 +252,9 @@ and SpirvIntrinsicFieldGet =
     | Vector2_Get_X of receiver: SpirvExpr * typ: SpirvType
     | Vector2_Get_Y of receiver: SpirvExpr * typ: SpirvType
 
+    | Vector2Int_Get_X of receiver: SpirvExpr * typ: SpirvType
+    | Vector2Int_Get_Y of receiver: SpirvExpr * typ: SpirvType
+
     | Vector3_Get_X of receiver: SpirvExpr * typ: SpirvType
     | Vector3_Get_Y of receiver: SpirvExpr * typ: SpirvType
     | Vector3_Get_Z of receiver: SpirvExpr * typ: SpirvType
@@ -265,6 +268,9 @@ and SpirvIntrinsicFieldGet =
         match x with
         | Vector2_Get_X(typ=typ)
         | Vector2_Get_Y(typ=typ)
+
+        | Vector2Int_Get_X(typ=typ)
+        | Vector2Int_Get_Y(typ=typ)
 
         | Vector3_Get_X(typ=typ)
         | Vector3_Get_Y(typ=typ)

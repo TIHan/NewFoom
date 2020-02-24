@@ -514,6 +514,13 @@ let rec GenExpr cenv (env: env) expr =
             let resultId = nextResultId cenv
             addInstructions cenv [OpConvertFToS(retTy, resultId, arg)]
             resultId
+
+        | ConvertSIntToFloat arg ->
+            let arg = GenExpr cenv env arg |> deref cenv
+
+            let resultId = nextResultId cenv
+            addInstructions cenv [OpConvertSToF(retTy, resultId, arg)]
+            resultId
             
         | GetImage arg ->
             let arg = GenExpr cenv env arg |> deref cenv
@@ -546,11 +553,13 @@ let rec GenExpr cenv (env: env) expr =
             addCompositeExtractInstruction cenv fieldTyId receiverId [n]
             
         match fieldGet with
-        | Vector2_Get_X(receiver, fieldTy) 
+        | Vector2_Get_X(receiver, fieldTy)
+        | Vector2Int_Get_X(receiver, fieldTy) 
         | Vector3_Get_X(receiver, fieldTy)
         | Vector4_Get_X(receiver, fieldTy) ->
             getComponent receiver fieldTy 0u
         | Vector2_Get_Y(receiver, fieldTy) 
+        | Vector2Int_Get_Y(receiver, fieldTy) 
         | Vector3_Get_Y(receiver, fieldTy)
         | Vector4_Get_Y(receiver, fieldTy) ->
             getComponent receiver fieldTy 1u

@@ -376,12 +376,19 @@ and CheckIntrinsicField env receiver fieldInfo =
         env, Vector2_Get_X(spvReceiver, SpirvTypeFloat32)
     | "Y" when receiver.Type = typeof<Vector2> ->
         env, Vector2_Get_Y(spvReceiver, SpirvTypeFloat32)
+
+    | "X" when receiver.Type = typeof<Vector2Int> ->
+        env, Vector2Int_Get_X(spvReceiver, SpirvTypeInt32)
+    | "Y" when receiver.Type = typeof<Vector2Int> ->
+        env, Vector2Int_Get_Y(spvReceiver, SpirvTypeInt32)
+
     | "X" when receiver.Type = typeof<Vector3> ->
         env, Vector3_Get_X(spvReceiver, SpirvTypeFloat32)
     | "Y" when receiver.Type = typeof<Vector3> ->
         env, Vector3_Get_Y(spvReceiver, SpirvTypeFloat32)
     | "Z" when receiver.Type = typeof<Vector3> ->
         env, Vector3_Get_Z(spvReceiver, SpirvTypeFloat32)
+
     | "X" when receiver.Type = typeof<Vector4> ->
         env, Vector4_Get_X(spvReceiver, SpirvTypeFloat32)
     | "Y" when receiver.Type = typeof<Vector4> ->
