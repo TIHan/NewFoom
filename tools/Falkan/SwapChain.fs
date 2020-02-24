@@ -423,43 +423,6 @@ let mkSwapChain physicalDevice device surface graphicsFamily presentFamily =
 
     swapChain, surfaceFormat, extent, images
 
-let mkImageViewCreateInfo format image =
-    let components =
-        VkComponentMapping (
-            r = VkComponentSwizzle.VK_COMPONENT_SWIZZLE_IDENTITY, 
-            g = VkComponentSwizzle.VK_COMPONENT_SWIZZLE_IDENTITY, 
-            b = VkComponentSwizzle.VK_COMPONENT_SWIZZLE_IDENTITY, 
-            a = VkComponentSwizzle.VK_COMPONENT_SWIZZLE_IDENTITY
-        )
-
-    let subresourceRange =
-        VkImageSubresourceRange (
-            aspectMask = VkImageAspectFlags.VK_IMAGE_ASPECT_COLOR_BIT,
-            baseMipLevel = 0u,
-            levelCount = 1u,
-            baseArrayLayer = 0u,
-            layerCount = 1u
-        )
-
-    VkImageViewCreateInfo (
-        sType = VkStructureType.VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-        image = image,
-        viewType = VkImageViewType.VK_IMAGE_VIEW_TYPE_2D,
-        format = format,
-        components = components,
-        subresourceRange = subresourceRange
-    )
-
-let mkImageView device format image =
-    let mutable createInfo = mkImageViewCreateInfo format image
-    let mutable imageView = VkImageView()
-    vkCreateImageView(device, &&createInfo, vkNullPtr, &&imageView) |> checkResult
-    imageView
-    
-let mkImageViews device surfaceFormat images =
-    images
-    |> Array.map (mkImageView device surfaceFormat)
-
 let mkColorAttachment format =
     VkAttachmentDescription (
         format = format,
@@ -726,6 +689,27 @@ let updateDescriptorSet device descriptorSet pBufferInfo =
 
     vkUpdateDescriptorSets(device, 1u, &&descriptorWrite, 0u, vkNullPtr)
 
+let mkDescriptorImageInfo imageView sampler =
+    let mutable imageInfo =
+        VkDescriptorImageInfo(
+            imageLayout = VkImageLayout.VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+            imageView = imageView,
+            sampler = sampler)
+    imageInfo
+
+let updateDescriptorImageSet device descriptorSet pImageInfo =
+    let mutable descriptorWrite =
+        VkWriteDescriptorSet(
+            sType = VkStructureType.VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+            dstSet = descriptorSet,
+            dstBinding = 1u,
+            dstArrayElement = 0u,
+            descriptorType = VkDescriptorType.VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            descriptorCount = 1u,
+            pImageInfo = pImageInfo)
+
+    vkUpdateDescriptorSets(device, 1u, &&descriptorWrite, 0u, vkNullPtr)
+
 [<Sealed>]
 type SwapChain private (physicalDevice, device, surface, sync, graphicsFamily, graphicsQueue, presentFamily, presentQueue, commandPool) =
 
@@ -734,6 +718,7 @@ type SwapChain private (physicalDevice, device, surface, sync, graphicsFamily, g
     let mutable currentFrame = 0
     let mutable isDisposed = 0
     let mutable uniformBuffer = None
+    let mutable imageSampler = None
 
     let recordings = Collections.Generic.Dictionary<int, DrawRecording>()
     let shaders = ResizeArray ()
@@ -822,6 +807,17 @@ type SwapChain private (physicalDevice, device, surface, sync, graphicsFamily, g
         | _ ->
             ()
 
+    let setSampler () =
+        match imageSampler with
+        | Some (imageView, sampler) ->
+            let state = state.Value
+            state.descriptorSets.[1]
+            |> Array.iter (fun descriptorSet ->
+                let mutable imageInfo = mkDescriptorImageInfo imageView sampler
+                updateDescriptorImageSet device descriptorSet &&imageInfo)
+        | _ ->
+            ()
+
     member x.Recreate () =
         if not (Monitor.IsEntered gate) then
             Monitor.Enter gate
@@ -864,6 +860,7 @@ type SwapChain private (physicalDevice, device, surface, sync, graphicsFamily, g
                 |> Some
 
             setUniformBuffer ()
+            setSampler ()
 
             shaders
             |> Seq.iter (fun shader ->
@@ -925,6 +922,15 @@ type SwapChain private (physicalDevice, device, surface, sync, graphicsFamily, g
         uniformBuffer <- Some(buffer, size)
 
         setUniformBuffer ()
+
+    member x.SetSampler(imageView: VkImageView, sampler: VkSampler) =
+        lock gate |> fun _ ->
+
+        check ()
+
+        imageSampler <- Some (imageView, sampler)
+
+        setSampler ()
 
     member x.DrawFrame () =
         lock gate |> fun _ ->

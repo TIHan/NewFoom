@@ -365,6 +365,7 @@ let fillBuffer<'T when 'T : unmanaged> physicalDevice device commandPool transfe
 type Image =
     {
         image: VkImage
+        imageView: VkImageView
         sampler: VkSampler
         memory: DeviceMemory
         width: int
@@ -441,8 +442,9 @@ let mkSampler device =
 let mkBoundImage physicalDevice device width height format tiling usage properties =
     let image = mkImage device width height format tiling usage
     let memory = bindImage physicalDevice device image properties
+    let imageView = mkImageView device VkFormat.VK_FORMAT_R8G8B8A8_SRGB image
     let sampler = mkSampler device
-    { image = image; sampler = sampler; memory = memory; width = width; height = height }
+    { image = image; imageView = imageView; sampler = sampler; memory = memory; width = width; height = height }
 
 let transitionImageLayout (commandBuffer: VkCommandBuffer) image (format: VkFormat) oldLayout newLayout =
     let srcAccessMask, dstAccessMask, srcStage, dstStage =
@@ -581,6 +583,7 @@ type FalGraphics
 
     let destroyImage (image: Image) =
         vkDestroySampler(device, image.sampler, vkNullPtr)
+        vkDestroyImageView(device, image.imageView, vkNullPtr)
         vkDestroyImage(device, image.image, vkNullPtr)
 
     member __.AddShader (vertexBindings, vertexAttributes, vertexBytes, fragmentBytes) : PipelineIndex =
