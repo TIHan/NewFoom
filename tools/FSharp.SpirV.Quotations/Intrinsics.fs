@@ -223,3 +223,10 @@ type SampledImage<'SampledType, 'Dim, 'Depth, 'Arrayed, 'Multisampled, 'Sampled,
     member _.Image: Image<'SampledType, 'Dim, 'Depth, 'Arrayed, 'Multisampled, 'Sampled, 'Format, 'AccessQualifier> = failwith ErrorMessage
 
     member _.Gather(_coordinate: Vector2, _comp: int): Vector4 = failwith ErrorMessage
+
+[<AbstractClass; Sealed>]
+type SpirvInstrinsics =
+
+    static member VectorShuffle<'T>(_v1: Vector2, _v2: Vector2) : 'T = failwith ErrorMessage
+
+    static member ConvertFloatToInt(_v: Vector2) : Vector2Int = failwith ErrorMessage

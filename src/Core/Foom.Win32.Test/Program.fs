@@ -30,7 +30,7 @@ type Vertex =
         texCoord: Vector2
     }
 
-type Sampler2d = SampledImage<single, DimKind.Two, ImageDepthKind.Depth, ImageArrayedKind.NonArrayed, ImageMultisampleKind.Single, ImageSampleKind.Sampler, ImageFormatKind.Rgba8, AccessQualifierKind.None>
+type Sampler2d = SampledImage<single, DimKind.Two, ImageDepthKind.Depth, ImageArrayedKind.NonArrayed, ImageMultisampleKind.Single, ImageSampleKind.Sampler, ImageFormatKind.Rgba32f, AccessQualifierKind.None>
 
 let radians (degrees) = degrees * MathF.PI / 180.f
 
@@ -92,6 +92,7 @@ let setRender (instance: FalGraphics) =
 
     let fragment =
         <@ 
+          //  let sampler = Variable<Sampler> [Decoration.Binding 1u; Decoration.DescriptorSet 1u] StorageClass.UniformConstant
             let sampler = Variable<Sampler2d> [Decoration.Binding 1u; Decoration.DescriptorSet 1u] StorageClass.UniformConstant
             let fragColor = Variable<Vector3> [Decoration.Location 0u] StorageClass.Input
             let fragTexCoord = Variable<Vector2> [Decoration.Location 1u] StorageClass.Input
@@ -106,15 +107,17 @@ let setRender (instance: FalGraphics) =
               //  let y = int fragTexCoord.Y
               //  let x = float32 x
               //  let y = float32 y
-                let coord = Vector2Int(int fragColor.X, int fragColor.Y)
-                let redo = Vector2(float32 coord.X, float32 coord.Y)
+              let x = SpirvInstrinsics.VectorShuffle<Vector2>(fragTexCoord, fragTexCoord)
+              let x = SpirvInstrinsics.ConvertFloatToInt(fragTexCoord)
+              outColor <- sampler.Image.Fetch x
+              //  let coord = Vector2Int(int fragTexCoord.X, int fragTexCoord.Y)
+           //    outColor <- sampler.Gather(fragTexCoord, 0)
+               // let redo = Vector2(float32 coord.X, float32 coord.Y)
               //  let image = sampler.Image
-             //   let x = sampler.Gather(fragTexCoord, 0).X
-            //    let y = sampler.Gather(fragTexCoord, 1).Y
-             //   let z = sampler.Gather(fragTexCoord, 2).Z
-             //   let w = sampler.Gather(fragTexCoord, 3).W
-                outColor <- Vector4(Vector3(redo.X, redo.Y, fragColor.Z), 1.f) //Vector4(x, y, z, w) //sampler.Gather(Vector2(x, y), 0) //image.Fetch coord
-            //    outColor <- sampler.Image.Fetch coord
+
+             //   outColor <- Vector4(x, y, z, w)
+            //    outColor <- Vector4(Vector3(redo.X, redo.Y, fragColor.Z), 1.f) //Vector4(x, y, z, w) //sampler.Gather(Vector2(x, y), 0) //image.Fetch coord
+             //   outColor <- sampler.Image.Fetch coord
                // outColor <- 
         @>
     let spvFragmentInfo = SpirvGenInfo.Create(AddressingModel.Logical, MemoryModel.GLSL450, ExecutionModel.Fragment, [Capability.Shader], ["GLSL.std.450"], ExecutionMode.OriginUpperLeft)
