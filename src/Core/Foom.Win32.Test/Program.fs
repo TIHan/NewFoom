@@ -163,6 +163,8 @@ let main argv =
     use instance = FalGraphics.Create device
     let mvp, mvpUniform = setRender instance
 
+    let mutable mvp = mvp
+
     let windowEvents = 
         let gate = obj ()
         let mutable quit = false
@@ -180,10 +182,10 @@ let main argv =
                     printfn "%A" events
 
             member __.OnUpdateFrame (time, interval) =
-               // let mvp =
-               //     { mvp with model = Matrix4x4.CreateRotationY(radians (float32 time))}
-             //   instance.FillBuffer(mvpUniform, ReadOnlySpan[|mvp|])
-            //    instance.SetUniformBuffer(mvpUniform)
+                mvp <-
+                    { mvp with model = Matrix4x4.CreateRotationY(radians (float32 time))}
+                instance.FillBuffer(mvpUniform, ReadOnlySpan[|mvp|])
+              //  instance.SetUniformBuffer(mvpUniform)
                 quit
 
             member __.OnRenderFrame (_, _, _, _) =
