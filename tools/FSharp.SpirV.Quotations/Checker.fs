@@ -367,6 +367,9 @@ and CheckIntrinsicCall env checkedArgs expr =
     | Call(_, methInfo, _), _, [arg1;arg2;arg3] when methInfo.DeclaringType.FullName.StartsWith(typedefof<SampledImage<_, _, _, _, _, _, _, _>>.FullName) && methInfo.Name = "Gather" ->
         env, ImageGather (arg1, arg2, arg3, mkSpirvType expr.Type) |> SpirvIntrinsicCall
 
+    | Call(_, methInfo, _), _, [arg1;arg2] when methInfo.DeclaringType.FullName.StartsWith(typedefof<SampledImage<_, _, _, _, _, _, _, _>>.FullName) && methInfo.Name = "ImplicitLod" ->
+        env, ImplicitLod (arg1, arg2, mkSpirvType expr.Type) |> SpirvIntrinsicCall
+
     | SpecificCall <@ SpirvInstrinsics.VectorShuffle<_> @> _, [|_|], [arg1;arg2] ->
         env, VectorShuffle(arg1, arg2, [0u;1u], mkSpirvType expr.Type) |> SpirvIntrinsicCall
 

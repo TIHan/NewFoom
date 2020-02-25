@@ -30,14 +30,14 @@ type Vertex =
         texCoord: Vector2
     }
 
-type Sampler2d = SampledImage<single, DimKind.Two, ImageDepthKind.Depth, ImageArrayedKind.NonArrayed, ImageMultisampleKind.Single, ImageSampleKind.Sampler, ImageFormatKind.Rgba32f, AccessQualifierKind.None>
+type Sampler2d = SampledImage<single, DimKind.Two, ImageDepthKind.NoDepth, ImageArrayedKind.NonArrayed, ImageMultisampleKind.Single, ImageSampleKind.Sampler, ImageFormatKind.Unknown, AccessQualifierKind.None>
 
 let radians (degrees) = degrees * MathF.PI / 180.f
 
 let setRender (instance: FalGraphics) =
     use bmp = new Bitmap(Bitmap.FromFile("texture.jpg"))
     let rect = Rectangle(0, 0, bmp.Width, bmp.Height)
-    let data = bmp.LockBits(rect, ImageLockMode.ReadWrite, bmp.PixelFormat)
+    let data = bmp.LockBits(rect, ImageLockMode.ReadWrite, PixelFormat.Format32bppArgb)
 
     let image = instance.CreateImage(bmp.Width, bmp.Height)
     let ptr = data.Scan0 |> NativePtr.ofNativeInt<byte> |> NativePtr.toVoidPtr
@@ -107,11 +107,12 @@ let setRender (instance: FalGraphics) =
               //  let y = int fragTexCoord.Y
               //  let x = float32 x
               //  let y = float32 y
-              let x = SpirvInstrinsics.VectorShuffle<Vector2>(fragTexCoord, fragTexCoord)
-              let x = SpirvInstrinsics.ConvertFloatToInt(fragTexCoord)
-              outColor <- sampler.Image.Fetch x
+            //  let x = SpirvInstrinsics.VectorShuffle<Vector2>(fragTexCoord, fragTexCoord)
+           //   let uv = SpirvInstrinsics.ConvertFloatToInt(fragTexCoord)
+          //    let x = sampler.Image.Fetch (Vector2Int(256, 256))
+              outColor <- sampler.ImplicitLod fragTexCoord
               //  let coord = Vector2Int(int fragTexCoord.X, int fragTexCoord.Y)
-           //    outColor <- sampler.Gather(fragTexCoord, 0)
+         //     outColor <- sampler.Gather(fragTexCoord, 0)
                // let redo = Vector2(float32 coord.X, float32 coord.Y)
               //  let image = sampler.Image
 

@@ -10,6 +10,8 @@ open FSharp.Vulkan.Interop
 #nowarn "9"
 #nowarn "51"
 
+let defaultImageFormat = VkFormat.VK_FORMAT_B8G8R8A8_UNORM
+
 [<Struct;NoEquality;NoComparison>]
 type DeviceMemory =
     {
@@ -442,7 +444,7 @@ let mkSampler device =
 let mkBoundImage physicalDevice device width height format tiling usage properties =
     let image = mkImage device width height format tiling usage
     let memory = bindImage physicalDevice device image properties
-    let imageView = mkImageView device VkFormat.VK_FORMAT_R8G8B8A8_SRGB image
+    let imageView = mkImageView device defaultImageFormat image
     let sampler = mkSampler device
     { image = image; imageView = imageView; sampler = sampler; memory = memory; width = width; height = height }
 
@@ -484,7 +486,7 @@ let recordCopyImage (commandBuffer: VkCommandBuffer) width height srcBuffer dstI
 
     vkBeginCommandBuffer(commandBuffer, &&beginInfo) |> checkResult
 
-    transitionImageLayout commandBuffer dstImage VkFormat.VK_FORMAT_R8G8B8A8_SRGB VkImageLayout.VK_IMAGE_LAYOUT_UNDEFINED VkImageLayout.VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
+    transitionImageLayout commandBuffer dstImage defaultImageFormat VkImageLayout.VK_IMAGE_LAYOUT_UNDEFINED VkImageLayout.VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
 
     let mutable copyRegion =
         VkBufferImageCopy (
@@ -497,7 +499,7 @@ let recordCopyImage (commandBuffer: VkCommandBuffer) width height srcBuffer dstI
 
     vkCmdCopyBufferToImage(commandBuffer, srcBuffer, dstImage, VkImageLayout.VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1u, &&copyRegion)
 
-    transitionImageLayout commandBuffer dstImage VkFormat.VK_FORMAT_R8G8B8A8_SRGB VkImageLayout.VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL VkImageLayout.VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+    transitionImageLayout commandBuffer dstImage defaultImageFormat VkImageLayout.VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL VkImageLayout.VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
 
     vkEndCommandBuffer(commandBuffer) |> checkResult
 
@@ -634,7 +636,7 @@ type FalGraphics
 
         let image = 
             mkBoundImage physicalDevice device width height 
-                VkFormat.VK_FORMAT_R8G8B8A8_SRGB 
+                defaultImageFormat
                 VkImageTiling.VK_IMAGE_TILING_OPTIMAL 
                 (VkImageUsageFlags.VK_IMAGE_USAGE_TRANSFER_DST_BIT ||| VkImageUsageFlags.VK_IMAGE_USAGE_SAMPLED_BIT) 
                 VkMemoryPropertyFlags.VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT

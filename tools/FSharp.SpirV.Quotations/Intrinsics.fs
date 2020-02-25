@@ -224,6 +224,8 @@ type SampledImage<'SampledType, 'Dim, 'Depth, 'Arrayed, 'Multisampled, 'Sampled,
 
     member _.Gather(_coordinate: Vector2, _comp: int): Vector4 = failwith ErrorMessage
 
+    member _.ImplicitLod(_coordinate: Vector2) = failwith ErrorMessage
+
 [<AbstractClass; Sealed>]
 type SpirvInstrinsics =
 

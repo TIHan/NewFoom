@@ -24,6 +24,7 @@ type cenv =
         globalVariablesByVar: Dictionary<SpirvVar, IdResult>
         constants: Dictionary<SpirvConst, IdResult * Instruction>
         constantComposites: Dictionary<IdRef list, IdResult * Instruction>
+        loadedPointers: Dictionary<IdResult, IdResult>
 
         //
 
@@ -58,6 +59,7 @@ type cenv =
             globalVariablesByVar = Dictionary ()
             constants = Dictionary ()
             constantComposites = Dictionary ()
+            loadedPointers = Dictionary ()
             decorationInstructions = ResizeArray 100
             functions = Dictionary ()
             mainInitInstructions = ResizeArray 100
@@ -420,9 +422,13 @@ let tryEmitLoad cenv pointer =
             | true, OpTypePointer(_, _, baseType) -> baseType
             | _ -> failwith "Invalid pointer type."
 
-        let resultId = nextResultId cenv
-        addInstructions cenv [OpLoad(baseType, resultId, pointer, None)]
-        Some resultId
+        match cenv.loadedPointers.TryGetValue pointer with
+        | true, resultId -> Some resultId
+        | _ ->
+            let resultId = nextResultId cenv
+            addInstructions cenv [OpLoad(baseType, resultId, pointer, None)]
+            cenv.loadedPointers.[pointer] <- resultId
+            Some resultId
     | _ ->
         None
 
@@ -552,6 +558,14 @@ let rec GenExpr cenv (env: env) expr =
 
             let resultId = nextResultId cenv
             addInstructions cenv [OpVectorShuffle(retTy, resultId, arg1, arg2, arg3)]
+            resultId
+
+        | ImplicitLod (arg1, arg2, _) ->
+            let arg1 = GenExpr cenv env arg1 |> deref cenv
+            let arg2 = GenExpr cenv env arg2 |> deref cenv
+
+            let resultId = nextResultId cenv
+            addInstructions cenv [OpImageSampleImplicitLod(retTy, resultId, arg1, arg2, None)]
             resultId
 
     | SpirvIntrinsicFieldGet fieldGet ->
