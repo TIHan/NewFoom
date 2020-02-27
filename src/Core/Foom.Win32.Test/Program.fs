@@ -156,8 +156,6 @@ let main argv =
     let windowState = Win32WindowState (title, width, height)
     windowState.Show ()
 
-    windowState.WindowResized.Add(fun () -> printfn "it resized")
-
     let hwnd = windowState.Hwnd
     let hinstance = windowState.Hinstance
 
@@ -184,7 +182,6 @@ let main argv =
                     printfn "%A" events
 
             member __.OnUpdateFrame (time, interval) =
-                printfn "beef %A" time
                 mvp <-
                     { mvp with model = Matrix4x4.CreateRotationY(radians (float32 time))}
                 instance.FillBuffer(mvpUniform, ReadOnlySpan[|mvp|])

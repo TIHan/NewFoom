@@ -955,7 +955,6 @@ type SwapChain private (physicalDevice, device, surface, sync, graphicsFamily, g
 
             if res = VkResult.VK_ERROR_OUT_OF_DATE_KHR || res = VkResult.VK_SUBOPTIMAL_KHR || isInvalidated then
                 x.Recreate ()
-                printfn "doot"
             else
                 checkResult res
                 currentFrame <- nextFrame
