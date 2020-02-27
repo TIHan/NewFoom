@@ -692,7 +692,7 @@ type FalGraphics
 
                 vkDestroyCommandPool(device, commandPool, vkNullPtr)
 
-    static member Create(falDevice: FalDevice) =
+    static member Create(falDevice: FalDevice, invalidate) =
         let physicalDevice = falDevice.PhysicalDevice
         let device = falDevice.Device
         let indices = falDevice.Indices
@@ -713,6 +713,6 @@ type FalGraphics
         // TODO: We should try to use a transfer queue instead of a graphics queue. This works for now.
         let transferQueue = mkQueue device graphicsFamily
 
-        let swapChain = SwapChain.Create(physicalDevice, device, surface, graphicsFamily, presentFamily, commandPool)
+        let swapChain = SwapChain.Create(physicalDevice, device, surface, graphicsFamily, presentFamily, commandPool, invalidate)
 
         new FalGraphics(physicalDevice, device, commandPool, transferQueue, swapChain)

@@ -130,6 +130,7 @@ type Win32WindowState (title: string, width: int, weight: int) as this =
     let mutable hinstance = nativeint 0
 
     let windowClosing = Event<unit> ()
+    let windowResized = Event<unit> ()
 
     member private __.WndProc hWnd msg wParam lParam =
         match int msg with
@@ -141,6 +142,9 @@ type Win32WindowState (title: string, width: int, weight: int) as this =
                 DefWindowProc(hWnd, msg, wParam, lParam)
             | _ ->
                 DefWindowProc(hWnd, msg, wParam, lParam)
+        | x when x = WM_SIZE ->
+            windowResized.Trigger ()
+            DefWindowProc(hWnd, msg, wParam, lParam)
         | _ ->
             DefWindowProc(hWnd, msg, wParam, lParam)
 
@@ -148,6 +152,8 @@ type Win32WindowState (title: string, width: int, weight: int) as this =
     member private _.WndProcDelegate = del
 
     member __.WindowClosing = windowClosing.Publish
+
+    member __.WindowResized = windowResized.Publish
 
     member __.Show () =
         del <- WndProcDelegate(this.WndProc)

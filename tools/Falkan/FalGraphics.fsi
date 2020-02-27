@@ -56,4 +56,4 @@ type FalGraphics =
 
     member SetSampler: FalImage -> unit
 
-    static member Create : FalDevice -> FalGraphics
+    static member Create : FalDevice * invalidate: IEvent<unit> -> FalGraphics

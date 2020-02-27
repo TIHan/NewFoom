@@ -22,4 +22,4 @@ type SwapChain =
 
     member WaitIdle: unit -> unit
 
-    static member Create : VkPhysicalDevice * VkDevice * VkSurfaceKHR * graphicsFamily: uint32 * presentFamily: uint32 * VkCommandPool -> SwapChain
+    static member Create : VkPhysicalDevice * VkDevice * VkSurfaceKHR * graphicsFamily: uint32 * presentFamily: uint32 * VkCommandPool * invalidate: IEvent<unit> -> SwapChain

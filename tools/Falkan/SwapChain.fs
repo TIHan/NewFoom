@@ -714,7 +714,7 @@ let updateDescriptorImageSet device descriptorSet pImageInfo =
     vkUpdateDescriptorSets(device, 1u, &&descriptorWrite, 0u, vkNullPtr)
 
 [<Sealed>]
-type SwapChain private (physicalDevice, device, surface, sync, graphicsFamily, graphicsQueue, presentFamily, presentQueue, commandPool) =
+type SwapChain private (physicalDevice, device, surface, sync, graphicsFamily, graphicsQueue, presentFamily, presentQueue, commandPool, invalidate: IEvent<unit>) =
 
     let gate = obj ()
     let mutable state = None
@@ -722,6 +722,7 @@ type SwapChain private (physicalDevice, device, surface, sync, graphicsFamily, g
     let mutable isDisposed = 0
     let mutable uniformBuffer = None
     let mutable imageSampler = None
+    let mutable isInvalidated = false
 
     let recordings = Collections.Generic.Dictionary<int, DrawRecording>()
     let shaders = ResizeArray ()
@@ -823,6 +824,9 @@ type SwapChain private (physicalDevice, device, surface, sync, graphicsFamily, g
         | _ ->
             ()
 
+    do
+        invalidate.Add(fun () -> isInvalidated <- true)
+
     member x.Recreate () =
         if not (Monitor.IsEntered gate) then
             Monitor.Enter gate
@@ -849,6 +853,7 @@ type SwapChain private (physicalDevice, device, surface, sync, graphicsFamily, g
             let framebuffers = mkFramebuffers device renderPass extent imageViews
             let commandBuffers = mkCommandBuffers device commandPool framebuffers
 
+            isInvalidated <- false
             state <- 
                 { 
                     extent = extent
@@ -948,8 +953,9 @@ type SwapChain private (physicalDevice, device, surface, sync, graphicsFamily, g
             let commandBuffers = state.commandBuffers
             let nextFrame, res = drawFrame device swapchain sync commandBuffers graphicsQueue presentQueue currentFrame
 
-            if res = VkResult.VK_ERROR_OUT_OF_DATE_KHR || res = VkResult.VK_SUBOPTIMAL_KHR then
+            if res = VkResult.VK_ERROR_OUT_OF_DATE_KHR || res = VkResult.VK_SUBOPTIMAL_KHR || isInvalidated then
                 x.Recreate ()
+                printfn "doot"
             else
                 checkResult res
                 currentFrame <- nextFrame
@@ -995,10 +1001,10 @@ type SwapChain private (physicalDevice, device, surface, sync, graphicsFamily, g
                     vkDestroySemaphore(device, s, vkNullPtr)
                 )
 
-    static member Create(physicalDevice, device, surface, graphicsFamily, presentFamily, commandPool) =
+    static member Create(physicalDevice, device, surface, graphicsFamily, presentFamily, commandPool, invalidate) =
         let sync = mkSync device
         let graphicsQueue = mkQueue device graphicsFamily
         let presentQueue = mkQueue device presentFamily
-        let swapChain = new SwapChain(physicalDevice, device, surface, sync, graphicsFamily, graphicsQueue, presentFamily, presentQueue, commandPool)
+        let swapChain = new SwapChain(physicalDevice, device, surface, sync, graphicsFamily, graphicsQueue, presentFamily, presentQueue, commandPool, invalidate)
         swapChain.Recreate ()
         swapChain
