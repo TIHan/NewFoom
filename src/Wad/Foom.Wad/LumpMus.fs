@@ -110,9 +110,9 @@ let pHeader lumpHeader =
     )
 
 // http://www.shikadi.net/moddingwiki/MUS_Format
-let pBody musHeader =
+let pBody offset musHeader =
     u_lookAhead (
-        u_skipBytes (int64 musHeader.Offset) >>.
+        u_skipBytes (int64 musHeader.Offset + int64 offset) >>.
         fun stream ->
             let mutable length = musHeader.Length
             let events = ResizeArray()
@@ -147,7 +147,7 @@ let pBody musHeader =
                         MusEvent.PitchBend amount
                     | 3uy ->
                         let b = stream.ReadByte()
-                        let sysEvent = (b <<< 1) >>> 1 >>> 2
+                        let sysEvent = (b <<< 1) >>> 1
                         MusEvent.System(systemEventToMidiController sysEvent)
                     | 4uy ->
                         let b = stream.ReadByte()
@@ -181,13 +181,12 @@ let pBody musHeader =
                 prev <- stream.Position
                 events.Add { Channel = channel; Event = event; Delayed = delayed }
 
-
             { Events = events.ToArray() }
     )
 
 let parse lumpHeader =
     pHeader lumpHeader >>= fun musHeader ->
-        pBody musHeader
+        pBody lumpHeader.Offset musHeader
 
 let Parse lumpHeader (stream: Stream) =
     u_run (parse lumpHeader) (ReadStream stream) 
