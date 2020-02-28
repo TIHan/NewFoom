@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFramework>netstandard2.1</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Unpickler.fs" />
@@ -18,8 +18,8 @@
     <Compile Include="Extensions.fsi" />
     <Compile Include="Extensions.fs" />
   </ItemGroup>
-  <ItemGroup />
   <ItemGroup>
+    <PackageReference Include="System.Memory" Version="4.5.3" />
     <PackageReference Include="System.Numerics.Vectors" Version="4.4.0" />
     <PackageReference Include="System.Collections.Immutable" Version="1.4.0" />
   </ItemGroup>

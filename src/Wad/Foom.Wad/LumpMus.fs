@@ -189,4 +189,50 @@ let parse lumpHeader =
         pBody lumpHeader.Offset musHeader
 
 let Parse lumpHeader (stream: Stream) =
-    u_run (parse lumpHeader) (ReadStream stream) 
+    u_run (parse lumpHeader) (ReadStream stream)
+
+// MIDI
+
+open FSharp.NativeInterop
+open System
+open System.Runtime.CompilerServices
+
+#nowarn "9"
+
+type BinaryWriter with
+
+    [<RequiresExplicitTypeArguments>]
+    member inline this.WriteBE<'T when 'T : unmanaged>(value: 'T) =
+        let stack = Span<byte>(Unsafe.AsPointer(&Unsafe.AsRef &value), 4)
+        stack.Reverse()
+        this.Write(Span.op_Implicit stack)
+
+type MThdHeader =
+    {
+        Length: uint32
+        Type: uint16
+        TrackCount: uint16
+        TicksPerQuarterNote: uint16
+    }
+
+let writeMThdHeader (writer: BinaryWriter) (header: MThdHeader) =
+    writer.Write([|byte 'M';byte 'T';byte 'h';byte 'd'|])
+    writer.WriteBE<uint32> header.Length
+    writer.WriteBE<uint16> header.Type
+    writer.WriteBE<uint16> header.TrackCount
+    writer.WriteBE<uint16> header.TicksPerQuarterNote
+
+type MidiEventType =
+    | NoteOff = 0x80
+    | NoteOn = 0x90
+    | PolyphonicKeyPressure = 0xA0
+    | Controller = 0xB0
+    | InstrumentChange = 0xC0
+    | ChannelPressure = 0xD0
+    | PitchBend = 0xE0
+
+type MTrkBlock =
+    {
+        Length: uint32
+        data: byte[]
+    }
