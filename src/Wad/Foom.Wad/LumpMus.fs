@@ -215,13 +215,6 @@ type MThdHeader =
         TicksPerQuarterNote: uint16
     }
 
-let writeMThdHeader (writer: BinaryWriter) (header: MThdHeader) =
-    writer.Write([|byte 'M';byte 'T';byte 'h';byte 'd'|])
-    writer.WriteBE<uint32> header.Length
-    writer.WriteBE<uint16> header.Type
-    writer.WriteBE<uint16> header.TrackCount
-    writer.WriteBE<uint16> header.TicksPerQuarterNote
-
 type MidiEventType =
     | NoteOff = 0x80
     | NoteOn = 0x90
@@ -236,3 +229,10 @@ type MTrkBlock =
         Length: uint32
         data: byte[]
     }
+
+let writeMThdHeader (writer: BinaryWriter) (header: MThdHeader) =
+    writer.Write([|byte 'M';byte 'T';byte 'h';byte 'd'|])
+    writer.WriteBE<uint32> header.Length
+    writer.WriteBE<uint16> header.Type
+    writer.WriteBE<uint16> header.TrackCount
+    writer.WriteBE<uint16> header.TicksPerQuarterNote
