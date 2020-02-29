@@ -31,10 +31,11 @@ type MidiController =
     | Mono = 126uy
     | Poly = 127uy
     | ResetAllControllersOnChannel = 121uy
+    | ChangeInstrumentEvent = 255uy
 
 let midiController controllerNumber =
     match controllerNumber with
-    | 0uy -> Unchecked.defaultof<MidiController>
+    | 0uy -> MidiController.ChangeInstrumentEvent
     | 1uy -> MidiController.BankSelect
     | 2uy -> MidiController.Modulation
     | 3uy -> MidiController.Volume
@@ -224,10 +225,33 @@ type MidiEventType =
     | ChannelPressure = 0xD0
     | PitchBend = 0xE0
 
+
+[<RequireQualifiedAccess>]
+type MidiEvent =
+    | NoteOff of noteNumber: uint8 * velocity: uint8
+    | NoteOn of noteNumber: uint8 * velocity: uint8
+    | PolyphonicKeyPressure of pressureValue: uint8 * noteNumber: uint8 
+    | Controller of controllerNumber: uint8 * value: uint8
+    | InstrumentChange of instrumentNumber: uint8
+    | ChannelPressure of channelPressure: uint8
+    | PitchBend of lsb: uint8 * msb: uint8
+    | EndOfTrack
+
+    member this.Value =
+        match this with
+        | MidiEvent.NoteOff _ -> 0x80
+        | MidiEvent.NoteOn _ -> 0x90
+        | MidiEvent.PolyphonicKeyPressure _ -> 0xA0
+        | MidiEvent.Controller _ -> 0xB0
+        | MidiEvent.InstrumentChange _ -> 0xC0
+        | MidiEvent.ChannelPressure _ -> 0xD0
+        | MidiEvent.PitchBend _ -> 0xE0
+        | MidiEvent.EndOfTrack -> 0x2F
+
 type MTrkBlock =
     {
         Length: uint32
-        data: byte[]
+        Events: MidiEvent []
     }
 
 let writeMThdHeader (writer: BinaryWriter) (header: MThdHeader) =
@@ -236,3 +260,41 @@ let writeMThdHeader (writer: BinaryWriter) (header: MThdHeader) =
     writer.WriteBE<uint16> header.Type
     writer.WriteBE<uint16> header.TrackCount
     writer.WriteBE<uint16> header.TicksPerQuarterNote
+
+let tryConvertMusEventToMidiEvent prevVolume channelCount (musEvent: MusEvent) =
+    match musEvent with
+    | MusEvent.ReleaseNote n -> 
+        MidiEvent.NoteOff(n, 127uy) 
+        |> ValueSome
+    | MusEvent.PlayNote(n, volumeOpt) ->
+        let volume =
+            match volumeOpt with
+            | Some volume -> volume
+            | _ -> prevVolume
+        MidiEvent.NoteOn(n, volume) 
+        |> ValueSome
+    | MusEvent.PitchBend n ->
+        MidiEvent.PitchBend((n &&& 1uy) <<< 6, (n >>> 1) &&& 127uy) 
+        |> ValueSome
+    | MusEvent.System midiController -> 
+        MidiEvent.Controller(byte midiController, if midiController = MidiController.Mono then channelCount else 0uy) 
+        |> ValueSome
+    | MusEvent.Controller(midiController, value) ->
+        if midiController = MidiController.ChangeInstrumentEvent then
+            MidiEvent.InstrumentChange(value) |> ValueSome
+        else
+            let value =
+                if midiController = MidiController.Volume then
+                    if value > 127uy then 127uy
+                    else 0uy
+                else
+                    value
+            MidiEvent.Controller(byte midiController, if midiController = MidiController.Mono then channelCount else value)
+            |> ValueSome
+    | MusEvent.EndOfMeasure ->
+        ValueNone
+    | MusEvent.Finish ->
+        MidiEvent.EndOfTrack
+        |> ValueSome
+    | MusEvent.Unused ->
+        ValueNone
