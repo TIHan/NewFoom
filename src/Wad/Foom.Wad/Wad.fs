@@ -355,7 +355,7 @@ type Wad(stream: Stream) =
             | Some x -> x
             | _ -> failwithf "Unable to find lump header, %s." name
 
-        let mus = LumpMus.Parse lumpHeader stream
+        let mus = LumpMus.GetMidiStream lumpHeader stream
         printfn "%A" mus
         ()
             

@@ -6,6 +6,7 @@ open Foom.Wad.Unpickler
 open Foom.Wad.Unpickle
 open System
 
+[<NoEquality;NoComparison>]
 type MusHeader =
     {
         Length: int
@@ -16,7 +17,7 @@ type MusHeader =
         InstrumentPatches: int []
     }
 
-type MidiController =
+type MusController =
     | BankSelect = 0uy
     | Modulation = 1uy
     | Volume = 7uy
@@ -33,40 +34,18 @@ type MidiController =
     | ResetAllControllersOnChannel = 121uy
     | ChangeInstrumentEvent = 255uy
 
-let midiController controllerNumber =
-    match controllerNumber with
-    | 0uy -> MidiController.ChangeInstrumentEvent
-    | 1uy -> MidiController.BankSelect
-    | 2uy -> MidiController.Modulation
-    | 3uy -> MidiController.Volume
-    | 4uy -> MidiController.Pan
-    | 5uy -> MidiController.Expression
-    | 6uy -> MidiController.ReverbDepth
-    | 7uy -> MidiController.ChorusDepth
-    | 8uy -> MidiController.SustainPedalHold
-    | 9uy -> MidiController.SoftPedal
-    | _ -> failwithf "Invalid controller: %A" controllerNumber
-
-let systemEventToMidiController sysEvent =
-    match sysEvent with
-    | 10uy -> MidiController.AllSoundsOff
-    | 11uy -> MidiController.AllNotesFadeOff
-    | 12uy -> MidiController.Mono
-    | 13uy -> MidiController.Poly
-    | 14uy -> MidiController.ResetAllControllersOnChannel
-    | _ -> midiController sysEvent
-
-[<RequireQualifiedAccess>]
+[<RequireQualifiedAccess;NoEquality;NoComparison>]
 type MusEvent =
-    | ReleaseNote of noteNumber: byte
-    | PlayNote of noteNumber: byte * volume: byte option
+    | ReleaseNote of number: byte
+    | PlayNote of number: byte * volume: byte voption
     | PitchBend of amount: byte
-    | System of MidiController
-    | Controller of MidiController * value: byte
+    | System of MusController
+    | Controller of MusController * value: byte
     | EndOfMeasure
     | Finish
     | Unused
 
+[<NoEquality;NoComparison>]
 type MusChannelEvent =
     {
         Channel: byte
@@ -74,10 +53,35 @@ type MusChannelEvent =
         Delayed: byte []
     }
 
+[<NoEquality;NoComparison>]
 type Mus =
     {
+        Header: MusHeader
         Events: MusChannelEvent []
     }
+
+let musController number =
+    match number with
+    | 0uy -> MusController.ChangeInstrumentEvent
+    | 1uy -> MusController.BankSelect
+    | 2uy -> MusController.Modulation
+    | 3uy -> MusController.Volume
+    | 4uy -> MusController.Pan
+    | 5uy -> MusController.Expression
+    | 6uy -> MusController.ReverbDepth
+    | 7uy -> MusController.ChorusDepth
+    | 8uy -> MusController.SustainPedalHold
+    | 9uy -> MusController.SoftPedal
+    | _ -> failwithf "Invalid controller: %A" number
+
+let systemEventToMusController sysEvent =
+    match sysEvent with
+    | 10uy -> MusController.AllSoundsOff
+    | 11uy -> MusController.AllNotesFadeOff
+    | 12uy -> MusController.Mono
+    | 13uy -> MusController.Poly
+    | 14uy -> MusController.ResetAllControllersOnChannel
+    | _ -> musController sysEvent
 
 let pHeader lumpHeader =
     goToLump lumpHeader (
@@ -139,9 +143,9 @@ let pBody offset musHeader =
                             if volFlag <> 0uy then
                                 let b = stream.ReadByte()
                                 let volume = (b <<< 1) >>> 1
-                                Some volume
+                                ValueSome volume
                             else
-                                None
+                                ValueNone
                         MusEvent.PlayNote(noteNumber, volume)
                     | 2uy ->
                         let amount = stream.ReadByte()
@@ -149,13 +153,13 @@ let pBody offset musHeader =
                     | 3uy ->
                         let b = stream.ReadByte()
                         let sysEvent = (b <<< 1) >>> 1
-                        MusEvent.System(systemEventToMidiController sysEvent)
+                        MusEvent.System(systemEventToMusController sysEvent)
                     | 4uy ->
                         let b = stream.ReadByte()
                         let controllerNumber = (b <<< 1) >>> 1 >>> 2
                         let b = stream.ReadByte()
                         let value = (b <<< 1) >>> 1
-                        MusEvent.Controller(midiController controllerNumber, value)
+                        MusEvent.Controller(musController controllerNumber, value)
                     | 5uy ->
                         MusEvent.EndOfMeasure
                     | 6uy ->
@@ -182,7 +186,7 @@ let pBody offset musHeader =
                 prev <- stream.Position
                 events.Add { Channel = channel; Event = event; Delayed = delayed }
 
-            { Events = events.ToArray() }
+            { Header = musHeader; Events = events.ToArray() }
     )
 
 let parse lumpHeader =
@@ -225,7 +229,6 @@ type MidiEventType =
     | ChannelPressure = 0xD0
     | PitchBend = 0xE0
 
-
 [<RequireQualifiedAccess>]
 type MidiEvent =
     | NoteOff of noteNumber: uint8 * velocity: uint8
@@ -233,7 +236,6 @@ type MidiEvent =
     | PolyphonicKeyPressure of pressureValue: uint8 * noteNumber: uint8 
     | Controller of controllerNumber: uint8 * value: uint8
     | InstrumentChange of instrumentNumber: uint8
-    | ChannelPressure of channelPressure: uint8
     | PitchBend of lsb: uint8 * msb: uint8
     | EndOfTrack
 
@@ -244,7 +246,6 @@ type MidiEvent =
         | MidiEvent.PolyphonicKeyPressure _ -> 0xA0
         | MidiEvent.Controller _ -> 0xB0
         | MidiEvent.InstrumentChange _ -> 0xC0
-        | MidiEvent.ChannelPressure _ -> 0xD0
         | MidiEvent.PitchBend _ -> 0xE0
         | MidiEvent.EndOfTrack -> 0x2F
 
@@ -261,15 +262,27 @@ let writeMThdHeader (writer: BinaryWriter) (header: MThdHeader) =
     writer.WriteBE<uint16> header.TrackCount
     writer.WriteBE<uint16> header.TicksPerQuarterNote
 
-let tryConvertMusEventToMidiEvent prevVolume channelCount (musEvent: MusEvent) =
-    match musEvent with
+let writeMidiEvent (writer: BinaryWriter) (midiEvent: MidiEvent) =
+    match midiEvent with
+    | MidiEvent.NoteOff(n, v) -> 0x80
+    | MidiEvent.NoteOn _ -> 0x90
+    | MidiEvent.PolyphonicKeyPressure _ -> 0xA0
+    | MidiEvent.Controller _ -> 0xB0
+    | MidiEvent.InstrumentChange _ -> 0xC0
+    | MidiEvent.PitchBend _ -> 0xE0
+    | MidiEvent.EndOfTrack -> 0x2F
+
+let tryConvertMusEventToMidiEvent (prevVolume: byref<byte>) channelCount (musChannelEvent: MusChannelEvent) =
+    match musChannelEvent.Event with
     | MusEvent.ReleaseNote n -> 
         MidiEvent.NoteOff(n, 127uy) 
         |> ValueSome
     | MusEvent.PlayNote(n, volumeOpt) ->
         let volume =
             match volumeOpt with
-            | Some volume -> volume
+            | ValueSome volume -> 
+                prevVolume <- volume
+                volume
             | _ -> prevVolume
         MidiEvent.NoteOn(n, volume) 
         |> ValueSome
@@ -277,19 +290,19 @@ let tryConvertMusEventToMidiEvent prevVolume channelCount (musEvent: MusEvent) =
         MidiEvent.PitchBend((n &&& 1uy) <<< 6, (n >>> 1) &&& 127uy) 
         |> ValueSome
     | MusEvent.System midiController -> 
-        MidiEvent.Controller(byte midiController, if midiController = MidiController.Mono then channelCount else 0uy) 
+        MidiEvent.Controller(byte midiController, if midiController = MusController.Mono then channelCount else 0uy) 
         |> ValueSome
     | MusEvent.Controller(midiController, value) ->
-        if midiController = MidiController.ChangeInstrumentEvent then
+        if midiController = MusController.ChangeInstrumentEvent then
             MidiEvent.InstrumentChange(value) |> ValueSome
         else
             let value =
-                if midiController = MidiController.Volume then
+                if midiController = MusController.Volume then
                     if value > 127uy then 127uy
                     else 0uy
                 else
                     value
-            MidiEvent.Controller(byte midiController, if midiController = MidiController.Mono then channelCount else value)
+            MidiEvent.Controller(byte midiController, if midiController = MusController.Mono then channelCount else value)
             |> ValueSome
     | MusEvent.EndOfMeasure ->
         ValueNone
@@ -298,3 +311,20 @@ let tryConvertMusEventToMidiEvent prevVolume channelCount (musEvent: MusEvent) =
         |> ValueSome
     | MusEvent.Unused ->
         ValueNone
+
+let convertMusToMidi (mus: Mus) =
+    let events =
+        let mutable prevVolume = 127uy
+        let events = ResizeArray()
+        for musEvent in mus.Events do
+            let res = tryConvertMusEventToMidiEvent &prevVolume (byte mus.Header.PrimaryChannelCount + byte mus.Header.SecondaryChannelCount) musEvent
+            match res with
+            | ValueSome midiEvent -> events.Add midiEvent
+            | _ -> ()
+        events.ToArray()
+    events
+
+let GetMidiStream lumpHeader stream =
+    let mus = Parse lumpHeader stream
+    convertMusToMidi mus
+    ()
