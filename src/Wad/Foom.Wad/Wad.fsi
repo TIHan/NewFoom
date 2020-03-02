@@ -24,7 +24,7 @@ type Wad =
 
     member FindMap : name: string -> Map
 
-    member FindMusic : name: string -> unit
+    member TryFindMusic : name: string -> byte[] option
 
     member OverrideFromFile : fileName: string -> unit
 

@@ -346,19 +346,10 @@ type Wad(stream: Stream) =
 
         Map.Create (lumpSectors.Sectors, lumpThings.Things, lumpLinedefs.Linedefs, lumpSidedefs.Sidedefs)
 
-    member __.FindMusic(name: string) =
-        let lumpHeader = 
-            let lumpHeaderOpt =
-                wadData.LumpHeaders
-                |> Array.tryFind (fun x -> x.Name.Equals(name, StringComparison.OrdinalIgnoreCase))
-            match lumpHeaderOpt with
-            | Some x -> x
-            | _ -> failwithf "Unable to find lump header, %s." name
-
-        let mus = LumpMus.GetMidiStream lumpHeader stream
-        printfn "%A" mus
-        ()
-            
+    member __.TryFindMusic(name: string) =
+        wadData.LumpHeaders
+        |> Array.tryFind (fun x -> x.Name.Equals(name, StringComparison.OrdinalIgnoreCase))
+        |> Option.map (fun lumpMus -> LumpMus.Parse lumpMus stream)
 
     member this.OverrideFromFile(fileName: string) =
         let wad = Wad.FromFile(fileName)
