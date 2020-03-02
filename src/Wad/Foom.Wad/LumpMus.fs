@@ -111,19 +111,31 @@ let writeMidiVariableLength (bytes: byte[]) (writer: BinaryWriter) =
         failwith "Data required for variable length."
 
     bytes
-    |> Array.iter writer.WriteBE<byte>
+    |> Array.iter writer.Write
 
 let writeMidiEventValue (midiEventTypeValue: byte) (midiChannelValue: byte) (writer: BinaryWriter) =
-    writer.WriteBE<byte> (midiEventTypeValue ||| midiChannelValue)
+    writer.Write (midiEventTypeValue ||| midiChannelValue)
 
 let writeMidiParameters (parm1: byte) (parm2: byte) (writer: BinaryWriter) =
-    writer.WriteBE<byte> parm1
-    writer.WriteBE<byte> parm2
+    writer.Write parm1
+    writer.Write parm2
 
 let writeMidiEvent deltaTime (midiEventTypeValue: byte) (midiChannelValue: byte) (parm1: byte) (parm2: byte) (writer: BinaryWriter) =
     writeMidiVariableLength deltaTime writer
     writeMidiEventValue midiEventTypeValue midiChannelValue writer
     writeMidiParameters parm1 parm2 writer
+
+let writeMidiHeader formatType trackCount ticksPerQuarterNote (writer: BinaryWriter) =
+    [|byte 'M';byte 'T';byte 'h';byte 'd'|] |> Array.iter writer.Write
+    writer.WriteBE<uint32> 6u
+    writer.WriteBE<uint16> formatType
+    writer.WriteBE<uint16> trackCount
+    writer.WriteBE<uint16> ticksPerQuarterNote
+
+let writeMidiTrack (trackEventData: byte[]) (writer: BinaryWriter) =
+    [|byte 'M';byte 'T';byte 'r';byte 'k'|] |> Array.iter writer.Write
+    writer.WriteBE<uint32> (uint32 trackEventData.Length)
+    trackEventData |> Array.iter writer.Write
 
 let pHeader lumpHeader =
     goToLump lumpHeader (
@@ -228,17 +240,16 @@ let pBody offset musHeader (writer: BinaryWriter) =
                             delayed.Add b
                         delayed.ToArray()
                     else
-                        [||]
+                        [|0uy|]
 
                 length <- length - int (stream.Position - prev)
                 prev <- stream.Position
 
                 if midiEventType <> MidiEventType.Invalid then
-                    ()
+                    writeMidiEvent deltaTime (byte midiEventType) channel midiParm1 midiParm2 writer
 
             writer.BaseStream.Position <- 0L
             let res = (new BinaryReader(writer.BaseStream)).ReadBytes(int writer.BaseStream.Length)
-            writer.Dispose()
             res
     )
 
@@ -249,124 +260,12 @@ let parse lumpHeader writer =
 let Parse lumpHeader (stream: Stream) =
     let ms = new MemoryStream()
     let writer = new BinaryWriter(ms, Text.Encoding.UTF8, leaveOpen=false)
-    u_run (parse lumpHeader writer) (ReadStream stream)
-
-//// MIDI
-
-//type MThdHeader =
-//    {
-//        Length: uint32
-//        Type: uint16
-//        TrackCount: uint16
-//        TicksPerQuarterNote: uint16
-//    }
-
-//type MidiEventType =
-//    | NoteOff = 0x80uy
-//    | NoteOn = 0x90uy
-//    | PolyphonicKeyPressure = 0xA0uy
-//    | Controller = 0xB0uy
-//    | InstrumentChange = 0xC0uy
-//    | ChannelPressure = 0xD0uy
-//    | PitchBend = 0xE0uy
-//    | EndOfTrack = 0x2Fuy
-
-//[<RequireQualifiedAccess>]
-//type MidiEvent =
-//    | NoteOff of noteNumber: uint8 * velocity: uint8
-//    | NoteOn of noteNumber: uint8 * velocity: uint8
-//    | PolyphonicKeyPressure of pressureValue: uint8 * noteNumber: uint8 
-//    | Controller of controllerNumber: uint8 * value: uint8
-//    | InstrumentChange of instrumentNumber: uint8
-//    | PitchBend of lsb: uint8 * msb: uint8
-//    | EndOfTrack
-
-//    member this.Value =
-//        match this with
-//        | MidiEvent.NoteOff _ -> 0x80
-//        | MidiEvent.NoteOn _ -> 0x90
-//        | MidiEvent.PolyphonicKeyPressure _ -> 0xA0
-//        | MidiEvent.Controller _ -> 0xB0
-//        | MidiEvent.InstrumentChange _ -> 0xC0
-//        | MidiEvent.PitchBend _ -> 0xE0
-//        | MidiEvent.EndOfTrack -> 0x2F
-
-//type MTrkBlock =
-//    {
-//        Length: uint32
-//        Events: MidiEvent []
-//    }
-
-//let writeMThdHeader (writer: BinaryWriter) (header: MThdHeader) =
-//    writer.Write([|byte 'M';byte 'T';byte 'h';byte 'd'|])
-//    writer.WriteBE<uint32> header.Length
-//    writer.WriteBE<uint16> header.Type
-//    writer.WriteBE<uint16> header.TrackCount
-//    writer.WriteBE<uint16> header.TicksPerQuarterNote
-
-//let writeMidiEvent (writer: BinaryWriter) (midiEvent: MidiEvent) =
-//    match midiEvent with
-//    | MidiEvent.NoteOff(n, v) -> 0x80
-//    | MidiEvent.NoteOn _ -> 0x90
-//    | MidiEvent.PolyphonicKeyPressure _ -> 0xA0
-//    | MidiEvent.Controller _ -> 0xB0
-//    | MidiEvent.InstrumentChange _ -> 0xC0
-//    | MidiEvent.PitchBend _ -> 0xE0
-//    | MidiEvent.EndOfTrack -> 0x2F
-
-//let tryConvertMusEventToMidiEvent (prevVolume: byref<byte>) channelCount (musChannelEvent: MusChannelEvent) =
-//    match musChannelEvent.Event with
-//    | MusEvent.ReleaseNote n -> 
-//        MidiEvent.NoteOff(n, 127uy) 
-//        |> ValueSome
-//    | MusEvent.PlayNote(n, volumeOpt) ->
-//        let volume =
-//            match volumeOpt with
-//            | ValueSome volume -> 
-//                prevVolume <- volume
-//                volume
-//            | _ -> prevVolume
-//        MidiEvent.NoteOn(n, volume) 
-//        |> ValueSome
-//    | MusEvent.PitchBend n ->
-//        MidiEvent.PitchBend((n &&& 1uy) <<< 6, (n >>> 1) &&& 127uy) 
-//        |> ValueSome
-//    | MusEvent.System midiController -> 
-//        MidiEvent.Controller(byte midiController, if midiController = MusController.Mono then channelCount else 0uy) 
-//        |> ValueSome
-//    | MusEvent.Controller(midiController, value) ->
-//        if midiController = MusController.ChangeInstrumentEvent then
-//            MidiEvent.InstrumentChange(value) |> ValueSome
-//        else
-//            let value =
-//                if midiController = MusController.Volume then
-//                    if value > 127uy then 127uy
-//                    else 0uy
-//                else
-//                    value
-//            MidiEvent.Controller(byte midiController, if midiController = MusController.Mono then channelCount else value)
-//            |> ValueSome
-//    | MusEvent.EndOfMeasure ->
-//        ValueNone
-//    | MusEvent.Finish ->
-//        MidiEvent.EndOfTrack
-//        |> ValueSome
-//    | MusEvent.Unused ->
-//        ValueNone
-
-//let convertMusToMidi (mus: Mus) =
-//    let events =
-//        let mutable prevVolume = 127uy
-//        let events = ResizeArray()
-//        for musEvent in mus.Events do
-//            let res = tryConvertMusEventToMidiEvent &prevVolume (byte mus.Header.PrimaryChannelCount + byte mus.Header.SecondaryChannelCount) musEvent
-//            match res with
-//            | ValueSome midiEvent -> events.Add midiEvent
-//            | _ -> ()
-//        events.ToArray()
-//    events
-
-//let GetMidiStream lumpHeader stream =
-//    let mus = Parse lumpHeader stream
-//    convertMusToMidi mus
-//    ()
+    let bytes = u_run (parse lumpHeader writer) (ReadStream stream)
+    writer.Dispose()
+    let ms = new MemoryStream()
+    let writer = new BinaryWriter(ms, Text.Encoding.UTF8, leaveOpen=false)
+    writeMidiHeader 0us 1us 120us writer
+    writeMidiTrack bytes writer
+    let bytes = ms.ToArray()
+    writer.Dispose()
+    bytes

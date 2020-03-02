@@ -92,7 +92,7 @@ let closeAudio () =
 let main argv =
     let wad = Wad.FromFile("../../../../../../Foom-deps/testwads/doom1.wad")
     let music = wad.TryFindMusic "d_e1m1"
-    printfn "%A" (music.IsSome)
+    System.IO.File.WriteAllBytes("test.mid", music.Value)
    // let deviceId = getDeviceId ()
 
    /// let filePath = """C:\NewFoom\src\Wad\Foom.Wad.MusicExtractor\D_DEAD.mid"""
