@@ -102,7 +102,7 @@ type BinaryWriter with
 
     [<RequiresExplicitTypeArguments>]
     member inline this.WriteBE<'T when 'T : unmanaged>(value: 'T) =
-        let stack = Span<byte>(Unsafe.AsPointer(&Unsafe.AsRef &value), 4)
+        let stack = Span<byte>(Unsafe.AsPointer(&Unsafe.AsRef &value), sizeof<'T>)
         stack.Reverse()
         this.Write(Span.op_Implicit stack)
 
@@ -116,14 +116,11 @@ let writeMidiVariableLength (bytes: byte[]) (writer: BinaryWriter) =
 let writeMidiEventValue (midiEventTypeValue: byte) (midiChannelValue: byte) (writer: BinaryWriter) =
     writer.Write (midiEventTypeValue ||| midiChannelValue)
 
-let writeMidiParameters (parm1: byte) (parm2: byte) (writer: BinaryWriter) =
-    writer.Write parm1
-    writer.Write parm2
-
-let writeMidiEvent deltaTime (midiEventTypeValue: byte) (midiChannelValue: byte) (parm1: byte) (parm2: byte) (writer: BinaryWriter) =
+let writeMidiEvent deltaTime (midiEventTypeValue: byte) (midiChannelValue: byte) (parm1: byte voption) (parm2: byte voption) (writer: BinaryWriter) =
     writeMidiVariableLength deltaTime writer
     writeMidiEventValue midiEventTypeValue midiChannelValue writer
-    writeMidiParameters parm1 parm2 writer
+    parm1 |> ValueOption.iter writer.Write
+    parm2 |> ValueOption.iter writer.Write
 
 let writeMidiHeader formatType trackCount ticksPerQuarterNote (writer: BinaryWriter) =
     [|byte 'M';byte 'T';byte 'h';byte 'd'|] |> Array.iter writer.Write
@@ -176,20 +173,22 @@ let pBody offset musHeader (writer: BinaryWriter) =
             let channelCount = byte (musHeader.PrimaryChannelCount + musHeader.SecondaryChannelCount)
             let mutable length = musHeader.Length
             let mutable prev = stream.Position
-            let mutable prevVolume = 127uy
+            let musChannelVolumes = System.Collections.Generic.Dictionary()
             while length > 0 do
                 let eventDescr = stream.ReadByte()
 
                 let last = (eventDescr) >>> 7
                 let eventType = LanguagePrimitives.EnumOfValue(byte ((eventDescr) <<< 1) >>> 5)
-                let channel = byte ((eventDescr <<< 4) >>> 4)
+                let musChannel = byte ((eventDescr <<< 4) >>> 4)
+                if not (musChannelVolumes.ContainsKey musChannel) then
+                    musChannelVolumes.[musChannel] <- 127uy
 
                 let midiEventType, midiParm1, midiParm2 =
                     match eventType with
                     | MusEventType.ReleaseNote ->
                         let b = stream.ReadByte()
                         let noteNumber = (b <<< 1) >>> 1
-                        MidiEventType.NoteOff, noteNumber, 0uy
+                        MidiEventType.NoteOff, ValueSome noteNumber, ValueSome 0uy
                     | MusEventType.PlayNote ->
                         let b = stream.ReadByte()
                         let volFlag = b >>> 7
@@ -198,34 +197,35 @@ let pBody offset musHeader (writer: BinaryWriter) =
                             if volFlag <> 0uy then
                                 let b = stream.ReadByte()
                                 let volume = (b <<< 1) >>> 1
-                                prevVolume <- volume
+                                let volume = if volume > 127uy then 127uy else volume
+                                musChannelVolumes.[musChannel] <- volume
                                 volume
                             else
-                                prevVolume
-                        MidiEventType.NoteOn, noteNumber, volume
+                                musChannelVolumes.[musChannel]
+                        MidiEventType.NoteOn, ValueSome noteNumber, ValueSome volume
                     | MusEventType.PitchBend ->
                         let n = stream.ReadByte()
-                        MidiEventType.PitchBend, (n &&& 1uy) <<< 6, (n >>> 1) &&& 127uy
+                        MidiEventType.PitchBend, ValueSome((n &&& 1uy) <<< 6), ValueSome((n >>> 1) &&& 127uy)
                     | MusEventType.System ->
                         let b = stream.ReadByte()
                         let midiCtrlTy = (b <<< 1) >>> 1 |> LanguagePrimitives.EnumOfValue |> systemEventToMidiControllerType
-                        MidiEventType.Controller, byte midiCtrlTy, 0uy
+                        MidiEventType.Controller, ValueSome(byte midiCtrlTy), ValueSome 0uy
                     | MusEventType.Controller ->
                         let b = stream.ReadByte()
                         let musCtrlTy = (b <<< 1) >>> 1 >>> 2 |> LanguagePrimitives.EnumOfValue
                         let b = stream.ReadByte()
                         let value = (b <<< 1) >>> 1
                         if musCtrlTy = MusControllerType.ChangeInstrumentEvent then
-                            MidiEventType.InstrumentChange, value, 0uy
+                            MidiEventType.InstrumentChange, ValueSome value, ValueNone
                         else
                             let midiCtrlTy = musControllerTypeToMidiControllerType musCtrlTy
-                            MidiEventType.Controller, byte midiCtrlTy, value
+                            MidiEventType.Controller, ValueSome(byte midiCtrlTy), ValueSome value
                     | MusEventType.EndOfMeasure ->
-                        MidiEventType.Invalid, 0uy, 0uy
+                        MidiEventType.Invalid, ValueNone, ValueNone
                     | MusEventType.Finish ->
-                        MidiEventType.EndOfTrack, 0uy, 0uy
+                        MidiEventType.EndOfTrack, ValueNone, ValueNone
                     | MusEventType.Unused ->
-                        MidiEventType.Invalid, 0uy, 0uy
+                        MidiEventType.Invalid, ValueNone, ValueNone
                     | _ ->
                         failwithf "Invalid mus event: %A" eventType
 
@@ -244,6 +244,11 @@ let pBody offset musHeader (writer: BinaryWriter) =
 
                 length <- length - int (stream.Position - prev)
                 prev <- stream.Position
+
+                let channel =
+                    if musChannel = 15uy then 9uy
+                    elif musChannel >= 9uy then musChannel + 1uy
+                    else musChannel
 
                 if midiEventType <> MidiEventType.Invalid then
                     writeMidiEvent deltaTime (byte midiEventType) channel midiParm1 midiParm2 writer
