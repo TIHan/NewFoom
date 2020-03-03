@@ -73,8 +73,11 @@ type MidiEventType =
     | InstrumentChange = 0xC0uy
     | ChannelPressure = 0xD0uy
     | PitchBend = 0xE0uy
+    | SystemReset = 0xFFuy
+    | Invalid = 254uy
+
+type MidiMetaEventType =
     | EndOfTrack = 0x2Fuy
-    | Invalid = 255uy
 
 let musControllerTypeToMidiControllerType musCtrlTy =
     match musCtrlTy with
@@ -111,12 +114,13 @@ let writeMidiVariableLength (bytes: byte[]) (writer: BinaryWriter) =
         failwith "Data required for variable length."
 
     bytes
+    |> Array.rev
     |> Array.iter writer.Write
 
 let writeMidiEventValue (midiEventTypeValue: byte) (midiChannelValue: byte) (writer: BinaryWriter) =
     writer.Write (midiEventTypeValue ||| midiChannelValue)
 
-let writeMidiEvent deltaTime (midiEventTypeValue: byte) (midiChannelValue: byte) (parm1: byte voption) (parm2: byte voption) (writer: BinaryWriter) =
+let writeMidiEvent deltaTime (midiEventTypeValue: byte) (midiChannelValue: byte) (parm1: byte[] voption) (parm2: byte[] voption) (writer: BinaryWriter) =
     writeMidiVariableLength deltaTime writer
     writeMidiEventValue midiEventTypeValue midiChannelValue writer
     parm1 |> ValueOption.iter writer.Write
@@ -188,7 +192,7 @@ let pBody offset musHeader (writer: BinaryWriter) =
                     | MusEventType.ReleaseNote ->
                         let b = stream.ReadByte()
                         let noteNumber = (b <<< 1) >>> 1
-                        MidiEventType.NoteOff, ValueSome noteNumber, ValueSome 0uy
+                        MidiEventType.NoteOff, ValueSome [|noteNumber|], ValueSome [|0uy|]
                     | MusEventType.PlayNote ->
                         let b = stream.ReadByte()
                         let volFlag = b >>> 7
@@ -202,28 +206,37 @@ let pBody offset musHeader (writer: BinaryWriter) =
                                 volume
                             else
                                 musChannelVolumes.[musChannel]
-                        MidiEventType.NoteOn, ValueSome noteNumber, ValueSome volume
+                        MidiEventType.NoteOn, ValueSome [|noteNumber|], ValueSome [|volume|]
                     | MusEventType.PitchBend ->
                         let n = stream.ReadByte()
-                        MidiEventType.PitchBend, ValueSome((n &&& 1uy) <<< 6), ValueSome((n >>> 1) &&& 127uy)
+                        MidiEventType.PitchBend, ValueSome([|(n &&& 1uy) <<< 6|]), ValueSome([|(n >>> 1) &&& 127uy|])
                     | MusEventType.System ->
                         let b = stream.ReadByte()
                         let midiCtrlTy = (b <<< 1) >>> 1 |> LanguagePrimitives.EnumOfValue |> systemEventToMidiControllerType
-                        MidiEventType.Controller, ValueSome(byte midiCtrlTy), ValueSome 0uy
+                        MidiEventType.Controller, ValueSome([|byte midiCtrlTy|]), ValueSome [|0uy|]
                     | MusEventType.Controller ->
                         let b = stream.ReadByte()
                         let musCtrlTy = (b <<< 1) >>> 1 >>> 2 |> LanguagePrimitives.EnumOfValue
                         let b = stream.ReadByte()
                         let value = (b <<< 1) >>> 1
                         if musCtrlTy = MusControllerType.ChangeInstrumentEvent then
-                            MidiEventType.InstrumentChange, ValueSome value, ValueNone
+                            MidiEventType.InstrumentChange, ValueSome [|value|], ValueNone
                         else
                             let midiCtrlTy = musControllerTypeToMidiControllerType musCtrlTy
-                            MidiEventType.Controller, ValueSome(byte midiCtrlTy), ValueSome value
+                            MidiEventType.Controller, ValueSome([|byte midiCtrlTy|]), ValueSome [|value|]
                     | MusEventType.EndOfMeasure ->
                         MidiEventType.Invalid, ValueNone, ValueNone
                     | MusEventType.Finish ->
-                        MidiEventType.EndOfTrack, ValueNone, ValueNone
+
+                        use ms = new MemoryStream()
+                        use seWriter = new BinaryWriter(ms)
+
+                        seWriter.Write(byte MidiMetaEventType.EndOfTrack)
+                        seWriter.Write 0uy
+
+                        let bytes = ms.ToArray()
+
+                        MidiEventType.SystemReset, ValueNone, ValueSome bytes
                     | MusEventType.Unused ->
                         MidiEventType.Invalid, ValueNone, ValueNone
                     | _ ->
