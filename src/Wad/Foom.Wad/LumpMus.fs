@@ -114,14 +114,18 @@ let writeMidiVariableLength (bytes: byte[]) (writer: BinaryWriter) =
         failwith "Data required for variable length."
 
     bytes
-    |> Array.rev
     |> Array.iter writer.Write
 
 let writeMidiEventValue (midiEventTypeValue: byte) (midiChannelValue: byte) (writer: BinaryWriter) =
     writer.Write (midiEventTypeValue ||| midiChannelValue)
 
-let writeMidiEvent deltaTime (midiEventTypeValue: byte) (midiChannelValue: byte) (parm1: byte[] voption) (parm2: byte[] voption) (writer: BinaryWriter) =
-    writeMidiVariableLength deltaTime writer
+let writeMidiEvent (deltaTime: uint32) (midiEventTypeValue: byte) (midiChannelValue: byte) (parm1: byte[] voption) (parm2: byte[] voption) (writer: BinaryWriter) =
+    let deltaTimeBytes = Array.zeroCreate 4
+    deltaTimeBytes.[0] <- (byte (deltaTime >>> (8 * 3))) ||| 0x80uy
+    deltaTimeBytes.[1] <- (byte (deltaTime >>> (8 * 2))) ||| 0x80uy
+    deltaTimeBytes.[2] <- (byte (deltaTime >>> (8 * 1))) ||| 0x80uy
+    deltaTimeBytes.[3] <- (byte (deltaTime >>> (8 * 0))) &&& 127uy
+    writeMidiVariableLength deltaTimeBytes writer
     writeMidiEventValue midiEventTypeValue midiChannelValue writer
     parm1 |> ValueOption.iter writer.Write
     parm2 |> ValueOption.iter writer.Write
@@ -178,6 +182,7 @@ let pBody offset musHeader (writer: BinaryWriter) =
             let mutable length = musHeader.Length
             let mutable prev = stream.Position
             let musChannelVolumes = System.Collections.Generic.Dictionary()
+            let mutable nextTime = 0u
             while length > 0 do
                 let eventDescr = stream.ReadByte()
 
@@ -247,16 +252,16 @@ let pBody offset musHeader (writer: BinaryWriter) =
 
                 let deltaTime =
                     if last <> 0uy then
-                        let delayed = ResizeArray()
+                        let mutable time = 0u
                         let mutable stop = false
                         while not stop do
                             let b = stream.ReadByte()
                             if b &&& 0x80uy = 0uy then
                                 stop <- true
-                            delayed.Add b
-                        delayed.ToArray()
+                            time <- time * 128u + uint32 ((b <<< 1) >>> 1)
+                        time
                     else
-                        [|0uy|]
+                        0u
 
                 length <- length - int (stream.Position - prev)
                 prev <- stream.Position
@@ -267,7 +272,9 @@ let pBody offset musHeader (writer: BinaryWriter) =
                     else musChannel
 
                 if midiEventType <> MidiEventType.Invalid then
-                    writeMidiEvent deltaTime (byte midiEventType) channel midiParm1 midiParm2 writer
+                    writeMidiEvent nextTime (byte midiEventType) channel midiParm1 midiParm2 writer
+
+                nextTime <- deltaTime
 
             writer.BaseStream.Position <- 0L
             let res = (new BinaryReader(writer.BaseStream)).ReadBytes(int writer.BaseStream.Length)
@@ -285,7 +292,7 @@ let Parse lumpHeader (stream: Stream) =
     writer.Dispose()
     let ms = new MemoryStream()
     let writer = new BinaryWriter(ms, Text.Encoding.UTF8, leaveOpen=false)
-    writeMidiHeader 0us 1us 120us writer
+    writeMidiHeader 0us 1us 70us writer
     writeMidiTrack bytes writer
     let bytes = ms.ToArray()
     writer.Dispose()
