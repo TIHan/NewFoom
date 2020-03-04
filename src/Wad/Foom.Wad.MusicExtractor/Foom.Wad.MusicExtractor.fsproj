@@ -10,6 +10,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\fmod\CSharpFMOD.csproj" />
     <ProjectReference Include="..\Foom.Wad\Foom.Wad.fsproj" />
   </ItemGroup>
 

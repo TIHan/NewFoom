@@ -82,7 +82,7 @@ Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "FSharp.Spirv.Generator", "t
 EndProject
 Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "Falkan", "tools\Falkan\Falkan.fsproj", "{DCE8B9AC-2ECB-45A2-806E-8040AA33C89B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "fmod", "src\fmod\fmod.csproj", "{8C700F44-957A-4402-AC0B-FF74C94E2FD2}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CSharpFMOD", "src\fmod\CSharpFMOD.csproj", "{8C700F44-957A-4402-AC0B-FF74C94E2FD2}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

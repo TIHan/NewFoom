@@ -109,24 +109,23 @@ type BinaryWriter with
         stack.Reverse()
         this.Write(Span.op_Implicit stack)
 
-let writeMidiVariableLength (bytes: byte[]) (writer: BinaryWriter) =
-    if bytes.Length = 0 then
-        failwith "Data required for variable length."
-
-    bytes
-    |> Array.iter writer.Write
-
 let writeMidiEventValue (midiEventTypeValue: byte) (midiChannelValue: byte) (writer: BinaryWriter) =
     writer.Write (midiEventTypeValue ||| midiChannelValue)
 
 let writeMidiEvent (deltaTime: uint32) (midiEventTypeValue: byte) (midiChannelValue: byte) (parm1: byte[] voption) (parm2: byte[] voption) (writer: BinaryWriter) =
-    let deltaTimeBytes = Array.zeroCreate 5
-    deltaTimeBytes.[0] <- byte ((deltaTime >>> (7 * 4))) &&& 127uy ||| 0x80uy
-    deltaTimeBytes.[1] <- byte ((deltaTime >>> (7 * 3))) &&& 127uy ||| 0x80uy
-    deltaTimeBytes.[2] <- byte ((deltaTime >>> (7 * 2))) &&& 127uy ||| 0x80uy
-    deltaTimeBytes.[3] <- byte ((deltaTime >>> (7 * 1))) &&& 127uy ||| 0x80uy
-    deltaTimeBytes.[4] <- byte ((deltaTime >>> (7 * 0))) &&& 127uy
-    writeMidiVariableLength deltaTimeBytes writer
+    let writeDeltaTimeByte i =
+        if i = 0 then
+            byte ((deltaTime >>> (7 * i))) &&& 127uy
+            |> writer.Write
+        else
+            let value = byte ((deltaTime >>> (7 * i))) &&& 127uy
+            if value <> 0uy then
+                writer.Write(value ||| 0x80uy)
+    writeDeltaTimeByte 4
+    writeDeltaTimeByte 3
+    writeDeltaTimeByte 2
+    writeDeltaTimeByte 1
+    writeDeltaTimeByte 0
     writeMidiEventValue midiEventTypeValue midiChannelValue writer
     parm1 |> ValueOption.iter writer.Write
     parm2 |> ValueOption.iter writer.Write
