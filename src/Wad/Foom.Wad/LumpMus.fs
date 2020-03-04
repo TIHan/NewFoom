@@ -208,8 +208,8 @@ let pBody offset musHeader (writer: BinaryWriter) =
                                 musChannelVolumes.[musChannel]
                         MidiEventType.NoteOn, ValueSome [|noteNumber|], ValueSome [|volume|]
                     | MusEventType.PitchBend ->
-                        let n = stream.ReadByte()
-                        MidiEventType.PitchBend, ValueSome([|(n &&& 1uy) <<< 6|]), ValueSome([|(n >>> 1) &&& 127uy|])
+                        let n = uint16 (stream.ReadByte()) * 64us
+                        MidiEventType.PitchBend, ValueSome([|byte ((n &&& 127us))|]), ValueSome([|byte ((n >>> 7) &&& 127us)|])
                     | MusEventType.System ->
                         let b = stream.ReadByte()
                         let midiCtrlTy = (b <<< 1) >>> 1 |> LanguagePrimitives.EnumOfValue |> systemEventToMidiControllerType
@@ -220,7 +220,10 @@ let pBody offset musHeader (writer: BinaryWriter) =
                         let b = stream.ReadByte()
                         let value = (b <<< 1) >>> 1
                         if musCtrlTy = MusControllerType.ChangeInstrumentEvent then
-                            MidiEventType.InstrumentChange, ValueSome [|value|], ValueNone
+                            if musHeader.InstrumentPatches |> Array.exists (fun x -> byte x = value) then
+                                MidiEventType.InstrumentChange, ValueSome [|value|], ValueNone
+                            else
+                                MidiEventType.Invalid, ValueNone, ValueNone
                         else
                             let midiCtrlTy = musControllerTypeToMidiControllerType musCtrlTy
                             MidiEventType.Controller, ValueSome([|byte midiCtrlTy|]), ValueSome [|value|]
