@@ -120,11 +120,12 @@ let writeMidiEventValue (midiEventTypeValue: byte) (midiChannelValue: byte) (wri
     writer.Write (midiEventTypeValue ||| midiChannelValue)
 
 let writeMidiEvent (deltaTime: uint32) (midiEventTypeValue: byte) (midiChannelValue: byte) (parm1: byte[] voption) (parm2: byte[] voption) (writer: BinaryWriter) =
-    let deltaTimeBytes = Array.zeroCreate 4
-    deltaTimeBytes.[0] <- (byte (deltaTime >>> (8 * 3))) ||| 0x80uy
-    deltaTimeBytes.[1] <- (byte (deltaTime >>> (8 * 2))) ||| 0x80uy
-    deltaTimeBytes.[2] <- (byte (deltaTime >>> (8 * 1))) ||| 0x80uy
-    deltaTimeBytes.[3] <- (byte (deltaTime >>> (8 * 0))) &&& 127uy
+    let deltaTimeBytes = Array.zeroCreate 5
+    deltaTimeBytes.[0] <- byte ((deltaTime >>> (7 * 4))) &&& 127uy ||| 0x80uy
+    deltaTimeBytes.[1] <- byte ((deltaTime >>> (7 * 3))) &&& 127uy ||| 0x80uy
+    deltaTimeBytes.[2] <- byte ((deltaTime >>> (7 * 2))) &&& 127uy ||| 0x80uy
+    deltaTimeBytes.[3] <- byte ((deltaTime >>> (7 * 1))) &&& 127uy ||| 0x80uy
+    deltaTimeBytes.[4] <- byte ((deltaTime >>> (7 * 0))) &&& 127uy
     writeMidiVariableLength deltaTimeBytes writer
     writeMidiEventValue midiEventTypeValue midiChannelValue writer
     parm1 |> ValueOption.iter writer.Write
@@ -221,7 +222,7 @@ let pBody offset musHeader (writer: BinaryWriter) =
                         MidiEventType.Controller, ValueSome([|byte midiCtrlTy|]), ValueSome [|0uy|]
                     | MusEventType.Controller ->
                         let b = stream.ReadByte()
-                        let musCtrlTy = (b <<< 1) >>> 1 >>> 2 |> LanguagePrimitives.EnumOfValue
+                        let musCtrlTy = (b <<< 1) >>> 1 |> LanguagePrimitives.EnumOfValue
                         let b = stream.ReadByte()
                         let value = (b <<< 1) >>> 1
                         if musCtrlTy = MusControllerType.ChangeInstrumentEvent then
