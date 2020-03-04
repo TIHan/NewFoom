@@ -236,7 +236,7 @@ let pBody offset musHeader (writer: BinaryWriter) =
 
                         let bytes = ms.ToArray()
 
-                        MidiEventType.SystemReset, ValueNone, ValueSome bytes
+                        MidiEventType.SystemReset, ValueSome bytes, ValueNone
                     | MusEventType.Unused ->
                         MidiEventType.Invalid, ValueNone, ValueNone
                     | _ ->
