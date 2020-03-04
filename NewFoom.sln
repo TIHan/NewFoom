@@ -80,7 +80,9 @@ Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "FSharp.Spirv.Quotations.Tes
 EndProject
 Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "FSharp.Spirv.Generator", "tools\FSharp.Spirv.Generator\FSharp.Spirv.Generator.fsproj", "{13125632-6582-4962-9646-C34BF68425BA}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Falkan", "tools\Falkan\Falkan.fsproj", "{DCE8B9AC-2ECB-45A2-806E-8040AA33C89B}"
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "Falkan", "tools\Falkan\Falkan.fsproj", "{DCE8B9AC-2ECB-45A2-806E-8040AA33C89B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "fmod", "src\fmod\fmod.csproj", "{8C700F44-957A-4402-AC0B-FF74C94E2FD2}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -346,6 +348,14 @@ Global
 		{DCE8B9AC-2ECB-45A2-806E-8040AA33C89B}.Release|Any CPU.Build.0 = Release|Any CPU
 		{DCE8B9AC-2ECB-45A2-806E-8040AA33C89B}.Release|x64.ActiveCfg = Release|Any CPU
 		{DCE8B9AC-2ECB-45A2-806E-8040AA33C89B}.Release|x64.Build.0 = Release|Any CPU
+		{8C700F44-957A-4402-AC0B-FF74C94E2FD2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8C700F44-957A-4402-AC0B-FF74C94E2FD2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8C700F44-957A-4402-AC0B-FF74C94E2FD2}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{8C700F44-957A-4402-AC0B-FF74C94E2FD2}.Debug|x64.Build.0 = Debug|Any CPU
+		{8C700F44-957A-4402-AC0B-FF74C94E2FD2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8C700F44-957A-4402-AC0B-FF74C94E2FD2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8C700F44-957A-4402-AC0B-FF74C94E2FD2}.Release|x64.ActiveCfg = Release|Any CPU
+		{8C700F44-957A-4402-AC0B-FF74C94E2FD2}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
