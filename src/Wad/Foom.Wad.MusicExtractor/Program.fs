@@ -15,7 +15,7 @@ let fmodCheckResult res =
 [<EntryPoint>]
 let main argv =
     let wad = Wad.FromFile("../../../../../../Foom-deps/testwads/doom1.wad")
-    let music = wad.TryFindMusic "d_e1m7"
+    let music = wad.TryFindMusic "d_e1m6"
 
     let res, fmodSystem = FMOD.Factory.System_Create()
     fmodCheckResult res
