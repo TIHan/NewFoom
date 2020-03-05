@@ -15,8 +15,7 @@ let fmodCheckResult res =
 [<EntryPoint>]
 let main argv =
     let wad = Wad.FromFile("../../../../../../Foom-deps/testwads/doom1.wad")
-    let music = wad.TryFindMusic "d_e1m2"
-    System.IO.File.WriteAllBytes("test.mid", music.Value)
+    let music = wad.TryFindMusic "d_e1m7"
 
     let res, fmodSystem = FMOD.Factory.System_Create()
     fmodCheckResult res
@@ -25,13 +24,12 @@ let main argv =
     let res, soundGroup = fmodSystem.createSoundGroup("wad")
     fmodCheckResult res
 
-    //let mutable info = FMOD.CREATESOUNDEXINFO()
-    //info.format <- FMOD.SOUND_FORMAT.PCM16
-    //info.cbsize <- sizeof<FMOD.CREATESOUNDEXINFO>
-    //let res, sound = fmodSystem.createSound(music.Value, FMOD.MODE.LOOP_NORMAL, &info)
-    //fmodCheckResult res
-
-    let res, sound = fmodSystem.createSound("test.mid", FMOD.MODE.LOOP_NORMAL)
+    let mutable info = FMOD.CREATESOUNDEXINFO()
+    info.format <- FMOD.SOUND_FORMAT.PCM16
+    info.cbsize <- sizeof<FMOD.CREATESOUNDEXINFO>
+    info.length <- uint32 music.Value.Length
+    let res, sound = fmodSystem.createSound(music.Value, FMOD.MODE.OPENMEMORY ||| FMOD.MODE.LOOP_NORMAL, &info)
+    Array.Clear(music.Value, 0, music.Value.Length)
     fmodCheckResult res
 
     sound.setSoundGroup soundGroup |> fmodCheckResult

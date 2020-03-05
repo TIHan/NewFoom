@@ -34,6 +34,8 @@ type Sampler2d = SampledImage<single, DimKind.Two, ImageDepthKind.NoDepth, Image
 
 let radians (degrees) = degrees * MathF.PI / 180.f
 
+type fnptr<'CallingConvention, 'Func> () = class end
+
 let setRender (instance: FalGraphics) =
     use bmp = new Bitmap(Bitmap.FromFile("texture.jpg"))
     let rect = Rectangle(0, 0, bmp.Width, bmp.Height)
@@ -81,6 +83,7 @@ let setRender (instance: FalGraphics) =
             let mutable fragTexCoord = Variable<Vector2> [Decoration.Location 1u] StorageClass.Output
 
             fun () ->
+                let vertex = vertex
                 gl_Position <- Vector4.Transform(Vector4(vertex.position, 0.f, 1.f), mvp.model * mvp.view * mvp.proj)
                 fragColor <- vertex.color
                 fragTexCoord <- vertex.texCoord
@@ -145,6 +148,76 @@ let setRender (instance: FalGraphics) =
     let pipelineIndex = instance.AddShader(verticesBindings, verticesAttributes, ReadOnlySpan vertexBytes, ReadOnlySpan fragmentBytes)
     instance.RecordDraw(pipelineIndex, [|verticesBuffer.Buffer|], vertices.Length, 1)
     mvp, mvpUniform
+
+[<Struct;NoComparison;NoEquality>]
+type VertexOutput<'T when 'T : unmanaged> =
+    {
+        Position: Vector3
+        UserData: 'T
+    }
+
+type Vertex<'Input, 'Output when 'Input : unmanaged and 'Output : unmanaged> = 
+    Vertex of (FalGraphics -> SpirvModule * VkVertexInputBindingDescription[] * VkVertexInputAttributeDescription[])
+
+module Shader =
+
+    open FSharp.Quotations
+    open FSharp.Quotations.DerivedPatterns
+    open FSharp.Quotations.Patterns
+    open FSharp.Quotations.ExprShape
+
+    let translateQuotation<'Input, 'Output when 'Input : unmanaged and 'Output : unmanaged> (vertex: Expr<'Input -> VertexOutput<'Output>>) : Expr<unit -> unit> =
+        match vertex with
+        | Lambda(_, Lambda _) -> failwith "Only one argument is allowed."
+        | Lambda(var, body) ->
+            <@
+                let vertex = Variable<'Input> [Decoration.Location 0u] StorageClass.Input
+                fun () -> ()
+            @>
+        
+
+//    let vertex<'Input, 'Output when 'Input : unmanaged and 'Output : unmanaged> (vertex: Expr<'Input -> VertexOutput<'Output>>) =
+//        let vertex = translateQuotation vertex
+//        fun (instance: FalGraphics) ->
+//            let verticesBindings = [|mkVertexInputBinding<'Input> 0u VkVertexInputRate.VK_VERTEX_INPUT_RATE_VERTEX|]
+//            let verticesAttributes = mkVertexAttributeDescriptions<'Input> 0u 0u
+            
+//            let vertex =
+//                <@
+//                    let mvp = Variable<ModelViewProjection> [Decoration.Binding 0u; Decoration.DescriptorSet 0u] StorageClass.Uniform
+//                    let vertex = Variable<Vertex> [Decoration.Location 0u] StorageClass.Input
+//                    let _position = Variable<Vector2> [Decoration.Location 0u] StorageClass.Input
+//                    let _color = Variable<Vector3> [Decoration.Location 1u] StorageClass.Input
+//                    let _texCoord = Variable<Vector2> [Decoration.Location 2u] StorageClass.Input
+//                    let mutable gl_Position  = Variable<Vector4> [Decoration.BuiltIn BuiltIn.Position] StorageClass.Output
+//                    let mutable fragColor = Variable<Vector3> [Decoration.Location 0u] StorageClass.Output
+//                    let mutable fragTexCoord = Variable<Vector2> [Decoration.Location 1u] StorageClass.Output
+
+//                    fun () ->
+//                        gl_Position <- Vector4.Transform(Vector4(vertex.position, 0.f, 1.f), mvp.model * mvp.view * mvp.proj)
+//                        fragColor <- vertex.color
+//                        fragTexCoord <- vertex.texCoord
+//                @>
+//            let spvVertexInfo = SpirvGenInfo.Create(AddressingModel.Logical, MemoryModel.GLSL450, ExecutionModel.Vertex, [Capability.Shader], [])
+//            let spvVertex =
+//                Checker.Check vertex
+//                |> SpirvGen.GenModule spvVertexInfo
+
+//let test () =
+//    let vertices =
+//        [|
+//            { position = Vector2 (-0.5f, -0.5f); color = Vector3 (1.f, 0.f, 0.f); texCoord = Vector2(1.f, 0.f) }
+//            { position = Vector2 (0.5f, -0.5f); color = Vector3 (0.f, 1.f, 0.f); texCoord = Vector2(0.f, 0.f) }
+//            { position = Vector2 (0.5f, 0.5f); color = Vector3 (0.f, 0.f, 1.f); texCoord = Vector2(0.f, 1.f) }
+//            { position = Vector2 (-0.5f, 0.5f); color = Vector3 (1.f, 1.f, 1.f); texCoord = Vector2(1.f, 1.f) }
+//            { position = Vector2 (-0.5f, -0.5f); color = Vector3 (1.f, 0.f, 0.f); texCoord = Vector2(1.f, 0.f) }
+//            { position = Vector2 (0.5f, 0.5f); color = Vector3 (0.f, 0.f, 1.f); texCoord = Vector2(0.f, 1.f) }
+//        |]
+//    let vertex =
+//        <@
+//            vertices.
+//        @>
+//    ()
 
 [<EntryPoint>]
 let main argv =
