@@ -9,18 +9,20 @@ open FSharp.Vulkan.Interop
 #nowarn "51"
 
 [<Struct;NoEquality;NoComparison>]
-type DeviceMemory =
+type FalkanDeviceMemory =
     {
-        raw: VkDeviceMemory
+        bucket: DeviceMemoryBucket
         offset: int
         size: int
     }
 
-[<Sealed>]
-type DeviceMemoryBucket private (device: VkDevice, raw: VkDeviceMemory, bucketSize: int) =
+    member this.Free() =
+        this.bucket.Free this
+
+and [<Sealed>] DeviceMemoryBucket private (device: VkDevice, raw: VkDeviceMemory, bucketSize: int) as this =
 
     let gate = obj ()
-    let blocks = ResizeArray<struct(DeviceMemory * bool)> 100 // TODO: We could do better here. Could allocate on the LOH if it gets big enough.
+    let blocks = ResizeArray<struct(FalkanDeviceMemory * bool)> 100 // TODO: We could do better here. Could allocate on the LOH if it gets big enough.
 
     let mutable freeBlocksCache = ValueNone
     let getFreeBlocks () =
@@ -83,7 +85,7 @@ type DeviceMemoryBucket private (device: VkDevice, raw: VkDeviceMemory, bucketSi
             if Seq.isEmpty blocks then
                 let block =
                     {
-                        raw = raw
+                        bucket = this
                         offset = 0
                         size = size
                     }
@@ -93,7 +95,7 @@ type DeviceMemoryBucket private (device: VkDevice, raw: VkDeviceMemory, bucketSi
                 let lastBlock = getLastBlock ()
                 let block =
                     {
-                        raw = raw
+                        bucket = this
                         offset = lastBlock.offset + lastBlock.size
                         size = size
                     }
@@ -103,7 +105,7 @@ type DeviceMemoryBucket private (device: VkDevice, raw: VkDeviceMemory, bucketSi
                 let struct(block, index) = getFreeFragmentBlock size
                 let newBlock =
                     {
-                        raw = raw
+                        bucket = this
                         offset = block.offset
                         size = size
                     }
@@ -114,7 +116,7 @@ type DeviceMemoryBucket private (device: VkDevice, raw: VkDeviceMemory, bucketSi
                 if remainingSize > 0 && remainingIndex < blocks.Count then
                     let remainingBlock =
                         {
-                            raw = raw
+                            bucket = this
                             offset = newBlock.offset + newBlock.size
                             size = remainingSize
                         }
@@ -143,6 +145,10 @@ type DeviceMemoryBucket private (device: VkDevice, raw: VkDeviceMemory, bucketSi
 
         clearCache ()
 
+    member _.VkDevice = device
+
+    member _.VkDeviceMemory = raw
+
     member _.MaxAvailableFreeSize =
         // TODO: Add cache that doesn't lock
         lock gate <| fun _ ->
@@ -160,10 +166,10 @@ type DeviceMemoryBucket private (device: VkDevice, raw: VkDeviceMemory, bucketSi
 
     member _.Free block =
         lock gate <| fun _ ->
-            if raw <> block.raw then
+            if raw <> block.bucket.VkDeviceMemory then
                 failwith "Invalid GPU memory to free in bucket."
 
-            freeBlock
+            freeBlock block
 
     interface IDisposable with
 
@@ -228,7 +234,7 @@ let mkBuffer device size usage =
 let bindMemory physicalDevice device buffer properties =
     let memRequirements = getMemoryRequirements device buffer
     let memory = allocateMemory physicalDevice device memRequirements properties
-    vkBindBufferMemory(device, buffer, memory.raw, uint64 memory.offset) |> checkResult
+    vkBindBufferMemory(device, buffer, memory.bucket.VkDeviceMemory, uint64 memory.offset) |> checkResult
     memory
 
 let mapMemory<'T when 'T : unmanaged> device memory offset (data: ReadOnlySpan<'T>) =
@@ -331,7 +337,7 @@ type FalkanBuffer =
         vkPhysicalDevice: VkPhysicalDevice
         vkDevice: VkDevice
         buffer: VkBuffer
-        memory: DeviceMemory
+        memory: FalkanDeviceMemory
         flags: FalkanBufferFlags
         kind: FalkanBufferKind
     }
@@ -375,7 +381,7 @@ type FalkanBuffer with
         let device = buffer.vkDevice
 
         if buffer.IsShared then
-            mapMemory<'T> device buffer.memory.raw buffer.memory.offset data
+            mapMemory<'T> device buffer.memory.bucket.VkDeviceMemory buffer.memory.offset data
         else
             // Memory that is not shared can not be written directly to from the CPU.
             // In order to set it from the CPU, a temporary shared memory buffer is used as a staging buffer to transfer the data.
@@ -388,7 +394,7 @@ type FalkanBuffer with
                     VkMemoryPropertyFlags.VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
             let stagingMemory = bindMemory physicalDevice device stagingBuffer stagingProperties
         
-            mapMemory device stagingMemory.raw stagingMemory.offset data
+            mapMemory device stagingMemory.bucket.VkDeviceMemory stagingMemory.offset data
         
             let size = uint64 (sizeof<'T> * count)
             copyBuffer device commandPool stagingBuffer buffer.buffer size transferQueue

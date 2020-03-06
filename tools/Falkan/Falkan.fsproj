@@ -11,6 +11,7 @@
     <Compile Include="FalDevice.fs" />
     <Compile Include="Compute.fsi" />
     <Compile Include="Compute.fs" />
+    <Compile Include="FalkanCommand.fs" />
     <Compile Include="FalkanBuffer.fs" />
     <Compile Include="FalkanImage.fs" />
     <Compile Include="FalkanDescriptorSet.fs" />

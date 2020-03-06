@@ -18,7 +18,7 @@ let getImageMemoryRequirements device image =
 let bindImage physicalDevice device image properties =
     let memRequirements = getImageMemoryRequirements device image
     let memory = allocateMemory physicalDevice device memRequirements properties
-    vkBindImageMemory(device, image, memory.raw, uint64 memory.offset) |> checkResult
+    vkBindImageMemory(device, image, memory.bucket.VkDeviceMemory, uint64 memory.offset) |> checkResult
     memory
 
 let mkImage device width height format tiling usage =
@@ -168,7 +168,7 @@ let fillImage physicalDevice device commandPool transferQueue (vkImage: VkImage)
             VkMemoryPropertyFlags.VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
     let stagingMemory = bindMemory physicalDevice device stagingBuffer stagingProperties
 
-    mapMemory device stagingMemory.raw stagingMemory.offset data
+    mapMemory device stagingMemory.bucket.VkDeviceMemory stagingMemory.offset data
     copyImage device commandPool width height stagingBuffer vkImage transferQueue
 
     vkDestroyBuffer(device, stagingBuffer, vkNullPtr)
@@ -180,7 +180,7 @@ type FalkanImage =
         vkImage: VkImage
         vkImageView: VkImageView
         vkSampler: VkSampler
-        memory: DeviceMemory
+        memory: FalkanDeviceMemory
         width: int
         height: int
     }
