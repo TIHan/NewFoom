@@ -8,216 +8,6 @@ open FSharp.Vulkan.Interop
 #nowarn "9"
 #nowarn "51"
 
-[<Struct;NoEquality;NoComparison>]
-type FalkanDeviceMemory =
-    {
-        bucket: DeviceMemoryBucket
-        offset: int
-        size: int
-    }
-
-    member this.Free() =
-        this.bucket.Free this
-
-and [<Sealed>] DeviceMemoryBucket private (device: VkDevice, raw: VkDeviceMemory, bucketSize: int) as this =
-
-    let gate = obj ()
-    let blocks = ResizeArray<struct(FalkanDeviceMemory * bool)> 100 // TODO: We could do better here. Could allocate on the LOH if it gets big enough.
-
-    let mutable freeBlocksCache = ValueNone
-    let getFreeBlocks () =
-        match freeBlocksCache with
-        | ValueSome blocks -> blocks
-        | _ ->
-            let mutable index = 0
-            let blocks =
-                blocks 
-                |> Seq.choose (fun struct(block, isFree) -> 
-                    if isFree then
-                        let i = index
-                        index <- index + 1
-                        Some struct(block, i)
-                    else
-                        None)
-                |> Seq.cache
-            freeBlocksCache <- ValueSome blocks
-            blocks
-
-    let mutable maxFreeFragmentSizeCache = ValueNone
-    let getMaxFreeFragmentSize () =
-        match maxFreeFragmentSizeCache with
-        | ValueSome size -> size
-        | _ ->
-            let blocks = getFreeBlocks ()
-            if Seq.isEmpty blocks then 0
-            else
-                let struct(block, _) = (blocks |> Seq.maxBy (fun struct(block, _) -> block.size))
-                let size = block.size
-                maxFreeFragmentSizeCache <- ValueSome size
-                size
-
-    let clearCache () =
-        freeBlocksCache <- ValueNone
-        maxFreeFragmentSizeCache <- ValueNone
-
-    let isBlockFree index =
-        let struct(_, isFree) = blocks.[index]
-        isFree
-
-    let getLastBlock () =
-        let struct(lastBlock, _) = blocks.[blocks.Count - 1]
-        lastBlock
-
-    let getFreeSize () =
-        if Seq.isEmpty blocks then
-            bucketSize
-        else
-            let lastBlock = getLastBlock ()
-            bucketSize - lastBlock.offset + lastBlock.size
-
-    let getFreeFragmentBlock size =
-        getFreeBlocks ()
-        |> Seq.filter (fun struct(block, _) -> block.size >= size)
-        |> Seq.minBy (fun struct(block, _) -> block.size)
-
-    let allocateBlock size =
-        let block =
-            if Seq.isEmpty blocks then
-                let block =
-                    {
-                        bucket = this
-                        offset = 0
-                        size = size
-                    }
-                blocks.Add struct(block, false)
-                block
-            elif getFreeSize () >= size then
-                let lastBlock = getLastBlock ()
-                let block =
-                    {
-                        bucket = this
-                        offset = lastBlock.offset + lastBlock.size
-                        size = size
-                    }
-                blocks.Add struct(block, false)
-                block
-            elif getMaxFreeFragmentSize () >= size then
-                let struct(block, index) = getFreeFragmentBlock size
-                let newBlock =
-                    {
-                        bucket = this
-                        offset = block.offset
-                        size = size
-                    }
-                blocks.[index] <- struct(newBlock, false)
-
-                let remainingSize = block.size - size
-                let remainingIndex = index + 1
-                if remainingSize > 0 && remainingIndex < blocks.Count then
-                    let remainingBlock =
-                        {
-                            bucket = this
-                            offset = newBlock.offset + newBlock.size
-                            size = remainingSize
-                        }
-                    blocks.Insert(remainingIndex, struct(remainingBlock, true))
-                newBlock
-            else
-                failwith "Invalid allocation on GPU memory block."
-
-        clearCache ()
-        block
-
-    let freeBlock block =
-        let index = blocks |> Seq.findIndex (fun struct(x, isFree) -> not isFree && x.offset = block.offset && x.size = block.size)
-        blocks.[index] <- struct(block, true)
-
-        let possibleNextBlockIndexToMerge = index + 1
-        let possiblePrevBlockIndexToMerge = index - 1
-        if possibleNextBlockIndexToMerge < blocks.Count && isBlockFree possibleNextBlockIndexToMerge then
-            let struct(blockToMerge, _) = blocks.[possibleNextBlockIndexToMerge]
-            blocks.[index] <- struct({ block with size = block.size + blockToMerge.size }, true)
-            blocks.RemoveAt possibleNextBlockIndexToMerge
-        elif possiblePrevBlockIndexToMerge < blocks.Count && isBlockFree possiblePrevBlockIndexToMerge then
-            let struct(blockToMerge, _) = blocks.[possiblePrevBlockIndexToMerge]
-            blocks.[index] <- struct({ block with offset = blockToMerge.offset; size = block.size + blockToMerge.size }, true)
-            blocks.RemoveAt possiblePrevBlockIndexToMerge
-
-        clearCache ()
-
-    member _.VkDevice = device
-
-    member _.VkDeviceMemory = raw
-
-    member _.MaxAvailableFreeSize =
-        // TODO: Add cache that doesn't lock
-        lock gate <| fun _ ->
-            let freeSize = getFreeSize ()
-            let freeFragmentSize = getMaxFreeFragmentSize ()
-            if freeSize > freeFragmentSize then freeSize
-            else freeFragmentSize
-
-    member _.Allocate size =
-        lock gate <| fun _ ->
-            if size > getFreeSize () && size > getMaxFreeFragmentSize () then
-                failwith "Not enough available GPU memory in bucket."
-
-            allocateBlock size
-
-    member _.Free block =
-        lock gate <| fun _ ->
-            if raw <> block.bucket.VkDeviceMemory then
-                failwith "Invalid GPU memory to free in bucket."
-
-            freeBlock block
-
-    interface IDisposable with
-
-        member _.Dispose() =
-            vkFreeMemory(device, raw, vkNullPtr)
-
-    static member Create(device, memTypeIndex, bucketSize) =
-        let mutable allocInfo =
-            VkMemoryAllocateInfo (
-                sType = VkStructureType.VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-                allocationSize = uint64 bucketSize,
-                memoryTypeIndex = memTypeIndex
-            )
-
-        let mutable raw = VkDeviceMemory ()
-        vkAllocateMemory(device, &&allocInfo, vkNullPtr, &&raw) |> checkResult
-        new DeviceMemoryBucket(device, raw, bucketSize)
-
-let getMemoryRequirements device buffer =
-    let mutable memRequirements = VkMemoryRequirements ()
-    vkGetBufferMemoryRequirements(device, buffer, &&memRequirements)
-    memRequirements
-
-let getSuitableMemoryTypeIndex physicalDevice typeFilter properties =
-    let mutable memProperties = VkPhysicalDeviceMemoryProperties ()
-    vkGetPhysicalDeviceMemoryProperties(physicalDevice, &&memProperties)
-
-    [| for i = 0 to int memProperties.memoryTypeCount - 1 do
-        if typeFilter &&& (1u <<< i) <> 0u then
-            let memType = memProperties.memoryTypes.[i]
-            if memType.propertyFlags &&& properties = properties then
-                yield uint32 i |]
-    |> Array.head
-
-// TODO: Let's not make this a global.
-let buckets = System.Collections.Concurrent.ConcurrentDictionary<struct(uint32 * VkDevice), Lazy<DeviceMemoryBucket>>()
-
-let allocateMemory physicalDevice device (memRequirements: VkMemoryRequirements) properties =
-    let memTypeIndex = 
-        getSuitableMemoryTypeIndex 
-            physicalDevice memRequirements.memoryTypeBits 
-            properties
-
-    let factory = System.Func<_, _> (fun struct(memTypeIndex, device) -> lazy DeviceMemoryBucket.Create(device, memTypeIndex, 64 * 1024 * 1024)) // TODO: 64mb is arbitrary for now just to this working
-    let bucket = buckets.GetOrAdd(struct(memTypeIndex, device), factory)
-
-    bucket.Value.Allocate(int memRequirements.size)
-
 let mkBuffer device size usage =
     let mutable bufferInfo =
         VkBufferCreateInfo (
@@ -234,7 +24,7 @@ let mkBuffer device size usage =
 let bindMemory physicalDevice device buffer properties =
     let memRequirements = getMemoryRequirements device buffer
     let memory = allocateMemory physicalDevice device memRequirements properties
-    vkBindBufferMemory(device, buffer, memory.bucket.VkDeviceMemory, uint64 memory.offset) |> checkResult
+    vkBindBufferMemory(device, buffer, memory.Bucket.VkDeviceMemory, uint64 memory.Offset) |> checkResult
     memory
 
 let mapMemory<'T when 'T : unmanaged> device memory offset (data: ReadOnlySpan<'T>) =
@@ -335,7 +125,6 @@ type FalkanBufferKind =
 type FalkanBuffer =
     {
         vkPhysicalDevice: VkPhysicalDevice
-        vkDevice: VkDevice
         buffer: VkBuffer
         memory: FalkanDeviceMemory
         flags: FalkanBufferFlags
@@ -345,7 +134,7 @@ type FalkanBuffer =
     member x.IsShared = hasSharedMemoryFlag x.flags
 
     member internal x.Destroy() =
-        vkDestroyBuffer(x.vkDevice, x.buffer, vkNullPtr)
+        vkDestroyBuffer(x.memory.Bucket.VkDevice, x.buffer, vkNullPtr)
 
 type FalDevice with
 
@@ -367,21 +156,21 @@ type FalDevice with
         let buffer = mkBuffer device size (usage ||| VkBufferUsageFlags.VK_BUFFER_USAGE_TRANSFER_DST_BIT)
         if isShared then
             let memory = bindMemory physicalDevice device buffer memProperties
-            { vkPhysicalDevice = physicalDevice; vkDevice = device; buffer = buffer; memory = memory; flags = flags; kind = kind }
+            { vkPhysicalDevice = physicalDevice; buffer = buffer; memory = memory; flags = flags; kind = kind }
         else
             // High-performance GPU memory
             let memory = bindMemory physicalDevice device buffer VkMemoryPropertyFlags.VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
-            { vkPhysicalDevice = physicalDevice; vkDevice = device; buffer = buffer; memory = memory; flags = flags; kind = kind }
+            { vkPhysicalDevice = physicalDevice; buffer = buffer; memory = memory; flags = flags; kind = kind }
 
 
 type FalkanBuffer with
 
     member buffer.SetData<'T when 'T : unmanaged>(data, commandPool, transferQueue) =
         let physicalDevice = buffer.vkPhysicalDevice
-        let device = buffer.vkDevice
+        let device = buffer.memory.Bucket.VkDevice
 
         if buffer.IsShared then
-            mapMemory<'T> device buffer.memory.bucket.VkDeviceMemory buffer.memory.offset data
+            mapMemory<'T> device buffer.memory.Bucket.VkDeviceMemory buffer.memory.Offset data
         else
             // Memory that is not shared can not be written directly to from the CPU.
             // In order to set it from the CPU, a temporary shared memory buffer is used as a staging buffer to transfer the data.
@@ -394,7 +183,7 @@ type FalkanBuffer with
                     VkMemoryPropertyFlags.VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
             let stagingMemory = bindMemory physicalDevice device stagingBuffer stagingProperties
         
-            mapMemory device stagingMemory.bucket.VkDeviceMemory stagingMemory.offset data
+            mapMemory device stagingMemory.Bucket.VkDeviceMemory stagingMemory.Offset data
         
             let size = uint64 (sizeof<'T> * count)
             copyBuffer device commandPool stagingBuffer buffer.buffer size transferQueue
