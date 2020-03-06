@@ -18,9 +18,9 @@ type SwapChainState =
         swapChain: VkSwapchainKHR
         imageViews: VkImageView []
         renderPass: VkRenderPass
-        descriptorSetLayout: VkDescriptorSetLayout[]
-        descriptorPool: VkDescriptorPool[]
-        descriptorSets: VkDescriptorSet [][]
+        descriptorSetLayout: FalkanDescriptorSetLayout[]
+        descriptorPool: FalkanDescriptorPool[]
+        descriptorSets: FalkanDescriptorSets []
         pipelineLayout: VkPipelineLayout
         framebuffers: VkFramebuffer []
         commandBuffers: VkCommandBuffer []
@@ -714,8 +714,10 @@ let updateDescriptorImageSet device descriptorSet pImageInfo =
     vkUpdateDescriptorSets(device, 1u, &&descriptorWrite, 0u, vkNullPtr)
 
 [<Sealed>]
-type SwapChain private (physicalDevice, device, surface, sync, graphicsFamily, graphicsQueue, presentFamily, presentQueue, commandPool, invalidate: IEvent<unit>) =
+type SwapChain private (fdevice: FalDevice, surface, sync, graphicsFamily, graphicsQueue, presentFamily, presentQueue, commandPool, invalidate: IEvent<unit>) =
 
+    let device = fdevice.Device
+    let physicalDevice = fdevice.PhysicalDevice
     let gate = obj ()
     let mutable state = None
     let mutable currentFrame = 0
@@ -773,10 +775,10 @@ type SwapChain private (physicalDevice, device, surface, sync, graphicsFamily, g
         )
 
         vkDestroyPipelineLayout(device, pipelineLayout, vkNullPtr)
-        descriptorPool
-        |> Array.iter (fun descriptorPool -> vkDestroyDescriptorPool(device, descriptorPool, vkNullPtr))
         descriptorSetLayout
-        |> Array.iter (fun descriptorSetLayout -> vkDestroyDescriptorSetLayout(device, descriptorSetLayout, vkNullPtr))
+        |> Array.iter (fun descriptorSetLayout -> (descriptorSetLayout :> IDisposable).Dispose())
+        descriptorPool
+        |> Array.iter (fun descriptorPool -> (descriptorPool :> IDisposable).Dispose())
         vkDestroyRenderPass(device, renderPass, vkNullPtr)
 
         imageViews
@@ -796,15 +798,16 @@ type SwapChain private (physicalDevice, device, surface, sync, graphicsFamily, g
 
     let record recording =
         let state = state.Value
+        let vkDescriptorSets = state.descriptorSets |> Array.map (fun x -> x.vkDescriptorSets)
         recordDraw 
-            state.extent state.framebuffers state.commandBuffers state.descriptorSets state.pipelineLayout state.renderPass 
+            state.extent state.framebuffers state.commandBuffers vkDescriptorSets state.pipelineLayout state.renderPass 
             pipelines.[recording.pipelineIndex] recording.vertexBuffers recording.vertexCount recording.instanceCount
 
     let setUniformBuffer () =
         match uniformBuffer with
         | Some(buffer, size) ->
             let state = state.Value
-            state.descriptorSets.[0]
+            state.descriptorSets.[0].vkDescriptorSets
             |> Array.iter (fun descriptorSet ->
                 let mutable bufferInfo = mkDescriptorBufferInfo buffer size
                 updateDescriptorSet device descriptorSet &&bufferInfo
@@ -816,7 +819,7 @@ type SwapChain private (physicalDevice, device, surface, sync, graphicsFamily, g
         match imageSampler with
         | Some (imageView, sampler) ->
             let state = state.Value
-            state.descriptorSets.[1]
+            state.descriptorSets.[1].vkDescriptorSets
             |> Array.iter (fun descriptorSet ->
                 let mutable imageInfo = mkDescriptorImageInfo imageView sampler
                 updateDescriptorImageSet device descriptorSet &&imageInfo
@@ -839,17 +842,15 @@ type SwapChain private (physicalDevice, device, surface, sync, graphicsFamily, g
             let imageViews = mkImageViews device surfaceFormat.format images
             let renderPass = mkRenderPass device surfaceFormat.format
 
-            let uboSetLayout = mkDescriptorSetLayout device 0u VkDescriptorType.VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER VkShaderStageFlags.VK_SHADER_STAGE_VERTEX_BIT
-            let uboPool = mkDescriptorPool device VkDescriptorType.VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER imageViews.Length
-            let uboSetLayouts = Array.init imageViews.Length (fun _ -> uboSetLayout)
-            let uboSets = mkDescriptorSets device imageViews.Length uboPool uboSetLayouts
+            let uboPool = fdevice.CreateDescriptorPool(UniformBufferDescriptor, imageViews.Length)
+            let uboSetLayout = uboPool.CreateSetLayout(VertexStage, 0u)
+            let uboSets = uboSetLayout.CreateDescriptorSets imageViews.Length
 
-            let samplerSetLayout = mkDescriptorSetLayout device 1u VkDescriptorType.VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER VkShaderStageFlags.VK_SHADER_STAGE_FRAGMENT_BIT
-            let samplerPool = mkDescriptorPool device VkDescriptorType.VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER imageViews.Length
-            let samplerSetLayouts = Array.init imageViews.Length (fun _ -> samplerSetLayout)
-            let samplerSets = mkDescriptorSets device imageViews.Length samplerPool samplerSetLayouts
+            let samplerPool = fdevice.CreateDescriptorPool(CombinedImageSamplerDescriptor, imageViews.Length)
+            let samplerSetLayout = samplerPool.CreateSetLayout(FragmentStage, 1u)
+            let samplerSets = samplerSetLayout.CreateDescriptorSets imageViews.Length
 
-            let pipelineLayout = mkPipelineLayout device [|uboSetLayout;samplerSetLayout|]
+            let pipelineLayout = mkPipelineLayout device [|uboSetLayout.vkDescriptorSetLayout;samplerSetLayout.vkDescriptorSetLayout|]
             let framebuffers = mkFramebuffers device renderPass extent imageViews
             let commandBuffers = mkCommandBuffers device commandPool framebuffers
 
@@ -1000,10 +1001,10 @@ type SwapChain private (physicalDevice, device, surface, sync, graphicsFamily, g
                     vkDestroySemaphore(device, s, vkNullPtr)
                 )
 
-    static member Create(physicalDevice, device, surface, graphicsFamily, presentFamily, commandPool, invalidate) =
-        let sync = mkSync device
-        let graphicsQueue = mkQueue device graphicsFamily
-        let presentQueue = mkQueue device presentFamily
-        let swapChain = new SwapChain(physicalDevice, device, surface, sync, graphicsFamily, graphicsQueue, presentFamily, presentQueue, commandPool, invalidate)
+    static member Create(device: FalDevice, surface, graphicsFamily, presentFamily, commandPool, invalidate) =
+        let sync = mkSync device.Device
+        let graphicsQueue = mkQueue device.Device graphicsFamily
+        let presentQueue = mkQueue device.Device presentFamily
+        let swapChain = new SwapChain(device, surface, sync, graphicsFamily, graphicsQueue, presentFamily, presentQueue, commandPool, invalidate)
         swapChain.Recreate ()
         swapChain

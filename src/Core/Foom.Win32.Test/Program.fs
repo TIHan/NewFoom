@@ -44,7 +44,7 @@ let setRender (instance: FalGraphics) =
     instance.FillImage(image, ReadOnlySpan(ptr, data.Width * data.Height * 4))
     bmp.UnlockBits(data)
     //let mvpBindings = [||]
-    let mvpUniform = instance.CreateBuffer<ModelViewProjection>(1, BufferFlags.None, BufferKind.Uniform)
+    let mvpUniform = instance.CreateBuffer<ModelViewProjection>(1, FalkanBufferFlags.None, UniformBuffer)
     let mvp =
         {
             model = Matrix4x4.CreateRotationY(radians 90.f)
@@ -52,7 +52,7 @@ let setRender (instance: FalGraphics) =
             proj = Matrix4x4.CreatePerspectiveFieldOfView(radians 45.f, 1280.f / 720.f, 0.1f, 10.f)
         }
     instance.FillBuffer(mvpUniform, ReadOnlySpan [|mvp|])
-    instance.SetUniformBuffer(mvpUniform)
+    instance.SetUniformBuffer<ModelViewProjection>(mvpUniform)
     instance.SetSampler image
 
     let vertices =
@@ -66,7 +66,7 @@ let setRender (instance: FalGraphics) =
         |]
     let verticesBindings = [|mkVertexInputBinding<Vertex> 0u VkVertexInputRate.VK_VERTEX_INPUT_RATE_VERTEX|]
     let verticesAttributes = mkVertexAttributeDescriptions<Vertex> 0u 0u
-    let verticesBuffer = instance.CreateBuffer<Vertex> (vertices.Length, BufferFlags.None, BufferKind.Vertex)
+    let verticesBuffer = instance.CreateBuffer<Vertex> (vertices.Length, FalkanBufferFlags.None, VertexBuffer)
     instance.FillBuffer(verticesBuffer, ReadOnlySpan vertices)
 
     let vertex =
@@ -142,7 +142,7 @@ let setRender (instance: FalGraphics) =
         bytes
 
     let pipelineIndex = instance.AddShader(verticesBindings, verticesAttributes, ReadOnlySpan vertexBytes, ReadOnlySpan fragmentBytes)
-    instance.RecordDraw(pipelineIndex, [|verticesBuffer.Buffer|], vertices.Length, 1)
+    instance.RecordDraw(pipelineIndex, [|verticesBuffer.buffer|], vertices.Length, 1)
     mvp, mvpUniform
 
 [<EntryPoint>]
