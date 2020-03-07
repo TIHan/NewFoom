@@ -70,8 +70,8 @@ let setRender (instance: FalGraphics) =
     let mvpUniform = instance.CreateBuffer<ModelViewProjection>(1, FalkanBufferFlags.None, UniformBuffer)
     let mvp =
         {
-            model = Matrix4x4.CreateRotationY(radians 90.f)
-            view = Matrix4x4.CreateLookAt(Vector3(2.0f, 2.0f, 2.0f), Vector3(0.f), Vector3(0.f, 0.f, 1.0f))
+            model = Matrix4x4.Identity
+            view = Matrix4x4.CreateLookAt(Vector3(0.0f, 0.0f, 5.0f), Vector3(0.1f), Vector3(0.f, 0.f, 1.0f))
             proj = Matrix4x4.CreatePerspectiveFieldOfView(radians 45.f, 1280.f / 720.f, 0.1f, 1000.f)
         }
     instance.FillBuffer(mvpUniform, ReadOnlySpan [|mvp|])
