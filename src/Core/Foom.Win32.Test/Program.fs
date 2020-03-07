@@ -33,7 +33,7 @@ type Vertex =
 
 type Sampler2d = SampledImage<single, DimKind.Two, ImageDepthKind.NoDepth, ImageArrayedKind.NonArrayed, ImageMultisampleKind.Single, ImageSampleKind.Sampler, ImageFormatKind.Unknown, AccessQualifierKind.None>
 
-let radians (degrees) = degrees * MathF.PI / 180.f
+let radians (degrees) = degrees * (MathF.PI / 180.f)
 
 
 let createBitmap (pixels: Pixel [,]) =
@@ -68,10 +68,12 @@ let setRender (instance: FalGraphics) =
 
     //let mvpBindings = [||]
     let mvpUniform = instance.CreateBuffer<ModelViewProjection>(1, FalkanBufferFlags.None, UniformBuffer)
+    let mutable quat = Matrix4x4.CreateFromAxisAngle (Vector3.UnitZ, radians 90.f)
+    quat.Translation <- Vector3(0.f, 0.f, -5.f)
     let mvp =
         {
             model = Matrix4x4.Identity
-            view = Matrix4x4.CreateLookAt(Vector3(0.0f, 0.0f, 5.0f), Vector3(0.1f), Vector3(0.f, 0.f, 1.0f))
+            view = quat //Matrix4x4.CreateLookAt(Vector3(0.0f, 0.0f, 5.0f), Vector3(1.f), Vector3(0.f, 0.f, 1.f))
             proj = Matrix4x4.CreatePerspectiveFieldOfView(radians 45.f, 1280.f / 720.f, 0.1f, 1000.f)
         }
     instance.FillBuffer(mvpUniform, ReadOnlySpan [|mvp|])
@@ -92,20 +94,27 @@ let setRender (instance: FalGraphics) =
         instance.FillImage(image, ReadOnlySpan(ptr, data.Width * data.Height * 4))
         bmp.UnlockBits(data)
 
+        let checkNan (v: Vector4) =
+            if Single.IsNaN v.X then
+                failwith "it's nan"
+            v
+
         instance.SetSampler image
         instance.FillBuffer(mvpUniform, ReadOnlySpan [|mvp|])
         let vertices =
             [|
-                Vector3 (-0.5f, -0.5f, 0.f)
-                Vector3 (0.5f, -0.5f, 0.f)
-                Vector3 (0.5f, 0.5f, 0.f)
-                Vector3 (-0.5f, 0.5f, 0.f)
-                Vector3 (-0.5f, -0.5f, 0.f)
-                Vector3 (0.5f, 0.5f, 0.f)
+                Vector4 (-0.5f, -0.5f, 0.f, 1.0f)
+                Vector4 (0.5f, -0.5f, 0.f, 1.0f)
+                Vector4 (0.5f, 0.5f, 0.f, 1.f)
+                Vector4 (-0.5f, 0.5f, 0.f, 1.f)
+                Vector4 (-0.5f, -0.5f, 0.f, 1.f)
+                Vector4 (0.5f, 0.5f, 0.f, 1.f)
             |]
-        let verticesBindings = [|mkVertexInputBinding<Vector3> 0u VkVertexInputRate.VK_VERTEX_INPUT_RATE_VERTEX|]
-        let verticesAttributes = mkVertexAttributeDescriptions<Vector3> 0u 0u
-        let verticesBuffer = instance.CreateBuffer<Vector3> (vertices.Length, FalkanBufferFlags.None, VertexBuffer)
+            |> Array.map (fun v -> Vector4.Transform(v, mvp.model * mvp.view * mvp.proj) |> checkNan)
+
+        let verticesBindings = [|mkVertexInputBinding<Vector4> 0u VkVertexInputRate.VK_VERTEX_INPUT_RATE_VERTEX|]
+        let verticesAttributes = mkVertexAttributeDescriptions<Vector4> 0u 0u
+        let verticesBuffer = instance.CreateBuffer<Vector4> (vertices.Length, FalkanBufferFlags.None, VertexBuffer)
         instance.FillBuffer(verticesBuffer, ReadOnlySpan vertices)
 
 
@@ -128,13 +137,13 @@ let setRender (instance: FalGraphics) =
         let vertex =
             <@
                 let mvp = Variable<ModelViewProjection> [Decoration.Binding 0u; Decoration.DescriptorSet 0u] StorageClass.Uniform
-                let position = Variable<Vector3> [Decoration.Location 0u; Decoration.Binding 0u] StorageClass.Input
+                let position = Variable<Vector4> [Decoration.Location 0u; Decoration.Binding 0u] StorageClass.Input
                 let texCoord = Variable<Vector2> [Decoration.Location 1u; Decoration.Binding 1u] StorageClass.Input
                 let mutable gl_Position  = Variable<Vector4> [Decoration.BuiltIn BuiltIn.Position] StorageClass.Output
                 let mutable fragTexCoord = Variable<Vector2> [Decoration.Location 0u] StorageClass.Output
 
                 fun () ->
-                    gl_Position <- Vector4.Transform(Vector4(position, 1.f), mvp.model * mvp.view * mvp.proj)
+                    gl_Position <- position //Vector4(position, 1.f)
                     fragTexCoord <- texCoord
             @>
         let spvVertexInfo = SpirvGenInfo.Create(AddressingModel.Logical, MemoryModel.GLSL450, ExecutionModel.Vertex, [Capability.Shader], [])
