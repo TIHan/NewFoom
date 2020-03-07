@@ -714,7 +714,7 @@ let updateDescriptorImageSet device descriptorSet pImageInfo =
     vkUpdateDescriptorSets(device, 1u, &&descriptorWrite, 0u, vkNullPtr)
 
 [<Sealed>]
-type SwapChain private (fdevice: FalDevice, surface, sync, graphicsFamily, graphicsQueue, presentFamily, presentQueue, commandPool, invalidate: IEvent<unit>) =
+type SwapChain private (fdevice: FalDevice, surface, sync, graphicsFamily, graphicsQueue, presentFamily, presentQueue, invalidate: IEvent<unit>) =
 
     let device = fdevice.Device
     let physicalDevice = fdevice.PhysicalDevice
@@ -767,7 +767,7 @@ type SwapChain private (fdevice: FalDevice, surface, sync, graphicsFamily, graph
         pipelines.Clear ()
 
         use pCommandBuffers = fixed commandBuffers
-        vkFreeCommandBuffers(device, commandPool, uint32 commandBuffers.Length, pCommandBuffers)
+        vkFreeCommandBuffers(device, fdevice.VkCommandPool, uint32 commandBuffers.Length, pCommandBuffers)
 
         framebuffers
         |> Array.iter (fun framebuffer ->
@@ -852,7 +852,7 @@ type SwapChain private (fdevice: FalDevice, surface, sync, graphicsFamily, graph
 
             let pipelineLayout = mkPipelineLayout device [|uboSetLayout.vkDescriptorSetLayout;samplerSetLayout.vkDescriptorSetLayout|]
             let framebuffers = mkFramebuffers device renderPass extent imageViews
-            let commandBuffers = mkCommandBuffers device commandPool framebuffers
+            let commandBuffers = mkCommandBuffers device fdevice.VkCommandPool framebuffers
 
             isInvalidated <- false
             state <- 
@@ -1001,10 +1001,10 @@ type SwapChain private (fdevice: FalDevice, surface, sync, graphicsFamily, graph
                     vkDestroySemaphore(device, s, vkNullPtr)
                 )
 
-    static member Create(device: FalDevice, surface, graphicsFamily, presentFamily, commandPool, invalidate) =
+    static member Create(device: FalDevice, surface, graphicsFamily, presentFamily, invalidate) =
         let sync = mkSync device.Device
         let graphicsQueue = mkQueue device.Device graphicsFamily
         let presentQueue = mkQueue device.Device presentFamily
-        let swapChain = new SwapChain(device, surface, sync, graphicsFamily, graphicsQueue, presentFamily, presentQueue, commandPool, invalidate)
+        let swapChain = new SwapChain(device, surface, sync, graphicsFamily, graphicsQueue, presentFamily, presentQueue, invalidate)
         swapChain.Recreate ()
         swapChain

@@ -1,2 +1,0 @@
-﻿[<AutoOpen>]
-module Falkan.Compute

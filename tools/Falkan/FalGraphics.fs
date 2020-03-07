@@ -16,8 +16,6 @@ type PipelineIndex = int
 type FalGraphics
     private
     (fdevice: FalDevice,
-     commandPool: VkCommandPool,
-     transferQueue: VkQueue,
      swapChain: SwapChain) =
 
     let device = fdevice.Device
@@ -35,9 +33,9 @@ type FalGraphics
         checkDispose ()
         swapChain.AddShader (vertexBindings, vertexAttributes, vertexBytes, fragmentBytes)
 
-    member _.RecordDraw (pipelineIndex, vertexBuffers, vertexCount, instanceCount) =
+    member _.RecordDraw (pipelineIndex, vertexBuffers: FalkanBuffer seq, vertexCount, instanceCount) =
         checkDispose ()
-        swapChain.RecordDraw (pipelineIndex, vertexBuffers, vertexCount, instanceCount)
+        swapChain.RecordDraw (pipelineIndex, vertexBuffers |> Seq.map (fun x -> x.buffer) |> Array.ofSeq, vertexCount, instanceCount)
 
     member __.DrawFrame () =
         checkDispose ()
@@ -60,7 +58,7 @@ type FalGraphics
     member _.FillBuffer<'T when 'T : unmanaged> (buffer: FalkanBuffer, data) =
         checkDispose ()
 
-        buffer.SetData<'T>(data, commandPool, transferQueue)
+        buffer.SetData<'T>(data)
 
     member _.DestroyBuffer (buffer: FalkanBuffer) =
         lock gate <| fun _ ->
@@ -84,7 +82,7 @@ type FalGraphics
     member _.FillImage (buffer: FalkanImage, data) =
         checkDispose ()
 
-        fillImage physicalDevice device commandPool transferQueue buffer.vkImage buffer.width buffer.height data
+        fillImage physicalDevice device fdevice.VkCommandPool fdevice.VkTransferQueue buffer.vkImage buffer.width buffer.height data
 
     member _.SetUniformBuffer<'T when 'T : unmanaged>(buffer: FalkanBuffer) =
         lock gate <| fun _ ->
@@ -128,10 +126,7 @@ type FalGraphics
                     if x.IsValueCreated then
                         (x.Value :> IDisposable).Dispose())
 
-                vkDestroyCommandPool(device, commandPool, vkNullPtr)
-
     static member Create(falDevice: FalDevice, invalidate) =
-        let device = falDevice.Device
         let indices = falDevice.Indices
         let surface =
             match falDevice.Surface with
@@ -146,10 +141,6 @@ type FalGraphics
         if graphicsFamily <> presentFamily then
             failwith "Currently not able to handle concurrent graphics and present families."
 
-        let commandPool = mkCommandPool device graphicsFamily
-        // TODO: We should try to use a transfer queue instead of a graphics queue. This works for now.
-        let transferQueue = mkQueue device graphicsFamily
+        let swapChain = SwapChain.Create(falDevice, surface, graphicsFamily, presentFamily, invalidate)
 
-        let swapChain = SwapChain.Create(falDevice, surface, graphicsFamily, presentFamily, commandPool, invalidate)
-
-        new FalGraphics(falDevice, commandPool, transferQueue, swapChain)
+        new FalGraphics(falDevice, swapChain)

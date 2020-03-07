@@ -21,7 +21,7 @@ let mkBuffer device size usage =
     vkCreateBuffer(device, &&bufferInfo, vkNullPtr, &&vertexBuffer) |> checkResult
     vertexBuffer
 
-let bindMemory physicalDevice device buffer properties =
+let internal bindMemory physicalDevice device buffer properties =
     let memRequirements = getMemoryRequirements device buffer
     let memory = allocateMemory physicalDevice device memRequirements properties
     vkBindBufferMemory(device, buffer, memory.Bucket.VkDeviceMemory, uint64 memory.Offset) |> checkResult
@@ -123,10 +123,10 @@ type FalkanBufferKind =
 
 [<Struct;NoComparison>]
 type FalkanBuffer =
-    {
-        vkPhysicalDevice: VkPhysicalDevice
+    internal {
+        device: FalDevice
         buffer: VkBuffer
-        memory: FalkanDeviceMemory
+        memory: DeviceMemory
         flags: FalkanBufferFlags
         kind: FalkanBufferKind
     }
@@ -134,7 +134,8 @@ type FalkanBuffer =
     member x.IsShared = hasSharedMemoryFlag x.flags
 
     member internal x.Destroy() =
-        vkDestroyBuffer(x.memory.Bucket.VkDevice, x.buffer, vkNullPtr)
+        vkDestroyBuffer(x.device.Device, x.buffer, vkNullPtr)
+        (x.memory :> IDisposable).Dispose()
 
 type FalDevice with
 
@@ -156,18 +157,20 @@ type FalDevice with
         let buffer = mkBuffer device size (usage ||| VkBufferUsageFlags.VK_BUFFER_USAGE_TRANSFER_DST_BIT)
         if isShared then
             let memory = bindMemory physicalDevice device buffer memProperties
-            { vkPhysicalDevice = physicalDevice; buffer = buffer; memory = memory; flags = flags; kind = kind }
+            { device = this; buffer = buffer; memory = memory; flags = flags; kind = kind }
         else
             // High-performance GPU memory
             let memory = bindMemory physicalDevice device buffer VkMemoryPropertyFlags.VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
-            { vkPhysicalDevice = physicalDevice; buffer = buffer; memory = memory; flags = flags; kind = kind }
+            { device = this; buffer = buffer; memory = memory; flags = flags; kind = kind }
 
 
 type FalkanBuffer with
 
-    member buffer.SetData<'T when 'T : unmanaged>(data, commandPool, transferQueue) =
-        let physicalDevice = buffer.vkPhysicalDevice
+    member buffer.SetData<'T when 'T : unmanaged>(data) =
+        let physicalDevice = buffer.device.PhysicalDevice
         let device = buffer.memory.Bucket.VkDevice
+        let commandPool = buffer.device.VkCommandPool
+        let transferQueue = buffer.device.VkTransferQueue
 
         if buffer.IsShared then
             mapMemory<'T> device buffer.memory.Bucket.VkDeviceMemory buffer.memory.Offset data
@@ -181,11 +184,11 @@ type FalkanBuffer with
             let stagingProperties = 
                     VkMemoryPropertyFlags.VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT ||| 
                     VkMemoryPropertyFlags.VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
-            let stagingMemory = bindMemory physicalDevice device stagingBuffer stagingProperties
+            use stagingMemory = bindMemory physicalDevice device stagingBuffer stagingProperties
         
             mapMemory device stagingMemory.Bucket.VkDeviceMemory stagingMemory.Offset data
         
             let size = uint64 (sizeof<'T> * count)
             copyBuffer device commandPool stagingBuffer buffer.buffer size transferQueue
-        
+
             vkDestroyBuffer(device, stagingBuffer, vkNullPtr)

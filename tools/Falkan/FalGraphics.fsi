@@ -10,7 +10,7 @@ type FalGraphics =
 
     member AddShader: vertexBindings: VkVertexInputBindingDescription [] * vertexAttributes: VkVertexInputAttributeDescription [] * ReadOnlySpan<byte> * fragmentBytes: ReadOnlySpan<byte> -> PipelineIndex
 
-    member RecordDraw: pipelineIndex: PipelineIndex * buffers: VkBuffer [] * vertexCount: int * instanceCount: int -> unit
+    member RecordDraw: pipelineIndex: PipelineIndex * buffers: FalkanBuffer seq * vertexCount: int * instanceCount: int -> unit
 
     member DrawFrame: unit -> unit
 

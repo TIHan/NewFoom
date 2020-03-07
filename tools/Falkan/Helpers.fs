@@ -20,7 +20,7 @@ let mkCommandPool device queueFamilyIndex =
         VkCommandPoolCreateInfo (
             sType = VkStructureType.VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
             queueFamilyIndex = queueFamilyIndex,
-            flags = VkCommandPoolCreateFlags () // Optional
+            flags = VkCommandPoolCreateFlags.VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT // Optional
         )
 
     let mutable commandPool = VkCommandPool ()

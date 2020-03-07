@@ -30,6 +30,10 @@ type FalDevice =
 
     member internal Surface: VkSurfaceKHR option
 
+    member internal VkCommandPool: VkCommandPool
+
+    member internal VkTransferQueue: VkQueue
+
     static member internal Create: appName: string * engineName: string * validationLayers: string list * deviceExtensions: string list * ?mkSurface: (VkInstance -> VkSurfaceKHR) -> FalDevice
 
     static member CreateWin32Surface : HWND * HINSTANCE * appName: string * engineName: string * validationLayers: string list * deviceExtensions: string list -> FalDevice

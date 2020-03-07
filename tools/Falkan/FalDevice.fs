@@ -280,6 +280,8 @@ type FalDevice private
         physicalDevice: VkPhysicalDevice,
         indices: QueueFamilyIndices,
         device: VkDevice,
+        vkCommandPool: VkCommandPool,
+        vkTransferQueue: VkQueue,
         handles: GCHandle []
     ) =
 
@@ -305,6 +307,14 @@ type FalDevice private
         checkDispose ()
         surfaceOpt
 
+    member _.VkCommandPool =
+        checkDispose ()
+        vkCommandPool
+
+    member _.VkTransferQueue =
+        checkDispose ()
+        vkTransferQueue
+
     interface IDisposable with
         member x.Dispose () =
             if Interlocked.CompareExchange(&isDisposed, 1, 0) = 1 then
@@ -312,6 +322,7 @@ type FalDevice private
             else
                 GC.SuppressFinalize x
 
+                vkDestroyCommandPool(device, vkCommandPool, vkNullPtr)
                 vkDestroyDevice(device, vkNullPtr)
 
                 if debugMessenger <> IntPtr.Zero then
@@ -344,7 +355,21 @@ type FalDevice private
         let indices = getPhysicalDeviceQueueFamilies physicalDevice surfaceOpt
         let device = mkLogicalDevice physicalDevice indices validationLayers deviceExtensions
 
-        new FalDevice (instance, surfaceOpt, debugMessenger, physicalDevice, indices, device, [|debugCallbackHandle|])
+        let _transferFamily =
+            match indices.transferFamily with
+            | Some transferQueueFamily -> transferQueueFamily
+            | _ -> failwith "Unable to create FalkanGraphicsDevice: Transfer queue not available on physical device."
+
+        let graphicsFamily =
+            match indices.graphicsFamily with
+            | Some graphicsQueueFamily -> graphicsQueueFamily
+            | _ -> failwith "Unable to create FalkanGraphicsDevice: Graphics queue not available on physical device."
+
+        let commandPool = mkCommandPool device graphicsFamily
+        // TODO: We should try to use a transfer queue instead of a graphics queue. This works for now.
+        let transferQueue = mkQueue device graphicsFamily
+
+        new FalDevice (instance, surfaceOpt, debugMessenger, physicalDevice, indices, device, commandPool, transferQueue, [|debugCallbackHandle|])
 
     static member CreateWin32Surface (hwnd, hinstance, appName, engineName, validationLayers, deviceExtensions) =
         let mkSurface =

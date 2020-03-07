@@ -15,7 +15,7 @@ let getImageMemoryRequirements device image =
     vkGetImageMemoryRequirements(device, image, &&memRequirements)
     memRequirements
 
-let bindImage physicalDevice device image properties =
+let internal bindImage physicalDevice device image properties =
     let memRequirements = getImageMemoryRequirements device image
     let memory = allocateMemory physicalDevice device memRequirements properties
     vkBindImageMemory(device, image, memory.Bucket.VkDeviceMemory, uint64 memory.Offset) |> checkResult
@@ -175,12 +175,12 @@ let fillImage physicalDevice device commandPool transferQueue (vkImage: VkImage)
 
 [<Struct;NoComparison;NoEquality>]
 type FalkanImage =
-    {
+    internal {
         vkDevice: VkDevice
         vkImage: VkImage
         vkImageView: VkImageView
         vkSampler: VkSampler
-        memory: FalkanDeviceMemory
+        memory: DeviceMemory
         width: int
         height: int
     }
