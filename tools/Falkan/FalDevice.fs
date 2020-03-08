@@ -61,12 +61,12 @@ let mkInstance appName engineName validationLayers =
     use engineNamePtr = fixed vkBytesOfString engineName
    
     let mutable appInfo = mkApplicationInfo appNamePtr engineNamePtr
-    let extensions = getInstanceExtensions () |> Array.map (fun x -> x.extensionName.ToString())
+    let extensions = getInstanceExtensions () |> Array.map (fun x -> x.extensionName.ToString()) |> Array.filter (fun x -> x <> VK_NV_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME)
     let layers = getInstanceLayers validationLayers |> Array.map (fun x -> x.layerName.ToString())
     
     use extensionsHandle = vkFixedStringArray extensions
     use layersHandle = vkFixedStringArray layers
-    let createInfo = mkInstanceCreateInfo &&appInfo (uint32 extensions.Length) extensionsHandle.PtrPtr (uint32 layers.Length) layersHandle.PtrPtr
+    let mutable createInfo = mkInstanceCreateInfo &&appInfo (uint32 extensions.Length) extensionsHandle.PtrPtr (uint32 layers.Length) layersHandle.PtrPtr
 
     let mutable instance = VkInstance()
     vkCreateInstance(&&createInfo, vkNullPtr, &&instance) |> checkResult

@@ -37,6 +37,9 @@ type FalGraphics
         checkDispose ()
         swapChain.RecordDraw (pipelineIndex, vertexBuffers |> Seq.map (fun x -> x.buffer) |> Array.ofSeq, vertexCount, instanceCount)
 
+    member _.SetupCommands() =
+        swapChain.SetupCommands()
+
     member __.DrawFrame () =
         checkDispose ()
         swapChain.DrawFrame ()

@@ -69,18 +69,21 @@ let setRender (instance: FalGraphics) =
     //let mvpBindings = [||]
     let mvpUniform = instance.CreateBuffer<ModelViewProjection>(1, FalkanBufferFlags.None, UniformBuffer)
     let mutable quat = Matrix4x4.CreateFromAxisAngle (Vector3.UnitZ, radians 90.f)
-    quat.Translation <- Vector3(0.f, 0.f, -5.f)
+    quat.Translation <- Vector3(start.X, start.Y, 50.f)
+    let mutable invertedView = Matrix4x4.Identity
+    Matrix4x4.Invert(quat, &invertedView) |> ignore
+   // let mutable quat = Matrix4x4.CreateLookAt(Vector3.Zero, Vector3(start.X, start.Y, 0.f), Vector3.UnitZ)
     let mvp =
         {
             model = Matrix4x4.Identity
-            view = quat //Matrix4x4.CreateLookAt(Vector3(0.0f, 0.0f, 5.0f), Vector3(1.f), Vector3(0.f, 0.f, 1.f))
+            view = invertedView //Matrix4x4.CreateLookAt(Vector3(0.0f, 0.0f, 5.0f), Vector3(1.f), Vector3(0.f, 0.f, 1.f))
             proj = Matrix4x4.CreatePerspectiveFieldOfView(radians 45.f, 1280.f / 720.f, 0.1f, 1000.f)
         }
     instance.FillBuffer(mvpUniform, ReadOnlySpan [|mvp|])
     instance.SetUniformBuffer<ModelViewProjection>(mvpUniform)
 
     (e1m1.Sectors, e1m1.ComputeAllSectorGeometry())
-    ||> Seq.iter2 (fun s geo ->
+    ||> Seq.iteri2 (fun i s geo ->
         let texture = wad.TryFindFlatTexture(s.FloorTextureName).Value
        
         let data = texture.Data
@@ -102,31 +105,39 @@ let setRender (instance: FalGraphics) =
         instance.SetSampler image
         instance.FillBuffer(mvpUniform, ReadOnlySpan [|mvp|])
         let vertices =
+            //geo.FloorVertices
+            //|> Array.map (fun x -> Vector3(x.X, x.Y, 0.f))
+           // |> Array.rev
+            let x = float32 i * 0.1f
             [|
-                Vector4 (-0.5f, -0.5f, 0.f, 1.0f)
-                Vector4 (0.5f, -0.5f, 0.f, 1.0f)
-                Vector4 (0.5f, 0.5f, 0.f, 1.f)
-                Vector4 (-0.5f, 0.5f, 0.f, 1.f)
-                Vector4 (-0.5f, -0.5f, 0.f, 1.f)
-                Vector4 (0.5f, 0.5f, 0.f, 1.f)
+                Vector3 (-0.5f + x + start.X, -0.5f + x + start.Y, 0.f)
+                Vector3 (0.5f + x + start.X, 0.5f + x + start.Y, 0.f)
+                Vector3 (0.5f + x + start.X, -0.5f + x + start.Y, 0.f)
+                
+                Vector3 (-0.5f + x + start.X, 0.5f + x + start.Y, 0.f)
+                Vector3 (0.5f + x + start.X, 0.5f + x + start.Y, 0.f)
+                Vector3 (-0.5f + x + start.X, -0.5f + x + start.Y, 0.f)
+                
             |]
-            |> Array.map (fun v -> Vector4.Transform(v, mvp.model * mvp.view * mvp.proj) |> checkNan)
+//            |> Array.map (fun v -> Vector4.Transform(v, mvp.model * mvp.view * mvp.proj) |> checkNan)
 
-        let verticesBindings = [|mkVertexInputBinding<Vector4> 0u VkVertexInputRate.VK_VERTEX_INPUT_RATE_VERTEX|]
-        let verticesAttributes = mkVertexAttributeDescriptions<Vector4> 0u 0u
-        let verticesBuffer = instance.CreateBuffer<Vector4> (vertices.Length, FalkanBufferFlags.None, VertexBuffer)
+        let verticesBindings = [|mkVertexInputBinding<Vector3> 0u VkVertexInputRate.VK_VERTEX_INPUT_RATE_VERTEX|]
+        let verticesAttributes = mkVertexAttributeDescriptions<Vector3> 0u 0u
+        let verticesBuffer = instance.CreateBuffer<Vector3> (vertices.Length, FalkanBufferFlags.None, VertexBuffer)
         instance.FillBuffer(verticesBuffer, ReadOnlySpan vertices)
 
 
-        //let uv = Map.CreateSectorUv(texture.Width,texture.Height, geo.FloorVertices)
+      //  let uv = Map.CreateSectorUv(texture.Width,texture.Height, geo.FloorVertices)
         let uv =
             [|
                 Vector2(1.f, 0.f)
+                Vector2(0.f, 1.f)
                 Vector2(0.f, 0.f)
-                Vector2(0.f, 1.f)
+                
                 Vector2(1.f, 1.f)
-                Vector2(1.f, 0.f)
                 Vector2(0.f, 1.f)
+                Vector2(1.f, 0.f)
+                
             |]
 
         let uvBindings = [|mkVertexInputBinding<Vector2> 1u VkVertexInputRate.VK_VERTEX_INPUT_RATE_VERTEX|]
@@ -137,13 +148,13 @@ let setRender (instance: FalGraphics) =
         let vertex =
             <@
                 let mvp = Variable<ModelViewProjection> [Decoration.Binding 0u; Decoration.DescriptorSet 0u] StorageClass.Uniform
-                let position = Variable<Vector4> [Decoration.Location 0u; Decoration.Binding 0u] StorageClass.Input
+                let position = Variable<Vector3> [Decoration.Location 0u; Decoration.Binding 0u] StorageClass.Input
                 let texCoord = Variable<Vector2> [Decoration.Location 1u; Decoration.Binding 1u] StorageClass.Input
                 let mutable gl_Position  = Variable<Vector4> [Decoration.BuiltIn BuiltIn.Position] StorageClass.Output
                 let mutable fragTexCoord = Variable<Vector2> [Decoration.Location 0u] StorageClass.Output
 
                 fun () ->
-                    gl_Position <- position //Vector4(position, 1.f)
+                    gl_Position <- Vector4.Transform(Vector4(position, 1.f), mvp.model * mvp.view * mvp.proj)
                     fragTexCoord <- texCoord
             @>
         let spvVertexInfo = SpirvGenInfo.Create(AddressingModel.Logical, MemoryModel.GLSL450, ExecutionModel.Vertex, [Capability.Shader], [])
@@ -158,7 +169,7 @@ let setRender (instance: FalGraphics) =
                 let mutable outColor = Variable<Vector4> [Decoration.Location 0u] StorageClass.Output
 
                 fun () ->
-                  outColor <- sampler.ImplicitLod fragTexCoord
+                  outColor <- Vector4(1.f, 0.f, 0.f, 1.f) //sampler.ImplicitLod fragTexCoord
             @>
         let spvFragmentInfo = SpirvGenInfo.Create(AddressingModel.Logical, MemoryModel.GLSL450, ExecutionModel.Fragment, [Capability.Shader], ["GLSL.std.450"], ExecutionMode.OriginUpperLeft)
         let spvFragment = 
@@ -194,12 +205,15 @@ let main argv =
     let windowState = Win32WindowState (title, width, height)
     windowState.Show ()
 
+  //  Console.ReadLine() |> ignore
+
     let hwnd = windowState.Hwnd
     let hinstance = windowState.Hinstance
 
-    use device = FalDevice.CreateWin32Surface(hwnd, hinstance, "App", "Engine", ["VK_LAYER_KHRONOS_validation"], [VK_KHR_SWAPCHAIN_EXTENSION_NAME])
+    use device = FalDevice.CreateWin32Surface(hwnd, hinstance, "App", "Engine", ["VK_LAYER_LUNARG_standard_validation"], [VK_KHR_SWAPCHAIN_EXTENSION_NAME])
     use instance = FalGraphics.Create (device, windowState.WindowResized)
     let mvp, mvpUniform = setRender instance
+    instance.SetupCommands()
 
     let mutable mvp = mvp
 
@@ -218,6 +232,18 @@ let main argv =
             member __.OnInputEvents events = 
                 if not events.IsEmpty then
                     printfn "%A" events
+                events
+                |> List.iter (fun x ->
+                    match x with
+                    | InputEvent.KeyPressed 'W' ->
+                        let mutable view = mvp.view
+                        view.Translation <- view.Translation + Vector3(0.f, 0.1f, 0.f)
+                        mvp <-
+                            { mvp with view = view }
+                        instance.FillBuffer(mvpUniform, ReadOnlySpan[|mvp|])
+                      //  instance.SetUniformBuffer<ModelViewProjection>(mvpUniform)
+                    | _ -> ()
+                )
 
             member __.OnUpdateFrame (time, interval) =
                 //mvp <-

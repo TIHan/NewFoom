@@ -12,6 +12,8 @@ type FalGraphics =
 
     member RecordDraw: pipelineIndex: PipelineIndex * buffers: FalkanBuffer seq * vertexCount: int * instanceCount: int -> unit
 
+    member SetupCommands: unit -> unit
+
     member DrawFrame: unit -> unit
 
     member WaitIdle: unit -> unit

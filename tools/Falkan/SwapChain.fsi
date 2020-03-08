@@ -20,6 +20,8 @@ type SwapChain =
 
     member DrawFrame: unit -> unit
 
+    member SetupCommands: unit -> unit
+
     member WaitIdle: unit -> unit
 
     static member Create : FalDevice * VkSurfaceKHR * graphicsFamily: uint32 * presentFamily: uint32 * invalidate: IEvent<unit> -> SwapChain

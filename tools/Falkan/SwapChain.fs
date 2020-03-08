@@ -30,6 +30,7 @@ type SwapChainState =
 type DrawRecording =
     {
         pipelineIndex: int
+        pipelines: ResizeArray<VkPipeline>
         vertexBuffers: VkBuffer []
         vertexCount: uint32
         instanceCount: uint32
@@ -37,7 +38,7 @@ type DrawRecording =
 
 type PipelineIndex = int
 
-let recordDraw extent (framebuffers: VkFramebuffer []) (commandBuffers: VkCommandBuffer []) (descriptorSets: VkDescriptorSet [][]) pipelineLayout renderPass graphicsPipeline (vertexBuffers: VkBuffer []) vertexCount instanceCount =
+let recordDraw extent (framebuffers: VkFramebuffer []) (commandBuffers: VkCommandBuffer []) (descriptorSets: VkDescriptorSet [][]) pipelineLayout renderPass (drawRecordings: DrawRecording seq) =
     for i = 0 to framebuffers.Length - 1 do
         let framebuffer = framebuffers.[i]
         let commandBuffer = commandBuffers.[i]
@@ -74,26 +75,30 @@ let recordDraw extent (framebuffers: VkFramebuffer []) (commandBuffers: VkComman
 
         vkCmdBeginRenderPass(commandBuffer, &&beginInfo, VkSubpassContents.VK_SUBPASS_CONTENTS_INLINE)
 
-        // Bind graphics pipeline
 
-        vkCmdBindPipeline(commandBuffer, VkPipelineBindPoint.VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline)
+        for draw in drawRecordings do
 
-        // Bind descriptor sets
+            // Bind graphics pipeline
 
-        let sets = [|uboSet;samplerSet|]
-        use pDescriptorSet = fixed sets
-        vkCmdBindDescriptorSets(commandBuffer, VkPipelineBindPoint.VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0u, uint32 sets.Length, pDescriptorSet, 0u, vkNullPtr)
+            vkCmdBindPipeline(commandBuffer, VkPipelineBindPoint.VK_PIPELINE_BIND_POINT_GRAPHICS, draw.pipelines.[draw.pipelineIndex])
 
-        // Bind vertex buffers
+            // Bind descriptor sets
 
-        if vertexBuffers |> Array.isEmpty |> not then          
-            let mutable offsets = 0UL
-            use pVertexBuffers = fixed vertexBuffers
-            vkCmdBindVertexBuffers(commandBuffer, 0u, uint32 vertexBuffers.Length, pVertexBuffers, &&offsets)
+            let sets = [|uboSet;samplerSet|]
+            use pDescriptorSet = fixed sets
+            vkCmdBindDescriptorSets(commandBuffer, VkPipelineBindPoint.VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0u, uint32 sets.Length, pDescriptorSet, 0u, vkNullPtr)
 
-        // Draw
+            // Bind vertex buffers
+        
+            if draw.vertexBuffers |> Array.isEmpty |> not then          
+                let offsets = draw.vertexBuffers |> Array.map (fun _ -> 0UL)
+                use pOffsets = fixed offsets
+                use pVertexBuffers = fixed draw.vertexBuffers
+                vkCmdBindVertexBuffers(commandBuffer, 0u, uint32 draw.vertexBuffers.Length, pVertexBuffers, pOffsets)
 
-        vkCmdDraw(commandBuffer, vertexCount, instanceCount, 0u, 0u)
+            // Draw
+
+            vkCmdDraw(commandBuffer, draw.vertexCount, draw.instanceCount, 0u, 0u)
 
         // End render pass
 
@@ -102,6 +107,7 @@ let recordDraw extent (framebuffers: VkFramebuffer []) (commandBuffers: VkComman
         // Finish recording
 
         vkEndCommandBuffer(commandBuffer) |> checkResult
+
 
 let mkShaderStageInfo stage pName shaderModule =
     VkPipelineShaderStageCreateInfo (
@@ -148,10 +154,10 @@ let mkRasterizerCreateInfo () =
         sType = VkStructureType.VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
         depthClampEnable = VK_FALSE,
         rasterizerDiscardEnable = VK_FALSE,
-        polygonMode = VkPolygonMode.VK_POLYGON_MODE_FILL,
+        polygonMode = VkPolygonMode.VK_POLYGON_MODE_LINE,
         lineWidth = 1.0f,
         cullMode = VkCullModeFlags.VK_CULL_MODE_BACK_BIT,
-        frontFace = VkFrontFace.VK_FRONT_FACE_CLOCKWISE,
+        frontFace = VkFrontFace.VK_FRONT_FACE_COUNTER_CLOCKWISE,
         depthBiasEnable = VK_FALSE,
         depthBiasConstantFactor = 0.f, // Optional
         depthBiasClamp = 0.f, // Optional
@@ -796,12 +802,11 @@ type SwapChain private (fdevice: FalDevice, surface, sync, graphicsFamily, graph
         | _ ->
             failwith "should not happen"
 
-    let record recording =
+    let record () =
         let state = state.Value
         let vkDescriptorSets = state.descriptorSets |> Array.map (fun x -> x.vkDescriptorSets)
         recordDraw 
-            state.extent state.framebuffers state.commandBuffers vkDescriptorSets state.pipelineLayout state.renderPass 
-            pipelines.[recording.pipelineIndex] recording.vertexBuffers recording.vertexCount recording.instanceCount
+            state.extent state.framebuffers state.commandBuffers vkDescriptorSets state.pipelineLayout state.renderPass recordings.Values
 
     let setUniformBuffer () =
         match uniformBuffer with
@@ -878,8 +883,7 @@ type SwapChain private (fdevice: FalDevice, surface, sync, graphicsFamily, graph
                 addPipeline shader
             )
 
-            recordings.Values
-            |> Seq.iter record
+            record ()
 
         finally
             Monitor.Exit gate
@@ -916,12 +920,12 @@ type SwapChain private (fdevice: FalDevice, surface, sync, graphicsFamily, graph
             let recording =
                 {
                     pipelineIndex = pipelineIndex
+                    pipelines = pipelines
                     vertexBuffers = vertexBuffers
                     vertexCount = uint32 vertexCount
                     instanceCount = uint32 instanceCount
                 }
             recordings.[pipelineIndex] <- recording
-            record recording
         else
             failwith "Pipeline index is invalid."
 
@@ -942,6 +946,9 @@ type SwapChain private (fdevice: FalDevice, surface, sync, graphicsFamily, graph
         imageSampler <- Some (imageView, sampler)
 
         setSampler ()
+
+    member x.SetupCommands() =
+        record ()
 
     member x.DrawFrame () =
         lock gate |> fun _ ->
