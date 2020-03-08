@@ -127,9 +127,9 @@ let mkInputAssemblyCreateInfo () =
 let mkViewport (extent: VkExtent2D) =
     VkViewport (
         x = 0.f,
-        y = 0.f,
+        y = float32 extent.height,
         width = float32 extent.width,
-        height = float32 extent.height,
+        height = -float32 extent.height,
         minDepth = 0.f,
         maxDepth = 1.f
     )
@@ -156,7 +156,7 @@ let mkRasterizerCreateInfo () =
         rasterizerDiscardEnable = VK_FALSE,
         polygonMode = VkPolygonMode.VK_POLYGON_MODE_FILL,
         lineWidth = 1.0f,
-        cullMode = VkCullModeFlags.VK_CULL_MODE_FRONT_BIT,
+        cullMode = VkCullModeFlags.VK_CULL_MODE_BACK_BIT,
         frontFace = VkFrontFace.VK_FRONT_FACE_COUNTER_CLOCKWISE,
         depthBiasEnable = VK_FALSE,
         depthBiasConstantFactor = 0.f, // Optional

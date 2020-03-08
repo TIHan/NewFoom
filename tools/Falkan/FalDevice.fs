@@ -17,7 +17,7 @@ let mkApplicationInfo appNamePtr engineNamePtr =
         applicationVersion = VK_MAKE_VERSION(1u, 0u, 0u),
         pEngineName = engineNamePtr,
         engineVersion = VK_MAKE_VERSION(1u, 0u, 0u),
-        apiVersion = VK_API_VERSION_1_0
+        apiVersion = VK_API_VERSION_1_1
     )
 
 let getInstanceExtension<'T when 'T :> Delegate> instance =

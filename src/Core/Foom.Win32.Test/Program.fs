@@ -21,7 +21,12 @@ type ModelViewProjection =
         model: Matrix4x4
         view: Matrix4x4
         proj: Matrix4x4
-    }    
+    }
+    
+    member this.InvertedView =
+        let mutable invertedView = Matrix4x4.Identity
+        Matrix4x4.Invert(this.view, &invertedView) |> ignore
+        { model = this.model; view = invertedView; proj = this.proj }
 
 [<Struct>]
 type Vertex =
@@ -68,18 +73,19 @@ let setRender (instance: FalGraphics) =
 
     //let mvpBindings = [||]
     let mvpUniform = instance.CreateBuffer<ModelViewProjection>(1, FalkanBufferFlags.None, UniformBuffer)
-    let mutable quat = Matrix4x4.CreateFromAxisAngle (Vector3.UnitZ, radians 90.f)
-    quat.Translation <- Vector3(start.X, start.Y, 5000.f)
+    let mutable quat = Matrix4x4.Identity //Quaternion.CreateFromAxisAngle(Vector3.UnitX, radians 180.f) |> Matrix4x4.CreateFromQuaternion //Matrix4x4.CreateFromAxisAngle(Vector3.UnitX, radians 180.f)
+    quat.Translation <- Vector3(start.X, start.Y, 2000.f)
     let mutable invertedView = Matrix4x4.Identity
     Matrix4x4.Invert(quat, &invertedView) |> ignore
    // let mutable quat = Matrix4x4.CreateLookAt(Vector3.Zero, Vector3(start.X, start.Y, 0.f), Vector3.UnitZ)
     let mvp =
         {
             model = Matrix4x4.Identity
-            view = invertedView //Matrix4x4.CreateLookAt(Vector3(0.0f, 0.0f, 5.0f), Vector3(1.f), Vector3(0.f, 0.f, 1.f))
+            view = quat //Matrix4x4.CreateLookAt(Vector3(0.0f, 0.0f, 5.0f), Vector3(1.f), Vector3(0.f, 0.f, 1.f))
             proj = Matrix4x4.CreatePerspectiveFieldOfView(radians 45.f, 1280.f / 720.f, 0.1f, 1000000.f)
         }
-    instance.FillBuffer(mvpUniform, ReadOnlySpan [|mvp|])
+
+    instance.FillBuffer(mvpUniform, ReadOnlySpan [|mvp.InvertedView|])
     instance.SetUniformBuffer<ModelViewProjection>(mvpUniform)
 
     (e1m1.Sectors, e1m1.ComputeAllSectorGeometry())
@@ -103,10 +109,9 @@ let setRender (instance: FalGraphics) =
             v
 
         instance.SetSampler image
-        instance.FillBuffer(mvpUniform, ReadOnlySpan [|mvp|])
+        instance.FillBuffer(mvpUniform, ReadOnlySpan [|mvp.InvertedView|])
         let vertices =
             geo.FloorVertices
-            |> Array.map (fun x -> Vector3(x.X, x.Y, 0.f))
            // |> Array.rev
             //let x = float32 i * 0.1f
             //[|
@@ -119,7 +124,7 @@ let setRender (instance: FalGraphics) =
             //    Vector3 (-0.5f + x + start.X, -0.5f + x + start.Y, 0.f)
                 
             //|]
-//            |> Array.map (fun v -> Vector4.Transform(v, mvp.model * mvp.view * mvp.proj) |> checkNan)
+           // |> Array.map (fun v -> Vector4.Transform(v, mvp.model * mvp.view * mvp.proj) |> checkNan)
 
         let verticesBindings = [|mkVertexInputBinding<Vector3> 0u VkVertexInputRate.VK_VERTEX_INPUT_RATE_VERTEX|]
         let verticesAttributes = mkVertexAttributeDescriptions<Vector3> 0u 0u
@@ -234,22 +239,21 @@ let main argv =
                     printfn "%A" events
                 events
                 |> List.iter (fun x ->
-                    match x with
-                    | InputEvent.KeyPressed 'W' ->
-                        let mutable view = mvp.view
-                        view.Translation <- view.Translation + Vector3(0.f, 0.1f, 0.f)
-                        mvp <-
-                            { mvp with view = view }
-                        instance.FillBuffer(mvpUniform, ReadOnlySpan[|mvp|])
-                      //  instance.SetUniformBuffer<ModelViewProjection>(mvpUniform)
-                    | _ -> ()
+                    let v =
+                        match x with
+                        | InputEvent.KeyPressed 'W' -> Vector3(0.f, 20.f, 0.f) +  mvp.view.Translation
+                        | InputEvent.KeyPressed 'S' -> Vector3(0.f, -20.f, 0.f) +  mvp.view.Translation
+                        | InputEvent.KeyPressed 'A' -> Vector3(-20.f, 0.f, 0.f) +  mvp.view.Translation
+                        | InputEvent.KeyPressed 'D' -> Vector3(20.f, 0.f, 0.f) +  mvp.view.Translation
+                        | _ -> mvp.view.Translation
+                    let mutable view = mvp.view
+                    view.Translation <- v
+                    mvp <-
+                        { mvp with view = view }
+                    instance.FillBuffer(mvpUniform, ReadOnlySpan[|mvp.InvertedView|])
                 )
 
             member __.OnUpdateFrame (time, interval) =
-                //mvp <-
-                //    { mvp with model = Matrix4x4.CreateRotationY(radians (float32 time))}
-                //instance.FillBuffer(mvpUniform, ReadOnlySpan[|mvp|])
-              //  instance.SetUniformBuffer(mvpUniform)
                 quit
 
             member __.OnRenderFrame (_, _, _, _) =
