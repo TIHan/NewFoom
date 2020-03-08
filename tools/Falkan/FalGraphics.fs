@@ -29,14 +29,6 @@ type FalGraphics
         if isDisposed <> 0 then
             failwith "Vulkan instance is disposed."
 
-    member __.AddShader (vertexBindings, vertexAttributes, vertexBytes, fragmentBytes) : PipelineIndex =
-        checkDispose ()
-        swapChain.AddShader (vertexBindings, vertexAttributes, vertexBytes, fragmentBytes)
-
-    member _.RecordDraw (pipelineIndex, vertexBuffers: FalkanBuffer seq, vertexCount, instanceCount) =
-        checkDispose ()
-        swapChain.RecordDraw (pipelineIndex, vertexBuffers |> Seq.map (fun x -> x.buffer) |> Array.ofSeq, vertexCount, instanceCount)
-
     member _.SetupCommands() =
         swapChain.SetupCommands()
 

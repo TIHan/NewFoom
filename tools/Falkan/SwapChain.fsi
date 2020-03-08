@@ -37,13 +37,9 @@ type FalkanShader<'T1, 'T2> =
 type internal SwapChain =
     interface IDisposable
 
-    member AddShader: vertexBindings: VkVertexInputBindingDescription [] * vertexAttributes: VkVertexInputAttributeDescription [] * ReadOnlySpan<byte> * fragmentBytes: ReadOnlySpan<byte> -> PipelineIndex
-
     member SetUniformBuffer: VkBuffer * size: int -> unit
 
     member SetSampler: VkImageView * VkSampler -> unit
-
-    member RecordDraw: pipelineIndex: PipelineIndex * vertexBuffers: VkBuffer [] * vertexCount: int * instanceCount: int -> unit
 
     member DrawFrame: unit -> unit
 

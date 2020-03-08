@@ -8,10 +8,6 @@ open FSharp.Vulkan.Interop
 type FalGraphics =
     interface IDisposable
 
-    member AddShader: vertexBindings: VkVertexInputBindingDescription [] * vertexAttributes: VkVertexInputAttributeDescription [] * ReadOnlySpan<byte> * fragmentBytes: ReadOnlySpan<byte> -> PipelineIndex
-
-    member RecordDraw: pipelineIndex: PipelineIndex * buffers: FalkanBuffer seq * vertexCount: int * instanceCount: int -> unit
-
     member SetupCommands: unit -> unit
 
     member DrawFrame: unit -> unit

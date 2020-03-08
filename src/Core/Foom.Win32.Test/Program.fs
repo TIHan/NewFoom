@@ -126,7 +126,7 @@ let setRender (instance: FalGraphics) =
     //let mvpBindings = [||]
     let mvpUniform = instance.CreateBuffer<ModelViewProjection>(1, FalkanBufferFlags.None, UniformBuffer)
     let mutable quat = Matrix4x4.Identity //Quaternion.CreateFromAxisAngle(Vector3.UnitX, radians 180.f) |> Matrix4x4.CreateFromQuaternion //Matrix4x4.CreateFromAxisAngle(Vector3.UnitX, radians 180.f)
-    quat.Translation <- Vector3(start.X, start.Y, 2000.f)
+    quat.Translation <- Vector3(start.X, start.Y, 5000.f)
     let mutable invertedView = Matrix4x4.Identity
     Matrix4x4.Invert(quat, &invertedView) |> ignore
    // let mutable quat = Matrix4x4.CreateLookAt(Vector3.Zero, Vector3(start.X, start.Y, 0.f), Vector3.UnitZ)
@@ -140,13 +140,14 @@ let setRender (instance: FalGraphics) =
     instance.FillBuffer(mvpUniform, ReadOnlySpan [|mvp.InvertedView|])
     instance.SetUniformBuffer<ModelViewProjection>(mvpUniform)
 
+    let shader = meshShader instance
+
     (e1m1.Sectors, e1m1.ComputeAllSectorGeometry())
     ||> Seq.iteri2 (fun i s geo ->
         let texture = wad.TryFindFlatTexture(s.FloorTextureName).Value
        
         let data = texture.Data
         use bmp = createBitmap data
-        //use bmp = new Bitmap(Bitmap.FromFile("texture.jpg"))
         let rect = Rectangle(0, 0, bmp.Width, bmp.Height)
         let data = bmp.LockBits(rect, ImageLockMode.ReadWrite, PixelFormat.Format32bppArgb)
 
@@ -155,101 +156,17 @@ let setRender (instance: FalGraphics) =
         instance.FillImage(image, ReadOnlySpan(ptr, data.Width * data.Height * 4))
         bmp.UnlockBits(data)
 
-        let checkNan (v: Vector4) =
-            if Single.IsNaN v.X then
-                failwith "it's nan"
-            v
-
         instance.SetSampler image
         instance.FillBuffer(mvpUniform, ReadOnlySpan [|mvp.InvertedView|])
-        let vertices =
-            geo.FloorVertices
-           // |> Array.rev
-            //let x = float32 i * 0.1f
-            //[|
-            //    Vector3 (-0.5f + x + start.X, -0.5f + x + start.Y, 0.f)
-            //    Vector3 (0.5f + x + start.X, 0.5f + x + start.Y, 0.f)
-            //    Vector3 (0.5f + x + start.X, -0.5f + x + start.Y, 0.f)
-                
-            //    Vector3 (-0.5f + x + start.X, 0.5f + x + start.Y, 0.f)
-            //    Vector3 (0.5f + x + start.X, 0.5f + x + start.Y, 0.f)
-            //    Vector3 (-0.5f + x + start.X, -0.5f + x + start.Y, 0.f)
-                
-            //|]
-           // |> Array.map (fun v -> Vector4.Transform(v, mvp.model * mvp.view * mvp.proj) |> checkNan)
-
-        let verticesBindings = [|mkVertexInputBinding<Vector3> 0u VkVertexInputRate.VK_VERTEX_INPUT_RATE_VERTEX|]
-        let verticesAttributes = mkVertexAttributeDescriptions<Vector3> 0u 0u
+        let vertices = geo.FloorVertices
         let verticesBuffer = instance.CreateBuffer<Vector3> (vertices.Length, FalkanBufferFlags.None, VertexBuffer)
         instance.FillBuffer(verticesBuffer, ReadOnlySpan vertices)
 
-
         let uv = Map.CreateSectorUv(texture.Width,texture.Height, geo.FloorVertices)
-        //let uv =
-        //    [|
-        //        Vector2(1.f, 0.f)
-        //        Vector2(0.f, 1.f)
-        //        Vector2(0.f, 0.f)
-                
-        //        Vector2(1.f, 1.f)
-        //        Vector2(0.f, 1.f)
-        //        Vector2(1.f, 0.f)
-                
-        //    |]
-
-        let uvBindings = [|mkVertexInputBinding<Vector2> 1u VkVertexInputRate.VK_VERTEX_INPUT_RATE_VERTEX|]
-        let uvAttributes = mkVertexAttributeDescriptions<Vector2> 1u 1u
         let uvBuffer = instance.CreateBuffer<Vector2> (uv.Length, FalkanBufferFlags.None, VertexBuffer)
         instance.FillBuffer(uvBuffer, ReadOnlySpan uv)
 
-        let vertex =
-            <@
-                let mvp = Variable<ModelViewProjection> [Decoration.Binding 0u; Decoration.DescriptorSet 0u] StorageClass.Uniform
-                let position = Variable<Vector3> [Decoration.Location 0u; Decoration.Binding 0u] StorageClass.Input
-                let texCoord = Variable<Vector2> [Decoration.Location 1u; Decoration.Binding 1u] StorageClass.Input
-                let mutable gl_Position  = Variable<Vector4> [Decoration.BuiltIn BuiltIn.Position] StorageClass.Output
-                let mutable fragTexCoord = Variable<Vector2> [Decoration.Location 0u] StorageClass.Output
-
-                fun () ->
-                    gl_Position <- Vector4.Transform(Vector4(position, 1.f), mvp.model * mvp.view * mvp.proj)
-                    fragTexCoord <- texCoord
-            @>
-        let spvVertexInfo = SpirvGenInfo.Create(AddressingModel.Logical, MemoryModel.GLSL450, ExecutionModel.Vertex, [Capability.Shader], [])
-        let spvVertex =
-            Checker.Check vertex
-            |> SpirvGen.GenModule spvVertexInfo
-
-        let fragment =
-            <@ 
-                let sampler = Variable<Sampler2d> [Decoration.Binding 1u; Decoration.DescriptorSet 1u] StorageClass.UniformConstant
-                let fragTexCoord = Variable<Vector2> [Decoration.Location 0u] StorageClass.Input
-                let mutable outColor = Variable<Vector4> [Decoration.Location 0u] StorageClass.Output
-
-                fun () ->
-                  outColor <- sampler.ImplicitLod fragTexCoord
-            @>
-        let spvFragmentInfo = SpirvGenInfo.Create(AddressingModel.Logical, MemoryModel.GLSL450, ExecutionModel.Fragment, [Capability.Shader], ["GLSL.std.450"], ExecutionMode.OriginUpperLeft)
-        let spvFragment = 
-            Checker.Check fragment
-            |> SpirvGen.GenModule spvFragmentInfo
-
-        let vertexBytes =
-            use ms = new System.IO.MemoryStream 100
-            SpirvModule.Serialize (ms, spvVertex)
-            let bytes = Array.zeroCreate (int ms.Length)
-            ms.Position <- 0L
-            ms.Read(bytes, 0, bytes.Length) |> ignore
-            bytes
-        let fragmentBytes =
-            use ms = new System.IO.MemoryStream 100
-            SpirvModule.Serialize (ms, spvFragment)
-            let bytes = Array.zeroCreate (int ms.Length)
-            ms.Position <- 0L
-            ms.Read(bytes, 0, bytes.Length) |> ignore
-            bytes
-
-        let pipelineIndex = instance.AddShader(Array.append verticesBindings uvBindings, Array.append verticesAttributes uvAttributes, ReadOnlySpan vertexBytes, ReadOnlySpan fragmentBytes)
-        instance.RecordDraw(pipelineIndex, [verticesBuffer;uvBuffer], vertices.Length, 1))
+        shader.AddDraw(verticesBuffer, uvBuffer, vertices.Length, 1))
     mvp, mvpUniform
 
 [<EntryPoint>]

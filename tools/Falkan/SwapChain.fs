@@ -7,6 +7,8 @@ open System.Runtime.InteropServices
 open System.Runtime.CompilerServices
 open FSharp.NativeInterop
 open FSharp.Vulkan.Interop
+open System.Collections.Generic
+open System.Collections.ObjectModel
 
 #nowarn "9"
 #nowarn "51"
@@ -26,19 +28,24 @@ type SwapChainState =
         commandBuffers: VkCommandBuffer []
     }
 
-[<NoEquality;NoComparison>]
-type DrawRecording =
+[<Struct;NoEquality;NoComparison>]
+type Draw =
     {
-        pipelineIndex: int
-        pipelines: ResizeArray<VkPipeline>
         vertexBuffers: VkBuffer []
         vertexCount: uint32
         instanceCount: uint32
     }
 
+[<Struct;NoEquality;NoComparison>]
+type Pipeline =
+    {
+        vkPipeline: VkPipeline
+        draws: Draw ResizeArray
+    }
+
 type PipelineIndex = int
 
-let recordDraw extent (framebuffers: VkFramebuffer []) (commandBuffers: VkCommandBuffer []) (descriptorSets: VkDescriptorSet [][]) pipelineLayout renderPass (drawRecordings: DrawRecording seq) =
+let recordDraw extent (framebuffers: VkFramebuffer []) (commandBuffers: VkCommandBuffer []) (descriptorSets: VkDescriptorSet [][]) pipelineLayout renderPass (pipelines: Pipeline seq) =
     for i = 0 to framebuffers.Length - 1 do
         let framebuffer = framebuffers.[i]
         let commandBuffer = commandBuffers.[i]
@@ -75,12 +82,11 @@ let recordDraw extent (framebuffers: VkFramebuffer []) (commandBuffers: VkComman
 
         vkCmdBeginRenderPass(commandBuffer, &&beginInfo, VkSubpassContents.VK_SUBPASS_CONTENTS_INLINE)
 
-
-        for draw in drawRecordings do
+        for pipeline in pipelines do
 
             // Bind graphics pipeline
 
-            vkCmdBindPipeline(commandBuffer, VkPipelineBindPoint.VK_PIPELINE_BIND_POINT_GRAPHICS, draw.pipelines.[draw.pipelineIndex])
+            vkCmdBindPipeline(commandBuffer, VkPipelineBindPoint.VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.vkPipeline)
 
             // Bind descriptor sets
 
@@ -88,17 +94,19 @@ let recordDraw extent (framebuffers: VkFramebuffer []) (commandBuffers: VkComman
             use pDescriptorSet = fixed sets
             vkCmdBindDescriptorSets(commandBuffer, VkPipelineBindPoint.VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0u, uint32 sets.Length, pDescriptorSet, 0u, vkNullPtr)
 
-            // Bind vertex buffers
+            for draw in pipeline.draws do
+
+                // Bind vertex buffers
         
-            if draw.vertexBuffers |> Array.isEmpty |> not then          
-                let offsets = draw.vertexBuffers |> Array.map (fun _ -> 0UL)
-                use pOffsets = fixed offsets
-                use pVertexBuffers = fixed draw.vertexBuffers
-                vkCmdBindVertexBuffers(commandBuffer, 0u, uint32 draw.vertexBuffers.Length, pVertexBuffers, pOffsets)
+                if draw.vertexBuffers |> Array.isEmpty |> not then          
+                    let offsets = draw.vertexBuffers |> Array.map (fun _ -> 0UL)
+                    use pOffsets = fixed offsets
+                    use pVertexBuffers = fixed draw.vertexBuffers
+                    vkCmdBindVertexBuffers(commandBuffer, 0u, uint32 draw.vertexBuffers.Length, pVertexBuffers, pOffsets)
 
-            // Draw
+                // Draw
 
-            vkCmdDraw(commandBuffer, draw.vertexCount, draw.instanceCount, 0u, 0u)
+                vkCmdDraw(commandBuffer, draw.vertexCount, draw.instanceCount, 0u, 0u)
 
         // End render pass
 
@@ -724,6 +732,9 @@ type ShaderInputKind =
     | PerVertex
     | PerInstance
 
+[<Struct;NoEquality;NoComparison>]
+type ShaderId = ShaderId of Guid
+
 open System.Numerics
 
 [<Struct>]
@@ -747,13 +758,13 @@ module FalkanShaderInput =
 
     let createVector2(kind, binding, location) : FalkanShaderInput<Vector2> = FalkanShaderInput(kind, binding, location)
 
-type FalkanShader<'T> = private FalkanShader of pipelineIndex: int * swapChain: SwapChain with
+type FalkanShader<'T> = private FalkanShader of ShaderId * swapChain: SwapChain with
 
     member this.AddDraw(buffer: FalkanBuffer, vertexCount, instanceCount) =
         match this with
         | FalkanShader(pipelineIndex, swapChain) -> swapChain.RecordDraw(pipelineIndex, [|buffer.buffer|], vertexCount, instanceCount)
 
-and FalkanShader<'T1, 'T2> = private FalkanShader2 of pipelineIndex: int * swapChain: SwapChain with
+and FalkanShader<'T1, 'T2> = private FalkanShader2 of ShaderId * swapChain: SwapChain with
 
     member this.AddDraw(buffer1: FalkanBuffer, buffer2: FalkanBuffer, vertexCount, instanceCount) =
         match this with
@@ -771,9 +782,9 @@ and [<Sealed>] SwapChain private (fdevice: FalDevice, surface, sync, graphicsFam
     let mutable imageSampler = None
     let mutable isInvalidated = false
 
-    let recordings = Collections.Generic.Dictionary<int, DrawRecording>()
+    let recordings = Collections.Generic.Dictionary<Guid, Shader * Pipeline>()
     let shaders = ResizeArray ()
-    let pipelines = ResizeArray ()
+    let pipelines = ResizeArray<Pipeline> ()
 
     let checkDispose () =       
         if isDisposed <> 0 then
@@ -806,7 +817,7 @@ and [<Sealed>] SwapChain private (fdevice: FalDevice, surface, sync, graphicsFam
         pipelines
         |> Seq.rev
         |> Seq.iter (fun pipeline ->
-            vkDestroyPipeline(device, pipeline, vkNullPtr)
+            vkDestroyPipeline(device, pipeline.vkPipeline, vkNullPtr)
         )
 
         pipelines.Clear ()
@@ -833,11 +844,13 @@ and [<Sealed>] SwapChain private (fdevice: FalDevice, surface, sync, graphicsFam
 
         vkDestroySwapchainKHR(device, swapChain, vkNullPtr)
 
-    let addPipeline group =
+    let addPipeline group draws =
         match state with
         | Some state ->
-            let pipeline = mkGraphicsPipeline device state.extent state.pipelineLayout state.renderPass group
+            let vkPipeline = mkGraphicsPipeline device state.extent state.pipelineLayout state.renderPass group
+            let pipeline = { vkPipeline = vkPipeline; draws = draws }
             pipelines.Add pipeline
+            pipeline
         | _ ->
             failwith "should not happen"
 
@@ -845,7 +858,7 @@ and [<Sealed>] SwapChain private (fdevice: FalDevice, surface, sync, graphicsFam
         let state = state.Value
         let vkDescriptorSets = state.descriptorSets |> Array.map (fun x -> x.vkDescriptorSets)
         recordDraw 
-            state.extent state.framebuffers state.commandBuffers vkDescriptorSets state.pipelineLayout state.renderPass recordings.Values
+            state.extent state.framebuffers state.commandBuffers vkDescriptorSets state.pipelineLayout state.renderPass pipelines
 
     let setUniformBuffer () =
         match uniformBuffer with
@@ -917,17 +930,17 @@ and [<Sealed>] SwapChain private (fdevice: FalDevice, surface, sync, graphicsFam
             setUniformBuffer ()
             setSampler ()
 
-            shaders
-            |> Seq.iter (fun shader ->
-                addPipeline shader
-            )
+            for pair in recordings |> Seq.toArray do
+                recordings.[pair.Key] <- 
+                    let pipeline = addPipeline (fst pair.Value) (snd pair.Value).draws
+                    (fst pair.Value, pipeline)
 
             record ()
 
         finally
             Monitor.Exit gate
 
-    member x.AddShader (vertexBindings, vertexAttributes, vertexBytes: ReadOnlySpan<byte>, fragmentBytes: ReadOnlySpan<byte>) : PipelineIndex =
+    member x.AddShader (vertexBindings, vertexAttributes, vertexBytes: ReadOnlySpan<byte>, fragmentBytes: ReadOnlySpan<byte>) =
         if not (Monitor.IsEntered gate) then
             Monitor.Enter gate
 
@@ -943,30 +956,29 @@ and [<Sealed>] SwapChain private (fdevice: FalDevice, surface, sync, graphicsFam
                     pVertexBytes (uint32 vertexBytes.Length) 
                     pFragmentBytes (uint32 fragmentBytes.Length)
 
-            let pipelineIndex = shaders.Count
             shaders.Add shader
-            addPipeline shader
-            pipelineIndex
+            let pipeline = addPipeline shader (ResizeArray())
+            let id = Guid.NewGuid()
+            recordings.[id] <- (shader, pipeline)
+            ShaderId id
         finally 
             Monitor.Exit gate
 
-    member x.RecordDraw(pipelineIndex, vertexBuffers, vertexCount, instanceCount) =
+    member x.RecordDraw((ShaderId id): ShaderId, vertexBuffers, vertexCount, instanceCount) =
         lock gate |> fun _ ->
 
         check ()
 
-        if pipelineIndex >= 0 && pipelineIndex < pipelines.Count then
-            let recording =
+        match recordings.TryGetValue id with
+        | false, _ -> failwith "Unable to find shader."
+        | true, (_, pipeline) ->
+            let draw =
                 {
-                    pipelineIndex = pipelineIndex
-                    pipelines = pipelines
                     vertexBuffers = vertexBuffers
                     vertexCount = uint32 vertexCount
                     instanceCount = uint32 instanceCount
                 }
-            recordings.[pipelineIndex] <- recording
-        else
-            failwith "Pipeline index is invalid."
+            pipeline.draws.Add draw
 
     member x.SetUniformBuffer(buffer, size) =
         lock gate |> fun _ ->
@@ -1014,14 +1026,14 @@ and [<Sealed>] SwapChain private (fdevice: FalDevice, surface, sync, graphicsFam
 
     member this.CreateShader(input: FalkanShaderInput<'T>, vertexSpirvSource: ReadOnlySpan<byte>, fragmentSpirvSource: ReadOnlySpan<byte>) =
         let vkVertexInputBindingDescription, vkVertexInputAttributeDescriptions = input.BuildVulkanInfo()
-        let pipelineIndex = this.AddShader([|vkVertexInputBindingDescription|], vkVertexInputAttributeDescriptions, vertexSpirvSource, fragmentSpirvSource)
-        FalkanShader(pipelineIndex, this) : FalkanShader<'T>
+        let id = this.AddShader([|vkVertexInputBindingDescription|], vkVertexInputAttributeDescriptions, vertexSpirvSource, fragmentSpirvSource)
+        FalkanShader(id, this) : FalkanShader<'T>
 
     member this.CreateShader(input1: FalkanShaderInput<'T1>, input2: FalkanShaderInput<'T2>, vertexSpirvSource: ReadOnlySpan<byte>, fragmentSpirvSource: ReadOnlySpan<byte>) =
         let vkVertexInputBindingDescription1, vkVertexInputAttributeDescriptions1 = input1.BuildVulkanInfo()
         let vkVertexInputBindingDescription2, vkVertexInputAttributeDescriptions2 = input2.BuildVulkanInfo()
-        let pipelineIndex = this.AddShader([|vkVertexInputBindingDescription1;vkVertexInputBindingDescription2|], Array.append vkVertexInputAttributeDescriptions1 vkVertexInputAttributeDescriptions2, vertexSpirvSource, fragmentSpirvSource)
-        FalkanShader2(pipelineIndex, this) : FalkanShader<'T1, 'T2>
+        let id = this.AddShader([|vkVertexInputBindingDescription1;vkVertexInputBindingDescription2|], Array.append vkVertexInputAttributeDescriptions1 vkVertexInputAttributeDescriptions2, vertexSpirvSource, fragmentSpirvSource)
+        FalkanShader2(id, this) : FalkanShader<'T1, 'T2>
 
     interface IDisposable with
 
