@@ -64,6 +64,58 @@ let createBitmap (pixels: Pixel [,]) =
 
     bitmap
 
+let meshShader (instance: FalGraphics) =
+    let input1 = FalkanShaderInput.createVector3(PerVertex, 0u, 0u)
+    let input2 = FalkanShaderInput.createVector2(PerVertex, 1u, 1u)
+
+    let vertex =
+        <@
+            let mvp = Variable<ModelViewProjection> [Decoration.Binding 0u; Decoration.DescriptorSet 0u] StorageClass.Uniform
+            let position = Variable<Vector3> [Decoration.Location 0u; Decoration.Binding 0u] StorageClass.Input
+            let texCoord = Variable<Vector2> [Decoration.Location 1u; Decoration.Binding 1u] StorageClass.Input
+            let mutable gl_Position  = Variable<Vector4> [Decoration.BuiltIn BuiltIn.Position] StorageClass.Output
+            let mutable fragTexCoord = Variable<Vector2> [Decoration.Location 0u] StorageClass.Output
+
+            fun () ->
+                gl_Position <- Vector4.Transform(Vector4(position, 1.f), mvp.model * mvp.view * mvp.proj)
+                fragTexCoord <- texCoord
+        @>
+    let spvVertexInfo = SpirvGenInfo.Create(AddressingModel.Logical, MemoryModel.GLSL450, ExecutionModel.Vertex, [Capability.Shader], [])
+    let spvVertex =
+        Checker.Check vertex
+        |> SpirvGen.GenModule spvVertexInfo
+
+    let fragment =
+        <@ 
+            let sampler = Variable<Sampler2d> [Decoration.Binding 1u; Decoration.DescriptorSet 1u] StorageClass.UniformConstant
+            let fragTexCoord = Variable<Vector2> [Decoration.Location 0u] StorageClass.Input
+            let mutable outColor = Variable<Vector4> [Decoration.Location 0u] StorageClass.Output
+
+            fun () ->
+              outColor <- sampler.ImplicitLod fragTexCoord
+        @>
+    let spvFragmentInfo = SpirvGenInfo.Create(AddressingModel.Logical, MemoryModel.GLSL450, ExecutionModel.Fragment, [Capability.Shader], ["GLSL.std.450"], ExecutionMode.OriginUpperLeft)
+    let spvFragment = 
+        Checker.Check fragment
+        |> SpirvGen.GenModule spvFragmentInfo
+
+    let vertexBytes =
+        use ms = new System.IO.MemoryStream 100
+        SpirvModule.Serialize (ms, spvVertex)
+        let bytes = Array.zeroCreate (int ms.Length)
+        ms.Position <- 0L
+        ms.Read(bytes, 0, bytes.Length) |> ignore
+        bytes
+    let fragmentBytes =
+        use ms = new System.IO.MemoryStream 100
+        SpirvModule.Serialize (ms, spvFragment)
+        let bytes = Array.zeroCreate (int ms.Length)
+        ms.Position <- 0L
+        ms.Read(bytes, 0, bytes.Length) |> ignore
+        bytes
+
+    instance.CreateShader(input1, input2, ReadOnlySpan vertexBytes, ReadOnlySpan fragmentBytes)
+
 let setRender (instance: FalGraphics) =
     let wad = Wad.FromFile("../../../../../../Foom-deps/testwads/doom1.wad")
     let e1m1 = wad.FindMap "e1m1"

@@ -11,7 +11,7 @@ open FSharp.Vulkan.Interop
 #nowarn "51"
 
 [<RequiresExplicitTypeArguments>]
-let mkVertexInputBinding<'T when 'T : unmanaged> binding inputRate =
+let mkVertexInputBinding<'T> binding inputRate =
     VkVertexInputBindingDescription (
         binding = binding,
         stride = uint32 sizeof<'T>,
@@ -27,7 +27,7 @@ let mkVertexAttributeDescription binding location format offset =
     )
 
 [<RequiresExplicitTypeArguments>]
-let mkVertexAttributeDescriptions<'T when 'T : unmanaged> locationOffset binding =
+let mkVertexAttributeDescriptions<'T> locationOffset binding =
     let rec mk (ty: Type) location offset = 
         match ty with
         | _ when ty = typeof<single> -> 

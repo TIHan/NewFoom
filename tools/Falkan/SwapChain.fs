@@ -719,8 +719,47 @@ let updateDescriptorImageSet device descriptorSet pImageInfo =
 
     vkUpdateDescriptorSets(device, 1u, &&descriptorWrite, 0u, vkNullPtr)
 
-[<Sealed>]
-type SwapChain private (fdevice: FalDevice, surface, sync, graphicsFamily, graphicsQueue, presentFamily, presentQueue, invalidate: IEvent<unit>) =
+[<Struct>]
+type ShaderInputKind =
+    | PerVertex
+    | PerInstance
+
+open System.Numerics
+
+[<Struct>]
+type FalkanShaderInput<'Input> = private FalkanShaderInput of ShaderInputKind * binding: uint32 * location: uint32 with
+
+    member this.BuildVulkanInfo() =
+        match this with
+        | FalkanShaderInput(kind, binding, location) -> 
+            let vkVertexInputRate =
+                match kind with
+                | PerVertex -> VkVertexInputRate.VK_VERTEX_INPUT_RATE_VERTEX
+                | PerInstance -> VkVertexInputRate.VK_VERTEX_INPUT_RATE_INSTANCE
+            let vkVertexInputBindingDescription = mkVertexInputBinding<'Input> binding vkVertexInputRate
+            let vkVertexInputAttributeDescriptions = mkVertexAttributeDescriptions<'Input> location binding
+            (vkVertexInputBindingDescription, vkVertexInputAttributeDescriptions)
+
+[<RequireQualifiedAccess>]
+module FalkanShaderInput =
+
+    let createVector3(kind, binding, location) : FalkanShaderInput<Vector3> = FalkanShaderInput(kind, binding, location)
+
+    let createVector2(kind, binding, location) : FalkanShaderInput<Vector2> = FalkanShaderInput(kind, binding, location)
+
+type FalkanShader<'T> = private FalkanShader of pipelineIndex: int * swapChain: SwapChain with
+
+    member this.AddDraw(buffer: FalkanBuffer, vertexCount, instanceCount) =
+        match this with
+        | FalkanShader(pipelineIndex, swapChain) -> swapChain.RecordDraw(pipelineIndex, [|buffer.buffer|], vertexCount, instanceCount)
+
+and FalkanShader<'T1, 'T2> = private FalkanShader2 of pipelineIndex: int * swapChain: SwapChain with
+
+    member this.AddDraw(buffer1: FalkanBuffer, buffer2: FalkanBuffer, vertexCount, instanceCount) =
+        match this with
+        | FalkanShader2(pipelineIndex, swapChain) -> swapChain.RecordDraw(pipelineIndex, [|buffer1.buffer;buffer2.buffer|], vertexCount, instanceCount)
+
+and [<Sealed>] SwapChain private (fdevice: FalDevice, surface, sync, graphicsFamily, graphicsQueue, presentFamily, presentQueue, invalidate: IEvent<unit>) =
 
     let device = fdevice.Device
     let physicalDevice = fdevice.PhysicalDevice
@@ -972,6 +1011,17 @@ type SwapChain private (fdevice: FalDevice, surface, sync, graphicsFamily, graph
         vkQueueWaitIdle(presentQueue) |> checkResult
         vkQueueWaitIdle(graphicsQueue) |> checkResult
         vkDeviceWaitIdle(device) |> checkResult
+
+    member this.CreateShader(input: FalkanShaderInput<'T>, vertexSpirvSource: ReadOnlySpan<byte>, fragmentSpirvSource: ReadOnlySpan<byte>) =
+        let vkVertexInputBindingDescription, vkVertexInputAttributeDescriptions = input.BuildVulkanInfo()
+        let pipelineIndex = this.AddShader([|vkVertexInputBindingDescription|], vkVertexInputAttributeDescriptions, vertexSpirvSource, fragmentSpirvSource)
+        FalkanShader(pipelineIndex, this) : FalkanShader<'T>
+
+    member this.CreateShader(input1: FalkanShaderInput<'T1>, input2: FalkanShaderInput<'T2>, vertexSpirvSource: ReadOnlySpan<byte>, fragmentSpirvSource: ReadOnlySpan<byte>) =
+        let vkVertexInputBindingDescription1, vkVertexInputAttributeDescriptions1 = input1.BuildVulkanInfo()
+        let vkVertexInputBindingDescription2, vkVertexInputAttributeDescriptions2 = input2.BuildVulkanInfo()
+        let pipelineIndex = this.AddShader([|vkVertexInputBindingDescription1;vkVertexInputBindingDescription2|], Array.append vkVertexInputAttributeDescriptions1 vkVertexInputAttributeDescriptions2, vertexSpirvSource, fragmentSpirvSource)
+        FalkanShader2(pipelineIndex, this) : FalkanShader<'T1, 'T2>
 
     interface IDisposable with
 

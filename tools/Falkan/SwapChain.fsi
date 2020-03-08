@@ -1,13 +1,40 @@
 ﻿[<AutoOpen>]
-module internal Falkan.SwapChain
+module Falkan.SwapChain
 
 open System
 open FSharp.Vulkan.Interop
 
 type PipelineIndex = int
 
+[<Struct>]
+type ShaderInputKind =
+    | PerVertex
+    | PerInstance
+
+open System.Numerics
+
+[<Struct>]
+type FalkanShaderInput<'Input> = private FalkanShaderInput of ShaderInputKind * binding: uint32 * location: uint32
+
+[<RequireQualifiedAccess>]
+module FalkanShaderInput =
+
+    val createVector2 : ShaderInputKind * binding: uint32 * location: uint32 -> FalkanShaderInput<Vector2>
+
+    val createVector3 : ShaderInputKind * binding: uint32 * location: uint32 -> FalkanShaderInput<Vector3>
+
 [<Sealed>]
-type SwapChain =
+type FalkanShader<'T> =
+
+    member AddDraw : FalkanBuffer * vertexCount : int * instanceCount: int -> unit
+
+[<Sealed>]
+type FalkanShader<'T1, 'T2> =
+
+    member AddDraw : FalkanBuffer * FalkanBuffer * vertexCount : int * instanceCount: int -> unit
+
+[<Sealed>]
+type internal SwapChain =
     interface IDisposable
 
     member AddShader: vertexBindings: VkVertexInputBindingDescription [] * vertexAttributes: VkVertexInputAttributeDescription [] * ReadOnlySpan<byte> * fragmentBytes: ReadOnlySpan<byte> -> PipelineIndex
@@ -23,5 +50,9 @@ type SwapChain =
     member SetupCommands: unit -> unit
 
     member WaitIdle: unit -> unit
+
+    member CreateShader: FalkanShaderInput<'T> * vertexSpirvSource: ReadOnlySpan<byte> * fragmentSpirvSource: ReadOnlySpan<byte> -> FalkanShader<'T>
+
+    member CreateShader: FalkanShaderInput<'T1> * FalkanShaderInput<'T2> * vertexSpirvSource: ReadOnlySpan<byte> * fragmentSpirvSource: ReadOnlySpan<byte> -> FalkanShader<'T1, 'T2>
 
     static member Create : FalDevice * VkSurfaceKHR * graphicsFamily: uint32 * presentFamily: uint32 * invalidate: IEvent<unit> -> SwapChain

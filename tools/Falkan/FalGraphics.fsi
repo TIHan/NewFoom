@@ -32,4 +32,8 @@ type FalGraphics =
 
     member SetSampler: FalkanImage -> unit
 
+    member CreateShader: FalkanShaderInput<'T> * vertexSpirvSource: ReadOnlySpan<byte> * fragmentSpirvSource: ReadOnlySpan<byte> -> FalkanShader<'T>
+
+    member CreateShader: FalkanShaderInput<'T1> * FalkanShaderInput<'T2> * vertexSpirvSource: ReadOnlySpan<byte> * fragmentSpirvSource: ReadOnlySpan<byte> -> FalkanShader<'T1, 'T2>
+
     static member Create : FalDevice * invalidate: IEvent<unit> -> FalGraphics

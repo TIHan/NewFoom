@@ -129,6 +129,12 @@ type FalGraphics
                     if x.IsValueCreated then
                         (x.Value :> IDisposable).Dispose())
 
+    member this.CreateShader(input: FalkanShaderInput<'T>, vertexSpirvSource: ReadOnlySpan<byte>, fragmentSpirvSource: ReadOnlySpan<byte>) =
+        swapChain.CreateShader(input, vertexSpirvSource, fragmentSpirvSource)
+
+    member this.CreateShader(input1: FalkanShaderInput<'T1>, input2: FalkanShaderInput<'T2>, vertexSpirvSource: ReadOnlySpan<byte>, fragmentSpirvSource: ReadOnlySpan<byte>) =
+        swapChain.CreateShader(input1, input2, vertexSpirvSource, fragmentSpirvSource)
+
     static member Create(falDevice: FalDevice, invalidate) =
         let indices = falDevice.Indices
         let surface =
