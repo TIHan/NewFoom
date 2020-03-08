@@ -166,7 +166,7 @@ let setRender (instance: FalGraphics) =
         let uvBuffer = instance.CreateBuffer<Vector2> (uv.Length, FalkanBufferFlags.None, VertexBuffer)
         instance.FillBuffer(uvBuffer, ReadOnlySpan uv)
 
-        shader.AddDraw(verticesBuffer, uvBuffer, vertices.Length, 1))
+        shader.AddDraw(image, verticesBuffer, uvBuffer, vertices.Length, 1))
     mvp, mvpUniform
 
 [<EntryPoint>]

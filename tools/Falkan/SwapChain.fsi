@@ -26,12 +26,12 @@ module FalkanShaderInput =
 [<Sealed>]
 type FalkanShader<'T> =
 
-    member AddDraw : FalkanBuffer * vertexCount : int * instanceCount: int -> unit
+    member AddDraw : FalkanImage * FalkanBuffer * vertexCount : int * instanceCount: int -> unit
 
 [<Sealed>]
 type FalkanShader<'T1, 'T2> =
 
-    member AddDraw : FalkanBuffer * FalkanBuffer * vertexCount : int * instanceCount: int -> unit
+    member AddDraw : FalkanImage * FalkanBuffer * FalkanBuffer * vertexCount : int * instanceCount: int -> unit
 
 [<Sealed>]
 type internal SwapChain =

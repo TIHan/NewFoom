@@ -29,8 +29,16 @@ type SwapChainState =
     }
 
 [<Struct;NoEquality;NoComparison>]
+type ImageSampler =
+    {
+        vkImageView: VkImageView
+        vkSampler: VkSampler
+    }
+
+[<Struct;NoEquality;NoComparison>]
 type Draw =
     {
+        imageSampler: ImageSampler
         vertexBuffers: VkBuffer []
         vertexCount: uint32
         instanceCount: uint32
@@ -760,15 +768,15 @@ module FalkanShaderInput =
 
 type FalkanShader<'T> = private FalkanShader of ShaderId * swapChain: SwapChain with
 
-    member this.AddDraw(buffer: FalkanBuffer, vertexCount, instanceCount) =
+    member this.AddDraw(image: FalkanImage, buffer: FalkanBuffer, vertexCount, instanceCount) =
         match this with
-        | FalkanShader(pipelineIndex, swapChain) -> swapChain.RecordDraw(pipelineIndex, [|buffer.buffer|], vertexCount, instanceCount)
+        | FalkanShader(shaderId, swapChain) -> swapChain.RecordDraw(shaderId, image, [|buffer.buffer|], vertexCount, instanceCount)
 
 and FalkanShader<'T1, 'T2> = private FalkanShader2 of ShaderId * swapChain: SwapChain with
 
-    member this.AddDraw(buffer1: FalkanBuffer, buffer2: FalkanBuffer, vertexCount, instanceCount) =
+    member this.AddDraw(image: FalkanImage, buffer1: FalkanBuffer, buffer2: FalkanBuffer, vertexCount, instanceCount) =
         match this with
-        | FalkanShader2(pipelineIndex, swapChain) -> swapChain.RecordDraw(pipelineIndex, [|buffer1.buffer;buffer2.buffer|], vertexCount, instanceCount)
+        | FalkanShader2(shaderId, swapChain) -> swapChain.RecordDraw(shaderId, image, [|buffer1.buffer;buffer2.buffer|], vertexCount, instanceCount)
 
 and [<Sealed>] SwapChain private (fdevice: FalDevice, surface, sync, graphicsFamily, graphicsQueue, presentFamily, presentQueue, invalidate: IEvent<unit>) =
 
@@ -964,7 +972,7 @@ and [<Sealed>] SwapChain private (fdevice: FalDevice, surface, sync, graphicsFam
         finally 
             Monitor.Exit gate
 
-    member x.RecordDraw((ShaderId id): ShaderId, vertexBuffers, vertexCount, instanceCount) =
+    member x.RecordDraw((ShaderId id): ShaderId, image: FalkanImage, vertexBuffers, vertexCount, instanceCount) =
         lock gate |> fun _ ->
 
         check ()
@@ -974,6 +982,7 @@ and [<Sealed>] SwapChain private (fdevice: FalDevice, surface, sync, graphicsFam
         | true, (_, pipeline) ->
             let draw =
                 {
+                    imageSampler = { vkImageView = image.vkImageView; vkSampler = image.vkSampler }
                     vertexBuffers = vertexBuffers
                     vertexCount = uint32 vertexCount
                     instanceCount = uint32 instanceCount
