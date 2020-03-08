@@ -69,7 +69,7 @@ let setRender (instance: FalGraphics) =
     //let mvpBindings = [||]
     let mvpUniform = instance.CreateBuffer<ModelViewProjection>(1, FalkanBufferFlags.None, UniformBuffer)
     let mutable quat = Matrix4x4.CreateFromAxisAngle (Vector3.UnitZ, radians 90.f)
-    quat.Translation <- Vector3(start.X, start.Y, 50.f)
+    quat.Translation <- Vector3(start.X, start.Y, 5000.f)
     let mutable invertedView = Matrix4x4.Identity
     Matrix4x4.Invert(quat, &invertedView) |> ignore
    // let mutable quat = Matrix4x4.CreateLookAt(Vector3.Zero, Vector3(start.X, start.Y, 0.f), Vector3.UnitZ)
@@ -77,7 +77,7 @@ let setRender (instance: FalGraphics) =
         {
             model = Matrix4x4.Identity
             view = invertedView //Matrix4x4.CreateLookAt(Vector3(0.0f, 0.0f, 5.0f), Vector3(1.f), Vector3(0.f, 0.f, 1.f))
-            proj = Matrix4x4.CreatePerspectiveFieldOfView(radians 45.f, 1280.f / 720.f, 0.1f, 1000.f)
+            proj = Matrix4x4.CreatePerspectiveFieldOfView(radians 45.f, 1280.f / 720.f, 0.1f, 1000000.f)
         }
     instance.FillBuffer(mvpUniform, ReadOnlySpan [|mvp|])
     instance.SetUniformBuffer<ModelViewProjection>(mvpUniform)
@@ -105,20 +105,20 @@ let setRender (instance: FalGraphics) =
         instance.SetSampler image
         instance.FillBuffer(mvpUniform, ReadOnlySpan [|mvp|])
         let vertices =
-            //geo.FloorVertices
-            //|> Array.map (fun x -> Vector3(x.X, x.Y, 0.f))
+            geo.FloorVertices
+            |> Array.map (fun x -> Vector3(x.X, x.Y, 0.f))
            // |> Array.rev
-            let x = float32 i * 0.1f
-            [|
-                Vector3 (-0.5f + x + start.X, -0.5f + x + start.Y, 0.f)
-                Vector3 (0.5f + x + start.X, 0.5f + x + start.Y, 0.f)
-                Vector3 (0.5f + x + start.X, -0.5f + x + start.Y, 0.f)
+            //let x = float32 i * 0.1f
+            //[|
+            //    Vector3 (-0.5f + x + start.X, -0.5f + x + start.Y, 0.f)
+            //    Vector3 (0.5f + x + start.X, 0.5f + x + start.Y, 0.f)
+            //    Vector3 (0.5f + x + start.X, -0.5f + x + start.Y, 0.f)
                 
-                Vector3 (-0.5f + x + start.X, 0.5f + x + start.Y, 0.f)
-                Vector3 (0.5f + x + start.X, 0.5f + x + start.Y, 0.f)
-                Vector3 (-0.5f + x + start.X, -0.5f + x + start.Y, 0.f)
+            //    Vector3 (-0.5f + x + start.X, 0.5f + x + start.Y, 0.f)
+            //    Vector3 (0.5f + x + start.X, 0.5f + x + start.Y, 0.f)
+            //    Vector3 (-0.5f + x + start.X, -0.5f + x + start.Y, 0.f)
                 
-            |]
+            //|]
 //            |> Array.map (fun v -> Vector4.Transform(v, mvp.model * mvp.view * mvp.proj) |> checkNan)
 
         let verticesBindings = [|mkVertexInputBinding<Vector3> 0u VkVertexInputRate.VK_VERTEX_INPUT_RATE_VERTEX|]
@@ -127,18 +127,18 @@ let setRender (instance: FalGraphics) =
         instance.FillBuffer(verticesBuffer, ReadOnlySpan vertices)
 
 
-      //  let uv = Map.CreateSectorUv(texture.Width,texture.Height, geo.FloorVertices)
-        let uv =
-            [|
-                Vector2(1.f, 0.f)
-                Vector2(0.f, 1.f)
-                Vector2(0.f, 0.f)
+        let uv = Map.CreateSectorUv(texture.Width,texture.Height, geo.FloorVertices)
+        //let uv =
+        //    [|
+        //        Vector2(1.f, 0.f)
+        //        Vector2(0.f, 1.f)
+        //        Vector2(0.f, 0.f)
                 
-                Vector2(1.f, 1.f)
-                Vector2(0.f, 1.f)
-                Vector2(1.f, 0.f)
+        //        Vector2(1.f, 1.f)
+        //        Vector2(0.f, 1.f)
+        //        Vector2(1.f, 0.f)
                 
-            |]
+        //    |]
 
         let uvBindings = [|mkVertexInputBinding<Vector2> 1u VkVertexInputRate.VK_VERTEX_INPUT_RATE_VERTEX|]
         let uvAttributes = mkVertexAttributeDescriptions<Vector2> 1u 1u
@@ -169,7 +169,7 @@ let setRender (instance: FalGraphics) =
                 let mutable outColor = Variable<Vector4> [Decoration.Location 0u] StorageClass.Output
 
                 fun () ->
-                  outColor <- Vector4(1.f, 0.f, 0.f, 1.f) //sampler.ImplicitLod fragTexCoord
+                  outColor <- sampler.ImplicitLod fragTexCoord
             @>
         let spvFragmentInfo = SpirvGenInfo.Create(AddressingModel.Logical, MemoryModel.GLSL450, ExecutionModel.Fragment, [Capability.Shader], ["GLSL.std.450"], ExecutionMode.OriginUpperLeft)
         let spvFragment = 
