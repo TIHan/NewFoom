@@ -11,9 +11,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Include="texture.jpg">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
     <Compile Include="Program.fs" />
   </ItemGroup>
 

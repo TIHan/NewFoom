@@ -166,7 +166,7 @@ let fillImage physicalDevice device commandPool transferQueue (vkImage: VkImage)
     let stagingProperties = 
             VkMemoryPropertyFlags.VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT ||| 
             VkMemoryPropertyFlags.VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
-    let stagingMemory = bindMemory physicalDevice device stagingBuffer stagingProperties
+    use stagingMemory = bindMemory physicalDevice device stagingBuffer stagingProperties
 
     mapMemory device stagingMemory.Bucket.VkDeviceMemory stagingMemory.Offset data
     copyImage device commandPool width height stagingBuffer vkImage transferQueue
@@ -201,6 +201,17 @@ type FalDevice with
         let memory = bindImage this.PhysicalDevice this.Device image VkMemoryPropertyFlags.VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
         let imageView = mkImageView this.Device defaultImageFormat image
         let sampler = mkSampler this.Device
+
+        //match imageSampler with
+        //| Some (imageView, sampler) ->
+        //    let state = state.Value
+        //    state.descriptorSets.[1].vkDescriptorSets
+        //    |> Array.iter (fun descriptorSet ->
+        //        let mutable imageInfo = mkDescriptorImageInfo imageView sampler
+        //        updateDescriptorImageSet device descriptorSet &&imageInfo
+        //        () (* prevent tail-call *))
+
+
         { vkDevice = this.Device
           vkImage = image
           vkImageView = imageView
