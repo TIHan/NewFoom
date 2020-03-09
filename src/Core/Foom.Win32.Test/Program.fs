@@ -156,7 +156,6 @@ let setRender (instance: FalGraphics) =
         instance.FillImage(image, ReadOnlySpan(ptr, data.Width * data.Height * 4))
         bmp.UnlockBits(data)
 
-        instance.SetSampler image
         instance.FillBuffer(mvpUniform, ReadOnlySpan [|mvp.InvertedView|])
         let vertices = geo.FloorVertices
         let verticesBuffer = instance.CreateBuffer<Vector3> (vertices.Length, FalkanBufferFlags.None, VertexBuffer)

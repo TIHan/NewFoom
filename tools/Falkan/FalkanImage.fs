@@ -173,6 +173,27 @@ let fillImage physicalDevice device commandPool transferQueue (vkImage: VkImage)
 
     vkDestroyBuffer(device, stagingBuffer, vkNullPtr)
 
+let mkDescriptorImageInfo imageView sampler =
+    let mutable imageInfo =
+        VkDescriptorImageInfo(
+            imageLayout = VkImageLayout.VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+            imageView = imageView,
+            sampler = sampler)
+    imageInfo
+
+let updateDescriptorImageSet device descriptorSet pImageInfo =
+    let mutable descriptorWrite =
+        VkWriteDescriptorSet(
+            sType = VkStructureType.VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+            dstSet = descriptorSet,
+            dstBinding = 1u,
+            dstArrayElement = 0u,
+            descriptorType = VkDescriptorType.VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            descriptorCount = 1u,
+            pImageInfo = pImageInfo)
+
+    vkUpdateDescriptorSets(device, 1u, &&descriptorWrite, 0u, vkNullPtr)
+
 [<Struct;NoComparison;NoEquality>]
 type FalkanImage =
     internal {
@@ -183,9 +204,14 @@ type FalkanImage =
         memory: DeviceMemory
         width: int
         height: int
+        descriptorSetLayout: FalkanDescriptorSetLayout
+        descriptorPool: FalkanDescriptorPool
+        descriptorSets: FalkanDescriptorSets
     }
 
     member internal this.Destroy() =
+        (this.descriptorSetLayout :> IDisposable).Dispose()
+        (this.descriptorPool :> IDisposable).Dispose()
         vkDestroySampler(this.vkDevice, this.vkSampler, vkNullPtr)
         vkDestroyImageView(this.vkDevice, this.vkImageView, vkNullPtr)
         vkDestroyImage(this.vkDevice, this.vkImage, vkNullPtr)
@@ -202,15 +228,16 @@ type FalDevice with
         let imageView = mkImageView this.Device defaultImageFormat image
         let sampler = mkSampler this.Device
 
-        //match imageSampler with
-        //| Some (imageView, sampler) ->
-        //    let state = state.Value
-        //    state.descriptorSets.[1].vkDescriptorSets
-        //    |> Array.iter (fun descriptorSet ->
-        //        let mutable imageInfo = mkDescriptorImageInfo imageView sampler
-        //        updateDescriptorImageSet device descriptorSet &&imageInfo
-        //        () (* prevent tail-call *))
+        // 3 is the most for pre-rendered image views defined in SwapChain
+        // TODO: Move this somewhere else.
+        let samplerPool = this.CreateDescriptorPool(CombinedImageSamplerDescriptor, 3)
+        let samplerSetLayout = samplerPool.CreateSetLayout(FragmentStage, 1u)
+        let samplerSets = samplerSetLayout.CreateDescriptorSets 3
 
+        samplerSets.vkDescriptorSets
+        |> Array.iter (fun set ->
+            let mutable imageInfo = mkDescriptorImageInfo imageView sampler
+            updateDescriptorImageSet this.Device set &&imageInfo)
 
         { vkDevice = this.Device
           vkImage = image
@@ -218,4 +245,7 @@ type FalDevice with
           vkSampler = sampler
           memory = memory
           width = width
-          height = height }
+          height = height
+          descriptorPool = samplerPool 
+          descriptorSetLayout = samplerSetLayout
+          descriptorSets = samplerSets }

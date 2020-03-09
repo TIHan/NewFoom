@@ -129,6 +129,7 @@ type ImageSampler =
     {
         vkImageView: VkImageView
         vkSampler: VkSampler
+        vkDescriptorSets: VkDescriptorSet []
     }
 
 [<Struct;NoEquality;NoComparison>]
@@ -154,7 +155,6 @@ let recordDraw extent (framebuffers: VkFramebuffer []) (commandBuffers: VkComman
         let framebuffer = framebuffers.[i]
         let commandBuffer = commandBuffers.[i]
         let uboSet = descriptorSets.[0].[i]
-        let samplerSet = descriptorSets.[1].[i]
 
         // Begin command buffer
 
@@ -192,13 +192,16 @@ let recordDraw extent (framebuffers: VkFramebuffer []) (commandBuffers: VkComman
 
             vkCmdBindPipeline(commandBuffer, VkPipelineBindPoint.VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.vkPipeline)
 
-            // Bind descriptor sets
-
-            let sets = [|uboSet;samplerSet|]
-            use pDescriptorSet = fixed sets
-            vkCmdBindDescriptorSets(commandBuffer, VkPipelineBindPoint.VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0u, uint32 sets.Length, pDescriptorSet, 0u, vkNullPtr)
 
             for draw in pipeline.draws do
+
+                // REVIEW: Might be expensive per draw but it works.
+                // Bind descriptor sets
+
+                let samplerSet = draw.imageSampler.vkDescriptorSets.[i]
+                let sets = [|uboSet;samplerSet|]
+                use pDescriptorSet = fixed sets
+                vkCmdBindDescriptorSets(commandBuffer, VkPipelineBindPoint.VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0u, uint32 sets.Length, pDescriptorSet, 0u, vkNullPtr)
 
                 // Bind vertex buffers
         
@@ -880,18 +883,6 @@ and [<Sealed>] SwapChain private (fdevice: FalDevice, surface, sync, graphicsFam
         | _ ->
             ()
 
-    let setSampler () =
-        match imageSampler with
-        | Some (imageView, sampler) ->
-            let state = state.Value
-            state.descriptorSets.[1].vkDescriptorSets
-            |> Array.iter (fun descriptorSet ->
-                let mutable imageInfo = mkDescriptorImageInfo imageView sampler
-                updateDescriptorImageSet device descriptorSet &&imageInfo
-                () (* prevent tail-call *))
-        | _ ->
-            ()
-
     do
         invalidate.Add(fun () -> isInvalidated <- true)
 
@@ -936,7 +927,6 @@ and [<Sealed>] SwapChain private (fdevice: FalDevice, surface, sync, graphicsFam
                 |> Some
 
             setUniformBuffer ()
-            setSampler ()
 
             for pair in recordings |> Seq.toArray do
                 recordings.[pair.Key] <- 
@@ -982,7 +972,7 @@ and [<Sealed>] SwapChain private (fdevice: FalDevice, surface, sync, graphicsFam
         | true, (_, pipeline) ->
             let draw =
                 {
-                    imageSampler = { vkImageView = image.vkImageView; vkSampler = image.vkSampler }
+                    imageSampler = { vkImageView = image.vkImageView; vkSampler = image.vkSampler; vkDescriptorSets = image.descriptorSets.vkDescriptorSets }
                     vertexBuffers = vertexBuffers
                     vertexCount = uint32 vertexCount
                     instanceCount = uint32 instanceCount
@@ -997,15 +987,6 @@ and [<Sealed>] SwapChain private (fdevice: FalDevice, surface, sync, graphicsFam
         uniformBuffer <- Some(buffer, size)
 
         setUniformBuffer ()
-
-    member x.SetSampler(imageView: VkImageView, sampler: VkSampler) =
-        lock gate |> fun _ ->
-
-        check ()
-
-        imageSampler <- Some (imageView, sampler)
-
-        setSampler ()
 
     member x.SetupCommands() =
         record ()

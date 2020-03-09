@@ -39,8 +39,6 @@ type internal SwapChain =
 
     member SetUniformBuffer: VkBuffer * size: int -> unit
 
-    member SetSampler: VkImageView * VkSampler -> unit
-
     member DrawFrame: unit -> unit
 
     member SetupCommands: unit -> unit

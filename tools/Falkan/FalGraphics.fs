@@ -86,13 +86,6 @@ type FalGraphics
 
         swapChain.SetUniformBuffer(buffer.buffer, sizeof<'T>)
 
-    member _.SetSampler(image: FalkanImage) =
-        lock gate <| fun _ ->
-            
-        checkDispose ()
-
-        swapChain.SetSampler(image.vkImageView, image.vkSampler)
-
     interface IDisposable with
         member x.Dispose () =
             if Interlocked.CompareExchange(&isDisposed, 1, 0) = 1 then
