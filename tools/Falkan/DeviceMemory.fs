@@ -203,7 +203,7 @@ let allocateMemory physicalDevice device (memRequirements: VkMemoryRequirements)
             physicalDevice memRequirements.memoryTypeBits 
             properties
 
-    let factory = System.Func<_, _> (fun struct(memTypeIndex, device) -> lazy DeviceMemoryBucket.Create(device, memTypeIndex, 64 * 1024 * 1024)) // TODO: 64mb is arbitrary for now just to this working
+    let factory = System.Func<_, _> (fun struct(memTypeIndex, device) -> lazy DeviceMemoryBucket.Create(device, memTypeIndex, 256 * 1024 * 1024)) // TODO: 64mb is arbitrary for now just to this working
     let bucket = buckets.GetOrAdd(struct(memTypeIndex, device), factory)
 
     bucket.Value.Allocate(int memRequirements.size, int memRequirements.alignment)

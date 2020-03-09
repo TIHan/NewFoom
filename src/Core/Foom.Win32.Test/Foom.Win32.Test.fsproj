@@ -22,6 +22,7 @@
     <ProjectReference Include="..\..\..\tools\Falkan\Falkan.fsproj" />
     <ProjectReference Include="..\..\..\tools\FSharp.SpirV.Quotations\FSharp.Spirv.Quotations.fsproj" />
     <ProjectReference Include="..\..\..\tools\FSharp.Vulkan\FSharp.Vulkan.fsproj" />
+    <ProjectReference Include="..\..\fmod\CSharpFMOD.csproj" />
     <ProjectReference Include="..\..\Wad\Foom.Wad\Foom.Wad.fsproj" />
     <ProjectReference Include="..\Foom.Core\Foom.Core.fsproj" />
     <ProjectReference Include="..\Foom.Win32\Foom.Win32.fsproj" />

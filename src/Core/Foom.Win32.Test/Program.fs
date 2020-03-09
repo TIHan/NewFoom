@@ -14,6 +14,47 @@ open FSharp.NativeInterop
 open Foom.Wad
 
 #nowarn "9"
+#nowarn "51"
+
+let loadMusic (wad: Wad) =    
+    let fmodCheckResult res =
+        if res <> FMOD.RESULT.OK then
+            failwithf "FMOD error! (%A) %s\n" res (FMOD.Error.String res)
+    
+
+    let wad = Wad.FromFile("../../../../../../Foom-deps/testwads/doom1.wad")
+    let music = wad.TryFindMusic "d_e1m2"
+    
+    let res, fmodSystem = FMOD.Factory.System_Create()
+    fmodCheckResult res
+    fmodSystem.init(512, FMOD.INITFLAGS.NORMAL, 0n) |> fmodCheckResult
+    
+    let res, soundGroup = fmodSystem.createSoundGroup("wad")
+    fmodCheckResult res
+    
+    let mutable info = FMOD.CREATESOUNDEXINFO()
+    info.format <- FMOD.SOUND_FORMAT.PCM16
+    info.cbsize <- sizeof<FMOD.CREATESOUNDEXINFO>
+    info.length <- uint32 music.Value.Length
+    let res, sound = fmodSystem.createSound(music.Value, FMOD.MODE.OPENMEMORY ||| FMOD.MODE.LOOP_NORMAL, &info)
+    Array.Clear(music.Value, 0, music.Value.Length)
+    fmodCheckResult res
+    
+    sound.setSoundGroup soundGroup |> fmodCheckResult
+    
+    let res, channelGroup = fmodSystem.createChannelGroup("music")
+    fmodCheckResult res
+    
+    let res, channel = fmodSystem.playSound(sound, channelGroup, false)
+    fmodCheckResult res
+    
+    let res, isPlaying = channel.isPlaying()
+    fmodCheckResult res
+    
+    fmodSystem.update() |> fmodCheckResult
+    
+    let res, v = channel.getVolume()
+    ()
 
 [<Struct>]
 type ModelViewProjection =
@@ -121,8 +162,8 @@ let meshShader (instance: FalGraphics) =
 
 let setRender (instance: FalGraphics) =
     let wad = Wad.FromFile("../../../../../../Foom-deps/testwads/doom1.wad")
-    let e1m1 = wad.FindMap "e1m1"
-
+    let e1m1 = wad.FindMap "e1m2"
+    loadMusic wad
     let start = e1m1.TryFindPlayer1Start().Value
     let start = Vector3(float32 start.X, float32 start.Y, 28.f)
 
