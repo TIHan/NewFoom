@@ -115,6 +115,7 @@ type SwapChainState =
         extent: VkExtent2D
         swapChain: VkSwapchainKHR
         imageViews: VkImageView []
+        imageDepthAttachment: FalkanImageDepthAttachment
         renderPass: VkRenderPass
         descriptorSetLayout: FalkanDescriptorSetLayout[]
         descriptorPool: FalkanDescriptorPool[]
@@ -564,19 +565,40 @@ let mkColorAttachmentRef =
         layout = VkImageLayout.VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
     )
 
-let mkSubpass pColorAttachmentRefs colorAttachmentRefCount =
+let mkDepthAttachment format =
+    VkAttachmentDescription (
+        format = format,
+        samples = VkSampleCountFlags.VK_SAMPLE_COUNT_1_BIT,
+        loadOp = VkAttachmentLoadOp.VK_ATTACHMENT_LOAD_OP_CLEAR,
+        storeOp = VkAttachmentStoreOp.VK_ATTACHMENT_STORE_OP_STORE,
+        stencilLoadOp = VkAttachmentLoadOp.VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+        stencilStoreOp = VkAttachmentStoreOp.VK_ATTACHMENT_STORE_OP_DONT_CARE,
+        initialLayout = VkImageLayout.VK_IMAGE_LAYOUT_UNDEFINED,
+        finalLayout = VkImageLayout.VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
+    )
+
+let mkDepthAttachmentRef =
+    VkAttachmentReference (
+        attachment = 1u,
+        layout = VkImageLayout.VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
+    )
+
+let mkSubpass pColorAttachmentRefs colorAttachmentRefCount pDepthStencilAttachment =
     // The index of the attachment in this array is directly referenced from the fragment shader 
     // with the layout(location = 0) out vec4 outColor directive!
     VkSubpassDescription (
         pipelineBindPoint = VkPipelineBindPoint.VK_PIPELINE_BIND_POINT_GRAPHICS,
         colorAttachmentCount = colorAttachmentRefCount,
         pColorAttachments = pColorAttachmentRefs
+      //  pDepthStencilAttachment = pDepthStencilAttachment
     )
 
 let mkRenderPass device format =
     let mutable colorAttachment = mkColorAttachment format
     let mutable colorAttachmentRef = mkColorAttachmentRef
-    let mutable subpass = mkSubpass &&colorAttachmentRef 1u
+    let mutable depthAttachment = mkDepthAttachment format
+    let mutable depthAttachmentRef = mkDepthAttachmentRef
+    let mutable subpass = mkSubpass &&colorAttachmentRef 1u &&depthAttachmentRef
 
     let mutable dependency = 
         VkSubpassDependency (
@@ -588,11 +610,13 @@ let mkRenderPass device format =
             dstAccessMask = (VkAccessFlags.VK_ACCESS_COLOR_ATTACHMENT_READ_BIT ||| VkAccessFlags.VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT)
         )
 
+    let attachments = [|colorAttachment|]
+    use pAttachments = fixed attachments
     let mutable createInfo =
         VkRenderPassCreateInfo (
             sType = VkStructureType.VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
-            attachmentCount = 1u,
-            pAttachments = &&colorAttachment,
+            attachmentCount = uint32 attachments.Length,
+            pAttachments = pAttachments,
             subpassCount = 1u,
             pSubpasses = &&subpass,
             dependencyCount = 1u,
@@ -618,16 +642,18 @@ let mkPipelineLayout device (layouts: VkDescriptorSetLayout []) =
     vkCreatePipelineLayout(device, &&createInfo, vkNullPtr, &&pipelineLayout) |> checkResult
     pipelineLayout
 
-let mkFramebuffers device renderPass (extent: VkExtent2D) imageViews =
-    imageViews
-    |> Array.map (fun imageView ->
+let mkFramebuffers device renderPass (extent: VkExtent2D) imageViews depthImageViews =
+    (imageViews, depthImageViews)
+    ||> Array.map2 (fun imageView depthImageView ->
+        let attachments = [|imageView|]
+        use pAttachments = fixed attachments
         let mutable imageView = imageView
         let mutable framebufferCreateInfo = 
             VkFramebufferCreateInfo (
                 sType = VkStructureType.VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
                 renderPass = renderPass,
-                attachmentCount = 1u,
-                pAttachments = &&imageView,
+                attachmentCount = uint32 attachments.Length,
+                pAttachments = pAttachments,
                 width = extent.width,
                 height = extent.height,
                 layers = 1u
@@ -813,6 +839,7 @@ and [<Sealed>] SwapChain private (fdevice: FalDevice, surface, sync, graphicsFam
         | Some {
                 swapChain = swapChain
                 imageViews = imageViews
+                imageDepthAttachment = imageDepthAttachment
                 renderPass = renderPass
                 descriptorSetLayout = descriptorSetLayout
                 descriptorPool = descriptorPool
@@ -848,6 +875,7 @@ and [<Sealed>] SwapChain private (fdevice: FalDevice, surface, sync, graphicsFam
         |> Array.iter (fun descriptorPool -> (descriptorPool :> IDisposable).Dispose())
         vkDestroyRenderPass(device, renderPass, vkNullPtr)
 
+        imageDepthAttachment.Destroy()
         imageViews
         |> Array.iter (fun imageView ->
             vkDestroyImageView(device, imageView, vkNullPtr)
@@ -896,6 +924,7 @@ and [<Sealed>] SwapChain private (fdevice: FalDevice, surface, sync, graphicsFam
 
             let swapChain, surfaceFormat, extent, images = mkSwapChain physicalDevice device surface graphicsFamily presentFamily
             let imageViews = mkImageViews device surfaceFormat.format images
+            let imageDepthAttachment = fdevice.CreateImageDepthAttachment(int extent.width, int extent.height)
             let renderPass = mkRenderPass device surfaceFormat.format
 
             let uboPool = fdevice.CreateDescriptorPool(UniformBufferDescriptor, imageViews.Length)
@@ -907,7 +936,7 @@ and [<Sealed>] SwapChain private (fdevice: FalDevice, surface, sync, graphicsFam
             let samplerSets = samplerSetLayout.CreateDescriptorSets imageViews.Length
 
             let pipelineLayout = mkPipelineLayout device [|uboSetLayout.vkDescriptorSetLayout;samplerSetLayout.vkDescriptorSetLayout|]
-            let framebuffers = mkFramebuffers device renderPass extent imageViews
+            let framebuffers = mkFramebuffers device renderPass extent imageViews (Array.init imageViews.Length (fun _ -> imageDepthAttachment.vkImageView))
             let commandBuffers = mkCommandBuffers device fdevice.VkCommandPool framebuffers
 
             isInvalidated <- false
@@ -916,6 +945,7 @@ and [<Sealed>] SwapChain private (fdevice: FalDevice, surface, sync, graphicsFam
                     extent = extent
                     swapChain = swapChain
                     imageViews = imageViews
+                    imageDepthAttachment = imageDepthAttachment
                     renderPass = renderPass
                     descriptorSetLayout = [|uboSetLayout;samplerSetLayout|]
                     descriptorSets = [|uboSets;samplerSets|]

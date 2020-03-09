@@ -253,11 +253,11 @@ type FalkanImage =
         descriptorSetLayout: FalkanDescriptorSetLayout
         descriptorPool: FalkanDescriptorPool
         descriptorSets: FalkanDescriptorSets
-        depthAttachment: FalkanImageDepthAttachment
+    //    depthAttachment: FalkanImageDepthAttachment
     }
 
     member internal this.Destroy() =
-        this.depthAttachment.Destroy()
+  //      this.depthAttachment.Destroy()
         (this.descriptorSetLayout :> IDisposable).Dispose()
         (this.descriptorPool :> IDisposable).Dispose()
         vkDestroySampler(this.vkDevice, this.vkSampler, vkNullPtr)
@@ -291,7 +291,7 @@ type FalDevice with
             updateDescriptorImageSet this.Device set &&imageInfo
             () (* prevent tail call *))
 
-        let depthAttachment = this.CreateImageDepthAttachment(width, height)
+      //  let depthAttachment = this.CreateImageDepthAttachment(width, height)
 
         { vkDevice = this.Device
           vkImage = image
@@ -303,5 +303,4 @@ type FalDevice with
           height = height
           descriptorPool = samplerPool 
           descriptorSetLayout = samplerSetLayout
-          descriptorSets = samplerSets
-          depthAttachment = depthAttachment }
+          descriptorSets = samplerSets }
