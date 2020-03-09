@@ -206,6 +206,7 @@ and SpirvIntrinsicCall =
     | ImageGather of sampledImage: SpirvExpr * coordinate: SpirvExpr * comp: SpirvExpr * retTy: SpirvType
     | VectorShuffle of arg1: SpirvExpr * arg2: SpirvExpr * arg3: uint32 list * retTy: SpirvType
     | ImplicitLod of arg1: SpirvExpr * arg2: SpirvExpr * retTy: SpirvType
+    | Kill
 
     member x.ReturnType =
         match x with
@@ -240,6 +241,7 @@ and SpirvIntrinsicCall =
         | ImageGather (_, _, _, retTy) -> retTy
         | VectorShuffle (_, _, _, retTy) -> retTy
         | ImplicitLod (_, _, retTy) -> retTy
+        | Kill -> SpirvType.SpirvTypeVoid
 
     member x.Arguments =
         match x with
@@ -252,6 +254,7 @@ and SpirvIntrinsicCall =
         | ImageGather (arg1, arg2, arg3, _) -> [arg1;arg2;arg3]
         | VectorShuffle (arg1, arg2, _, _) -> [arg1;arg2]
         | ImplicitLod (arg1, arg2, _) -> [arg1;arg2]
+        | Kill -> []
 
 
 and SpirvIntrinsicFieldGet =

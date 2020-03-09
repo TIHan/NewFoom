@@ -123,17 +123,13 @@ let setRender (instance: FalGraphics) =
     let start = e1m1.TryFindPlayer1Start().Value
     let start = Vector3(float32 start.X, float32 start.Y, 28.f)
 
-    //let mvpBindings = [||]
     let mvpUniform = instance.CreateBuffer<ModelViewProjection>(1, FalkanBufferFlags.None, UniformBuffer)
     let mutable quat =  Matrix4x4.CreateFromAxisAngle (Vector3.UnitX, 90.f * (float32 Math.PI / 180.f))
     quat.Translation <- Vector3(start.X, start.Y, 28.f)
-    let mutable invertedView = Matrix4x4.Identity
-    Matrix4x4.Invert(quat, &invertedView) |> ignore
-   // let mutable quat = Matrix4x4.CreateLookAt(Vector3.Zero, Vector3(start.X, start.Y, 0.f), Vector3.UnitZ)
     let mvp =
         {
             model = Matrix4x4.Identity
-            view = quat //Matrix4x4.CreateLookAt(Vector3(0.0f, 0.0f, 5.0f), Vector3(1.f), Vector3(0.f, 0.f, 1.f))
+            view = quat
             proj = Matrix4x4.CreatePerspectiveFieldOfView(radians 45.f, 1280.f / 720.f, 0.1f, 1000000.f)
         }
 
@@ -142,9 +138,12 @@ let setRender (instance: FalGraphics) =
 
     let shader = meshShader instance
 
-    (e1m1.Sectors, e1m1.ComputeAllSectorGeometry())
-    ||> Seq.iteri2 (fun i s geo ->
-        let texture = wad.TryFindFlatTexture(s.FloorTextureName).Value
+    let getImage name =
+        let texture = 
+            match wad.TryFindFlatTexture name with
+            | None ->
+                (wad.TryFindTexture name).Value
+            | Some texture -> texture
        
         let data = texture.Data
         use bmp = createBitmap data
@@ -155,17 +154,73 @@ let setRender (instance: FalGraphics) =
         let ptr = data.Scan0 |> NativePtr.ofNativeInt<byte> |> NativePtr.toVoidPtr
         instance.FillImage(image, ReadOnlySpan(ptr, data.Width * data.Height * 4))
         bmp.UnlockBits(data)
+        image
 
-        instance.FillBuffer(mvpUniform, ReadOnlySpan [|mvp.InvertedView|])
-        let vertices = geo.FloorVertices
+    let queueDraw (image: FalkanImage) (vertices: Vector3 []) (uv: Vector2 []) =      
         let verticesBuffer = instance.CreateBuffer<Vector3> (vertices.Length, FalkanBufferFlags.None, VertexBuffer)
         instance.FillBuffer(verticesBuffer, ReadOnlySpan vertices)
 
-        let uv = Map.CreateSectorUv(texture.Width,texture.Height, geo.FloorVertices)
         let uvBuffer = instance.CreateBuffer<Vector2> (uv.Length, FalkanBufferFlags.None, VertexBuffer)
         instance.FillBuffer(uvBuffer, ReadOnlySpan uv)
 
-        shader.AddDraw(image, verticesBuffer, uvBuffer, vertices.Length, 1))
+        shader.AddDraw(image, verticesBuffer, uvBuffer, vertices.Length, 1)
+
+    (e1m1.Sectors, e1m1.ComputeAllSectorGeometry())
+    ||> Seq.iteri2 (fun i s geo ->
+        let image = getImage s.FloorTextureName
+        let uv = Map.CreateSectorUv(image.Width,image.Height, geo.FloorVertices)
+        queueDraw image geo.FloorVertices uv
+
+        let image = getImage s.CeilingTextureName
+        let uv = Map.CreateSectorUv(image.Width,image.Height, geo.CeilingVertices)
+        queueDraw image geo.CeilingVertices uv
+
+        )
+
+
+    let queueLinedef geo (ldef: Linedef) sdefIndex =
+        match geo.Upper, sdefIndex with
+        | Some vertices, Some i ->
+            let sdef = e1m1.Sidedefs.[i]
+            match sdef.UpperTextureName with
+            | Some upperTex ->
+                let image = getImage upperTex
+                let uv = e1m1.CreateUpperWallUv(ldef, sdef, image.Width, image.Height, vertices)
+                queueDraw image vertices uv
+            | _ -> ()
+        | _ -> ()
+        
+        match geo.Middle, sdefIndex with
+        | Some vertices, Some i ->
+            let sdef = e1m1.Sidedefs.[i]
+            match sdef.MiddleTextureName with
+            | Some upperTex ->
+                let image = getImage upperTex
+                let uv = e1m1.CreateMiddleWallUv(ldef, sdef, image.Width, image.Height, vertices)
+                queueDraw image vertices uv
+            | _ -> ()
+        | _ -> ()
+        
+
+        match geo.Lower, sdefIndex with
+        | Some vertices, Some i ->
+            let sdef = e1m1.Sidedefs.[i]
+            match sdef.LowerTextureName with
+            | Some upperTex ->
+                let image = getImage upperTex
+                let uv = e1m1.CreateLowerWallUv(ldef, sdef, image.Width, image.Height, vertices)
+                queueDraw image vertices uv
+            | _ -> ()
+        | _ -> ()
+
+    e1m1.Linedefs
+    |> Seq.iter (fun ldef ->
+        let geo = e1m1.ComputeFrontWallGeometry ldef
+        queueLinedef geo ldef ldef.FrontSidedefIndex
+        queueLinedef geo ldef ldef.BackSidedefIndex
+        
+        )
+
     mvp, mvpUniform
 
 [<EntryPoint>]

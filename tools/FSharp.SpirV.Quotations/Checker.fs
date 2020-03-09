@@ -373,6 +373,9 @@ and CheckIntrinsicCall env checkedArgs expr =
     | SpecificCall <@ SpirvInstrinsics.VectorShuffle<_> @> _, [|_|], [arg1;arg2] ->
         env, VectorShuffle(arg1, arg2, [0u;1u], mkSpirvType expr.Type) |> SpirvIntrinsicCall
 
+    | SpecificCall <@ kill @> _, [||], [] ->
+        env, SpirvIntrinsicCall Kill
+
     | _ ->
         failwithf "Call not supported: %A" expr
 

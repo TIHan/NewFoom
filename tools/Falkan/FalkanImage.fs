@@ -256,6 +256,10 @@ type FalkanImage =
     //    depthAttachment: FalkanImageDepthAttachment
     }
 
+    member this.Width = int this.width
+
+    member this.Height = int this.height
+
     member internal this.Destroy() =
   //      this.depthAttachment.Destroy()
         (this.descriptorSetLayout :> IDisposable).Dispose()

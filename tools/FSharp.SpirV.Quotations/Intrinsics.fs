@@ -232,3 +232,7 @@ type SpirvInstrinsics =
     static member VectorShuffle<'T>(_v1: Vector2, _v2: Vector2) : 'T = failwith ErrorMessage
 
     static member ConvertFloatToInt(_v: Vector2) : Vector2Int = failwith ErrorMessage
+
+/// Only valid in the Fragment Execution Model.
+/// Analogous to 'OpKill'.
+let kill () : unit = failwith ErrorMessage
