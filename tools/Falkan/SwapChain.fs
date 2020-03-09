@@ -170,10 +170,17 @@ let recordDraw extent (framebuffers: VkFramebuffer []) (commandBuffers: VkComman
 
         // Begin Render pass
 
-        let mutable clearColor = 
+        let clearColor = 
             let colorValue = VkFixedArray_float32_4 (_0 = 0.f, _1 = 0.f, _2 = 0.f, _3 = 1.f)
             let color = VkClearColorValue (float32 = colorValue)
             VkClearValue (color = color)
+
+        let clearDepthStencil = 
+            let depthStencil = VkClearDepthStencilValue(depth = 1.f, stencil = uint32 0)
+            VkClearValue (depthStencil = depthStencil)
+
+        let clearValues = [|clearColor;clearDepthStencil|]
+        use pClearValues = fixed clearValues
 
         let mutable beginInfo =
             VkRenderPassBeginInfo (
@@ -181,8 +188,8 @@ let recordDraw extent (framebuffers: VkFramebuffer []) (commandBuffers: VkComman
                 renderPass = renderPass,
                 framebuffer = framebuffer,
                 renderArea = VkRect2D (offset = VkOffset2D (x = 0, y = 0), extent = extent),
-                clearValueCount = 1u,
-                pClearValues = &&clearColor
+                clearValueCount = uint32 clearValues.Length,
+                pClearValues = pClearValues
             )
 
         vkCmdBeginRenderPass(commandBuffer, &&beginInfo, VkSubpassContents.VK_SUBPASS_CONTENTS_INLINE)
@@ -290,6 +297,19 @@ let mkMultisampleCreateInfo () =
         alphaToCoverageEnable = VK_FALSE, // Optional
         alphaToOneEnable = VK_FALSE // Optional
     )
+
+let mkDepthStencilCreateInfo () =
+    VkPipelineDepthStencilStateCreateInfo (
+        sType = VkStructureType.VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
+        depthTestEnable = VK_TRUE,
+        depthWriteEnable = VK_TRUE,
+        depthCompareOp = VkCompareOp.VK_COMPARE_OP_LESS,
+        depthBoundsTestEnable = VK_FALSE,
+        minDepthBounds = 0.f, // optional
+        maxDepthBounds = 0.f, // optional
+        front = Unchecked.defaultof<_>, // optional
+        back = Unchecked.defaultof<_>, // optional
+        stencilTestEnable = VK_FALSE)
 
 let mkColorBlendAttachment () =
     VkPipelineColorBlendAttachmentState (
@@ -400,7 +420,7 @@ let mkGraphicsPipeline device extent pipelineLayout renderPass group =
 
     let mutable rasterizerCreateInfo = mkRasterizerCreateInfo ()
     let mutable multisampleCreateInfo = mkMultisampleCreateInfo ()
-    // TODO: depth stencil state
+    let mutable depthStencilCreateInfo = mkDepthStencilCreateInfo ()
 
     let mutable colorBlendAttachment = mkColorBlendAttachment ()
     let mutable colorBlendCreateInfo = mkColorBlendCreateInfo &&colorBlendAttachment 1u
@@ -419,7 +439,7 @@ let mkGraphicsPipeline device extent pipelineLayout renderPass group =
             pViewportState = &&viewportStateCreateInfo,
             pRasterizationState = &&rasterizerCreateInfo,
             pMultisampleState = &&multisampleCreateInfo,
-            pDepthStencilState = vkNullPtr, // Optional
+            pDepthStencilState = &&depthStencilCreateInfo,
             pColorBlendState = &&colorBlendCreateInfo,
             pDynamicState = vkNullPtr, // Optional
             layout = pipelineLayout,
@@ -565,9 +585,9 @@ let mkColorAttachmentRef =
         layout = VkImageLayout.VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
     )
 
-let mkDepthAttachment format =
+let mkDepthAttachment () =
     VkAttachmentDescription (
-        format = format,
+        format = VkFormat.VK_FORMAT_D24_UNORM_S8_UINT,
         samples = VkSampleCountFlags.VK_SAMPLE_COUNT_1_BIT,
         loadOp = VkAttachmentLoadOp.VK_ATTACHMENT_LOAD_OP_CLEAR,
         storeOp = VkAttachmentStoreOp.VK_ATTACHMENT_STORE_OP_STORE,
@@ -589,14 +609,14 @@ let mkSubpass pColorAttachmentRefs colorAttachmentRefCount pDepthStencilAttachme
     VkSubpassDescription (
         pipelineBindPoint = VkPipelineBindPoint.VK_PIPELINE_BIND_POINT_GRAPHICS,
         colorAttachmentCount = colorAttachmentRefCount,
-        pColorAttachments = pColorAttachmentRefs
-      //  pDepthStencilAttachment = pDepthStencilAttachment
+        pColorAttachments = pColorAttachmentRefs,
+        pDepthStencilAttachment = pDepthStencilAttachment
     )
 
 let mkRenderPass device format =
     let mutable colorAttachment = mkColorAttachment format
     let mutable colorAttachmentRef = mkColorAttachmentRef
-    let mutable depthAttachment = mkDepthAttachment format
+    let mutable depthAttachment = mkDepthAttachment ()
     let mutable depthAttachmentRef = mkDepthAttachmentRef
     let mutable subpass = mkSubpass &&colorAttachmentRef 1u &&depthAttachmentRef
 
@@ -610,7 +630,7 @@ let mkRenderPass device format =
             dstAccessMask = (VkAccessFlags.VK_ACCESS_COLOR_ATTACHMENT_READ_BIT ||| VkAccessFlags.VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT)
         )
 
-    let attachments = [|colorAttachment|]
+    let attachments = [|colorAttachment;depthAttachment|]
     use pAttachments = fixed attachments
     let mutable createInfo =
         VkRenderPassCreateInfo (
@@ -645,7 +665,7 @@ let mkPipelineLayout device (layouts: VkDescriptorSetLayout []) =
 let mkFramebuffers device renderPass (extent: VkExtent2D) imageViews depthImageViews =
     (imageViews, depthImageViews)
     ||> Array.map2 (fun imageView depthImageView ->
-        let attachments = [|imageView|]
+        let attachments = [|imageView;depthImageView|]
         use pAttachments = fixed attachments
         let mutable imageView = imageView
         let mutable framebufferCreateInfo = 
