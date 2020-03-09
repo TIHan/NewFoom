@@ -125,8 +125,8 @@ let setRender (instance: FalGraphics) =
 
     //let mvpBindings = [||]
     let mvpUniform = instance.CreateBuffer<ModelViewProjection>(1, FalkanBufferFlags.None, UniformBuffer)
-    let mutable quat = Matrix4x4.Identity //Quaternion.CreateFromAxisAngle(Vector3.UnitX, radians 180.f) |> Matrix4x4.CreateFromQuaternion //Matrix4x4.CreateFromAxisAngle(Vector3.UnitX, radians 180.f)
-    quat.Translation <- Vector3(start.X, start.Y, 5000.f)
+    let mutable quat =  Matrix4x4.CreateFromAxisAngle (Vector3.UnitX, 90.f * (float32 Math.PI / 180.f))
+    quat.Translation <- Vector3(start.X, start.Y, 28.f)
     let mutable invertedView = Matrix4x4.Identity
     Matrix4x4.Invert(quat, &invertedView) |> ignore
    // let mutable quat = Matrix4x4.CreateLookAt(Vector3.Zero, Vector3(start.X, start.Y, 0.f), Vector3.UnitZ)
@@ -190,6 +190,10 @@ let main argv =
 
     let mutable mvp = mvp
 
+    let mutable mousePos = Unchecked.defaultof<_>
+    let mutable yaw = 0.f
+    let mutable pitch = 0.f
+
     let windowEvents = 
         let gate = obj ()
         let mutable quit = false
@@ -203,23 +207,57 @@ let main argv =
                 )
 
             member __.OnInputEvents events = 
-                if not events.IsEmpty then
-                    printfn "%A" events
+              //  if not events.IsEmpty then
+              //      printfn "%A" events
+
+                let mutable acc = Vector3.Zero
+
+                let mutable view = mvp.view
+
+                let getRotation () =
+                    Quaternion.CreateFromRotationMatrix view
+
+                let setRotation quat =
+                    let mutable m = Matrix4x4.CreateFromQuaternion quat
+                    m.Translation <- view.Translation
+                    view <- m
+
+                let rotation = getRotation ()
+
+                let mutable xrel = 0.f
+                let mutable yrel = 0.f
                 events
                 |> List.iter (fun x ->
                     let v =
                         match x with
-                        | InputEvent.KeyPressed 'W' -> Vector3(0.f, 20.f, 0.f) +  mvp.view.Translation
-                        | InputEvent.KeyPressed 'S' -> Vector3(0.f, -20.f, 0.f) +  mvp.view.Translation
-                        | InputEvent.KeyPressed 'A' -> Vector3(-20.f, 0.f, 0.f) +  mvp.view.Translation
-                        | InputEvent.KeyPressed 'D' -> Vector3(20.f, 0.f, 0.f) +  mvp.view.Translation
-                        | _ -> mvp.view.Translation
-                    let mutable view = mvp.view
-                    view.Translation <- v
-                    mvp <-
-                        { mvp with view = view }
-                    instance.FillBuffer(mvpUniform, ReadOnlySpan[|mvp.InvertedView|])
+                        | InputEvent.KeyPressed 'W' -> Vector3.Transform (-Vector3.UnitZ, rotation)
+                        | InputEvent.KeyPressed 'S' -> Vector3.Transform (Vector3.UnitZ, rotation)
+                        | InputEvent.KeyPressed 'A' -> Vector3.Transform (-Vector3.UnitX, rotation)
+                        | InputEvent.KeyPressed 'D' -> Vector3.Transform (Vector3.UnitX, rotation)
+                        | InputEvent.MouseMoved(_, _, xrel2, yrel2) ->
+                            xrel <- float32 xrel2
+                            yrel <- float32 yrel2
+                            Vector3.Zero
+                        | _ -> Vector3.Zero
+                    acc <- acc + (Vector3(v.X, v.Y, v.Z))
                 )
+
+                acc <-
+                    if acc <> Vector3.Zero then
+                        (acc |> Vector3.Normalize) * 50.f
+                    else
+                        acc
+
+                if xrel <> 0.f || yrel <> 0.f then
+                    yaw <- yaw + (xrel * -0.25f) * (MathF.PI / 180.f)
+                    pitch <- pitch + (yrel * -0.25f) * (MathF.PI / 180.f)
+                    let rotation = Quaternion.CreateFromAxisAngle (Vector3.UnitX, 90.f * (float32 Math.PI / 180.f))
+                    setRotation (rotation * Quaternion.CreateFromYawPitchRoll(yaw * 0.25f, pitch * 0.25f, 0.f))
+
+                view.Translation <- view.Translation + acc
+                mvp <-
+                    { mvp with view = view }
+                instance.FillBuffer(mvpUniform, ReadOnlySpan[|mvp.InvertedView|])
 
             member __.OnUpdateFrame (time, interval) =
                 quit

@@ -89,6 +89,18 @@ let SC_KEYMENU = 0xF100
 let PM_REMOVE = 0x0001u
 
 let NULL = IntPtr.Zero
+
+let WM_MOUSEMOVE = 0x0200
+let WM_LBUTTONDOWN = 0x0201
+let WM_LBUTTONUP = 0x0202
+let WM_MBUTTONDOWN = 0x0207
+let WM_MBUTTONUP = 0x0208
+let WM_RBUTTONDOWN = 0x0204
+let WM_RBUTTONUP = 0x0205
+
+let MK_LBUTTON = 0x0001
+let MK_MBUTTON = 0x0010
+let MK_RBUTTON = 0x0002
     
 type DWORD = uint32
 type LPCWSTR = nativeptr<char>
@@ -105,7 +117,7 @@ type ATOM = int
 type BOOL = byte
 type WPARAM = UINT
 type LPARAM = nativeint
-type LONG = nativeint
+type LONG = uint64
 type LRESULT = nativeint
 type HANDLE = nativeint
 
@@ -147,8 +159,12 @@ extern nativeint CreateWindowExW(
 [<Struct>]
 type POINT =
 
-    val mutable x : LONG
-    val mutable y : LONG
+    val mutable x : uint32
+    val mutable y : uint32
+    val mutable _x: uint32
+    val mutable _y: uint32
+
+type LPPOINT = nativeptr<POINT>
 
 [<Struct>]
 type MSG =
@@ -161,6 +177,13 @@ type MSG =
     val mutable pt : POINT
 
 type LPMSG = nativeptr<MSG>
+
+[<Struct>]
+type RECT =
+    val mutable left: uint32
+    val mutable top: uint32
+    val mutable right: uint32
+    val mutable bottom: uint32
 
 [<DllImport("user32.dll")>]
 extern BOOL ShowWindow(HWND hWnd, int nCmdShow)
@@ -209,3 +232,21 @@ extern HANDLE CreateEventW(LPSECURITY_ATTRIBUTES lpEventAttributes, BOOL bManual
 
 [<UnmanagedFunctionPointer(CallingConvention.Cdecl)>]
 type WndProcDelegate = delegate of HWND * UINT * nativeint * nativeint -> nativeint
+
+[<DllImport("user32.dll")>]
+extern BOOL GetCursorPos(LPPOINT lpPoint)
+
+[<DllImport("user32.dll")>]
+extern BOOL ScreenToClient(HWND hWnd, LPPOINT lpPoint)
+
+[<DllImport("user32.dll")>]
+extern BOOL ClipCursor(RECT* lpRect)
+
+[<DllImport("user32.dll")>]
+extern int ShowCursor(BOOL bShow)
+
+[<DllImport("user32.dll")>]
+extern BOOL GetWindowRect(HWND hWnd, RECT* lpRect)
+
+[<DllImport("user32.dll")>]
+extern BOOL SetCursorPos(int x, int y)

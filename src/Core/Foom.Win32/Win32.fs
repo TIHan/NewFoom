@@ -122,6 +122,27 @@ type Win32Game (windowTitle: string, svGame: AbstractServerGame, clGame: Abstrac
 
 open FSharp.Window
 
+let private hideCursor hWnd =
+    let mutable rect = Unchecked.defaultof<RECT>
+    GetWindowRect(hWnd, &&rect) |> ignore
+    ClipCursor(&&rect) |> ignore
+    ShowCursor(0uy) |> ignore
+
+let private centerCursor hWnd =
+    let mutable rect = Unchecked.defaultof<RECT>
+    GetWindowRect(hWnd, &&rect) |> ignore
+    SetCursorPos(int rect.right / 2, int rect.bottom / 2) |> ignore
+
+let private tryGetCursorPos hWnd =
+    let mutable point = Unchecked.defaultof<_>
+    if GetCursorPos(&&point) = 1uy then
+        if ScreenToClient(hWnd, &&point) = 1uy then
+            ValueSome point
+        else
+            ValueNone
+    else
+        ValueNone
+
 [<Sealed>]
 type Win32WindowState (title: string, width: int, weight: int) as this =
 
@@ -132,7 +153,12 @@ type Win32WindowState (title: string, width: int, weight: int) as this =
     let windowClosing = Event<unit> ()
     let windowResized = Event<unit> ()
 
+    let mutable xrel = 0u
+    let mutable yrel = 0u
+    let mutable prevPoint = POINT()
+
     member private __.WndProc hWnd msg wParam lParam =
+        hideCursor hWnd
         match int msg with
         | x when x = WM_SYSCOMMAND ->
             match int wParam with
@@ -162,6 +188,12 @@ type Win32WindowState (title: string, width: int, weight: int) as this =
         hwnd <- hwnd2
         hinstance <- hinstance2
 
+        centerCursor hwnd
+        prevPoint <- 
+            match tryGetCursorPos hwnd with
+            | ValueSome point -> point
+            | _ -> POINT()
+
     member __.Hwnd = hwnd
 
     member __.Hinstance = hinstance
@@ -188,6 +220,34 @@ type Win32WindowState (title: string, width: int, weight: int) as this =
                 | x when x = WM_KEYUP || x = WM_SYSKEYUP ->
                     if hashKey.Remove(char msg.lParam) then
                         inputs.Add(KeyReleased(char msg.lParam))
+
+                | x when int x = WM_MOUSEMOVE ->
+                    match tryGetCursorPos hwnd with
+                    | ValueSome point ->
+                        let xrel = point.x - prevPoint.x
+                        let yrel = point.y - prevPoint.y
+                        inputs.Add(MouseMoved(int point.x, int point.y, int xrel, int yrel))
+                        centerCursor hwnd
+                    | _ ->
+                        ()
+
+                | x when int x = WM_LBUTTONDOWN ->
+                    inputs.Add(MouseButtonPressed MouseButtonType.Left)
+
+                | x when int x = WM_LBUTTONUP ->
+                    inputs.Add(MouseButtonReleased MouseButtonType.Left)
+
+                | x when int x = WM_MBUTTONDOWN ->
+                    inputs.Add(MouseButtonPressed MouseButtonType.Middle)
+
+                | x when int x = WM_MBUTTONUP ->
+                    inputs.Add(MouseButtonReleased MouseButtonType.Middle)
+
+                | x when int x = WM_RBUTTONDOWN ->
+                    inputs.Add(MouseButtonPressed MouseButtonType.Right)
+
+                | x when int x = WM_RBUTTONUP ->
+                    inputs.Add(MouseButtonReleased MouseButtonType.Right)
 
                 | x when int x = WM_QUIT ->
                     CloseWindow(hwnd) |> ignore
