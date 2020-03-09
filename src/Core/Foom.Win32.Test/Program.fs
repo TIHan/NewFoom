@@ -219,9 +219,7 @@ let setRender (instance: FalGraphics) =
     e1m1.Linedefs
     |> Seq.iter (fun ldef ->
         let geo = e1m1.ComputeFrontWallGeometry ldef
-        queueLinedef geo ldef ldef.FrontSidedefIndex
-        queueLinedef geo ldef ldef.BackSidedefIndex
-        
+        queueLinedef geo ldef ldef.FrontSidedefIndex        
         )
 
     mvp, mvpUniform
