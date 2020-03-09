@@ -77,18 +77,34 @@ let mkSampler device =
     vkCreateSampler(device, &&samplerInfo, vkNullPtr, &&sampler) |> checkResult
     sampler
 
+let hasStencilComponent format =
+    format = VkFormat.VK_FORMAT_D32_SFLOAT_S8_UINT || format = VkFormat.VK_FORMAT_D24_UNORM_S8_UINT
+
 let transitionImageLayout (commandBuffer: VkCommandBuffer) image (format: VkFormat) oldLayout newLayout =
-    let srcAccessMask, dstAccessMask, srcStage, dstStage =
+    let aspectMask, srcAccessMask, dstAccessMask, srcStage, dstStage =
         if oldLayout = VkImageLayout.VK_IMAGE_LAYOUT_UNDEFINED && newLayout = VkImageLayout.VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL then
+            VkImageAspectFlags.VK_IMAGE_ASPECT_COLOR_BIT,
             Unchecked.defaultof<_>, 
             VkAccessFlags.VK_ACCESS_TRANSFER_WRITE_BIT, 
             VkPipelineStageFlags.VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
             VkPipelineStageFlags.VK_PIPELINE_STAGE_TRANSFER_BIT
         elif oldLayout = VkImageLayout.VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && newLayout = VkImageLayout.VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL then
+            VkImageAspectFlags.VK_IMAGE_ASPECT_COLOR_BIT,
             VkAccessFlags.VK_ACCESS_TRANSFER_WRITE_BIT, 
             VkAccessFlags.VK_ACCESS_SHADER_READ_BIT, 
             VkPipelineStageFlags.VK_PIPELINE_STAGE_TRANSFER_BIT,
             VkPipelineStageFlags.VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT
+        elif oldLayout = VkImageLayout.VK_IMAGE_LAYOUT_UNDEFINED && newLayout = VkImageLayout.VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL then
+            let aspectMask =
+                if hasStencilComponent format then
+                    VkImageAspectFlags.VK_IMAGE_ASPECT_DEPTH_BIT ||| VkImageAspectFlags.VK_IMAGE_ASPECT_STENCIL_BIT
+                else
+                    VkImageAspectFlags.VK_IMAGE_ASPECT_DEPTH_BIT
+            aspectMask,
+            Unchecked.defaultof<_>,
+            (VkAccessFlags.VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT ||| VkAccessFlags.VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT),
+            VkPipelineStageFlags.VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+            VkPipelineStageFlags.VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT
         else
             failwith "Unsupported layout transition."
     let mutable barrier =
@@ -99,13 +115,14 @@ let transitionImageLayout (commandBuffer: VkCommandBuffer) image (format: VkForm
             srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
             dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
             image = image,
-            subresourceRange = VkImageSubresourceRange(aspectMask = VkImageAspectFlags.VK_IMAGE_ASPECT_COLOR_BIT, baseMipLevel = 0u, levelCount = 1u, baseArrayLayer = 0u, layerCount = 1u),
+            subresourceRange = VkImageSubresourceRange(aspectMask = aspectMask, baseMipLevel = 0u, levelCount = 1u, baseArrayLayer = 0u, layerCount = 1u),
             srcAccessMask = srcAccessMask,
             dstAccessMask = dstAccessMask)
 
     vkCmdPipelineBarrier(commandBuffer, srcStage, dstStage, Unchecked.defaultof<_>, 0u, vkNullPtr, 0u, vkNullPtr, 1u, &&barrier)
+    aspectMask
 
-let recordCopyImage (commandBuffer: VkCommandBuffer) width height srcBuffer dstImage =
+let recordCopyImage (commandBuffer: VkCommandBuffer) format width height srcBuffer dstImage =
     let mutable beginInfo =
         VkCommandBufferBeginInfo (
             sType = VkStructureType.VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
@@ -115,24 +132,24 @@ let recordCopyImage (commandBuffer: VkCommandBuffer) width height srcBuffer dstI
 
     vkBeginCommandBuffer(commandBuffer, &&beginInfo) |> checkResult
 
-    transitionImageLayout commandBuffer dstImage defaultImageFormat VkImageLayout.VK_IMAGE_LAYOUT_UNDEFINED VkImageLayout.VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
+    let aspectMask = transitionImageLayout commandBuffer dstImage format VkImageLayout.VK_IMAGE_LAYOUT_UNDEFINED VkImageLayout.VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
 
     let mutable copyRegion =
         VkBufferImageCopy (
             bufferOffset = 0UL,
             bufferRowLength = 0u,
             bufferImageHeight = 0u,
-            imageSubresource = VkImageSubresourceLayers(aspectMask = VkImageAspectFlags.VK_IMAGE_ASPECT_COLOR_BIT, mipLevel = 0u, baseArrayLayer = 0u, layerCount = 1u),
+            imageSubresource = VkImageSubresourceLayers(aspectMask = aspectMask, mipLevel = 0u, baseArrayLayer = 0u, layerCount = 1u),
             imageOffset = VkOffset3D(),
             imageExtent = VkExtent3D(width = uint32 width, height = uint32 height, depth = 1u))
 
     vkCmdCopyBufferToImage(commandBuffer, srcBuffer, dstImage, VkImageLayout.VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1u, &&copyRegion)
 
-    transitionImageLayout commandBuffer dstImage defaultImageFormat VkImageLayout.VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL VkImageLayout.VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+    transitionImageLayout commandBuffer dstImage format VkImageLayout.VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL VkImageLayout.VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL |> ignore
 
     vkEndCommandBuffer(commandBuffer) |> checkResult
 
-let copyImage device commandPool width height srcBuffer dstImage queue =
+let copyImage device commandPool format width height srcBuffer dstImage queue =
     let mutable allocInfo =
         VkCommandBufferAllocateInfo (
             sType = VkStructureType.VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
@@ -143,7 +160,7 @@ let copyImage device commandPool width height srcBuffer dstImage queue =
 
     let mutable commandBuffer = VkCommandBuffer()
     vkAllocateCommandBuffers(device, &&allocInfo, &&commandBuffer) |> checkResult
-    recordCopyImage commandBuffer width height srcBuffer dstImage
+    recordCopyImage commandBuffer format width height srcBuffer dstImage
 
     let mutable submitInfo =
         VkSubmitInfo (
@@ -157,7 +174,7 @@ let copyImage device commandPool width height srcBuffer dstImage queue =
 
     vkFreeCommandBuffers(device, commandPool, 1u, &&commandBuffer)
 
-let fillImage physicalDevice device commandPool transferQueue (vkImage: VkImage) width height (data: ReadOnlySpan<byte>) =
+let fillImage physicalDevice device commandPool transferQueue (vkImage: VkImage) format width height (data: ReadOnlySpan<byte>) =
     // Memory that is not shared can not be written directly to from the CPU.
     // In order to set it from the CPU, a temporary shared memory buffer is used as a staging buffer to transfer the data.
     // This means that write times to local memory is more expensive but is highly-performant when read from the GPU.
@@ -169,7 +186,7 @@ let fillImage physicalDevice device commandPool transferQueue (vkImage: VkImage)
     use stagingMemory = bindMemory physicalDevice device stagingBuffer stagingProperties
 
     mapMemory device stagingMemory.Bucket.VkDeviceMemory stagingMemory.Offset data
-    copyImage device commandPool width height stagingBuffer vkImage transferQueue
+    copyImage device commandPool format width height stagingBuffer vkImage transferQueue
 
     vkDestroyBuffer(device, stagingBuffer, vkNullPtr)
 
@@ -202,6 +219,7 @@ type FalkanImage =
         vkImageView: VkImageView
         vkSampler: VkSampler
         memory: DeviceMemory
+        format: VkFormat
         width: int
         height: int
         descriptorSetLayout: FalkanDescriptorSetLayout
@@ -215,6 +233,39 @@ type FalkanImage =
         vkDestroySampler(this.vkDevice, this.vkSampler, vkNullPtr)
         vkDestroyImageView(this.vkDevice, this.vkImageView, vkNullPtr)
         vkDestroyImage(this.vkDevice, this.vkImage, vkNullPtr)
+
+[<Struct;NoComparison;NoEquality>]
+type FalkanImageDepthAttachment =
+    internal {
+        vkDevice: VkDevice
+        vkImage: VkImage
+        vkImageView: VkImageView
+        memory: DeviceMemory
+        width: int
+        height: int
+    }
+
+    member internal this.Destroy() =
+        vkDestroyImageView(this.vkDevice, this.vkImageView, vkNullPtr)
+        vkDestroyImage(this.vkDevice, this.vkImage, vkNullPtr)
+
+type FalDevice with
+
+    member this.CreateImageDepthAttachment(width, height) =
+        let image = 
+            mkImage this.Device width height 
+                VkFormat.VK_FORMAT_D24_UNORM_S8_UINT
+                VkImageTiling.VK_IMAGE_TILING_OPTIMAL 
+                VkImageUsageFlags.VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT
+        let memory = bindImage this.PhysicalDevice this.Device image VkMemoryPropertyFlags.VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+        let imageView = mkImageView this.Device defaultImageFormat image
+
+        { vkDevice = this.Device
+          vkImage = image
+          vkImageView = imageView
+          memory = memory
+          width = width
+          height = height }
 
 type FalDevice with
 
@@ -237,13 +288,15 @@ type FalDevice with
         samplerSets.vkDescriptorSets
         |> Array.iter (fun set ->
             let mutable imageInfo = mkDescriptorImageInfo imageView sampler
-            updateDescriptorImageSet this.Device set &&imageInfo)
+            updateDescriptorImageSet this.Device set &&imageInfo
+            () (* prevent tail call *))
 
         { vkDevice = this.Device
           vkImage = image
           vkImageView = imageView
           vkSampler = sampler
           memory = memory
+          format = defaultImageFormat
           width = width
           height = height
           descriptorPool = samplerPool 

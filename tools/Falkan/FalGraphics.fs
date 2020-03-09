@@ -77,7 +77,7 @@ type FalGraphics
     member _.FillImage (buffer: FalkanImage, data) =
         checkDispose ()
 
-        fillImage physicalDevice device fdevice.VkCommandPool fdevice.VkTransferQueue buffer.vkImage buffer.width buffer.height data
+        fillImage physicalDevice device fdevice.VkCommandPool fdevice.VkTransferQueue buffer.vkImage buffer.format buffer.width buffer.height data
 
     member _.SetUniformBuffer<'T when 'T : unmanaged>(buffer: FalkanBuffer) =
         lock gate <| fun _ ->
