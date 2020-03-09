@@ -8,8 +8,6 @@ open FSharp.Vulkan.Interop
 #nowarn "9"
 #nowarn "51"
 
-let defaultImageFormat = VkFormat.VK_FORMAT_B8G8R8A8_UNORM
-
 let getImageMemoryRequirements device image =
     let mutable memRequirements = VkMemoryRequirements ()
     vkGetImageMemoryRequirements(device, image, &&memRequirements)
@@ -76,9 +74,6 @@ let mkSampler device =
     let mutable sampler = VkSampler()
     vkCreateSampler(device, &&samplerInfo, vkNullPtr, &&sampler) |> checkResult
     sampler
-
-let hasStencilComponent format =
-    format = VkFormat.VK_FORMAT_D32_SFLOAT_S8_UINT || format = VkFormat.VK_FORMAT_D24_UNORM_S8_UINT
 
 let transitionImageLayout (commandBuffer: VkCommandBuffer) image (format: VkFormat) oldLayout newLayout =
     let aspectMask, srcAccessMask, dstAccessMask, srcStage, dstStage =
@@ -212,29 +207,6 @@ let updateDescriptorImageSet device descriptorSet pImageInfo =
     vkUpdateDescriptorSets(device, 1u, &&descriptorWrite, 0u, vkNullPtr)
 
 [<Struct;NoComparison;NoEquality>]
-type FalkanImage =
-    internal {
-        vkDevice: VkDevice
-        vkImage: VkImage
-        vkImageView: VkImageView
-        vkSampler: VkSampler
-        memory: DeviceMemory
-        format: VkFormat
-        width: int
-        height: int
-        descriptorSetLayout: FalkanDescriptorSetLayout
-        descriptorPool: FalkanDescriptorPool
-        descriptorSets: FalkanDescriptorSets
-    }
-
-    member internal this.Destroy() =
-        (this.descriptorSetLayout :> IDisposable).Dispose()
-        (this.descriptorPool :> IDisposable).Dispose()
-        vkDestroySampler(this.vkDevice, this.vkSampler, vkNullPtr)
-        vkDestroyImageView(this.vkDevice, this.vkImageView, vkNullPtr)
-        vkDestroyImage(this.vkDevice, this.vkImage, vkNullPtr)
-
-[<Struct;NoComparison;NoEquality>]
 type FalkanImageDepthAttachment =
     internal {
         vkDevice: VkDevice
@@ -258,7 +230,7 @@ type FalDevice with
                 VkImageTiling.VK_IMAGE_TILING_OPTIMAL 
                 VkImageUsageFlags.VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT
         let memory = bindImage this.PhysicalDevice this.Device image VkMemoryPropertyFlags.VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
-        let imageView = mkImageView this.Device defaultImageFormat image
+        let imageView = mkImageView this.Device VkFormat.VK_FORMAT_D24_UNORM_S8_UINT image
 
         { vkDevice = this.Device
           vkImage = image
@@ -266,6 +238,33 @@ type FalDevice with
           memory = memory
           width = width
           height = height }
+
+[<Struct;NoComparison;NoEquality>]
+type FalkanImage =
+    internal {
+        vkDevice: VkDevice
+        vkImage: VkImage
+        vkImageView: VkImageView
+        vkSampler: VkSampler
+        memory: DeviceMemory
+        format: VkFormat
+        width: int
+        height: int
+        descriptorSetLayout: FalkanDescriptorSetLayout
+        descriptorPool: FalkanDescriptorPool
+        descriptorSets: FalkanDescriptorSets
+        depthAttachment: FalkanImageDepthAttachment
+    }
+
+    member internal this.Destroy() =
+        this.depthAttachment.Destroy()
+        (this.descriptorSetLayout :> IDisposable).Dispose()
+        (this.descriptorPool :> IDisposable).Dispose()
+        vkDestroySampler(this.vkDevice, this.vkSampler, vkNullPtr)
+        vkDestroyImageView(this.vkDevice, this.vkImageView, vkNullPtr)
+        vkDestroyImage(this.vkDevice, this.vkImage, vkNullPtr)
+
+let defaultImageFormat = VkFormat.VK_FORMAT_B8G8R8A8_UNORM
 
 type FalDevice with
 
@@ -280,6 +279,7 @@ type FalDevice with
         let sampler = mkSampler this.Device
 
         // 3 is the most for pre-rendered image views defined in SwapChain
+
         // TODO: Move this somewhere else.
         let samplerPool = this.CreateDescriptorPool(CombinedImageSamplerDescriptor, 3)
         let samplerSetLayout = samplerPool.CreateSetLayout(FragmentStage, 1u)
@@ -291,6 +291,8 @@ type FalDevice with
             updateDescriptorImageSet this.Device set &&imageInfo
             () (* prevent tail call *))
 
+        let depthAttachment = this.CreateImageDepthAttachment(width, height)
+
         { vkDevice = this.Device
           vkImage = image
           vkImageView = imageView
@@ -301,4 +303,5 @@ type FalDevice with
           height = height
           descriptorPool = samplerPool 
           descriptorSetLayout = samplerSetLayout
-          descriptorSets = samplerSets }
+          descriptorSets = samplerSets
+          depthAttachment = depthAttachment }

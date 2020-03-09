@@ -42,6 +42,20 @@ let mkCommandBuffers device commandPool (framebuffers: VkFramebuffer []) =
     vkAllocateCommandBuffers(device, &&allocCreateInfo, pCommandBuffers) |> checkResult
     commandBuffers
 
+let hasDepthComponent format =
+    format = VkFormat.VK_FORMAT_D32_SFLOAT_S8_UINT || format = VkFormat.VK_FORMAT_D24_UNORM_S8_UINT || format = VkFormat.VK_FORMAT_D32_SFLOAT
+
+let hasStencilComponent format =
+    format = VkFormat.VK_FORMAT_D32_SFLOAT_S8_UINT || format = VkFormat.VK_FORMAT_D24_UNORM_S8_UINT
+
+let getAspectMask format =
+    if hasStencilComponent format then
+        VkImageAspectFlags.VK_IMAGE_ASPECT_DEPTH_BIT ||| VkImageAspectFlags.VK_IMAGE_ASPECT_STENCIL_BIT
+    elif hasDepthComponent format then
+        VkImageAspectFlags.VK_IMAGE_ASPECT_DEPTH_BIT
+    else
+        VkImageAspectFlags.VK_IMAGE_ASPECT_COLOR_BIT
+
 let mkImageViewCreateInfo format image =
     let components =
         VkComponentMapping (
@@ -53,7 +67,7 @@ let mkImageViewCreateInfo format image =
 
     let subresourceRange =
         VkImageSubresourceRange (
-            aspectMask = VkImageAspectFlags.VK_IMAGE_ASPECT_COLOR_BIT,
+            aspectMask = getAspectMask format,
             baseMipLevel = 0u,
             levelCount = 1u,
             baseArrayLayer = 0u,
