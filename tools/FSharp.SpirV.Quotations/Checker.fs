@@ -45,6 +45,15 @@ let tryGetIndexForBackingField (propInfo: PropertyInfo) =
 
 let rec mkSpirvType ty =
     match ty with
+    | _ when ty = typeof<bool> ->
+        // .NET bools and Spirv bools are different sizes.
+        // .NET bool - 1 byte.
+        // Spirv bool - 4 bytes.
+        // However, it's ok to simply represent the .NET bool as a Spirv bool here.
+        // Only when it's part of a struct will a .NET bool become a SpirvTypeInt.
+        SpirvTypeBool
+    | _ when ty = typeof<byte> ->
+        SpirvTypeUInt8
     | _ when ty = typeof<int> -> 
         SpirvTypeInt32
     | _ when ty = typeof<float32> ->
@@ -77,7 +86,12 @@ let rec mkSpirvType ty =
         let fields =
             getFields ty
             |> Seq.map (fun field ->
-                SpirvField (field.Name, mkSpirvType field.FieldType, [])
+                let fieldTy = field.FieldType
+                let fieldTy =
+                    /// .NET bools are 1 byte, so the equivelant spirv type is SpirvTypeInt that is 8 bits and unsigned.
+                    if fieldTy = typeof<bool> then typeof<byte>
+                    else fieldTy                    
+                SpirvField (field.Name, mkSpirvType fieldTy, [])
             )
             |> List.ofSeq
         SpirvTypeStruct (ty.FullName, fields)
@@ -308,8 +322,16 @@ let rec CheckExpr env isReturnable expr =
     | FieldGet(Some receiver, fieldInfo) ->
         let env, spvFieldGet = CheckIntrinsicField env receiver fieldInfo
         env, SpirvIntrinsicFieldGet spvFieldGet
+
     | PropertyGet(Some receiver, propInfo, args) ->
         CheckPropertyGet env receiver propInfo args
+
+    | IfThenElse(condExpr, trueExpr, falseExpr) ->
+        let env, spvCondExpr = CheckExpr env false condExpr
+        let env, spvTrueExpr = CheckExpr env isReturnable trueExpr
+        let env, spvFalseExpr = CheckExpr env isReturnable falseExpr
+        env, SpirvBranchConditional(spvCondExpr, spvTrueExpr, spvFalseExpr)
+
     | _ ->
         failwithf "Expression not supported: %A" expr
 
@@ -375,6 +397,10 @@ and CheckIntrinsicCall env checkedArgs expr =
 
     | SpecificCall <@ kill @> _, [||], [] ->
         env, SpirvIntrinsicCall Kill
+
+    | SpecificCall <@ (<) : float32 -> float32 -> bool @> _, _, [arg1;arg2] ->
+        env, FloatUnorderedLessThan(arg1, arg2, mkSpirvType expr.Type) |> SpirvIntrinsicCall
+        
 
     | _ ->
         failwithf "Call not supported: %A" expr

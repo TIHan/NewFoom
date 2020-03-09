@@ -92,7 +92,10 @@ let meshShader (instance: FalGraphics) =
             let mutable outColor = Variable<Vector4> [Decoration.Location 0u] StorageClass.Output
 
             fun () ->
-              outColor <- sampler.ImplicitLod fragTexCoord
+                let color = sampler.ImplicitLod fragTexCoord
+                if color.W < 0.5f then
+                    kill ()
+                outColor <- color
         @>
     let spvFragmentInfo = SpirvGenInfo.Create(AddressingModel.Logical, MemoryModel.GLSL450, ExecutionModel.Fragment, [Capability.Shader], ["GLSL.std.450"], ExecutionMode.OriginUpperLeft)
     let spvFragment = 

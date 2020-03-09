@@ -11,7 +11,7 @@ open Tast
 [<NoEquality;NoComparison>]
 type cenv =
     {
-        mutable nextResultId: IdResult
+        nextResultId: IdResult ref
 
         // Types, Variables, Constants
 
@@ -53,7 +53,7 @@ type cenv =
 
     static member Default =
         {
-            nextResultId = 1u
+            nextResultId = ref 1u
             types = Dictionary ()
             typesByType = Dictionary ()
             typeFunctions = Dictionary ()
@@ -86,8 +86,8 @@ type env =
 #nowarn "51" 
 
 let nextResultId cenv =
-    let resultId = cenv.nextResultId
-    cenv.nextResultId <- cenv.nextResultId + 1u
+    let resultId = !cenv.nextResultId
+    cenv.nextResultId := !cenv.nextResultId + 1u
     resultId
 
 let addInstructions cenv instrs =
@@ -221,6 +221,7 @@ let emitConstantComposite cenv resultType debugName constituents =
 let rec emitType cenv ty =
     match ty with
     | SpirvTypeVoid -> emitTypeVoid cenv
+    | SpirvTypeBool -> emitTypeAux cenv ty (fun resultId -> OpTypeBool resultId)
     | SpirvTypeInt (width, sign) -> emitTypeAux cenv ty (fun resultId -> OpTypeInt(resultId, uint32 width, if sign then 1u else 0u))
     | SpirvTypeFloat width -> emitTypeAux cenv ty (fun resultId -> OpTypeFloat(resultId, uint32 width))
     | SpirvTypeVector2 -> emitTypeVector2 cenv
@@ -438,13 +439,18 @@ let tryEmitLoad cenv pointer =
     | _ ->
         None
 
+let emitLabel cenv =
+    let resultId = nextResultId cenv
+    addInstructions cenv [OpLabel resultId]
+    resultId
+
 let deref cenv (resultId: IdResult) =
     match tryEmitLoad cenv resultId with
     | Some resultId -> resultId
     | _ -> resultId
 
 [<Literal>]
-let ReturnVoidResultId = 0u
+let ZeroResultId = 0u
 
 let emitLoad cenv pointer =
     match tryEmitLoad cenv pointer with
@@ -458,7 +464,11 @@ type Returnable =
 let rec GenExpr cenv (env: env) blockScope returnable expr =
     match expr with
 
-    | SpirvNop -> 0u
+    | SpirvNop -> ZeroResultId
+
+    | SpirvUnreachable ->
+        addInstructions cenv [OpUnreachable]
+        ZeroResultId
 
     | SpirvConst spvConst ->
         GenConst cenv spvConst
@@ -503,7 +513,7 @@ let rec GenExpr cenv (env: env) blockScope returnable expr =
         let rhsId = GenExpr cenv env blockScope NotReturnable rhs |> deref cenv
         let id = GenGlobalVar cenv var
         addInstructions cenv [OpStore(id, rhsId, None)]
-        ReturnVoidResultId
+        ZeroResultId
 
     | SpirvIntrinsicCall call ->
         let retTy = emitType cenv call.ReturnType
@@ -582,7 +592,15 @@ let rec GenExpr cenv (env: env) blockScope returnable expr =
             // TODO: Add check that disallows this in non-Fragment Execution Models.
             addInstructions cenv [OpKill]
             cenv.ignoreAddingInstructions <- true
-            ReturnVoidResultId
+            ZeroResultId
+
+        | FloatUnorderedLessThan(arg1, arg2, _) ->
+            let arg1 = GenExpr cenv env blockScope NotReturnable arg1 |> deref cenv
+            let arg2 = GenExpr cenv env blockScope NotReturnable arg2 |> deref cenv
+
+            let resultId = nextResultId cenv
+            addInstructions cenv [OpFUnordLessThan(retTy, resultId, arg1, arg2)]
+            resultId
 
     | SpirvIntrinsicFieldGet fieldGet ->
         let getComponent receiver fieldTy n =
@@ -622,6 +640,28 @@ let rec GenExpr cenv (env: env) blockScope returnable expr =
         addInstructions cenv [op]
         cenv.locals.[accessChainPointerId] <- op
         emitLoad cenv accessChainPointerId
+
+    | SpirvBranchConditional(condExpr, trueExpr, falseExpr) ->
+        let resultIdCond = GenExpr cenv env blockScope NotReturnable condExpr
+        let contLabel = nextResultId cenv
+
+        let cenvTrue = { cenv with currentInstructions = ResizeArray () } // TODO: instead of creating a new cenv, put currentInstructions somewhere else? pass as an argument?
+        let cenvFalse = { cenv with currentInstructions = ResizeArray () }
+
+        let trueLabel = emitLabel cenvTrue
+        GenExpr cenvTrue env (blockScope + 1) BlockReturnable trueExpr |> ignore
+        addInstructions cenvTrue [OpBranch contLabel]
+
+        let falseLabel = emitLabel cenvFalse
+        GenExpr cenvFalse env (blockScope + 1) BlockReturnable falseExpr |> ignore
+        addInstructions cenvFalse [OpBranch contLabel]
+
+        addInstructions cenv [OpBranchConditional(resultIdCond, trueLabel, falseLabel, [])]
+        addInstructions cenv cenvTrue.currentInstructions
+        addInstructions cenv cenvFalse.currentInstructions
+        addInstructions cenv [OpLabel contLabel]
+
+        ZeroResultId
 
 and GenVector cenv env blockScope returnable retTy args =
     let constituents =
@@ -666,7 +706,7 @@ let rec GenTopLevelExpr cenv env expr =
         if not var.Type.IsVoid then
             GenGlobalVar cenv var |> ignore
         let resultId = GenExpr cenv env 1 BlockReturnable body
-        if resultId = ReturnVoidResultId then
+        if resultId = ZeroResultId then
             addInstructions cenv [OpReturn]
         else
             addInstructions cenv [OpReturnValue resultId]

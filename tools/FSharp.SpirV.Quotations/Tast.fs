@@ -14,6 +14,10 @@ type SpirvImageType = SpirvImageType of sampledType: SpirvType * dim: Dim * dept
 
 and SpirvType =
     | SpirvTypeVoid
+
+    /// 32-bit boolean.
+    | SpirvTypeBool
+
     | SpirvTypeInt of width: int * sign: bool
     | SpirvTypeFloat of width: int
     | SpirvTypeVector2
@@ -30,6 +34,7 @@ and SpirvType =
     member x.Name =
         match x with
         | SpirvTypeVoid -> "void"
+        | SpirvTypeBool -> "bool"
         | SpirvTypeInt (width, sign) -> "int" + string width + "(" + string sign + ")"
         | SpirvTypeFloat width -> "float" + string width
         | SpirvTypeVector2 -> "Vector2"
@@ -46,6 +51,7 @@ and SpirvType =
     member x.Size: int =
         match x with
         | SpirvTypeVoid -> failwith "Unable to get size of void type."
+        | SpirvTypeBool -> sizeof<uint32>
         | SpirvTypeInt (width, _) -> width / sizeof<byte>
         | SpirvTypeFloat width -> width / sizeof<byte>
         | SpirvTypeVector2
@@ -103,6 +109,7 @@ let mkSpirvVar (name, ty, decorations, storageClass, isMutable) =
         IsMutable = isMutable
     }
 
+let SpirvTypeUInt8 = SpirvTypeInt (8, false)
 let SpirvTypeInt32 = SpirvTypeInt (32, true)
 let SpirvTypeUInt32 = SpirvTypeInt (32, false)
 let SpirvTypeFloat32 = SpirvTypeFloat 32
@@ -136,6 +143,7 @@ type SpirvConst =
 
 type SpirvExpr =
     | SpirvNop
+    | SpirvUnreachable
     | SpirvConst of SpirvConst
     | SpirvLet of SpirvVar * rhs: SpirvExpr * body: SpirvExpr
     | SpirvSequential of SpirvExpr * SpirvExpr
@@ -150,10 +158,16 @@ type SpirvExpr =
     | SpirvIntrinsicFieldGet of SpirvIntrinsicFieldGet
     | SpirvFieldGet of receiver: SpirvExpr * index: int
 
+    // Control flow
+
+    | SpirvBranchConditional of condition: SpirvExpr * truePath: SpirvExpr * falsePath: SpirvExpr
+
     member x.Type =
         let rec getType expr =
             match expr with
             | SpirvNop -> 
+                SpirvTypeVoid
+            | SpirvUnreachable ->
                 SpirvTypeVoid
             | SpirvConst spvConst ->
                 match spvConst with
@@ -193,6 +207,8 @@ type SpirvExpr =
                 match receiver.Type with
                 | SpirvTypeStruct (_, fields) -> fields.[index].Type
                 | _ -> failwith "Invalid field get."
+            | SpirvBranchConditional _ -> 
+                SpirvTypeVoid
         getType x
 
 and SpirvIntrinsicCall =
@@ -207,6 +223,7 @@ and SpirvIntrinsicCall =
     | VectorShuffle of arg1: SpirvExpr * arg2: SpirvExpr * arg3: uint32 list * retTy: SpirvType
     | ImplicitLod of arg1: SpirvExpr * arg2: SpirvExpr * retTy: SpirvType
     | Kill
+    | FloatUnorderedLessThan of arg1: SpirvExpr * arg2: SpirvExpr * retTy: SpirvType
 
     member x.ReturnType =
         match x with
@@ -242,6 +259,7 @@ and SpirvIntrinsicCall =
         | VectorShuffle (_, _, _, retTy) -> retTy
         | ImplicitLod (_, _, retTy) -> retTy
         | Kill -> SpirvType.SpirvTypeVoid
+        | FloatUnorderedLessThan(_, _, retTy) -> retTy
 
     member x.Arguments =
         match x with
@@ -255,6 +273,7 @@ and SpirvIntrinsicCall =
         | VectorShuffle (arg1, arg2, _, _) -> [arg1;arg2]
         | ImplicitLod (arg1, arg2, _) -> [arg1;arg2]
         | Kill -> []
+        | FloatUnorderedLessThan(arg1, arg2, _) -> [arg1;arg2]
 
 
 and SpirvIntrinsicFieldGet =
