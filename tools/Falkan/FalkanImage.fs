@@ -250,9 +250,6 @@ type FalkanImage =
         format: VkFormat
         width: int
         height: int
-        descriptorSetLayout: FalkanDescriptorSetLayout
-        descriptorPool: FalkanDescriptorPool
-        descriptorSets: FalkanDescriptorSets
     //    depthAttachment: FalkanImageDepthAttachment
     }
 
@@ -261,9 +258,6 @@ type FalkanImage =
     member this.Height = int this.height
 
     member internal this.Destroy() =
-  //      this.depthAttachment.Destroy()
-        (this.descriptorSetLayout :> IDisposable).Dispose()
-        (this.descriptorPool :> IDisposable).Dispose()
         vkDestroySampler(this.vkDevice, this.vkSampler, vkNullPtr)
         vkDestroyImageView(this.vkDevice, this.vkImageView, vkNullPtr)
         vkDestroyImage(this.vkDevice, this.vkImage, vkNullPtr)
@@ -282,19 +276,6 @@ type FalDevice with
         let imageView = mkImageView this.Device defaultImageFormat image
         let sampler = mkSampler this.Device
 
-        // 3 is the most for pre-rendered image views defined in SwapChain
-
-        // TODO: Move this somewhere else.
-        let samplerPool = this.CreateDescriptorPool(CombinedImageSamplerDescriptor, 3)
-        let samplerSetLayout = samplerPool.CreateSetLayout(FragmentStage, 1u)
-        let samplerSets = samplerSetLayout.CreateDescriptorSets 3
-
-        samplerSets.vkDescriptorSets
-        |> Array.iter (fun set ->
-            let mutable imageInfo = mkDescriptorImageInfo imageView sampler
-            updateDescriptorImageSet this.Device set &&imageInfo
-            () (* prevent tail call *))
-
       //  let depthAttachment = this.CreateImageDepthAttachment(width, height)
 
         { vkDevice = this.Device
@@ -304,7 +285,4 @@ type FalDevice with
           memory = memory
           format = defaultImageFormat
           width = width
-          height = height
-          descriptorPool = samplerPool 
-          descriptorSetLayout = samplerSetLayout
-          descriptorSets = samplerSets }
+          height = height }

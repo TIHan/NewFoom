@@ -10,11 +10,10 @@ open FSharp.Vulkan.Interop
 #nowarn "9"
 #nowarn "51"
 
-[<RequiresExplicitTypeArguments>]
-let mkVertexInputBinding<'T> binding inputRate =
+let mkVertexInputBinding binding inputRate (ty: Type) =
     VkVertexInputBindingDescription (
         binding = binding,
-        stride = uint32 sizeof<'T>,
+        stride = uint32 (Marshal.SizeOf ty),
         inputRate = inputRate
     )
 
@@ -26,8 +25,7 @@ let mkVertexAttributeDescription binding location format offset =
         offset = offset
     )
 
-[<RequiresExplicitTypeArguments>]
-let mkVertexAttributeDescriptions<'T> locationOffset binding =
+let mkVertexAttributeDescriptions locationOffset binding ty =
     let rec mk (ty: Type) location offset = 
         match ty with
         | _ when ty = typeof<single> -> 
@@ -62,11 +60,11 @@ let mkVertexAttributeDescriptions<'T> locationOffset binding =
         | _ when ty.IsValueType ->
             ty.GetFields(Reflection.BindingFlags.NonPublic ||| Reflection.BindingFlags.Public ||| Reflection.BindingFlags.Instance)
             |> Array.mapi (fun i field ->
-                mk field.FieldType (location + uint32 i) (Marshal.OffsetOf<'T> field.Name |> uint32)
+                mk field.FieldType (location + uint32 i) (Marshal.OffsetOf(ty, field.Name) |> uint32)
             )
             |> Array.concat
     
         | _ ->
             failwithf "Type not supported: %A" ty
     
-    mk typeof<'T> locationOffset 0u
+    mk ty locationOffset 0u

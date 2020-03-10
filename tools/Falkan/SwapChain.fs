@@ -109,6 +109,13 @@ let updateDescriptorImageSet device descriptorSet pImageInfo =
 
     vkUpdateDescriptorSets(device, 1u, &&descriptorWrite, 0u, vkNullPtr)
 
+[<Struct;NoEquality;NoComparison>]
+type PipelineLayout =
+    {
+        vkPipelineLayout: VkPipelineLayout
+        vkDescriptorSetLayouts: struct(VkDescriptorSetLayout * VkDescriptorType) []
+    }
+
 [<NoEquality;NoComparison>]
 type SwapChainState =
     {
@@ -117,10 +124,8 @@ type SwapChainState =
         imageViews: VkImageView []
         imageDepthAttachment: FalkanImageDepthAttachment
         renderPass: VkRenderPass
-        descriptorSetLayout: FalkanDescriptorSetLayout[]
-        descriptorPool: FalkanDescriptorPool[]
-        descriptorSets: FalkanDescriptorSets []
-        pipelineLayout: VkPipelineLayout
+        descriptorPool: VkDescriptorPool[]
+        pipelineLayouts: PipelineLayout ResizeArray
         framebuffers: VkFramebuffer []
         commandBuffers: VkCommandBuffer []
     }
@@ -136,8 +141,8 @@ type ImageSampler =
 [<Struct;NoEquality;NoComparison>]
 type Draw =
     {
-        imageSampler: ImageSampler
-        vertexBuffers: VkBuffer []
+        vkDescriptorSets: VkDescriptorSet [][]
+        vertexVkBuffers: VkBuffer []
         vertexCount: uint32
         instanceCount: uint32
     }
@@ -145,17 +150,17 @@ type Draw =
 [<Struct;NoEquality;NoComparison>]
 type Pipeline =
     {
+        vkPipelineLayout: VkPipelineLayout
         vkPipeline: VkPipeline
         draws: Draw ResizeArray
     }
 
 type PipelineIndex = int
 
-let recordDraw extent (framebuffers: VkFramebuffer []) (commandBuffers: VkCommandBuffer []) (descriptorSets: VkDescriptorSet [][]) pipelineLayout renderPass (pipelines: Pipeline seq) =
+let recordDraw extent (framebuffers: VkFramebuffer []) (commandBuffers: VkCommandBuffer []) renderPass (pipelines: Pipeline seq) =
     for i = 0 to framebuffers.Length - 1 do
         let framebuffer = framebuffers.[i]
         let commandBuffer = commandBuffers.[i]
-        let uboSet = descriptorSets.[0].[i]
 
         // Begin command buffer
 
@@ -206,18 +211,19 @@ let recordDraw extent (framebuffers: VkFramebuffer []) (commandBuffers: VkComman
                 // REVIEW: Might be expensive per draw but it works.
                 // Bind descriptor sets
 
-                let samplerSet = draw.imageSampler.vkDescriptorSets.[i]
-                let sets = [|uboSet;samplerSet|]
-                use pDescriptorSet = fixed sets
-                vkCmdBindDescriptorSets(commandBuffer, VkPipelineBindPoint.VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0u, uint32 sets.Length, pDescriptorSet, 0u, vkNullPtr)
+                let sets =
+                    draw.vkDescriptorSets
+                    |> Array.map (fun x -> x.[i])
+                use pDescriptorSets = fixed sets
+                vkCmdBindDescriptorSets(commandBuffer, VkPipelineBindPoint.VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.vkPipelineLayout, 0u, uint32 draw.vkDescriptorSets.Length, pDescriptorSets, 0u, vkNullPtr)
 
                 // Bind vertex buffers
         
-                if draw.vertexBuffers |> Array.isEmpty |> not then          
-                    let offsets = draw.vertexBuffers |> Array.map (fun _ -> 0UL)
+                if draw.vertexVkBuffers |> Array.isEmpty |> not then          
+                    let offsets = draw.vertexVkBuffers |> Array.map (fun _ -> 0UL) // REVIEW: Doesn't allocate much at all, but maybe a way to get rid of it regardless?
                     use pOffsets = fixed offsets
-                    use pVertexBuffers = fixed draw.vertexBuffers
-                    vkCmdBindVertexBuffers(commandBuffer, 0u, uint32 draw.vertexBuffers.Length, pVertexBuffers, pOffsets)
+                    use pVertexBuffers = fixed draw.vertexVkBuffers
+                    vkCmdBindVertexBuffers(commandBuffer, 0u, uint32 draw.vertexVkBuffers.Length, pVertexBuffers, pOffsets)
 
                 // Draw
 
@@ -784,48 +790,168 @@ let drawFrame device swapChain sync (commandBuffers: VkCommandBuffer []) graphic
 
     (currentFrame + 1) % MaxFramesInFlight, res
 
-[<Struct>]
-type ShaderInputKind =
+type FalkanShaderDescriptorLayoutKind =
+    | UniformBufferDescriptor
+    | CombinedImageSamplerDescriptor
+
+    member this.VkDescriptorType =
+        match this with
+        | UniformBufferDescriptor -> VkDescriptorType.VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER
+        | CombinedImageSamplerDescriptor -> VkDescriptorType.VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER
+
+type FalkanShaderStage =
+    | VertexStage
+    | FragmentStage
+
+    member this.VkShaderStageFlags =
+        match this with
+        | VertexStage -> VkShaderStageFlags.VK_SHADER_STAGE_VERTEX_BIT
+        | FragmentStage -> VkShaderStageFlags.VK_SHADER_STAGE_FRAGMENT_BIT
+
+type FalkanShaderDescriptorLayout = FalkanShaderDescriptorLayout of FalkanShaderDescriptorLayoutKind * FalkanShaderStage * binding: uint32 with
+
+    member this.Build vkDevice =
+        match this with
+        | FalkanShaderDescriptorLayout(kind, stage, binding) ->
+            struct(mkDescriptorSetLayout vkDevice binding kind.VkDescriptorType stage.VkShaderStageFlags, kind.VkDescriptorType)
+
+type FalkanShaderVertexInputKind =
     | PerVertex
     | PerInstance
 
-[<Struct;NoEquality;NoComparison>]
-type ShaderId = ShaderId of Guid
+type FalkanShaderVertexInput = FalkanShaderVertexInput of FalkanShaderVertexInputKind * binding: uint32 * location: uint32 * Type with
 
-open System.Numerics
-
-[<Struct>]
-type FalkanShaderInput<'Input> = private FalkanShaderInput of ShaderInputKind * binding: uint32 * location: uint32 with
-
-    member this.BuildVulkanInfo() =
+    member this.Build() =
         match this with
-        | FalkanShaderInput(kind, binding, location) -> 
+        | FalkanShaderVertexInput(kind, binding, location, ty) ->
             let vkVertexInputRate =
                 match kind with
                 | PerVertex -> VkVertexInputRate.VK_VERTEX_INPUT_RATE_VERTEX
                 | PerInstance -> VkVertexInputRate.VK_VERTEX_INPUT_RATE_INSTANCE
-            let vkVertexInputBindingDescription = mkVertexInputBinding<'Input> binding vkVertexInputRate
-            let vkVertexInputAttributeDescriptions = mkVertexAttributeDescriptions<'Input> location binding
+            let vkVertexInputBindingDescription = mkVertexInputBinding binding vkVertexInputRate ty
+            let vkVertexInputAttributeDescriptions = mkVertexAttributeDescriptions location binding ty
             (vkVertexInputBindingDescription, vkVertexInputAttributeDescriptions)
 
+type FalkanShaderLayout = FalkanShaderLayout of descriptors: FalkanShaderDescriptorLayout list * vertexInputs: FalkanShaderVertexInput list with
+
+    member this.Build vkDevice =
+        match this with
+        | FalkanShaderLayout(descriptors, vertexInputs) ->
+            let descriptors =
+                descriptors
+                |> List.map (fun x -> x.Build vkDevice)
+                |> Array.ofList
+
+            let bindingDescriptions, attributeDescriptions =
+                vertexInputs
+                |> List.map (fun x -> x.Build())
+                |> Array.ofList
+                |> Array.unzip
+
+            (descriptors, bindingDescriptions, attributeDescriptions)
+
+[<Struct;NoComparison>]
+type ShaderId = ShaderId of Guid
+
+type ShaderInput =
+    | ShaderVertexInputBuffer of FalkanBuffer
+    | ShaderDescriptorInputBuffer of FalkanBuffer * size: int
+    | ShaderDescriptorInputImage of FalkanImage
+
+[<Sealed>]
+type FalkanShaderDrawVertexBuilder (inputs: ShaderInput list) =
+
+    member _.Inputs = inputs
+    
+    member _.AddVertexBuffer(buffer: FalkanBuffer) =
+        ShaderVertexInputBuffer buffer :: inputs
+        |> FalkanShaderDrawVertexBuilder
+        
+    member _.Build (vkDevice, vkDescriptorSetLayouts: struct(VkDescriptorSetLayout * VkDescriptorType) [], descriptorSetCount, vertexCount, instanceCount) =
+        let inputs = inputs |> List.rev |> Array.ofList
+
+        let descriptorSets =
+            let mutable i = 0
+            inputs
+            |> Array.choose (fun x ->
+                match x with
+                | ShaderDescriptorInputBuffer (buffer, size) ->    
+                    let struct(vkDescriptorSetLayout, vkDescriptorType) = vkDescriptorSetLayouts.[i]
+                    let vkDescriptorPool = mkDescriptorPool vkDevice vkDescriptorType descriptorSetCount
+                    let vkDescriptorSetLayouts = Array.init (int descriptorSetCount) (fun _ -> vkDescriptorSetLayout)
+                    let vkDescriptorSets = mkDescriptorSets vkDevice descriptorSetCount vkDescriptorPool vkDescriptorSetLayouts
+
+                    vkDescriptorSets
+                    |> Array.iter (fun d ->
+                        let mutable info = mkDescriptorBufferInfo buffer.buffer size
+                        updateDescriptorSet vkDevice d &&info
+                        () (* prevent tail-call *))
+
+                    i <- i + 1
+                    Some vkDescriptorSets
+
+                | ShaderDescriptorInputImage image ->    
+                    let struct(vkDescriptorSetLayout, vkDescriptorType) = vkDescriptorSetLayouts.[i]
+                    let vkDescriptorPool = mkDescriptorPool vkDevice vkDescriptorType descriptorSetCount
+                    let vkDescriptorSetLayouts = Array.init (int descriptorSetCount) (fun _ -> vkDescriptorSetLayout)
+                    let vkDescriptorSets = mkDescriptorSets vkDevice descriptorSetCount vkDescriptorPool vkDescriptorSetLayouts
+
+                    vkDescriptorSets
+                    |> Array.iter (fun d ->
+                        let mutable info = mkDescriptorImageInfo image.vkImageView image.vkSampler
+                        updateDescriptorImageSet vkDevice d &&info
+                        () (* prevent tail-call *))
+
+                    i <- i + 1
+                    Some vkDescriptorSets
+                | _ ->
+                    None)
+
+        let vertexVkBuffers =
+            inputs
+            |> Array.choose (fun x ->
+                match x with
+                | ShaderVertexInputBuffer buffer -> Some buffer.buffer
+                | _ -> None)
+
+        {
+            vkDescriptorSets = descriptorSets
+            vertexVkBuffers = vertexVkBuffers
+            vertexCount = vertexCount
+            instanceCount = instanceCount
+        }
+
+[<Sealed>]
+type FalkanShaderDrawDescriptorBuilder (inputs: ShaderInput list) =
+
+    member _.Inputs = inputs
+
+    member _.AddDescriptorBuffer(buffer: FalkanBuffer, size) =
+         ShaderDescriptorInputBuffer(buffer, size) :: inputs
+        |> FalkanShaderDrawDescriptorBuilder
+
+    member _.AddDescriptorImage(image: FalkanImage) =
+         ShaderDescriptorInputImage image :: inputs
+        |> FalkanShaderDrawDescriptorBuilder
+
+    member _.Next = FalkanShaderDrawVertexBuilder inputs
+
 [<RequireQualifiedAccess>]
-module FalkanShaderInput =
+module FalkanShaderDrawBuilder =
 
-    let createVector3(kind, binding, location) : FalkanShaderInput<Vector3> = FalkanShaderInput(kind, binding, location)
+    let Create() =
+        FalkanShaderDrawDescriptorBuilder []
 
-    let createVector2(kind, binding, location) : FalkanShaderInput<Vector2> = FalkanShaderInput(kind, binding, location)
+type FalkanShader = private FalkanShader of ShaderId * struct(VkDescriptorSetLayout * VkDescriptorType) [] * swapChain: SwapChain with
 
-type FalkanShader<'T> = private FalkanShader of ShaderId * swapChain: SwapChain with
+    member _.CreateDrawBuilder() =
+        FalkanShaderDrawDescriptorBuilder []
 
-    member this.AddDraw(image: FalkanImage, buffer: FalkanBuffer, vertexCount, instanceCount) =
+    member this.AddDraw(drawBuilder: FalkanShaderDrawVertexBuilder, vertexCount, instanceCount) =
         match this with
-        | FalkanShader(shaderId, swapChain) -> swapChain.RecordDraw(shaderId, image, [|buffer.buffer|], vertexCount, instanceCount)
-
-and FalkanShader<'T1, 'T2> = private FalkanShader2 of ShaderId * swapChain: SwapChain with
-
-    member this.AddDraw(image: FalkanImage, buffer1: FalkanBuffer, buffer2: FalkanBuffer, vertexCount, instanceCount) =
-        match this with
-        | FalkanShader2(shaderId, swapChain) -> swapChain.RecordDraw(shaderId, image, [|buffer1.buffer;buffer2.buffer|], vertexCount, instanceCount)
+        | FalkanShader(shaderId, descriptorSetLayouts, swapChain) ->
+            let draw = drawBuilder.Build(swapChain.VkDevice, descriptorSetLayouts, swapChain.ImageCount, vertexCount, instanceCount)
+            swapChain.RecordDraw(shaderId, draw)
 
 and [<Sealed>] SwapChain private (fdevice: FalDevice, surface, sync, graphicsFamily, graphicsQueue, presentFamily, presentQueue, invalidate: IEvent<unit>) =
 
@@ -861,9 +987,8 @@ and [<Sealed>] SwapChain private (fdevice: FalDevice, surface, sync, graphicsFam
                 imageViews = imageViews
                 imageDepthAttachment = imageDepthAttachment
                 renderPass = renderPass
-                descriptorSetLayout = descriptorSetLayout
                 descriptorPool = descriptorPool
-                pipelineLayout = pipelineLayout
+                pipelineLayouts = pipelineLayouts
                 framebuffers = framebuffers
                 commandBuffers = commandBuffers
                 } ->
@@ -888,11 +1013,14 @@ and [<Sealed>] SwapChain private (fdevice: FalDevice, surface, sync, graphicsFam
             vkDestroyFramebuffer(device, framebuffer, vkNullPtr)
         )
 
-        vkDestroyPipelineLayout(device, pipelineLayout, vkNullPtr)
-        descriptorSetLayout
-        |> Array.iter (fun descriptorSetLayout -> (descriptorSetLayout :> IDisposable).Dispose())
+        pipelineLayouts
+        |> Seq.iter (fun pipelineLayout ->
+            pipelineLayout.vkDescriptorSetLayouts
+            |> Array.iter (fun struct(descriptorSetLayout, _) -> vkDestroyDescriptorSetLayout(device, descriptorSetLayout, vkNullPtr))
+            vkDestroyPipelineLayout(device, pipelineLayout.vkPipelineLayout, vkNullPtr))
+
         descriptorPool
-        |> Array.iter (fun descriptorPool -> (descriptorPool :> IDisposable).Dispose())
+        |> Array.iter (fun descriptorPool -> vkDestroyDescriptorPool(device, descriptorPool, vkNullPtr))
         vkDestroyRenderPass(device, renderPass, vkNullPtr)
 
         imageDepthAttachment.Destroy()
@@ -903,11 +1031,11 @@ and [<Sealed>] SwapChain private (fdevice: FalDevice, surface, sync, graphicsFam
 
         vkDestroySwapchainKHR(device, swapChain, vkNullPtr)
 
-    let addPipeline group draws =
+    let addPipeline group draws vkPipelineLayout =
         match state with
         | Some state ->
-            let vkPipeline = mkGraphicsPipeline device state.extent state.pipelineLayout state.renderPass group
-            let pipeline = { vkPipeline = vkPipeline; draws = draws }
+            let vkPipeline = mkGraphicsPipeline device state.extent vkPipelineLayout state.renderPass group
+            let pipeline = { vkPipelineLayout = vkPipelineLayout; vkPipeline = vkPipeline; draws = draws }
             pipelines.Add pipeline
             pipeline
         | _ ->
@@ -915,24 +1043,20 @@ and [<Sealed>] SwapChain private (fdevice: FalDevice, surface, sync, graphicsFam
 
     let record () =
         let state = state.Value
-        let vkDescriptorSets = state.descriptorSets |> Array.map (fun x -> x.vkDescriptorSets)
         recordDraw 
-            state.extent state.framebuffers state.commandBuffers vkDescriptorSets state.pipelineLayout state.renderPass pipelines
-
-    let setUniformBuffer () =
-        match uniformBuffer with
-        | Some(buffer, size) ->
-            let state = state.Value
-            state.descriptorSets.[0].vkDescriptorSets
-            |> Array.iter (fun descriptorSet ->
-                let mutable bufferInfo = mkDescriptorBufferInfo buffer size
-                updateDescriptorSet device descriptorSet &&bufferInfo
-                () (* prevent tail-call *))
-        | _ ->
-            ()
+            state.extent state.framebuffers state.commandBuffers state.renderPass pipelines
 
     do
         invalidate.Add(fun () -> isInvalidated <- true)
+
+    member _.ImageCount = 
+        check ()
+
+        match state with
+        | None -> failwith "Swap chain not initialized."
+        | Some state -> state.imageViews.Length
+
+    member _.VkDevice = device
 
     member x.Recreate () =
         if not (Monitor.IsEntered gate) then
@@ -946,16 +1070,6 @@ and [<Sealed>] SwapChain private (fdevice: FalDevice, surface, sync, graphicsFam
             let imageViews = mkImageViews device surfaceFormat.format images
             let imageDepthAttachment = fdevice.CreateImageDepthAttachment(int extent.width, int extent.height)
             let renderPass = mkRenderPass device surfaceFormat.format
-
-            let uboPool = fdevice.CreateDescriptorPool(UniformBufferDescriptor, imageViews.Length)
-            let uboSetLayout = uboPool.CreateSetLayout(VertexStage, 0u)
-            let uboSets = uboSetLayout.CreateDescriptorSets imageViews.Length
-
-            let samplerPool = fdevice.CreateDescriptorPool(CombinedImageSamplerDescriptor, imageViews.Length)
-            let samplerSetLayout = samplerPool.CreateSetLayout(FragmentStage, 1u)
-            let samplerSets = samplerSetLayout.CreateDescriptorSets imageViews.Length
-
-            let pipelineLayout = mkPipelineLayout device [|uboSetLayout.vkDescriptorSetLayout;samplerSetLayout.vkDescriptorSetLayout|]
             let framebuffers = mkFramebuffers device renderPass extent imageViews (Array.init imageViews.Length (fun _ -> imageDepthAttachment.vkImageView))
             let commandBuffers = mkCommandBuffers device fdevice.VkCommandPool framebuffers
 
@@ -967,33 +1081,32 @@ and [<Sealed>] SwapChain private (fdevice: FalDevice, surface, sync, graphicsFam
                     imageViews = imageViews
                     imageDepthAttachment = imageDepthAttachment
                     renderPass = renderPass
-                    descriptorSetLayout = [|uboSetLayout;samplerSetLayout|]
-                    descriptorSets = [|uboSets;samplerSets|]
-                    descriptorPool = [|uboPool;samplerPool|]
-                    pipelineLayout = pipelineLayout
+                    descriptorPool = [||]
+                    pipelineLayouts = ResizeArray()
                     framebuffers = framebuffers
                     commandBuffers = commandBuffers
                 }
                 |> Some
-
-            setUniformBuffer ()
-
-            for pair in recordings |> Seq.toArray do
-                recordings.[pair.Key] <- 
-                    let pipeline = addPipeline (fst pair.Value) (snd pair.Value).draws
-                    (fst pair.Value, pipeline)
 
             record ()
 
         finally
             Monitor.Exit gate
 
-    member x.AddShader (vertexBindings, vertexAttributes, vertexBytes: ReadOnlySpan<byte>, fragmentBytes: ReadOnlySpan<byte>) =
+    member x.AddShader (descriptorSetLayouts: struct(VkDescriptorSetLayout * VkDescriptorType) [], vertexBindings, vertexAttributes, vertexBytes: ReadOnlySpan<byte>, fragmentBytes: ReadOnlySpan<byte>) =
         if not (Monitor.IsEntered gate) then
             Monitor.Enter gate
 
         try
             check ()
+
+            let pipelineLayout = 
+                {
+                    vkPipelineLayout = mkPipelineLayout device (descriptorSetLayouts |> Array.map (fun struct(x, _) -> x))
+                    vkDescriptorSetLayouts = descriptorSetLayouts
+                }
+
+            state.Value.pipelineLayouts.Add pipelineLayout
 
             let pVertexBytes = Unsafe.AsPointer(&Unsafe.AsRef(&vertexBytes.GetPinnableReference())) |> NativePtr.ofVoidPtr
             let pFragmentBytes = Unsafe.AsPointer(&Unsafe.AsRef(&fragmentBytes.GetPinnableReference())) |> NativePtr.ofVoidPtr
@@ -1005,14 +1118,14 @@ and [<Sealed>] SwapChain private (fdevice: FalDevice, surface, sync, graphicsFam
                     pFragmentBytes (uint32 fragmentBytes.Length)
 
             shaders.Add shader
-            let pipeline = addPipeline shader (ResizeArray())
+            let pipeline = addPipeline shader (ResizeArray()) pipelineLayout.vkPipelineLayout
             let id = Guid.NewGuid()
             recordings.[id] <- (shader, pipeline)
             ShaderId id
         finally 
             Monitor.Exit gate
 
-    member x.RecordDraw((ShaderId id): ShaderId, image: FalkanImage, vertexBuffers, vertexCount, instanceCount) =
+    member x.RecordDraw((ShaderId id): ShaderId, draw: Draw) =
         lock gate |> fun _ ->
 
         check ()
@@ -1020,23 +1133,7 @@ and [<Sealed>] SwapChain private (fdevice: FalDevice, surface, sync, graphicsFam
         match recordings.TryGetValue id with
         | false, _ -> failwith "Unable to find shader."
         | true, (_, pipeline) ->
-            let draw =
-                {
-                    imageSampler = { vkImageView = image.vkImageView; vkSampler = image.vkSampler; vkDescriptorSets = image.descriptorSets.vkDescriptorSets }
-                    vertexBuffers = vertexBuffers
-                    vertexCount = uint32 vertexCount
-                    instanceCount = uint32 instanceCount
-                }
             pipeline.draws.Add draw
-
-    member x.SetUniformBuffer(buffer, size) =
-        lock gate |> fun _ ->
-
-        check ()
-
-        uniformBuffer <- Some(buffer, size)
-
-        setUniformBuffer ()
 
     member x.SetupCommands() =
         record ()
@@ -1064,16 +1161,10 @@ and [<Sealed>] SwapChain private (fdevice: FalDevice, surface, sync, graphicsFam
         vkQueueWaitIdle(graphicsQueue) |> checkResult
         vkDeviceWaitIdle(device) |> checkResult
 
-    member this.CreateShader(input: FalkanShaderInput<'T>, vertexSpirvSource: ReadOnlySpan<byte>, fragmentSpirvSource: ReadOnlySpan<byte>) =
-        let vkVertexInputBindingDescription, vkVertexInputAttributeDescriptions = input.BuildVulkanInfo()
-        let id = this.AddShader([|vkVertexInputBindingDescription|], vkVertexInputAttributeDescriptions, vertexSpirvSource, fragmentSpirvSource)
-        FalkanShader(id, this) : FalkanShader<'T>
-
-    member this.CreateShader(input1: FalkanShaderInput<'T1>, input2: FalkanShaderInput<'T2>, vertexSpirvSource: ReadOnlySpan<byte>, fragmentSpirvSource: ReadOnlySpan<byte>) =
-        let vkVertexInputBindingDescription1, vkVertexInputAttributeDescriptions1 = input1.BuildVulkanInfo()
-        let vkVertexInputBindingDescription2, vkVertexInputAttributeDescriptions2 = input2.BuildVulkanInfo()
-        let id = this.AddShader([|vkVertexInputBindingDescription1;vkVertexInputBindingDescription2|], Array.append vkVertexInputAttributeDescriptions1 vkVertexInputAttributeDescriptions2, vertexSpirvSource, fragmentSpirvSource)
-        FalkanShader2(id, this) : FalkanShader<'T1, 'T2>
+    member this.CreateShader(layout: FalkanShaderLayout, vertexSpirvSource: ReadOnlySpan<byte>, fragmentSpirvSource: ReadOnlySpan<byte>) =
+        let descriptorSetLayouts, bindingDescriptions, attributeDescriptions = layout.Build device
+        let id = this.AddShader(descriptorSetLayouts, bindingDescriptions, attributeDescriptions |> Array.concat, vertexSpirvSource, fragmentSpirvSource)
+        FalkanShader(id, descriptorSetLayouts, this)
 
     interface IDisposable with
 

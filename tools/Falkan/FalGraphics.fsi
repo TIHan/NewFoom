@@ -2,7 +2,6 @@
 module Falkan.Graphics
 
 open System
-open FSharp.Vulkan.Interop
 
 [<Sealed>]
 type FalGraphics =
@@ -24,10 +23,6 @@ type FalGraphics =
 
     member FillImage : FalkanImage * ReadOnlySpan<byte> -> unit
 
-    member SetUniformBuffer<'T when 'T : unmanaged> : FalkanBuffer -> unit
-
-    member CreateShader: FalkanShaderInput<'T> * vertexSpirvSource: ReadOnlySpan<byte> * fragmentSpirvSource: ReadOnlySpan<byte> -> FalkanShader<'T>
-
-    member CreateShader: FalkanShaderInput<'T1> * FalkanShaderInput<'T2> * vertexSpirvSource: ReadOnlySpan<byte> * fragmentSpirvSource: ReadOnlySpan<byte> -> FalkanShader<'T1, 'T2>
+    member CreateShader: FalkanShaderLayout * vertexSpirvSource: ReadOnlySpan<byte> * fragmentSpirvSource: ReadOnlySpan<byte> -> FalkanShader
 
     static member Create : FalDevice * invalidate: IEvent<unit> -> FalGraphics

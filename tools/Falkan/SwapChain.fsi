@@ -6,38 +6,53 @@ open FSharp.Vulkan.Interop
 
 type PipelineIndex = int
 
-[<Struct>]
-type ShaderInputKind =
+type FalkanShaderDescriptorLayoutKind =
+    | UniformBufferDescriptor
+    | CombinedImageSamplerDescriptor
+
+type FalkanShaderStage =
+    | VertexStage
+    | FragmentStage
+
+type FalkanShaderDescriptorLayout = FalkanShaderDescriptorLayout of FalkanShaderDescriptorLayoutKind * FalkanShaderStage * binding: uint32
+
+type FalkanShaderVertexInputKind =
     | PerVertex
     | PerInstance
 
-open System.Numerics
+type FalkanShaderVertexInput = FalkanShaderVertexInput of FalkanShaderVertexInputKind * binding: uint32 * location: uint32 * Type
 
-[<Struct>]
-type FalkanShaderInput<'Input> = private FalkanShaderInput of ShaderInputKind * binding: uint32 * location: uint32
+type FalkanShaderLayout = FalkanShaderLayout of descriptors: FalkanShaderDescriptorLayout list * vertexInputs: FalkanShaderVertexInput list
+
+[<Sealed>]
+type FalkanShaderDrawVertexBuilder =
+
+    member AddVertexBuffer : FalkanBuffer -> FalkanShaderDrawVertexBuilder
+
+[<Sealed>]
+type FalkanShaderDrawDescriptorBuilder =
+
+    member AddDescriptorBuffer : FalkanBuffer * size: int -> FalkanShaderDrawDescriptorBuilder
+
+    member AddDescriptorImage : FalkanImage -> FalkanShaderDrawDescriptorBuilder
+
+    member Next : FalkanShaderDrawVertexBuilder
 
 [<RequireQualifiedAccess>]
-module FalkanShaderInput =
+module FalkanShaderDrawBuilder =
 
-    val createVector2 : ShaderInputKind * binding: uint32 * location: uint32 -> FalkanShaderInput<Vector2>
-
-    val createVector3 : ShaderInputKind * binding: uint32 * location: uint32 -> FalkanShaderInput<Vector3>
+    val Create : unit -> FalkanShaderDrawDescriptorBuilder
 
 [<Sealed>]
-type FalkanShader<'T> =
+type FalkanShader =
 
-    member AddDraw : FalkanImage * FalkanBuffer * vertexCount : int * instanceCount: int -> unit
+    member CreateDrawBuilder : unit -> FalkanShaderDrawDescriptorBuilder
 
-[<Sealed>]
-type FalkanShader<'T1, 'T2> =
-
-    member AddDraw : FalkanImage * FalkanBuffer * FalkanBuffer * vertexCount : int * instanceCount: int -> unit
+    member AddDraw : drawBuilder: FalkanShaderDrawVertexBuilder * vertexCount: uint32 * instanceCount: uint32 -> unit
 
 [<Sealed>]
 type internal SwapChain =
     interface IDisposable
-
-    member SetUniformBuffer: VkBuffer * size: int -> unit
 
     member DrawFrame: unit -> unit
 
@@ -45,8 +60,7 @@ type internal SwapChain =
 
     member WaitIdle: unit -> unit
 
-    member CreateShader: FalkanShaderInput<'T> * vertexSpirvSource: ReadOnlySpan<byte> * fragmentSpirvSource: ReadOnlySpan<byte> -> FalkanShader<'T>
+    member CreateShader: layout: FalkanShaderLayout * vertexSpirvSource: ReadOnlySpan<byte> * fragmentSpirvSource: ReadOnlySpan<byte> -> FalkanShader
 
-    member CreateShader: FalkanShaderInput<'T1> * FalkanShaderInput<'T2> * vertexSpirvSource: ReadOnlySpan<byte> * fragmentSpirvSource: ReadOnlySpan<byte> -> FalkanShader<'T1, 'T2>
 
     static member Create : FalDevice * VkSurfaceKHR * graphicsFamily: uint32 * presentFamily: uint32 * invalidate: IEvent<unit> -> SwapChain

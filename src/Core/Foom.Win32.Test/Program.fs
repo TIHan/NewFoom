@@ -106,8 +106,8 @@ let createBitmap (pixels: Pixel [,]) =
     bitmap
 
 let meshShader (instance: FalGraphics) =
-    let input1 = FalkanShaderInput.createVector3(PerVertex, 0u, 0u)
-    let input2 = FalkanShaderInput.createVector2(PerVertex, 1u, 1u)
+    let input1 = FalkanShaderVertexInput(PerVertex, 0u, 0u, typeof<Vector3>)
+    let input2 = FalkanShaderVertexInput(PerVertex, 1u, 1u, typeof<Vector2>)
 
     let vertex =
         <@
@@ -158,7 +158,14 @@ let meshShader (instance: FalGraphics) =
         ms.Read(bytes, 0, bytes.Length) |> ignore
         bytes
 
-    instance.CreateShader(input1, input2, ReadOnlySpan vertexBytes, ReadOnlySpan fragmentBytes)
+    let layout = FalkanShaderLayout(
+        [
+            FalkanShaderDescriptorLayout(UniformBufferDescriptor, VertexStage, 0u)
+            FalkanShaderDescriptorLayout(CombinedImageSamplerDescriptor, FragmentStage, 1u)
+        ],
+        [input1; input2])
+
+    instance.CreateShader(layout, ReadOnlySpan vertexBytes, ReadOnlySpan fragmentBytes)
 
 let setRender (instance: FalGraphics) =
     let wad = Wad.FromFile("../../../../../../Foom-deps/testwads/doom1.wad")
@@ -178,7 +185,6 @@ let setRender (instance: FalGraphics) =
         }
 
     instance.FillBuffer(mvpUniform, ReadOnlySpan [|mvp.InvertedView|])
-    instance.SetUniformBuffer<ModelViewProjection>(mvpUniform)
 
     let shader = meshShader instance
 
@@ -207,7 +213,12 @@ let setRender (instance: FalGraphics) =
         let uvBuffer = instance.CreateBuffer<Vector2> (uv.Length, FalkanBufferFlags.None, VertexBuffer)
         instance.FillBuffer(uvBuffer, ReadOnlySpan uv)
 
-        shader.AddDraw(image, verticesBuffer, uvBuffer, vertices.Length, 1)
+        let draw = shader.CreateDrawBuilder()
+        let draw = draw.AddDescriptorBuffer(mvpUniform, sizeof<ModelViewProjection>)
+        let draw = draw.AddDescriptorImage(image)
+        let draw = draw.Next.AddVertexBuffer(verticesBuffer)
+        let draw = draw.AddVertexBuffer(uvBuffer)
+        shader.AddDraw(draw, uint32 vertices.Length, 1u)
 
     (e1m1.Sectors, e1m1.ComputeAllSectorGeometry())
     ||> Seq.iteri2 (fun i s geo ->

@@ -79,13 +79,6 @@ type FalGraphics
 
         fillImage physicalDevice device fdevice.VkCommandPool fdevice.VkTransferQueue buffer.vkImage buffer.format buffer.width buffer.height data
 
-    member _.SetUniformBuffer<'T when 'T : unmanaged>(buffer: FalkanBuffer) =
-        lock gate <| fun _ ->
-            
-        checkDispose ()
-
-        swapChain.SetUniformBuffer(buffer.buffer, sizeof<'T>)
-
     interface IDisposable with
         member x.Dispose () =
             if Interlocked.CompareExchange(&isDisposed, 1, 0) = 1 then
@@ -114,11 +107,8 @@ type FalGraphics
                     if x.IsValueCreated then
                         (x.Value :> IDisposable).Dispose())
 
-    member this.CreateShader(input: FalkanShaderInput<'T>, vertexSpirvSource: ReadOnlySpan<byte>, fragmentSpirvSource: ReadOnlySpan<byte>) =
-        swapChain.CreateShader(input, vertexSpirvSource, fragmentSpirvSource)
-
-    member this.CreateShader(input1: FalkanShaderInput<'T1>, input2: FalkanShaderInput<'T2>, vertexSpirvSource: ReadOnlySpan<byte>, fragmentSpirvSource: ReadOnlySpan<byte>) =
-        swapChain.CreateShader(input1, input2, vertexSpirvSource, fragmentSpirvSource)
+    member this.CreateShader(layout: FalkanShaderLayout, vertexSpirvSource: ReadOnlySpan<byte>, fragmentSpirvSource: ReadOnlySpan<byte>) =
+        swapChain.CreateShader(layout, vertexSpirvSource, fragmentSpirvSource)
 
     static member Create(falDevice: FalDevice, invalidate) =
         let indices = falDevice.Indices
