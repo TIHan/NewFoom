@@ -198,23 +198,37 @@ let emitConstantAux cenv resultType debugName literal =
     match cenv.constants.TryGetValue literal with
     | true, (resultId, _) -> resultId
     | _ ->
-        let value = 
-            match literal with
-            | SpirvConstInt (value, _) -> 
-                let mutable value = value
-                let valuePtr = &&value |> NativePtr.toVoidPtr
-                BitConverter.ToUInt32(ReadOnlySpan(valuePtr, 4))
-            | SpirvConstSingle (value, _) ->
-                let mutable value = value
-                let valuePtr = &&value |> NativePtr.toVoidPtr
-                BitConverter.ToUInt32(ReadOnlySpan(valuePtr, 4))
-            | SpirvConstBool (value, _) -> if value then 1u else 0u
-            | _ -> failwith "Invalid constant."
+        let create value =
+            let resultId = nextResultId cenv
+            cenv.constants.[literal] <- (resultId, OpConstant(resultType, resultId, value))
+            cenv.debugNames.Add(string resultId + "_const_" + debugName, resultId)
+            resultId
 
-        let resultId = nextResultId cenv
-        cenv.constants.[literal] <- (resultId, OpConstant(resultType, resultId, value))
-        cenv.debugNames.Add(string resultId + "_const_" + debugName, resultId)
-        resultId
+        let createBoolTrue () =
+            let resultId = nextResultId cenv
+            cenv.constants.[literal] <- (resultId, OpSpecConstantTrue(resultType, resultId))
+            cenv.debugNames.Add(string resultId + "_const_" + debugName, resultId)
+            resultId
+
+        let createBoolFalse () =
+            let resultId = nextResultId cenv
+            cenv.constants.[literal] <- (resultId, OpSpecConstantFalse(resultType, resultId))
+            cenv.debugNames.Add(string resultId + "_const_" + debugName, resultId)
+            resultId
+
+        match literal with
+        | SpirvConstInt (value, _) -> 
+            let mutable value = value
+            let valuePtr = &&value |> NativePtr.toVoidPtr
+            BitConverter.ToUInt32(ReadOnlySpan(valuePtr, 4))
+            |> create
+        | SpirvConstSingle (value, _) ->
+            let mutable value = value
+            let valuePtr = &&value |> NativePtr.toVoidPtr
+            BitConverter.ToUInt32(ReadOnlySpan(valuePtr, 4))
+            |> create
+        | SpirvConstBool (value, _) -> if value then createBoolTrue () else createBoolFalse ()
+        | _ -> failwith "Invalid constant."
 
 let emitConstantComposite cenv resultType debugName constituents =
     match cenv.constantComposites.TryGetValue constituents with
@@ -310,7 +324,7 @@ and emitTypeFunction cenv paramTys retTy =
         resultId
 
 and emitConstantBool cenv (v: bool) =
-    emitConstantAux cenv (emitType cenv SpirvTypeInt32) "bool" (SpirvConstBool(v, []))
+    emitConstantAux cenv (emitType cenv SpirvTypeBool) "bool" (SpirvConstBool(v, []))
 
 and emitConstantInt cenv (n: int) =
     emitConstantAux cenv (emitType cenv SpirvTypeInt32) "int" (SpirvConstInt(n, []))

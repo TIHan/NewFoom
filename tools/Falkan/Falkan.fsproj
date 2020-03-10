@@ -7,6 +7,7 @@
   <ItemGroup>
     <Compile Include="PublicHelpers.fs" />
     <Compile Include="Helpers.fs" />
+    <Compile Include="InternalDeviceHelpers.fs" />
     <Compile Include="FalDevice.fsi" />
     <Compile Include="FalDevice.fs" />
     <Compile Include="DeviceMemory.fs" />

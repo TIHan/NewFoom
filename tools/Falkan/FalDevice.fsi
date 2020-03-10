@@ -3,21 +3,17 @@ module Falkan.Device
 
 open System
 open FSharp.Vulkan.Interop
+open InternalDeviceHelpers
 
-type internal QueueFamilyIndices =
-    {
-        graphicsFamily: uint32 option
-        presentFamily: uint32 option
-        computeFamily: uint32 option
-        transferFamily: uint32 option
-    }
+type VulkanDeviceLayer =
+    | LunarGStandardValidation
 
-    member HasGraphics: bool
+type VulkanDeviceExtension =
+    | ShaderFloat16Int8
 
-    member HasCompute: bool
-
-    member HasTransfer: bool
-
+/// Implicit vulkan device layers:
+///     "VK_KHR_swapchain"
+/// Vulkan version 1.1
 [<Sealed>]
 type FalDevice =
     interface IDisposable
@@ -34,6 +30,4 @@ type FalDevice =
 
     member internal VkTransferQueue: VkQueue
 
-    static member internal Create: appName: string * engineName: string * validationLayers: string list * deviceExtensions: string list * ?mkSurface: (VkInstance -> VkSurfaceKHR) -> FalDevice
-
-    static member CreateWin32Surface : HWND * HINSTANCE * appName: string * engineName: string * validationLayers: string list * deviceExtensions: string list -> FalDevice
+    static member CreateWin32 : hWnd: nativeint * hInstance: nativeint * appName: string * engineName: string * deviceLayers: VulkanDeviceLayer list * deviceExtensions: VulkanDeviceExtension list -> FalDevice
