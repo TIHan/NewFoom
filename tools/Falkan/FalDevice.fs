@@ -17,7 +17,7 @@ let mkApplicationInfo appNamePtr engineNamePtr =
         applicationVersion = VK_MAKE_VERSION(1u, 0u, 0u),
         pEngineName = engineNamePtr,
         engineVersion = VK_MAKE_VERSION(1u, 0u, 0u),
-        apiVersion = VK_API_VERSION_1_1
+        apiVersion = VK_MAKE_VERSION(1u, 1u, 0u)
     )
 
 let getInstanceExtension<'T when 'T :> Delegate> instance =
@@ -266,6 +266,14 @@ let mkLogicalDevice physicalDevice indices validationLayers deviceExtensions =
             &&deviceFeatures 
             (uint32 extensions.Length) extensionsHandle.PtrPtr
             (uint32 layers.Length) layersHandle.PtrPtr
+
+    let mutable features =
+        VkPhysicalDeviceShaderFloat16Int8FeaturesKHR(
+            sType = VkStructureType.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT16_INT8_FEATURES_KHR,
+            shaderInt8 = VK_TRUE
+        )
+
+    createInfo.pNext <- &&features |> NativePtr.toNativeInt
 
     let mutable device = VkDevice()
     vkCreateDevice(physicalDevice, &&createInfo, vkNullPtr, &&device) |> checkResult

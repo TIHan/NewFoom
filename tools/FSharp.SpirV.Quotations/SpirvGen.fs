@@ -163,6 +163,7 @@ let emitTypeAux cenv ty f =
             |> List.iteri (fun i (SpirvField(_, fieldTy, _)) ->
                 let i = uint32 i
                 match fieldTy with
+                | SpirvTypeBool -> addDecorationInstructions cenv [OpMemberDecorate(resultId, i, Decoration.Offset offset)]
                 | SpirvTypeInt _ -> addDecorationInstructions cenv [OpMemberDecorate(resultId, i, Decoration.Offset offset)]
                 | SpirvTypeFloat _ -> addDecorationInstructions cenv [OpMemberDecorate(resultId, i, Decoration.Offset offset)]
                 | SpirvTypeVector2 -> addDecorationInstructions cenv [OpMemberDecorate(resultId, i, Decoration.Offset offset)]
@@ -197,12 +198,18 @@ let emitConstantAux cenv resultType debugName literal =
     match cenv.constants.TryGetValue literal with
     | true, (resultId, _) -> resultId
     | _ ->
-        let valuePtr =
+        let value = 
             match literal with
-            | SpirvConstInt (value, _) -> &&value |> NativePtr.toVoidPtr
-            | SpirvConstSingle (value, _) -> &&value |> NativePtr.toVoidPtr
+            | SpirvConstInt (value, _) -> 
+                let mutable value = value
+                let valuePtr = &&value |> NativePtr.toVoidPtr
+                BitConverter.ToUInt32(ReadOnlySpan(valuePtr, 4))
+            | SpirvConstSingle (value, _) ->
+                let mutable value = value
+                let valuePtr = &&value |> NativePtr.toVoidPtr
+                BitConverter.ToUInt32(ReadOnlySpan(valuePtr, 4))
+            | SpirvConstBool (value, _) -> if value then 1u else 0u
             | _ -> failwith "Invalid constant."
-        let value = BitConverter.ToUInt32(ReadOnlySpan(valuePtr, 4))
 
         let resultId = nextResultId cenv
         cenv.constants.[literal] <- (resultId, OpConstant(resultType, resultId, value))
@@ -302,6 +309,9 @@ and emitTypeFunction cenv paramTys retTy =
         cenv.typeFunctions.[tys] <- (resultId, [OpTypeFunction(resultId, retTyId, paramTyIds)])
         resultId
 
+and emitConstantBool cenv (v: bool) =
+    emitConstantAux cenv (emitType cenv SpirvTypeInt32) "bool" (SpirvConstBool(v, []))
+
 and emitConstantInt cenv (n: int) =
     emitConstantAux cenv (emitType cenv SpirvTypeInt32) "int" (SpirvConstInt(n, []))
 
@@ -333,6 +343,9 @@ let rec isConstant expr =
 
 let rec GenConst cenv spvConst =
     match spvConst with
+    | SpirvConstBool (n, decorations) ->
+        emitConstantBool cenv n
+        
     | SpirvConstInt (n, decorations) ->
         emitConstantInt cenv n
 
@@ -641,7 +654,7 @@ let rec GenExpr cenv (env: env) blockScope returnable expr =
         cenv.locals.[accessChainPointerId] <- op
         emitLoad cenv accessChainPointerId
 
-    | SpirvBranchConditional(condExpr, trueExpr, falseExpr) ->
+    | SpirvIfThenElse(condExpr, trueExpr, falseExpr) ->
         let resultIdCond = GenExpr cenv env blockScope NotReturnable condExpr
         let contLabel = nextResultId cenv
 
@@ -656,7 +669,7 @@ let rec GenExpr cenv (env: env) blockScope returnable expr =
         GenExpr cenvFalse env (blockScope + 1) BlockReturnable falseExpr |> ignore
         addInstructions cenvFalse [OpBranch contLabel]
 
-        addInstructions cenv [OpBranchConditional(resultIdCond, trueLabel, falseLabel, [])]
+        addInstructions cenv [OpSelectionMerge(contLabel, SelectionControl.None);OpBranchConditional(resultIdCond, trueLabel, falseLabel, [])]
         addInstructions cenv cenvTrue.currentInstructions
         addInstructions cenv cenvFalse.currentInstructions
         addInstructions cenv [OpLabel contLabel]
@@ -840,4 +853,8 @@ let GenModule (info: SpirvGenInfo) expr =
         @
         (cenv.currentInstructions |> List.ofSeq)
 
-    SpirvModule.Create(instrs = instrs)
+    let VK_MAKE_VERSION(major: uint32, minor: uint32) = ((major <<< 16) ||| (minor <<< 8))
+
+    let version = VK_MAKE_VERSION(1u, 3u)
+
+    SpirvModule.Create(version = version, instrs = instrs)

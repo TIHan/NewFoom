@@ -46,11 +46,6 @@ let tryGetIndexForBackingField (propInfo: PropertyInfo) =
 let rec mkSpirvType ty =
     match ty with
     | _ when ty = typeof<bool> ->
-        // .NET bools and Spirv bools are different sizes.
-        // .NET bool - 1 byte.
-        // Spirv bool - 4 bytes.
-        // However, it's ok to simply represent the .NET bool as a Spirv bool here.
-        // Only when it's part of a struct will a .NET bool become a SpirvTypeInt.
         SpirvTypeBool
     | _ when ty = typeof<byte> ->
         SpirvTypeUInt8
@@ -85,13 +80,8 @@ let rec mkSpirvType ty =
     | _ when ty.IsValueType ->
         let fields =
             getFields ty
-            |> Seq.map (fun field ->
-                let fieldTy = field.FieldType
-                let fieldTy =
-                    /// .NET bools are 1 byte, so the equivelant spirv type is SpirvTypeInt that is 8 bits and unsigned.
-                    if fieldTy = typeof<bool> then typeof<byte>
-                    else fieldTy                    
-                SpirvField (field.Name, mkSpirvType fieldTy, [])
+            |> Seq.map (fun field ->      
+                SpirvField (field.Name, mkSpirvType field.FieldType, [])
             )
             |> List.ofSeq
         SpirvTypeStruct (ty.FullName, fields)
@@ -184,12 +174,24 @@ and mkSpirvImageType (sampledType: Type) (dim: Type) (depth: Type) (arrayed: Typ
 let mkSpirvArrayType elementSpvTy length =
     SpirvTypeArray (elementSpvTy, length)
 
+let implicitSpirvTypeConvert storageClass spvTy =
+    match spvTy with
+    //| SpirvTypeBool -> 
+    //    match storageClass with
+    //    | StorageClass.UniformConstant
+    //    | StorageClass.Uniform
+    //    | StorageClass.Input
+    //    | StorageClass.Output
+    //    | StorageClass.PushConstant -> SpirvTypeUInt8
+    //    | _ -> spvTy
+    | _ -> spvTy
+
 let mkSpirvVarOfVarAux env decorations storageClass var getSpvTy =
     match env.varCache.TryFind var with
     | Some spvVar -> env, spvVar
     | _ ->
         let spvTy = getSpvTy ()
-        let spvVar = mkSpirvVar (var.Name, spvTy, decorations, storageClass, var.IsMutable)
+        let spvVar = mkSpirvVar (var.Name, implicitSpirvTypeConvert storageClass spvTy, decorations, storageClass, var.IsMutable)
         { env with varCache = env.varCache.Add(var, spvVar) }, spvVar
 
 let mkSpirvVarOfVar env decorations storageClass var =
@@ -234,6 +236,12 @@ let rec mkSpirvConst expr =
     | NewArray (elementTy, exprs) ->
         let elementSpvTy = mkSpirvType elementTy
         SpirvConstArray(elementSpvTy, exprs |> List.map mkSpirvConst, [])
+
+    | Value(x, _) when x.GetType() = typeof<bool> && unbox x = false ->
+        SpirvConstBool(false, [])
+
+    | Value(x, _) when x.GetType() = typeof<bool> && unbox x = true ->
+        SpirvConstBool(true, [])
 
     | _ ->
         failwithf "Invalid expression for constant: %A" expr
@@ -330,7 +338,7 @@ let rec CheckExpr env isReturnable expr =
         let env, spvCondExpr = CheckExpr env false condExpr
         let env, spvTrueExpr = CheckExpr env isReturnable trueExpr
         let env, spvFalseExpr = CheckExpr env isReturnable falseExpr
-        env, SpirvBranchConditional(spvCondExpr, spvTrueExpr, spvFalseExpr)
+        env, SpirvIfThenElse(spvCondExpr, spvTrueExpr, spvFalseExpr)
 
     | _ ->
         failwithf "Expression not supported: %A" expr

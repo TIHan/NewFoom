@@ -121,7 +121,7 @@ let meshShader (instance: FalGraphics) =
                 gl_Position <- Vector4.Transform(Vector4(position, 1.f), mvp.model * mvp.view * mvp.proj)
                 fragTexCoord <- texCoord
         @>
-    let spvVertexInfo = SpirvGenInfo.Create(AddressingModel.Logical, MemoryModel.GLSL450, ExecutionModel.Vertex, [Capability.Shader], [])
+    let spvVertexInfo = SpirvGenInfo.Create(AddressingModel.Logical, MemoryModel.GLSL450, ExecutionModel.Vertex, [Capability.Shader;Capability.Int8], [])
     let spvVertex =
         Checker.Check vertex
         |> SpirvGen.GenModule spvVertexInfo
@@ -138,7 +138,7 @@ let meshShader (instance: FalGraphics) =
                     kill ()
                 outColor <- color
         @>
-    let spvFragmentInfo = SpirvGenInfo.Create(AddressingModel.Logical, MemoryModel.GLSL450, ExecutionModel.Fragment, [Capability.Shader], ["GLSL.std.450"], ExecutionMode.OriginUpperLeft)
+    let spvFragmentInfo = SpirvGenInfo.Create(AddressingModel.Logical, MemoryModel.GLSL450, ExecutionModel.Fragment, [Capability.Shader;Capability.Int8], ["GLSL.std.450"], ExecutionMode.OriginUpperLeft)
     let spvFragment = 
         Checker.Check fragment
         |> SpirvGen.GenModule spvFragmentInfo
@@ -162,7 +162,7 @@ let meshShader (instance: FalGraphics) =
 
 let setRender (instance: FalGraphics) =
     let wad = Wad.FromFile("../../../../../../Foom-deps/testwads/doom1.wad")
-    let e1m1 = wad.FindMap "e1m2"
+    let e1m1 = wad.FindMap "e1m1"
     loadMusic wad
     let start = e1m1.TryFindPlayer1Start().Value
     let start = Vector3(float32 start.X, float32 start.Y, 28.f)
@@ -280,7 +280,7 @@ let main argv =
     let hwnd = windowState.Hwnd
     let hinstance = windowState.Hinstance
 
-    use device = FalDevice.CreateWin32Surface(hwnd, hinstance, "App", "Engine", ["VK_LAYER_LUNARG_standard_validation"], [VK_KHR_SWAPCHAIN_EXTENSION_NAME])
+    use device = FalDevice.CreateWin32Surface(hwnd, hinstance, "App", "Engine", ["VK_LAYER_LUNARG_standard_validation"], [VK_KHR_SWAPCHAIN_EXTENSION_NAME;VK_KHR_SHADER_FLOAT16_INT8_EXTENSION_NAME])
     use instance = FalGraphics.Create (device, windowState.WindowResized)
     let mvp, mvpUniform = setRender instance
     instance.SetupCommands()

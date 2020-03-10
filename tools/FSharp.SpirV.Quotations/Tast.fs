@@ -51,7 +51,7 @@ and SpirvType =
     member x.Size: int =
         match x with
         | SpirvTypeVoid -> failwith "Unable to get size of void type."
-        | SpirvTypeBool -> sizeof<uint32>
+        | SpirvTypeBool -> sizeof<bool>
         | SpirvTypeInt (width, _) -> width / sizeof<byte>
         | SpirvTypeFloat width -> width / sizeof<byte>
         | SpirvTypeVector2
@@ -115,6 +115,7 @@ let SpirvTypeUInt32 = SpirvTypeInt (32, false)
 let SpirvTypeFloat32 = SpirvTypeFloat 32
 
 type SpirvConst =
+    | SpirvConstBool of bool * decorations: Decorations
     | SpirvConstInt of int * decorations: Decorations
     | SpirvConstUInt32 of uint32 * decorations: Decorations
     | SpirvConstSingle of single * decorations: Decorations
@@ -131,6 +132,7 @@ type SpirvConst =
 
     member x.Decorations =
         match x with
+        | SpirvConstBool (decorations=decorations)
         | SpirvConstInt (decorations=decorations)
         | SpirvConstUInt32 (decorations=decorations)
         | SpirvConstSingle (decorations=decorations)
@@ -140,6 +142,12 @@ type SpirvConst =
         | SpirvConstVector4 (decorations=decorations)
         | SpirvConstMatrix4x4 (decorations=decorations)
         | SpirvConstArray (decorations=decorations) -> decorations
+
+[<RequireQualifiedAccess>]
+type SpirvSelectionControl =
+    | None
+    | Flatten
+    | DontFlatten
 
 type SpirvExpr =
     | SpirvNop
@@ -160,7 +168,7 @@ type SpirvExpr =
 
     // Control flow
 
-    | SpirvBranchConditional of condition: SpirvExpr * truePath: SpirvExpr * falsePath: SpirvExpr
+    | SpirvIfThenElse of condition: SpirvExpr * truePath: SpirvExpr * falsePath: SpirvExpr
 
     member x.Type =
         let rec getType expr =
@@ -171,6 +179,7 @@ type SpirvExpr =
                 SpirvTypeVoid
             | SpirvConst spvConst ->
                 match spvConst with
+                | SpirvConstBool _ -> SpirvTypeBool
                 | SpirvConstInt _ -> SpirvTypeInt32
                 | SpirvConstUInt32 _ -> SpirvTypeUInt32
                 | SpirvConstSingle _ -> SpirvTypeFloat 32
@@ -207,7 +216,7 @@ type SpirvExpr =
                 match receiver.Type with
                 | SpirvTypeStruct (_, fields) -> fields.[index].Type
                 | _ -> failwith "Invalid field get."
-            | SpirvBranchConditional _ -> 
+            | SpirvIfThenElse _ -> 
                 SpirvTypeVoid
         getType x
 
