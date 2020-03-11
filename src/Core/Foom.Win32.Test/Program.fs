@@ -276,11 +276,16 @@ let setRender (instance: FalGraphics) =
 
     mvp, mvpUniform
 
+open Falkan.FreeType
+
 [<EntryPoint>]
 let main argv =
     let title = "F# Vulkan"
     let width = 1280
     let height = 720
+
+    let freeType = FreeType.Create()
+    freeType.Load("fonts/OpenSans/OpenSans-Regular.ttf")
 
     // Add dispose
     let windowState = Win32WindowState (title, width, height)
@@ -298,7 +303,6 @@ let main argv =
 
     let mutable mvp = mvp
 
-    let mutable mousePos = Unchecked.defaultof<_>
     let mutable yaw = 0.f
     let mutable pitch = 0.f
 
