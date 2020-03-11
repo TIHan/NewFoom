@@ -158,12 +158,13 @@ let meshShader (instance: FalGraphics) =
         ms.Read(bytes, 0, bytes.Length) |> ignore
         bytes
 
-    let layout = FalkanShaderLayout(
-        [
-            FalkanShaderDescriptorLayout(UniformBufferDescriptor, VertexStage, 0u)
-            FalkanShaderDescriptorLayout(CombinedImageSamplerDescriptor, FragmentStage, 1u)
-        ],
-        [input1; input2])
+    let layout = 
+        FalkanShaderLayout(
+            [
+                FalkanShaderDescriptorLayout(UniformBufferDescriptor, VertexStage, 0u)
+                FalkanShaderDescriptorLayout(CombinedImageSamplerDescriptor, FragmentStage, 1u)
+            ],
+            [input1; input2])
 
     instance.CreateShader(layout, ReadOnlySpan vertexBytes, ReadOnlySpan fragmentBytes)
 
@@ -185,7 +186,6 @@ let setRender (instance: FalGraphics) =
         }
 
     instance.FillBuffer(mvpUniform, ReadOnlySpan [|mvp.InvertedView|])
-
     let shader = meshShader instance
 
     let getImage name =
@@ -338,7 +338,7 @@ let main argv =
                 |> List.iter (fun x ->
                     let v =
                         match x with
-                        | InputEvent.KeyPressed 'W' -> Vector3.Transform (-Vector3.UnitZ, rotation)
+                        | InputEvent.KeyPressed 'W' -> printfn "yo"; Vector3.Transform (-Vector3.UnitZ, rotation)
                         | InputEvent.KeyPressed 'S' -> Vector3.Transform (Vector3.UnitZ, rotation)
                         | InputEvent.KeyPressed 'A' -> Vector3.Transform (-Vector3.UnitX, rotation)
                         | InputEvent.KeyPressed 'D' -> Vector3.Transform (Vector3.UnitX, rotation)
@@ -365,9 +365,10 @@ let main argv =
                 view.Translation <- view.Translation + acc
                 mvp <-
                     { mvp with view = view }
-                instance.FillBuffer(mvpUniform, ReadOnlySpan[|mvp.InvertedView|])
+                
 
             member __.OnUpdateFrame (time, interval) =
+                instance.FillBuffer(mvpUniform, ReadOnlySpan[|mvp.InvertedView|])
                 quit
 
             member __.OnRenderFrame (_, _, _, _) =

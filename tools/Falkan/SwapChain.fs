@@ -997,14 +997,6 @@ and [<Sealed>] SwapChain private (fdevice: FalDevice, surface, sync, graphicsFam
 
         currentFrame <- 0
 
-        pipelines
-        |> Seq.rev
-        |> Seq.iter (fun pipeline ->
-            vkDestroyPipeline(device, pipeline.vkPipeline, vkNullPtr)
-        )
-
-        pipelines.Clear ()
-
         use pCommandBuffers = fixed commandBuffers
         vkFreeCommandBuffers(device, fdevice.VkCommandPool, uint32 commandBuffers.Length, pCommandBuffers)
 
@@ -1013,14 +1005,6 @@ and [<Sealed>] SwapChain private (fdevice: FalDevice, surface, sync, graphicsFam
             vkDestroyFramebuffer(device, framebuffer, vkNullPtr)
         )
 
-        pipelineLayouts
-        |> Seq.iter (fun pipelineLayout ->
-            pipelineLayout.vkDescriptorSetLayouts
-            |> Array.iter (fun struct(descriptorSetLayout, _) -> vkDestroyDescriptorSetLayout(device, descriptorSetLayout, vkNullPtr))
-            vkDestroyPipelineLayout(device, pipelineLayout.vkPipelineLayout, vkNullPtr))
-
-        descriptorPool
-        |> Array.iter (fun descriptorPool -> vkDestroyDescriptorPool(device, descriptorPool, vkNullPtr))
         vkDestroyRenderPass(device, renderPass, vkNullPtr)
 
         imageDepthAttachment.Destroy()
@@ -1173,6 +1157,8 @@ and [<Sealed>] SwapChain private (fdevice: FalDevice, surface, sync, graphicsFam
                 failwith "SwapChain already disposed"
             else
                 GC.SuppressFinalize x
+
+
                 lock gate (fun () ->
                     shaders
                     |> Seq.rev
