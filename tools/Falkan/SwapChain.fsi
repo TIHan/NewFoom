@@ -4,8 +4,6 @@ module Falkan.SwapChain
 open System
 open FSharp.Vulkan.Interop
 
-type PipelineIndex = int
-
 type FalkanShaderDescriptorLayoutKind =
     | UniformBufferDescriptor
     | CombinedImageSamplerDescriptor

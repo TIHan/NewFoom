@@ -158,7 +158,7 @@ type Win32WindowState (title: string, width: int, weight: int) as this =
     let mutable prevPoint = POINT()
 
     member private __.WndProc hWnd msg wParam lParam =
-     //   hideCursor hWnd
+        hideCursor hWnd
         match int msg with
         | x when x = WM_SYSCOMMAND ->
             match int wParam with
@@ -188,7 +188,7 @@ type Win32WindowState (title: string, width: int, weight: int) as this =
         hwnd <- hwnd2
         hinstance <- hinstance2
 
-      //  centerCursor hwnd
+        centerCursor hwnd
         prevPoint <- 
             match tryGetCursorPos hwnd with
             | ValueSome point -> point
@@ -227,7 +227,7 @@ type Win32WindowState (title: string, width: int, weight: int) as this =
                         let xrel = point.x - prevPoint.x
                         let yrel = point.y - prevPoint.y
                         inputs.Add(MouseMoved(int point.x, int point.y, int xrel, int yrel))
-                      //  centerCursor hwnd
+                        centerCursor hwnd
                     | _ ->
                         ()
 

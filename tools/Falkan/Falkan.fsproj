@@ -12,8 +12,8 @@
     <Compile Include="FalDevice.fs" />
     <Compile Include="DeviceMemory.fs" />
     <Compile Include="FalkanBuffer.fs" />
-    <Compile Include="FalkanDescriptorSet.fs" />
     <Compile Include="FalkanImage.fs" />
+    <Compile Include="InternalPipelineHelpers.fs" />
     <Compile Include="SwapChain.fsi" />
     <Compile Include="SwapChain.fs" />
     <Compile Include="FalGraphics.fsi" />

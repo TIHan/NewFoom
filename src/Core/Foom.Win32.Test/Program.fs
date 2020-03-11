@@ -315,9 +315,6 @@ let main argv =
                 )
 
             member __.OnInputEvents events = 
-              //  if not events.IsEmpty then
-              //      printfn "%A" events
-
                 let mutable acc = Vector3.Zero
 
                 let mutable view = mvp.view
@@ -338,7 +335,7 @@ let main argv =
                 |> List.iter (fun x ->
                     let v =
                         match x with
-                        | InputEvent.KeyPressed 'W' -> printfn "yo"; Vector3.Transform (-Vector3.UnitZ, rotation)
+                        | InputEvent.KeyPressed 'W' -> Vector3.Transform (-Vector3.UnitZ, rotation)
                         | InputEvent.KeyPressed 'S' -> Vector3.Transform (Vector3.UnitZ, rotation)
                         | InputEvent.KeyPressed 'A' -> Vector3.Transform (-Vector3.UnitX, rotation)
                         | InputEvent.KeyPressed 'D' -> Vector3.Transform (Vector3.UnitX, rotation)
