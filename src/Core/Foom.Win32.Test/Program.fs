@@ -159,7 +159,7 @@ let meshShader (instance: FalGraphics) =
         bytes
 
     let layout = 
-        Shader(0,
+        Shader(0,true,
             [
                 FalkanShaderDescriptorLayout(UniformBufferDescriptor, VertexStage, 0u)
                 FalkanShaderDescriptorLayout(CombinedImageSamplerDescriptor, FragmentStage, 1u)

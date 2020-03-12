@@ -118,11 +118,17 @@ type Draw =
         instanceCount: uint32
     }
 
+type PipelineFlags =
+    | Default = 0b00
+    | Depth =   0b01
+    | Stencil = 0b10
+
 [<Struct;NoEquality;NoComparison>]
 type PipelineLayout =
     {
         vkPipelineLayout: VkPipelineLayout
         vkDescriptorSetLayouts: struct(VkDescriptorSetLayout * VkDescriptorType) []
+        pipelineFlags: PipelineFlags
         draws: ResizeArray<Draw>
     }
 
@@ -135,7 +141,7 @@ type Pipeline =
 
 type PipelineIndex = int
 
-let recordDraw extent (framebuffers: VkFramebuffer []) (commandBuffers: VkCommandBuffer []) renderPass (pipelines: Pipeline seq) =
+let recordDraw extent (framebuffers: VkFramebuffer []) (commandBuffers: VkCommandBuffer []) renderPass (pipelineSets: ResizeArray<ResizeArray<Pipeline>>) =
     for i = 0 to framebuffers.Length - 1 do
         let framebuffer = framebuffers.[i]
         let commandBuffer = commandBuffers.[i]
@@ -177,35 +183,43 @@ let recordDraw extent (framebuffers: VkFramebuffer []) (commandBuffers: VkComman
 
         vkCmdBeginRenderPass(commandBuffer, &&beginInfo, VkSubpassContents.VK_SUBPASS_CONTENTS_INLINE)
 
-        for pipeline in pipelines do
+        let mutable subpassIndex = 0
+        for pipelines in pipelineSets do
 
-            // Bind graphics pipeline
+            for pipeline in pipelines do
 
-            vkCmdBindPipeline(commandBuffer, VkPipelineBindPoint.VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.vkPipeline)
+                // Bind graphics pipeline
+
+                vkCmdBindPipeline(commandBuffer, VkPipelineBindPoint.VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.vkPipeline)
 
 
-            for draw in pipeline.layout.draws do
+                for draw in pipeline.layout.draws do
 
-                // REVIEW: Might be expensive per draw but it works.
-                // Bind descriptor sets
+                    // REVIEW: Might be expensive per draw but it works.
+                    // Bind descriptor sets
 
-                let sets =
-                    draw.vkDescriptorSets
-                    |> Array.map (fun x -> x.[i])
-                use pDescriptorSets = fixed sets
-                vkCmdBindDescriptorSets(commandBuffer, VkPipelineBindPoint.VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.layout.vkPipelineLayout, 0u, uint32 draw.vkDescriptorSets.Length, pDescriptorSets, 0u, vkNullPtr)
+                    let sets =
+                        draw.vkDescriptorSets
+                        |> Array.map (fun x -> x.[i])
+                    use pDescriptorSets = fixed sets
+                    vkCmdBindDescriptorSets(commandBuffer, VkPipelineBindPoint.VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.layout.vkPipelineLayout, 0u, uint32 draw.vkDescriptorSets.Length, pDescriptorSets, 0u, vkNullPtr)
 
-                // Bind vertex buffers
+                    // Bind vertex buffers
         
-                if draw.vertexVkBuffers |> Array.isEmpty |> not then          
-                    let offsets = draw.vertexVkBuffers |> Array.map (fun _ -> 0UL) // REVIEW: Doesn't allocate much at all, but maybe a way to get rid of it regardless?
-                    use pOffsets = fixed offsets
-                    use pVertexBuffers = fixed draw.vertexVkBuffers
-                    vkCmdBindVertexBuffers(commandBuffer, 0u, uint32 draw.vertexVkBuffers.Length, pVertexBuffers, pOffsets)
+                    if draw.vertexVkBuffers |> Array.isEmpty |> not then          
+                        let offsets = draw.vertexVkBuffers |> Array.map (fun _ -> 0UL) // REVIEW: Doesn't allocate much at all, but maybe a way to get rid of it regardless?
+                        use pOffsets = fixed offsets
+                        use pVertexBuffers = fixed draw.vertexVkBuffers
+                        vkCmdBindVertexBuffers(commandBuffer, 0u, uint32 draw.vertexVkBuffers.Length, pVertexBuffers, pOffsets)
 
-                // Draw
+                    // Draw
 
-                vkCmdDraw(commandBuffer, draw.vertexCount, draw.instanceCount, 0u, 0u)
+                    vkCmdDraw(commandBuffer, draw.vertexCount, draw.instanceCount, 0u, 0u)
+
+            subpassIndex <- subpassIndex + 1
+
+            if subpassIndex < pipelineSets.Count then
+                vkCmdNextSubpass(commandBuffer, VkSubpassContents.VK_SUBPASS_CONTENTS_INLINE)
 
         // End render pass
 
@@ -282,10 +296,10 @@ let mkMultisampleCreateInfo () =
         alphaToOneEnable = VK_FALSE // Optional
     )
 
-let mkDepthStencilCreateInfo () =
+let mkDepthStencilCreateInfo depthTest stencilTest =
     VkPipelineDepthStencilStateCreateInfo (
         sType = VkStructureType.VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
-        depthTestEnable = VK_TRUE,
+        depthTestEnable = depthTest,
         depthWriteEnable = VK_TRUE,
         depthCompareOp = VkCompareOp.VK_COMPARE_OP_LESS,
         depthBoundsTestEnable = VK_FALSE,
@@ -293,7 +307,7 @@ let mkDepthStencilCreateInfo () =
         maxDepthBounds = 0.f, // optional
         front = Unchecked.defaultof<_>, // optional
         back = Unchecked.defaultof<_>, // optional
-        stencilTestEnable = VK_FALSE)
+        stencilTestEnable = stencilTest)
 
 let mkColorBlendAttachment () =
     VkPipelineColorBlendAttachmentState (
@@ -371,7 +385,7 @@ let mkShader device vertexBindings vertexAttributes vert vertSize frag fragSize 
         fragment = fragShaderModule
     }
 
-let mkGraphicsPipeline device extent pipelineLayout renderPass group =
+let mkGraphicsPipeline device extent pipelineLayout renderPass subpassIndex flags group =
     use pNameMain = fixed vkBytesOfString "main"
 
     let stages =
@@ -398,9 +412,17 @@ let mkGraphicsPipeline device extent pipelineLayout renderPass group =
     let mutable scissor = mkScissor extent
     let mutable viewportStateCreateInfo = mkViewportStateCreateInfo &&viewport &&scissor
 
+    let depthTest =
+        if flags &&& PipelineFlags.Depth = PipelineFlags.Depth then VK_TRUE
+        else VK_FALSE
+
+    let stencilTest =
+        if flags &&& PipelineFlags.Stencil = PipelineFlags.Stencil then VK_TRUE
+        else VK_FALSE
+
     let mutable rasterizerCreateInfo = mkRasterizerCreateInfo ()
     let mutable multisampleCreateInfo = mkMultisampleCreateInfo ()
-    let mutable depthStencilCreateInfo = mkDepthStencilCreateInfo ()
+    let mutable depthStencilCreateInfo = mkDepthStencilCreateInfo depthTest stencilTest
 
     let mutable colorBlendAttachment = mkColorBlendAttachment ()
     let mutable colorBlendCreateInfo = mkColorBlendCreateInfo &&colorBlendAttachment 1u
@@ -424,7 +446,7 @@ let mkGraphicsPipeline device extent pipelineLayout renderPass group =
             pDynamicState = vkNullPtr, // Optional
             layout = pipelineLayout,
             renderPass = renderPass,
-            subpass = 0u,
+            subpass = uint32 subpassIndex,
 
             basePipelineHandle = VK_NULL_HANDLE, // Optional
             basePipelineIndex = -1 // Optional
