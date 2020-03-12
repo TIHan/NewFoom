@@ -72,12 +72,12 @@ let mkDescriptorBufferInfo uniformBuffer size =
             range = uint64 size)
     bufferInfo
 
-let updateDescriptorSet device descriptorSet pBufferInfo =
+let updateDescriptorSet device binding descriptorSet pBufferInfo =
     let mutable descriptorWrite =
         VkWriteDescriptorSet(
             sType = VkStructureType.VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
             dstSet = descriptorSet,
-            dstBinding = 0u,
+            dstBinding = binding,
             dstArrayElement = 0u,
             descriptorType = VkDescriptorType.VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
             descriptorCount = 1u,
@@ -95,12 +95,12 @@ let mkDescriptorImageInfo imageView sampler =
             sampler = sampler)
     imageInfo
 
-let updateDescriptorImageSet device descriptorSet pImageInfo =
+let updateDescriptorImageSet device binding descriptorSet pImageInfo =
     let mutable descriptorWrite =
         VkWriteDescriptorSet(
             sType = VkStructureType.VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
             dstSet = descriptorSet,
-            dstBinding = 1u,
+            dstBinding = binding,
             dstArrayElement = 0u,
             descriptorType = VkDescriptorType.VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
             descriptorCount = 1u,

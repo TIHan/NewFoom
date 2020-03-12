@@ -12,6 +12,7 @@ open System.Drawing
 open System.Drawing.Imaging
 open FSharp.NativeInterop
 open Foom.Wad
+open Falkan.FreeType
 
 #nowarn "9"
 #nowarn "51"
@@ -168,6 +169,67 @@ let meshShader (instance: FalGraphics) =
 
     instance.CreateShader(layout, ReadOnlySpan vertexBytes, ReadOnlySpan fragmentBytes)
 
+let textShader (instance: FalGraphics) =
+    let input1 = FalkanShaderVertexInput(PerVertex, 0u, 0u, typeof<Vector2>)
+    let input2 = FalkanShaderVertexInput(PerVertex, 1u, 1u, typeof<Vector2>)
+
+    let vertex =
+        <@
+            let position = Variable<Vector2> [Decoration.Location 0u; Decoration.Binding 0u] StorageClass.Input
+            let texCoord = Variable<Vector2> [Decoration.Location 1u; Decoration.Binding 1u] StorageClass.Input
+            let mutable gl_Position  = Variable<Vector4> [Decoration.BuiltIn BuiltIn.Position] StorageClass.Output
+            let mutable fragTexCoord = Variable<Vector2> [Decoration.Location 0u] StorageClass.Output
+
+            fun () ->
+                gl_Position <- Vector4(position, 0.f, 1.f)
+                fragTexCoord <- texCoord
+        @>
+    let spvVertexInfo = SpirvGenInfo.Create(AddressingModel.Logical, MemoryModel.GLSL450, ExecutionModel.Vertex, [Capability.Shader], [])
+    let spvVertex =
+        Checker.Check vertex
+        |> SpirvGen.GenModule spvVertexInfo
+
+    let fragment =
+        <@ 
+            let sampler = Variable<Sampler2d> [Decoration.Binding 0u; Decoration.DescriptorSet 0u] StorageClass.UniformConstant
+            let fragTexCoord = Variable<Vector2> [Decoration.Location 0u] StorageClass.Input
+            let mutable outColor = Variable<Vector4> [Decoration.Location 0u] StorageClass.Output
+
+            fun () ->
+                let color = sampler.ImplicitLod fragTexCoord
+                if color.W < 0.5f then
+                    kill ()
+                outColor <- color
+        @>
+    let spvFragmentInfo = SpirvGenInfo.Create(AddressingModel.Logical, MemoryModel.GLSL450, ExecutionModel.Fragment, [Capability.Shader], ["GLSL.std.450"], ExecutionMode.OriginUpperLeft)
+    let spvFragment = 
+        Checker.Check fragment
+        |> SpirvGen.GenModule spvFragmentInfo
+
+    let vertexBytes =
+        use ms = new System.IO.MemoryStream 100
+        SpirvModule.Serialize (ms, spvVertex)
+        let bytes = Array.zeroCreate (int ms.Length)
+        ms.Position <- 0L
+        ms.Read(bytes, 0, bytes.Length) |> ignore
+        bytes
+    let fragmentBytes =
+        use ms = new System.IO.MemoryStream 100
+        SpirvModule.Serialize (ms, spvFragment)
+        let bytes = Array.zeroCreate (int ms.Length)
+        ms.Position <- 0L
+        ms.Read(bytes, 0, bytes.Length) |> ignore
+        bytes
+
+    let layout = 
+        Shader(0,false,
+            [
+                FalkanShaderDescriptorLayout(CombinedImageSamplerDescriptor, FragmentStage, 0u)
+            ],
+            [input1; input2])
+
+    instance.CreateShader(layout, ReadOnlySpan vertexBytes, ReadOnlySpan fragmentBytes)
+
 let setRender (instance: FalGraphics) =
     let wad = Wad.FromFile("../../../../../../Foom-deps/testwads/doom1.wad")
     let e1m1 = wad.FindMap "e1m1"
@@ -274,20 +336,51 @@ let setRender (instance: FalGraphics) =
         queueLinedef geo ldef ldef.FrontSidedefIndex        
         )
 
-    mvp, mvpUniform
+    let freeType = FreeType.Create()
+    let face = freeType.Load("fonts/OpenSans/OpenSans-Regular.ttf")
+   // face.SetCharSize(0, 16*64, 300u, 300u)
+    use doot = face.GetCharBitmap('a', 48)
+    let bmp = doot.Bitmap
+    let shader = textShader instance
 
-open Falkan.FreeType
+    let verticesBuffer = instance.CreateBuffer<Vector2>(3, FalkanBufferFlags.None, VertexBuffer)
+    let vertices =
+        [|
+            Vector2(0.f, 0.f)
+            Vector2(0.5f, 0.5f)
+            Vector2(0.f, 1.f)
+        |]
+    instance.FillBuffer(verticesBuffer, ReadOnlySpan vertices)
+
+    let uvBuffer = instance.CreateBuffer<Vector2>(3, FalkanBufferFlags.None, VertexBuffer)
+    let uv =
+        [|
+            Vector2(0.f, 0.f)
+            Vector2(0.5f, 0.5f)
+            Vector2(0.f, 1.f)
+        |]
+    instance.FillBuffer(uvBuffer, ReadOnlySpan uv)
+
+    let rect = Rectangle(0, 0, bmp.Width, bmp.Height)
+    let data = bmp.LockBits(rect, ImageLockMode.ReadWrite, PixelFormat.Format32bppArgb)
+    let image = instance.CreateImage(bmp.Width, bmp.Height)
+    let ptr = data.Scan0 |> NativePtr.ofNativeInt<byte> |> NativePtr.toVoidPtr
+    instance.FillImage(image, ReadOnlySpan(ptr, data.Width * data.Height * 4))
+    bmp.UnlockBits(data)
+
+    let draw = shader.CreateDrawBuilder()
+    let draw = draw.AddDescriptorImage(image)
+    let draw = draw.Next.AddVertexBuffer(verticesBuffer)
+    let draw = draw.AddVertexBuffer(uvBuffer)
+    shader.AddDraw(draw, uint32 vertices.Length, 1u)
+
+    mvp, mvpUniform
 
 [<EntryPoint>]
 let main argv =
     let title = "F# Vulkan"
     let width = 1280
     let height = 720
-
-    let freeType = FreeType.Create()
-    let face =freeType.Load("fonts/OpenSans/OpenSans-Regular.ttf")
-   // face.SetCharSize(0, 16*64, 300u, 300u)
-    use doot = face.GetCharBitmap('a', 48)
 
     // Add dispose
     let windowState = Win32WindowState (title, width, height)
