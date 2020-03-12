@@ -285,7 +285,9 @@ let main argv =
     let height = 720
 
     let freeType = FreeType.Create()
-    freeType.Load("fonts/OpenSans/OpenSans-Regular.ttf")
+    let face =freeType.Load("fonts/OpenSans/OpenSans-Regular.ttf")
+   // face.SetCharSize(0, 16*64, 300u, 300u)
+    use doot = face.GetCharBitmap('a', 48)
 
     // Add dispose
     let windowState = Win32WindowState (title, width, height)

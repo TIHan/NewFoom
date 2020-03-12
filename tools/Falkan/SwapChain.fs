@@ -183,7 +183,7 @@ let mkDepthAttachmentRef =
         layout = VkImageLayout.VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
     )
 
-let mkSubpass pColorAttachmentRefs colorAttachmentRefCount pDepthStencilAttachment =
+let mkColorDepthStencilSubpassDesc pColorAttachmentRefs colorAttachmentRefCount pDepthStencilAttachment =
     // The index of the attachment in this array is directly referenced from the fragment shader 
     // with the layout(location = 0) out vec4 outColor directive!
     VkSubpassDescription (
@@ -193,13 +193,16 @@ let mkSubpass pColorAttachmentRefs colorAttachmentRefCount pDepthStencilAttachme
         pDepthStencilAttachment = pDepthStencilAttachment
     )
 
-let mkRenderPass device format =
-    let mutable colorAttachment = mkColorAttachment format
-    let mutable colorAttachmentRef = mkColorAttachmentRef
-    let mutable depthAttachment = mkDepthAttachment ()
-    let mutable depthAttachmentRef = mkDepthAttachmentRef
-    let mutable subpass = mkSubpass &&colorAttachmentRef 1u &&depthAttachmentRef
+let mkColorSubpassDesc pColorAttachmentRefs colorAttachmentRefCount =
+    // The index of the attachment in this array is directly referenced from the fragment shader 
+    // with the layout(location = 0) out vec4 outColor directive!
+    VkSubpassDescription (
+        pipelineBindPoint = VkPipelineBindPoint.VK_PIPELINE_BIND_POINT_GRAPHICS,
+        colorAttachmentCount = colorAttachmentRefCount,
+        pColorAttachments = pColorAttachmentRefs
+    )
 
+let mkRenderPass device (subpassDescs: VkSubpassDescription []) (attachmentDescs: VkAttachmentDescription []) =
     let mutable dependency = 
         VkSubpassDependency (
             srcSubpass = VK_SUBPASS_EXTERNAL,
@@ -210,15 +213,15 @@ let mkRenderPass device format =
             dstAccessMask = (VkAccessFlags.VK_ACCESS_COLOR_ATTACHMENT_READ_BIT ||| VkAccessFlags.VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT)
         )
 
-    let attachments = [|colorAttachment;depthAttachment|]
-    use pAttachments = fixed attachments
+    use pSubpasses = fixed subpassDescs
+    use pAttachments = fixed attachmentDescs
     let mutable createInfo =
         VkRenderPassCreateInfo (
             sType = VkStructureType.VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
-            attachmentCount = uint32 attachments.Length,
+            attachmentCount = uint32 attachmentDescs.Length,
             pAttachments = pAttachments,
-            subpassCount = 1u,
-            pSubpasses = &&subpass,
+            subpassCount = uint32 subpassDescs.Length,
+            pSubpasses = pSubpasses,
             dependencyCount = 1u,
             pDependencies = &&dependency
         )
@@ -226,6 +229,20 @@ let mkRenderPass device format =
     let mutable renderPass = VkRenderPass ()
     vkCreateRenderPass(device, &&createInfo, vkNullPtr, &&renderPass) |> checkResult
     renderPass
+
+let mkColorDepthStencilRenderPass device format =
+    let mutable colorAttachment = mkColorAttachment format
+    let mutable colorAttachmentRef = mkColorAttachmentRef
+    let mutable depthAttachment = mkDepthAttachment ()
+    let mutable depthAttachmentRef = mkDepthAttachmentRef
+    let subpass = mkColorDepthStencilSubpassDesc &&colorAttachmentRef 1u &&depthAttachmentRef
+    mkRenderPass device [|subpass|] [|colorAttachment;depthAttachment|]
+
+let mkColorRenderPass device format =
+    let mutable colorAttachment = mkColorAttachment format
+    let mutable colorAttachmentRef = mkColorAttachmentRef
+    let subpass = mkColorSubpassDesc &&colorAttachmentRef 1u
+    mkRenderPass device [|subpass|] [|colorAttachment|]
 
 let mkPipelineLayout device (layouts: VkDescriptorSetLayout []) =
     use pSetLayouts = fixed layouts
@@ -432,6 +449,17 @@ type ShaderInput =
     | ShaderDescriptorInputBuffer of FalkanBuffer * size: int
     | ShaderDescriptorInputImage of FalkanImage
 
+type FalkanRenderPassKind =
+    | ColorRenderPass
+    | ColorDepthStencilRenderPass
+
+type FalkanRenderPass = FalkanRenderPass of FalkanRenderPassKind with
+
+    member this.Build(device, format) =
+        match this with
+        | FalkanRenderPass ColorRenderPass -> mkColorRenderPass device format
+        | FalkanRenderPass ColorDepthStencilRenderPass -> mkColorDepthStencilRenderPass device format
+
 [<Sealed>]
 type FalkanShaderDrawVertexBuilder (inputs: ShaderInput list) =
 
@@ -630,7 +658,7 @@ and [<Sealed>] SwapChain private (fdevice: FalDevice, surface, sync, graphicsFam
             let swapChain, surfaceFormat, extent, images = mkSwapChain physicalDevice device surface graphicsFamily presentFamily
             let imageViews = mkImageViews device surfaceFormat.format images
             let imageDepthAttachment = fdevice.CreateImageDepthAttachment(int extent.width, int extent.height)
-            let renderPass = mkRenderPass device surfaceFormat.format
+            let renderPass = mkColorDepthStencilRenderPass device surfaceFormat.format
             let framebuffers = mkFramebuffers device renderPass extent imageViews (Array.init imageViews.Length (fun _ -> imageDepthAttachment.vkImageView))
             let commandBuffers = mkCommandBuffers device fdevice.VkCommandPool framebuffers
 
