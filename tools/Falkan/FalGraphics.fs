@@ -115,7 +115,7 @@ type FalGraphics
     member this.CreateShader(layout: FalkanShaderDescription, vertexSpirvSource: ReadOnlySpan<byte>, fragmentSpirvSource: ReadOnlySpan<byte>) =
         swapChain.CreateShader(layout, vertexSpirvSource, fragmentSpirvSource)
 
-    static member Create(falDevice: FalDevice, invalidate) =
+    static member Create(falDevice: FalDevice, invalidate, renderSubpassDescs) =
         let indices = falDevice.Indices
         let surface =
             match falDevice.Surface with
@@ -130,6 +130,6 @@ type FalGraphics
         if graphicsFamily <> presentFamily then
             failwith "Currently not able to handle concurrent graphics and present families."
 
-        let swapChain = SwapChain.Create(falDevice, surface, graphicsFamily, presentFamily, invalidate)
+        let swapChain = SwapChain.Create(falDevice, surface, graphicsFamily, presentFamily, invalidate, renderSubpassDescs)
 
         new FalGraphics(falDevice, swapChain)

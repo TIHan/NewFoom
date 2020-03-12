@@ -159,7 +159,7 @@ let meshShader (instance: FalGraphics) =
         bytes
 
     let layout = 
-        Shader(
+        Shader(0,
             [
                 FalkanShaderDescriptorLayout(UniformBufferDescriptor, VertexStage, 0u)
                 FalkanShaderDescriptorLayout(CombinedImageSamplerDescriptor, FragmentStage, 1u)
@@ -299,7 +299,11 @@ let main argv =
     let hinstance = windowState.Hinstance
 
     use device = FalDevice.CreateWin32(hwnd, hinstance, "App", "Engine", [VulkanDeviceLayer.LunarGStandardValidation], [])
-    use instance = FalGraphics.Create (device, windowState.WindowResized)
+
+    let subpasses =
+        [RenderSubpass ColorDepthStencilSubpass]
+
+    use instance = FalGraphics.Create (device, windowState.WindowResized, subpasses)
     let mvp, mvpUniform = setRender instance
     instance.SetupCommands()
 

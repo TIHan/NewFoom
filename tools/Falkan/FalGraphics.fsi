@@ -27,4 +27,4 @@ type FalGraphics =
 
     member CreateShader: FalkanShaderDescription * vertexSpirvSource: ReadOnlySpan<byte> * fragmentSpirvSource: ReadOnlySpan<byte> -> FalkanShader
 
-    static member Create : FalDevice * invalidate: IEvent<unit> -> FalGraphics
+    static member Create : FalDevice * invalidate: IEvent<unit> * renderSubpassDescs: FalkanRenderSubpassDescription list -> FalGraphics
