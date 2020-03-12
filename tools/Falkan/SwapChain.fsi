@@ -20,7 +20,13 @@ type FalkanShaderVertexInputKind =
 
 type FalkanShaderVertexInput = FalkanShaderVertexInput of FalkanShaderVertexInputKind * binding: uint32 * location: uint32 * Type
 
-type FalkanShaderLayout = FalkanShaderLayout of descriptors: FalkanShaderDescriptorLayout list * vertexInputs: FalkanShaderVertexInput list
+type FalkanShaderDescription = Shader of descriptors: FalkanShaderDescriptorLayout list * vertexInputs: FalkanShaderVertexInput list
+
+type FalkanRenderSubpassKind =
+    | ColorSubpass
+    | ColorDepthStencilSubpass
+
+type FalkanRenderSubpassDescription = RenderSubpass of FalkanRenderSubpassKind
 
 [<Sealed>]
 type FalkanShaderDrawVertexBuilder =
@@ -58,7 +64,8 @@ type internal SwapChain =
 
     member WaitIdle: unit -> unit
 
-    member CreateShader: layout: FalkanShaderLayout * vertexSpirvSource: ReadOnlySpan<byte> * fragmentSpirvSource: ReadOnlySpan<byte> -> FalkanShader
+    member CreateShader: layout: FalkanShaderDescription * vertexSpirvSource: ReadOnlySpan<byte> * fragmentSpirvSource: ReadOnlySpan<byte> -> FalkanShader
 
+    member AddRenderSubpass : FalkanRenderSubpassDescription -> unit
 
     static member Create : FalDevice * VkSurfaceKHR * graphicsFamily: uint32 * presentFamily: uint32 * invalidate: IEvent<unit> -> SwapChain

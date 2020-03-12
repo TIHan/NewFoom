@@ -23,6 +23,8 @@ type FalGraphics =
 
     member FillImage : FalkanImage * ReadOnlySpan<byte> -> unit
 
-    member CreateShader: FalkanShaderLayout * vertexSpirvSource: ReadOnlySpan<byte> * fragmentSpirvSource: ReadOnlySpan<byte> -> FalkanShader
+    member AddRenderSubpass : FalkanRenderSubpassDescription -> unit
+
+    member CreateShader: FalkanShaderDescription * vertexSpirvSource: ReadOnlySpan<byte> * fragmentSpirvSource: ReadOnlySpan<byte> -> FalkanShader
 
     static member Create : FalDevice * invalidate: IEvent<unit> -> FalGraphics

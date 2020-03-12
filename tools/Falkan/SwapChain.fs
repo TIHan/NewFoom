@@ -230,20 +230,6 @@ let mkRenderPass device (subpassDescs: VkSubpassDescription []) (attachmentDescs
     vkCreateRenderPass(device, &&createInfo, vkNullPtr, &&renderPass) |> checkResult
     renderPass
 
-let mkColorDepthStencilRenderPass device format =
-    let mutable colorAttachment = mkColorAttachment format
-    let mutable colorAttachmentRef = mkColorAttachmentRef
-    let mutable depthAttachment = mkDepthAttachment ()
-    let mutable depthAttachmentRef = mkDepthAttachmentRef
-    let subpass = mkColorDepthStencilSubpassDesc &&colorAttachmentRef 1u &&depthAttachmentRef
-    mkRenderPass device [|subpass|] [|colorAttachment;depthAttachment|]
-
-let mkColorRenderPass device format =
-    let mutable colorAttachment = mkColorAttachment format
-    let mutable colorAttachmentRef = mkColorAttachmentRef
-    let subpass = mkColorSubpassDesc &&colorAttachmentRef 1u
-    mkRenderPass device [|subpass|] [|colorAttachment|]
-
 let mkPipelineLayout device (layouts: VkDescriptorSetLayout []) =
     use pSetLayouts = fixed layouts
     let mutable createInfo =
@@ -423,11 +409,11 @@ type FalkanShaderVertexInput = FalkanShaderVertexInput of FalkanShaderVertexInpu
             let vkVertexInputAttributeDescriptions = mkVertexAttributeDescriptions location binding ty
             (vkVertexInputBindingDescription, vkVertexInputAttributeDescriptions)
 
-type FalkanShaderLayout = FalkanShaderLayout of descriptors: FalkanShaderDescriptorLayout list * vertexInputs: FalkanShaderVertexInput list with
+type FalkanShaderDescription = Shader of descriptors: FalkanShaderDescriptorLayout list * vertexInputs: FalkanShaderVertexInput list with
 
     member this.Build vkDevice =
         match this with
-        | FalkanShaderLayout(descriptors, vertexInputs) ->
+        | Shader(descriptors, vertexInputs) ->
             let descriptors =
                 descriptors
                 |> List.map (fun x -> x.Build vkDevice)
@@ -449,16 +435,38 @@ type ShaderInput =
     | ShaderDescriptorInputBuffer of FalkanBuffer * size: int
     | ShaderDescriptorInputImage of FalkanImage
 
-type FalkanRenderPassKind =
-    | ColorRenderPass
-    | ColorDepthStencilRenderPass
+type FalkanRenderSubpassKind =
+    | ColorSubpass
+    | ColorDepthStencilSubpass
 
-type FalkanRenderPass = FalkanRenderPass of FalkanRenderPassKind with
+type FalkanRenderSubpassDescription = RenderSubpass of FalkanRenderSubpassKind with
+
+    member this.Build(device, colorAttachmentRef: nativeptr<VkAttachmentReference>, depthAttachmentRef: nativeptr<VkAttachmentReference>) =
+        match this with
+        | RenderSubpass(kind) ->
+            let subpassDesc =
+                match kind with
+                | ColorSubpass -> mkColorSubpassDesc colorAttachmentRef 1u
+                | ColorDepthStencilSubpass -> mkColorDepthStencilSubpassDesc colorAttachmentRef 1u depthAttachmentRef
+
+            subpassDesc
+
+type FalkanRenderPassDescription = RenderPass of FalkanRenderSubpassDescription list with
 
     member this.Build(device, format) =
         match this with
-        | FalkanRenderPass ColorRenderPass -> mkColorRenderPass device format
-        | FalkanRenderPass ColorDepthStencilRenderPass -> mkColorDepthStencilRenderPass device format
+        | RenderPass(fsubpassDescs) -> 
+            let mutable colorAttachment = mkColorAttachment format
+            let mutable colorAttachmentRef = mkColorAttachmentRef
+            let mutable depthAttachment = mkDepthAttachment ()
+            let mutable depthAttachmentRef = mkDepthAttachmentRef
+
+            let subpassDescs = Array.zeroCreate fsubpassDescs.Length
+            let mutable i = 0
+            for fsubpassDesc in fsubpassDescs do
+                let subpassDesc = fsubpassDesc.Build(device, &&colorAttachmentRef, &&depthAttachmentRef)
+                subpassDescs.[i] <- subpassDesc
+            mkRenderPass device subpassDescs [|colorAttachment;depthAttachment|]
 
 [<Sealed>]
 type FalkanShaderDrawVertexBuilder (inputs: ShaderInput list) =
@@ -567,6 +575,8 @@ and [<Sealed>] SwapChain private (fdevice: FalDevice, surface, sync, graphicsFam
     let mutable isDisposed = 0
     let mutable isInvalidated = false
 
+    let renderSubpassDescs = ResizeArray<FalkanRenderSubpassDescription>()
+
     let shaders = Collections.Generic.Dictionary<Guid, struct(Shader * PipelineLayout)>()
     let pipelines = ResizeArray<Pipeline> ()
 
@@ -658,7 +668,7 @@ and [<Sealed>] SwapChain private (fdevice: FalDevice, surface, sync, graphicsFam
             let swapChain, surfaceFormat, extent, images = mkSwapChain physicalDevice device surface graphicsFamily presentFamily
             let imageViews = mkImageViews device surfaceFormat.format images
             let imageDepthAttachment = fdevice.CreateImageDepthAttachment(int extent.width, int extent.height)
-            let renderPass = mkColorDepthStencilRenderPass device surfaceFormat.format
+            let renderPass = (RenderPass (renderSubpassDescs |> Seq.toList)).Build(device, surfaceFormat.format)
             let framebuffers = mkFramebuffers device renderPass extent imageViews (Array.init imageViews.Length (fun _ -> imageDepthAttachment.vkImageView))
             let commandBuffers = mkCommandBuffers device fdevice.VkCommandPool framebuffers
 
@@ -728,6 +738,13 @@ and [<Sealed>] SwapChain private (fdevice: FalDevice, surface, sync, graphicsFam
     member x.SetupCommands() =
         record ()
 
+    member _.AddRenderSubpass(renderSubpassDesc: FalkanRenderSubpassDescription) =
+        lock gate |> fun _ ->
+
+        check ()
+
+        renderSubpassDescs.Add renderSubpassDesc
+
     member x.DrawFrame () =
         lock gate |> fun _ ->
 
@@ -751,7 +768,7 @@ and [<Sealed>] SwapChain private (fdevice: FalDevice, surface, sync, graphicsFam
         vkQueueWaitIdle(graphicsQueue) |> checkResult
         vkDeviceWaitIdle(device) |> checkResult
 
-    member this.CreateShader(layout: FalkanShaderLayout, vertexSpirvSource: ReadOnlySpan<byte>, fragmentSpirvSource: ReadOnlySpan<byte>) =
+    member this.CreateShader(layout: FalkanShaderDescription, vertexSpirvSource: ReadOnlySpan<byte>, fragmentSpirvSource: ReadOnlySpan<byte>) =
         let descriptorSetLayouts, bindingDescriptions, attributeDescriptions = layout.Build device
         let id = this.AddShader(descriptorSetLayouts, bindingDescriptions, attributeDescriptions |> Array.concat, vertexSpirvSource, fragmentSpirvSource)
         FalkanShader(id, descriptorSetLayouts, this)

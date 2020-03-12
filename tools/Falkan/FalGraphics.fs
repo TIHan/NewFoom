@@ -79,6 +79,11 @@ type FalGraphics
 
         fillImage physicalDevice device fdevice.VkCommandPool fdevice.VkTransferQueue buffer.vkImage buffer.format buffer.width buffer.height data
 
+    member _.AddRenderSubpass renderSubpassDesc =
+        checkDispose ()
+
+        swapChain.AddRenderSubpass renderSubpassDesc
+
     interface IDisposable with
         member x.Dispose () =
             if Interlocked.CompareExchange(&isDisposed, 1, 0) = 1 then
@@ -107,7 +112,7 @@ type FalGraphics
                     if x.IsValueCreated then
                         (x.Value :> IDisposable).Dispose())
 
-    member this.CreateShader(layout: FalkanShaderLayout, vertexSpirvSource: ReadOnlySpan<byte>, fragmentSpirvSource: ReadOnlySpan<byte>) =
+    member this.CreateShader(layout: FalkanShaderDescription, vertexSpirvSource: ReadOnlySpan<byte>, fragmentSpirvSource: ReadOnlySpan<byte>) =
         swapChain.CreateShader(layout, vertexSpirvSource, fragmentSpirvSource)
 
     static member Create(falDevice: FalDevice, invalidate) =
