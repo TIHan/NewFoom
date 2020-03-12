@@ -55,8 +55,8 @@ let mkSampler device =
     let mutable samplerInfo = 
         VkSamplerCreateInfo(
             sType = VkStructureType.VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
-            magFilter = VkFilter.VK_FILTER_LINEAR,
-            minFilter = VkFilter.VK_FILTER_LINEAR,
+            magFilter = VkFilter.VK_FILTER_NEAREST,
+            minFilter = VkFilter.VK_FILTER_NEAREST,
             addressModeU = VkSamplerAddressMode.VK_SAMPLER_ADDRESS_MODE_REPEAT,
             addressModeV = VkSamplerAddressMode.VK_SAMPLER_ADDRESS_MODE_REPEAT,
             addressModeW = VkSamplerAddressMode.VK_SAMPLER_ADDRESS_MODE_REPEAT,

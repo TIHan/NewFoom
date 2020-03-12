@@ -339,25 +339,33 @@ let setRender (instance: FalGraphics) =
     let freeType = FreeType.Create()
     let face = freeType.Load("fonts/OpenSans/OpenSans-Regular.ttf")
    // face.SetCharSize(0, 16*64, 300u, 300u)
-    use doot = face.GetCharBitmap('a', 48)
+    use doot = face.GetCharBitmap('$', 1024)
     let bmp = doot.Bitmap
     let shader = textShader instance
 
-    let verticesBuffer = instance.CreateBuffer<Vector2>(3, FalkanBufferFlags.None, VertexBuffer)
+    let verticesBuffer = instance.CreateBuffer<Vector2>(6, FalkanBufferFlags.None, VertexBuffer)
     let vertices =
         [|
-            Vector2(0.f, 0.f)
+            Vector2(-0.5f, -0.5f)
+            Vector2(0.5f, -0.5f)
             Vector2(0.5f, 0.5f)
-            Vector2(0.f, 1.f)
+            Vector2(0.5f, 0.5f)
+            Vector2(-0.5f, 0.5f)
+            Vector2(-0.5f, -0.5f)
+
         |]
     instance.FillBuffer(verticesBuffer, ReadOnlySpan vertices)
 
-    let uvBuffer = instance.CreateBuffer<Vector2>(3, FalkanBufferFlags.None, VertexBuffer)
+    let uvBuffer = instance.CreateBuffer<Vector2>(6, FalkanBufferFlags.None, VertexBuffer)
     let uv =
         [|
             Vector2(0.f, 0.f)
-            Vector2(0.5f, 0.5f)
-            Vector2(0.f, 1.f)
+            Vector2(1.f, 0.f)          
+            Vector2(1.f, -1.f)
+
+            Vector2(1.f, -1.f)
+            Vector2(0.f, -1.f)
+            Vector2(0.f, 0.f)
         |]
     instance.FillBuffer(uvBuffer, ReadOnlySpan uv)
 
@@ -469,6 +477,10 @@ let main argv =
 
             member __.OnUpdateFrame (time, interval) =
                 instance.FillBuffer(mvpUniform, ReadOnlySpan[|mvp.InvertedView|])
+                let s = System.Diagnostics.Stopwatch.StartNew()
+                instance.SetupCommands()
+                s.Stop()
+                printfn "%A" (s.Elapsed.TotalMilliseconds)
                 quit
 
             member __.OnRenderFrame (_, _, _, _) =
