@@ -646,7 +646,7 @@ and [<Sealed>] SwapChain private (fdevice: FalDevice, surface, sync, graphicsFam
 
     let record () =
         let state = state.Value
-        recordDraw state.extent state.framebuffers state.commandBuffers state.renderPass renderSubpassPipelines
+        recordDraw state.extent state.framebuffers state.commandBuffers state.imageDepthAttachment.vkImage state.renderPass renderSubpassPipelines
 
     do
         invalidate.Add(fun () -> isInvalidated <- true)

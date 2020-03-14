@@ -40,7 +40,7 @@ let getSize name =
     let enum =
         vk.Enums
         |> Array.pick (fun x -> x.Enums |> Array.find (fun x -> x.Name = name) |> Some)
-    name, enum.XElement.FirstAttribute.Value |> Int32.Parse
+    name,  try enum.XElement.FirstAttribute.Value |> Int32.Parse with | _ -> failwithf "Failed to parse %s to an Int32." enum.Name
 
 let constants =
     lazy
@@ -55,8 +55,8 @@ let constants =
             getSize "VK_MAX_MEMORY_HEAPS"
             getSize "VK_MAX_DEVICE_GROUP_SIZE"
             ("VK_MAX_DEVICE_GROUP_SIZE_KHR", getSize "VK_MAX_DEVICE_GROUP_SIZE" |> snd)
-            getSize "VK_MAX_DRIVER_NAME_SIZE_KHR"
-            getSize "VK_MAX_DRIVER_INFO_SIZE_KHR"
+            getSize "VK_MAX_DRIVER_NAME_SIZE"
+            getSize "VK_MAX_DRIVER_INFO_SIZE"
         ]
         |> Map.ofList
 
@@ -168,11 +168,12 @@ let tryGetVkEnum env (vkXmlEnums: Vk.Enums) =
 
         let cases = getExtendedVkEnumCases env cases vkXmlEnums.Name
 
-        if not cases.IsEmpty then
-            let vkTy = VkType(vkXmlEnums.Name, vkXmlEnums.Comment, VkEnum cases)
-            Some(vkTy, { env with types = Map.add vkXmlEnums.Name vkTy env.types })
-        else
-            None
+        let vkTy =
+            if not cases.IsEmpty then
+                VkType(vkXmlEnums.Name, vkXmlEnums.Comment, VkEnum cases)
+            else
+                VkType(vkXmlEnums.Name, vkXmlEnums.Comment, VkAliasOrDefine "uint32")
+        Some(vkTy, { env with types = Map.add vkXmlEnums.Name vkTy env.types })
     | Some "bitmask" ->
         let cases =
             vkXmlEnums.Enums
@@ -181,11 +182,12 @@ let tryGetVkEnum env (vkXmlEnums: Vk.Enums) =
 
         let cases = getExtendedVkEnumCases env cases vkXmlEnums.Name
 
-        if not cases.IsEmpty then
-            let vkTy = VkType(vkXmlEnums.Name, vkXmlEnums.Comment, VkEnum cases)
-            Some(vkTy, { env with types = Map.add vkXmlEnums.Name vkTy env.types })
-        else
-            None
+        let vkTy =
+            if not cases.IsEmpty then
+                VkType(vkXmlEnums.Name, vkXmlEnums.Comment, VkEnum cases)
+            else
+                VkType(vkXmlEnums.Name, vkXmlEnums.Comment, VkAliasOrDefine "uint32")
+        Some(vkTy, { env with types = Map.add vkXmlEnums.Name vkTy env.types })
     | _ ->
         None
 
@@ -727,12 +729,18 @@ let tryGenVkType env vkType =
         | "VK_API_VERSION_1_1" ->
             "let VK_API_VERSION_1_1 = VK_MAKE_VERSION(1u, 1u, 0u)"
             |> Some, env
+        | "VK_API_VERSION_1_2" ->
+            "let VK_API_VERSION_1_2 = VK_MAKE_VERSION(1u, 2u, 0u)"
+            |> Some, env
         | "VK_HEADER_VERSION" ->
-            None, env // Not relevant
+            Some "let VK_HEADER_VERSION = 134u", env // CAN BE SUBJECT TO CHANGE, CAREFUL ON GENERATION!!
         | "VK_DEFINE_HANDLE" ->
             None, env // Not relevant
         | "VK_NULL_HANDLE" ->
             "let VK_NULL_HANDLE = nativeint 0"
+            |> Some, env
+        | "VK_HEADER_VERSION_COMPLETE" ->
+            "let VK_HEADER_VERSION_COMPLETE = VK_MAKE_VERSION(1u, 2u, VK_HEADER_VERSION)"
             |> Some, env
         | _ ->
             if name.Contains "VK_" then

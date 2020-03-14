@@ -175,6 +175,7 @@ let textShader (instance: FalGraphics) =
 
     let vertex =
         <@
+            let proj = Variable<Matrix4x4> [Decoration.Binding 1u] StorageClass.Uniform
             let position = Variable<Vector2> [Decoration.Location 0u; Decoration.Binding 0u] StorageClass.Input
             let texCoord = Variable<Vector2> [Decoration.Location 1u; Decoration.Binding 1u] StorageClass.Input
             let mutable gl_Position  = Variable<Vector4> [Decoration.BuiltIn BuiltIn.Position] StorageClass.Output
@@ -222,7 +223,7 @@ let textShader (instance: FalGraphics) =
         bytes
 
     let layout = 
-        Shader(0,false,
+        Shader(0,true,
             [
                 FalkanShaderDescriptorLayout(CombinedImageSamplerDescriptor, FragmentStage, 0u)
             ],
@@ -345,8 +346,10 @@ let setRender (instance: FalGraphics) =
 
     let verticesBuffer = instance.CreateBuffer<Vector2>(6, FalkanBufferFlags.None, VertexBuffer)
     let vertices =
+        let xratio = (1024 - bmp.Width + doot.Left)
+
         [|
-            Vector2(-0.5f, -0.5f)
+            Vector2(-1.f, -0.5f)
             Vector2(0.5f, -0.5f)
             Vector2(0.5f, 0.5f)
             Vector2(0.5f, 0.5f)

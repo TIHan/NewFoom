@@ -140,8 +140,22 @@ type Pipeline =
     }
 
 type PipelineIndex = int
+open System.Numerics
 
-let recordDraw extent (framebuffers: VkFramebuffer []) (commandBuffers: VkCommandBuffer []) renderPass (pipelineSets: ResizeArray<ResizeArray<Pipeline>>) =
+type RenderPassInfo = RenderPassInfo of clearColor: VkFixedArray_float32_4 * clearDepthStencil: struct(single * uint32)
+
+type RenderPassCommand =
+// VkPipelineBindPoint.VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.layout.vkPipelineLayout, 0u, uint32 draw.vkDescriptorSets.Length, pDescriptorSets, 0u, vkNullPt
+    | BindDescriptorSets of VkPipelineLayout * VkDescriptorSet []
+    | BindVertexBuffers of VkBuffer [] * offsets: uint64 []
+    | BindPipeline of VkPipeline
+    | Draw of vertexCount: uint32 * instanceCount: uint32 * firstVertex: uint32 * firstInstance: uint32
+    | NextSubpass of RenderPassInfo
+
+type Command =
+    | RenderPass of RenderPassInfo
+
+let recordDraw extent (framebuffers: VkFramebuffer []) (commandBuffers: VkCommandBuffer []) (depthStencilImage: VkImage) renderPass (pipelineSets: ResizeArray<ResizeArray<Pipeline>>) =
     for i = 0 to framebuffers.Length - 1 do
         let framebuffer = framebuffers.[i]
         let commandBuffer = commandBuffers.[i]
