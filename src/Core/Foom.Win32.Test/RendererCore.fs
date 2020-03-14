@@ -1,8 +1,8 @@
-﻿module Falkan.Renderer.Core
+﻿module FsGame.Renderer.Vulkan
 
 open Foom.Game
 open Foom.Win32
-open Falkan
+open FsGame.Graphics.Vulkan
 open FSharp.Vulkan.Interop
 open FSharp.Window
 open FSharp.Spirv
@@ -14,7 +14,7 @@ open System.Drawing
 open System.Drawing.Imaging
 open FSharp.NativeInterop
 open Foom.Wad
-open Falkan.FreeType
+open FsGame.Graphics.FreeType
 
 #nowarn "9"
 #nowarn "51"

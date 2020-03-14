@@ -1,5 +1,5 @@
 ﻿[<AutoOpen>]
-module Falkan.PublicHelpers
+module FsGame.Graphics.Vulkan.PublicHelpers
 
 open System
 open System.Threading

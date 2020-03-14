@@ -1,5 +1,5 @@
 ﻿[<AutoOpen>]
-module internal Falkan.DeviceMemory
+module internal FsGame.Graphics.Vulkan.DeviceMemory
 
 open System
 open FSharp.NativeInterop
@@ -7,6 +7,12 @@ open FSharp.Vulkan.Interop
 
 #nowarn "9"
 #nowarn "51"
+
+[<Struct;NoEquality;NoComparison>]
+type Block =
+    {
+        Memory: VkDeviceMemory
+    }
 
 [<Struct;NoEquality;NoComparison>]
 type DeviceMemory(bucket: DeviceMemoryBucket, offset: int, size: int) =

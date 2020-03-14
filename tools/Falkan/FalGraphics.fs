@@ -1,5 +1,5 @@
 ﻿[<AutoOpen>]
-module Falkan.Graphics
+module FsGame.Graphics.Vulkan.Graphics
 
 open System
 open System.Threading
@@ -15,7 +15,7 @@ type PipelineIndex = int
 [<Sealed>]
 type FalGraphics
     private
-    (fdevice: FalDevice,
+    (fdevice: VulkanDevice,
      swapChain: SwapChain) =
 
     let device = fdevice.Device
@@ -115,7 +115,7 @@ type FalGraphics
     member this.CreateShader(layout: FalkanShaderDescription, vertexSpirvSource: ReadOnlySpan<byte>, fragmentSpirvSource: ReadOnlySpan<byte>) =
         swapChain.CreateShader(layout, vertexSpirvSource, fragmentSpirvSource)
 
-    static member Create(falDevice: FalDevice, invalidate, renderSubpassDescs) =
+    static member Create(falDevice: VulkanDevice, invalidate, renderSubpassDescs) =
         let indices = falDevice.Indices
         let surface =
             match falDevice.Surface with

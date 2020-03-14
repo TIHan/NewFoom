@@ -1,0 +1,27 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>netcoreapp3.0</TargetFrameworks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="PublicHelpers.fs" />
+    <Compile Include="Helpers.fs" />
+    <Compile Include="InternalDeviceHelpers.fs" />
+    <Compile Include="VulkanDevice.fsi" />
+    <Compile Include="VulkanDevice.fs" />
+    <Compile Include="DeviceMemory.fs" />
+    <Compile Include="FalkanBuffer.fs" />
+    <Compile Include="FalkanImage.fs" />
+    <Compile Include="InternalPipelineHelpers.fs" />
+    <Compile Include="SwapChain.fsi" />
+    <Compile Include="SwapChain.fs" />
+    <Compile Include="FalGraphics.fsi" />
+    <Compile Include="FalGraphics.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\FSharp.Vulkan\FSharp.Vulkan.fsproj" />
+  </ItemGroup>
+
+</Project>

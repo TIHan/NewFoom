@@ -1,4 +1,4 @@
-﻿module internal Falkan.InternalPipelineHelpers
+﻿module internal FsGame.Graphics.Vulkan.InternalPipelineHelpers
 
 open System
 open System.Threading

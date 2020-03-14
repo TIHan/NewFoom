@@ -1,5 +1,5 @@
 ﻿[<AutoOpen>]
-module Falkan.FalkanImage
+module FsGame.Graphics.Vulkan.FalkanImage
 
 open System
 open FSharp.NativeInterop
@@ -221,7 +221,7 @@ type FalkanImageDepthAttachment =
         vkDestroyImageView(this.vkDevice, this.vkImageView, vkNullPtr)
         vkDestroyImage(this.vkDevice, this.vkImage, vkNullPtr)
 
-type FalDevice with
+type VulkanDevice with
 
     member this.CreateImageDepthAttachment(width, height) =
         let image = 
@@ -264,7 +264,7 @@ type FalkanImage =
 
 let defaultImageFormat = VkFormat.VK_FORMAT_B8G8R8A8_UNORM
 
-type FalDevice with
+type VulkanDevice with
 
     member this.CreateImage(width, height) =
         let image = 

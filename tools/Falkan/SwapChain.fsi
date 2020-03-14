@@ -1,5 +1,5 @@
 ﻿[<AutoOpen>]
-module Falkan.SwapChain
+module FsGame.Graphics.Vulkan.SwapChain
 
 open System
 open FSharp.Vulkan.Interop
@@ -68,4 +68,4 @@ type internal SwapChain =
 
     member AddRenderSubpass : FalkanRenderSubpassDescription -> unit
 
-    static member Create : FalDevice * VkSurfaceKHR * graphicsFamily: uint32 * presentFamily: uint32 * invalidate: IEvent<unit> * renderSubpasDescs: FalkanRenderSubpassDescription list -> SwapChain
+    static member Create : VulkanDevice * VkSurfaceKHR * graphicsFamily: uint32 * presentFamily: uint32 * invalidate: IEvent<unit> * renderSubpasDescs: FalkanRenderSubpassDescription list -> SwapChain

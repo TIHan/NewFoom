@@ -1,5 +1,5 @@
 ﻿[<AutoOpen>]
-module Falkan.SwapChain
+module FsGame.Graphics.Vulkan.SwapChain
 
 open System
 open System.Threading
@@ -568,7 +568,7 @@ type FalkanShader = private FalkanShader of ShaderId * struct(VkDescriptorSetLay
             let draw = drawBuilder.Build(swapChain.VkDevice, descriptorSetLayouts, swapChain.ImageCount, vertexCount, instanceCount)
             swapChain.RecordDraw(shaderId, draw)
 
-and [<Sealed>] SwapChain private (fdevice: FalDevice, surface, sync, graphicsFamily, graphicsQueue, presentFamily, presentQueue, invalidate: IEvent<unit>) =
+and [<Sealed>] SwapChain private (fdevice: VulkanDevice, surface, sync, graphicsFamily, graphicsQueue, presentFamily, presentQueue, invalidate: IEvent<unit>) =
 
     let device = fdevice.Device
     let physicalDevice = fdevice.PhysicalDevice
@@ -821,7 +821,7 @@ and [<Sealed>] SwapChain private (fdevice: FalDevice, surface, sync, graphicsFam
                     vkDestroySemaphore(device, s, vkNullPtr)
                 )
 
-    static member Create(device: FalDevice, surface, graphicsFamily, presentFamily, invalidate, renderSubpassDescs) =
+    static member Create(device: VulkanDevice, surface, graphicsFamily, presentFamily, invalidate, renderSubpassDescs) =
         let sync = mkSync device.Device
         let graphicsQueue = mkQueue device.Device graphicsFamily
         let presentQueue = mkQueue device.Device presentFamily

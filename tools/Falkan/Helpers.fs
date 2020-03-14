@@ -1,5 +1,5 @@
 ﻿[<AutoOpen>]
-module internal Falkan.Helpers
+module internal FsGame.Graphics.Vulkan.Helpers
 
 open FSharp.Vulkan.Interop
 

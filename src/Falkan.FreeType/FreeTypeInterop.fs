@@ -1,4 +1,5 @@
-﻿module internal rec Falkan.FreeTypeInterop
+﻿[<AutoOpen>]
+module internal rec FsGame.Graphics.FreeType.NativeInterop.Interop
 
 open System
 open System.Runtime.InteropServices

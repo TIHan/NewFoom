@@ -80,11 +80,11 @@ Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "FSharp.Spirv.Quotations.Tes
 EndProject
 Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "FSharp.Spirv.Generator", "tools\FSharp.Spirv.Generator\FSharp.Spirv.Generator.fsproj", "{13125632-6582-4962-9646-C34BF68425BA}"
 EndProject
-Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "Falkan", "tools\Falkan\Falkan.fsproj", "{DCE8B9AC-2ECB-45A2-806E-8040AA33C89B}"
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "FsGame.Graphics.Vulkan", "tools\Falkan\FsGame.Graphics.Vulkan.fsproj", "{DCE8B9AC-2ECB-45A2-806E-8040AA33C89B}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CSharpFMOD", "src\fmod\CSharpFMOD.csproj", "{8C700F44-957A-4402-AC0B-FF74C94E2FD2}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Falkan.FreeType", "src\Falkan.FreeType\Falkan.FreeType.fsproj", "{7EE34512-3EFD-4F08-91A2-7EDE30BDB4DF}"
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "FsGame.Graphics.FreeType", "src\Falkan.FreeType\FsGame.Graphics.FreeType.fsproj", "{7EE34512-3EFD-4F08-91A2-7EDE30BDB4DF}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -1,5 +1,5 @@
 ﻿[<AutoOpen>]
-module Falkan.FalkanBuffer
+module FsGame.Graphics.Vulkan.FalkanBuffer
 
 open System
 open FSharp.NativeInterop
@@ -124,7 +124,7 @@ type FalkanBufferKind =
 [<Struct;NoComparison>]
 type FalkanBuffer =
     internal {
-        device: FalDevice
+        device: VulkanDevice
         buffer: VkBuffer
         memory: DeviceMemory
         flags: FalkanBufferFlags
@@ -137,7 +137,7 @@ type FalkanBuffer =
         vkDestroyBuffer(x.device.Device, x.buffer, vkNullPtr)
         (x.memory :> IDisposable).Dispose()
 
-type FalDevice with
+type VulkanDevice with
 
     member this.CreateBuffer(kind, flags, size) =
         let physicalDevice = this.PhysicalDevice

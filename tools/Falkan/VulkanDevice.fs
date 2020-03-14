@@ -1,11 +1,11 @@
 ﻿[<AutoOpen>]
-module Falkan.Device
+module FsGame.Graphics.Vulkan.VulkanDevice
 
 open System
 open System.Threading
 open System.Runtime.InteropServices
 open FSharp.Vulkan.Interop
-open Falkan.InternalDeviceHelpers
+open InternalDeviceHelpers
 
 type VulkanDeviceLayer =
     | LunarGStandardValidation
@@ -22,7 +22,7 @@ type VulkanDeviceExtension =
         | ShaderFloat16Int8 -> VK_KHR_SHADER_FLOAT16_INT8_EXTENSION_NAME
 
 [<Sealed>]
-type FalDevice private 
+type VulkanDevice private 
     (
         instance: VkInstance,
         surfaceOpt: VkSurfaceKHR option,
@@ -113,7 +113,7 @@ type FalDevice private
         // TODO: We should try to use a transfer queue instead of a graphics queue. This works for now.
         let transferQueue = mkQueue device graphicsFamily
 
-        new FalDevice (instance, surfaceOpt, debugMessenger, physicalDevice, indices, device, commandPool, transferQueue, [|debugCallbackHandle|])
+        new VulkanDevice (instance, surfaceOpt, debugMessenger, physicalDevice, indices, device, commandPool, transferQueue, [|debugCallbackHandle|])
 
     static member CreateWin32 (hwnd, hinstance, appName, engineName, deviceLayers, deviceExtensions) =
-        FalDevice.Create (appName, engineName, deviceLayers, deviceExtensions, createVkSurface = createWin32Surface hwnd hinstance)
+        VulkanDevice.Create (appName, engineName, deviceLayers, deviceExtensions, createVkSurface = createWin32Surface hwnd hinstance)

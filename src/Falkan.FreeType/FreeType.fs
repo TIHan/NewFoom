@@ -1,9 +1,10 @@
-﻿module Falkan.FreeType
+﻿[<AutoOpen>]
+module FsGame.Graphics.FreeType.FreeType
 
 open System
 open System.Drawing
 open FSharp.NativeInterop
-open Falkan.FreeTypeInterop
+open FsGame.Graphics.FreeType.NativeInterop
 
 #nowarn "9"
 #nowarn "51"

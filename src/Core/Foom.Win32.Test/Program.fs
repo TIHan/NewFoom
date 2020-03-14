@@ -1,6 +1,5 @@
 ﻿open Foom.Game
 open Foom.Win32
-open Falkan
 open FSharp.Vulkan.Interop
 open FSharp.Window
 open FSharp.Spirv
@@ -12,7 +11,8 @@ open System.Drawing
 open System.Drawing.Imaging
 open FSharp.NativeInterop
 open Foom.Wad
-open Falkan.FreeType
+open FsGame.Graphics.FreeType
+open FsGame.Graphics.Vulkan
 
 #nowarn "9"
 #nowarn "51"
@@ -402,7 +402,7 @@ let main argv =
     let hwnd = windowState.Hwnd
     let hinstance = windowState.Hinstance
 
-    use device = FalDevice.CreateWin32(hwnd, hinstance, "App", "Engine", [VulkanDeviceLayer.LunarGStandardValidation], [])
+    use device = VulkanDevice.CreateWin32(hwnd, hinstance, "App", "Engine", [VulkanDeviceLayer.LunarGStandardValidation], [])
 
     let subpasses =
         [RenderSubpass ColorDepthStencilSubpass]

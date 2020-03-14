@@ -1,4 +1,4 @@
-﻿module internal Falkan.InternalDeviceHelpers
+﻿module internal FsGame.Graphics.Vulkan.InternalDeviceHelpers
 
 open System
 open FSharp.NativeInterop

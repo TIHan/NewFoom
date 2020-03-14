@@ -1,5 +1,5 @@
 ﻿[<AutoOpen>]
-module Falkan.Graphics
+module FsGame.Graphics.Vulkan.Graphics
 
 open System
 
@@ -27,4 +27,4 @@ type FalGraphics =
 
     member CreateShader: FalkanShaderDescription * vertexSpirvSource: ReadOnlySpan<byte> * fragmentSpirvSource: ReadOnlySpan<byte> -> FalkanShader
 
-    static member Create : FalDevice * invalidate: IEvent<unit> * renderSubpassDescs: FalkanRenderSubpassDescription list -> FalGraphics
+    static member Create : VulkanDevice * invalidate: IEvent<unit> * renderSubpassDescs: FalkanRenderSubpassDescription list -> FalGraphics

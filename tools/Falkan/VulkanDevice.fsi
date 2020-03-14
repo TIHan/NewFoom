@@ -1,5 +1,5 @@
 ﻿[<AutoOpen>]
-module Falkan.Device
+module FsGame.Graphics.Vulkan.VulkanDevice
 
 open System
 open FSharp.Vulkan.Interop
@@ -15,7 +15,7 @@ type VulkanDeviceExtension =
 ///     "VK_KHR_swapchain"
 /// Vulkan version 1.1
 [<Sealed>]
-type FalDevice =
+type VulkanDevice =
     interface IDisposable
 
     member internal PhysicalDevice: VkPhysicalDevice
@@ -30,4 +30,4 @@ type FalDevice =
 
     member internal VkTransferQueue: VkQueue
 
-    static member CreateWin32 : hWnd: nativeint * hInstance: nativeint * appName: string * engineName: string * deviceLayers: VulkanDeviceLayer list * deviceExtensions: VulkanDeviceExtension list -> FalDevice
+    static member CreateWin32 : hWnd: nativeint * hInstance: nativeint * appName: string * engineName: string * deviceLayers: VulkanDeviceLayer list * deviceExtensions: VulkanDeviceExtension list -> VulkanDevice

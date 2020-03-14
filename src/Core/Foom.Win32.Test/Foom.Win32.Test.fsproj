@@ -24,10 +24,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\tools\Falkan\Falkan.fsproj" />
+    <ProjectReference Include="..\..\..\tools\Falkan\FsGame.Graphics.Vulkan.fsproj" />
     <ProjectReference Include="..\..\..\tools\FSharp.SpirV.Quotations\FSharp.Spirv.Quotations.fsproj" />
     <ProjectReference Include="..\..\..\tools\FSharp.Vulkan\FSharp.Vulkan.fsproj" />
-    <ProjectReference Include="..\..\Falkan.FreeType\Falkan.FreeType.fsproj" />
+    <ProjectReference Include="..\..\Falkan.FreeType\FsGame.Graphics.FreeType.fsproj" />
     <ProjectReference Include="..\..\fmod\CSharpFMOD.csproj" />
     <ProjectReference Include="..\..\Wad\Foom.Wad\Foom.Wad.fsproj" />
     <ProjectReference Include="..\Foom.Core\Foom.Core.fsproj" />
