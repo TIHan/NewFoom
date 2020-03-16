@@ -180,7 +180,7 @@ let fillImage physicalDevice device commandPool transferQueue (vkImage: VkImage)
             VkMemoryPropertyFlags.VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
     use stagingMemory = bindMemory physicalDevice device stagingBuffer stagingProperties
 
-    mapMemory device stagingMemory.Bucket.VkDeviceMemory stagingMemory.Offset data
+    mapMemory device stagingMemory.DeviceMemory stagingMemory.Block.Offset data
     copyImage device commandPool format width height stagingBuffer vkImage transferQueue
 
     vkDestroyBuffer(device, stagingBuffer, vkNullPtr)

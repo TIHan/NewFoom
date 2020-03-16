@@ -23,8 +23,8 @@ let mkBuffer device size usage =
 
 let internal bindMemory physicalDevice device buffer properties =
     let memRequirements = getMemoryRequirements device buffer
-    let memory = allocateMemory physicalDevice device memRequirements properties
-    vkBindBufferMemory(device, buffer, memory.Bucket.VkDeviceMemory, uint64 memory.Offset) |> checkResult
+    let memory = VulkanMemory.Allocate physicalDevice device memRequirements properties
+    vkBindBufferMemory(device, buffer, memory.DeviceMemory, uint64 memory.Block.Offset) |> checkResult
     memory
 
 let mapMemory<'T when 'T : unmanaged> device memory offset (data: ReadOnlySpan<'T>) =
@@ -126,7 +126,7 @@ type FalkanBuffer =
     internal {
         device: VulkanDevice
         buffer: VkBuffer
-        memory: DeviceMemory
+        memory: VulkanMemory
         flags: FalkanBufferFlags
         kind: FalkanBufferKind
     }
@@ -168,12 +168,12 @@ type FalkanBuffer with
 
     member buffer.SetData<'T when 'T : unmanaged>(data) =
         let physicalDevice = buffer.device.PhysicalDevice
-        let device = buffer.memory.Bucket.VkDevice
+        let device = buffer.device.Device
         let commandPool = buffer.device.VkCommandPool
         let transferQueue = buffer.device.VkTransferQueue
 
         if buffer.IsShared then
-            mapMemory<'T> device buffer.memory.Bucket.VkDeviceMemory buffer.memory.Offset data
+            mapMemory<'T> device buffer.memory.DeviceMemory buffer.memory.Block.Offset data
         else
             // Memory that is not shared can not be written directly to from the CPU.
             // In order to set it from the CPU, a temporary shared memory buffer is used as a staging buffer to transfer the data.
@@ -186,7 +186,7 @@ type FalkanBuffer with
                     VkMemoryPropertyFlags.VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
             use stagingMemory = bindMemory physicalDevice device stagingBuffer stagingProperties
         
-            mapMemory device stagingMemory.Bucket.VkDeviceMemory stagingMemory.Offset data
+            mapMemory device stagingMemory.DeviceMemory stagingMemory.Block.Offset data
         
             let size = uint64 (sizeof<'T> * count)
             copyBuffer device commandPool stagingBuffer buffer.buffer size transferQueue

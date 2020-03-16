@@ -2,17 +2,147 @@
 module internal FsGame.Graphics.Vulkan.DeviceMemory
 
 open System
+open System.Collections.Generic
 open FSharp.NativeInterop
 open FSharp.Vulkan.Interop
 
 #nowarn "9"
 #nowarn "51"
 
+let allocateDeviceMemory device memTypeIndex size =
+    let mutable allocInfo =
+        VkMemoryAllocateInfo (
+            sType = VkStructureType.VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+            allocationSize = uint64 size,
+            memoryTypeIndex = memTypeIndex
+        )
+
+    let mutable deviceMemory = VkDeviceMemory ()
+    vkAllocateMemory(device, &&allocInfo, vkNullPtr, &&deviceMemory) |> checkResult
+    deviceMemory
+
 [<Struct;NoEquality;NoComparison>]
 type Block =
     {
-        Memory: VkDeviceMemory
+        Offset: int
+        Size: int
+        Order: int
     }
+
+let splitBlock block =
+    if block.Order <= 0 then
+        failwith "Block order is less than or equal to zero."
+    let halfOffset = block.Offset / 2
+    let halfSize = block.Size / 2
+    let newOrder = block.Order - 1
+    struct({ Offset = halfOffset; Size = halfSize; Order = newOrder }, { Offset = halfOffset + halfSize; Size = halfSize; Order = newOrder })
+
+type ChunkTree =
+    | ChunkBranch of order: int * size: int * offset: int * left: ChunkTree * right: ChunkTree
+    | ChunkLeaf of order: int * size: int * offset: int * isFree: bool
+
+    member this.Order =
+        match this with
+        | ChunkBranch(order=order)
+        | ChunkLeaf(order=order) -> order
+
+    member this.Size =
+        match this with
+        | ChunkBranch(size=size)
+        | ChunkLeaf(size=size) -> size
+
+    member this.Offset =
+        match this with
+        | ChunkBranch(offset=offset)
+        | ChunkLeaf(offset=offset) -> offset
+
+    member this.IsLeaf =
+        match this with
+        | ChunkLeaf(isFree=isFree) -> isFree
+        | _ -> false
+
+    member this.SplitLeaf() =
+        match this with
+        | ChunkLeaf(order, size, offset, isFree) when isFree ->
+            let newSize = size / 2
+            let left = ChunkLeaf(order + 1, newSize, offset, true)
+            let right = ChunkLeaf(order + 1, newSize, offset + newSize, true)
+            ChunkBranch(order, size, offset, left, right)
+        | _ -> failwith "Cannot split a branch or a non-free leaf."
+
+    member this.Remap(f) =
+        match f this with
+        | ChunkBranch(order, size, offset, left, right) -> ChunkBranch(order, size, offset, left.Remap f, right.Remap f)
+        | leaf -> leaf
+
+[<Sealed>] 
+type Chunk (alignment: int, upperLimit: int) =
+
+    let sizes = Array.init (upperLimit + 1) (fun i -> pown 2 i * alignment)
+    let free = Array.init (upperLimit + 1) (fun _ -> ResizeArray<int>())
+
+    let getSize order = sizes.[order]
+    let getFreeOffsets order = free.[order]
+
+    let tryGetBlock order =
+        let offsets = getFreeOffsets order
+        if offsets.Count > 0 then
+            let offset = offsets.[0]
+            { Offset = offset; Size = getSize order; Order = order }
+            |> ValueSome
+        else
+            ValueNone
+
+    let rec tryRequestBlock order =
+        match tryGetBlock order with
+        | ValueSome block -> ValueSome block
+        | _ ->
+            match tryRequestBlock (order + 1) with
+            | ValueSome block ->
+                free.[block.Order].RemoveAt 0
+                let struct(halfBlock1, halfBlock2) = splitBlock block
+                let offsets = getFreeOffsets halfBlock1.Order
+                offsets.Add(halfBlock1.Offset)
+                offsets.Add(halfBlock2.Offset)
+                offsets.Sort()
+                tryRequestBlock order
+            | _ ->
+                ValueNone
+
+    let rec rebalance order =
+        let size = getSize order
+        let offsets = getFreeOffsets order
+        offsets.Sort()
+        for i = 0 to offsets.Count - 2 do
+            let j = i + 1
+            let offset1 = offsets.[i]
+            let offset2 = offsets.[j]
+            if (offset2 - offset1) = size then
+                let nextOrder = order + 1
+                (getFreeOffsets nextOrder).Add offset1
+                rebalance nextOrder
+
+    do free.[upperLimit].Add 0
+
+    member _.TryRequest(size: int) =
+        let requestOrder =
+            sizes
+            |> Array.findIndex (fun x -> size <= x)
+
+        match tryRequestBlock requestOrder with
+        | ValueSome block ->
+            (getFreeOffsets block.Order).RemoveAt 0
+            Some block
+        | _ ->
+            None
+
+    member _.Free(block: Block) =
+        let offsets = (getFreeOffsets block.Order)
+        offsets.Add block.Offset
+        rebalance block.Order
+        
+let chunks = System.Collections.Concurrent.ConcurrentDictionary<uint32 * VkDeviceSize, Lazy<ResizeArray<Chunk * VkDeviceMemory>>>()
+       
 
 [<Struct;NoEquality;NoComparison>]
 type DeviceMemory(bucket: DeviceMemoryBucket, offset: int, size: int) =
@@ -213,3 +343,65 @@ let allocateMemory physicalDevice device (memRequirements: VkMemoryRequirements)
     let bucket = buckets.GetOrAdd(struct(memTypeIndex, device), factory)
 
     bucket.Value.Allocate(int memRequirements.size, int memRequirements.alignment)
+
+// 64mb, artbitrary
+let DefaultChunkSize = 256 * 1024 * 1024
+
+let gate = obj ()
+
+[<Struct;NoEquality;NoComparison>]
+type VulkanMemory =
+    {
+        DeviceMemory: VkDeviceMemory
+        Block: Block
+        Chunk: Chunk
+        IsFree: bool ref
+    }
+
+    member this.Free() =
+        let isFree = this.IsFree
+        let chunk = this.Chunk
+        let block = this.Block
+        lock gate <| fun _ ->
+            if not !isFree then
+                isFree := true
+                chunk.Free block
+
+    interface IDisposable with
+
+        member this.Dispose() =
+            this.Free()
+
+    static member Allocate physicalDevice device (memRequirements: VkMemoryRequirements) properties =
+        lock gate <| fun _ ->
+            let memTypeIndex = 
+                getSuitableMemoryTypeIndex 
+                    physicalDevice memRequirements.memoryTypeBits 
+                    properties
+
+            let factory = System.Func<_, _> (fun _ -> lazy ResizeArray())
+            let chunks = chunks.GetOrAdd((memTypeIndex, memRequirements.alignment), factory).Value
+
+            let requestSize = int memRequirements.size
+
+            let blockOpt =
+                chunks
+                |> Seq.tryPick (fun (chunk, deviceMemory) -> 
+                    match chunk.TryRequest (int memRequirements.size) with
+                    | Some block -> Some (block, chunk, deviceMemory)
+                    | _ -> None)
+
+            match blockOpt with
+            | Some (block, chunk, deviceMemory) -> { DeviceMemory = deviceMemory; Block = block; Chunk = chunk; IsFree = ref false }
+            | _ ->
+                let alignment = int memRequirements.alignment
+                let size = requestSize
+                let upperLimit = 20
+
+                let chunk = Chunk(alignment, upperLimit)
+                let block = (chunk.TryRequest size).Value
+                let deviceMemory = allocateDeviceMemory device memTypeIndex (pown 2 20 * (int alignment))
+
+                chunks.Add(chunk, deviceMemory)
+
+                { DeviceMemory = deviceMemory; Block = block; Chunk = chunk; IsFree = ref false }
