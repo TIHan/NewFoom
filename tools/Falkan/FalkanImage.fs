@@ -15,8 +15,8 @@ let getImageMemoryRequirements device image =
 
 let internal bindImage physicalDevice device image properties =
     let memRequirements = getImageMemoryRequirements device image
-    let memory = allocateMemory physicalDevice device memRequirements properties
-    vkBindImageMemory(device, image, memory.Bucket.VkDeviceMemory, uint64 memory.Offset) |> checkResult
+    let memory = VulkanMemory.Allocate physicalDevice device memRequirements properties
+    vkBindImageMemory(device, image, memory.DeviceMemory, uint64 memory.Block.Offset) |> checkResult
     memory
 
 let mkImage device width height format tiling usage =
@@ -212,7 +212,7 @@ type FalkanImageDepthAttachment =
         vkDevice: VkDevice
         vkImage: VkImage
         vkImageView: VkImageView
-        memory: DeviceMemory
+        memory: VulkanMemory
         width: int
         height: int
     }
@@ -246,7 +246,7 @@ type FalkanImage =
         vkImage: VkImage
         vkImageView: VkImageView
         vkSampler: VkSampler
-        memory: DeviceMemory
+        memory: VulkanMemory
         format: VkFormat
         width: int
         height: int

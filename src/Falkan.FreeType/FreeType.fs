@@ -31,7 +31,7 @@ type FreeTypeBitmap internal (bmp: Bitmap, top: int, left: int) =
             bmp.Dispose()
 
 [<Sealed>]
-type FreeTypeFace(lib: FT_Library, face: FT_Face) =
+type FreeTypeFace internal (lib: FT_Library, face: FT_Face) =
     
     member _.SetCharSize(width, height, horizontalResolution, verticalResolution) =
         FT_Set_Char_Size(face, width, height, horizontalResolution, verticalResolution) |> checkResult

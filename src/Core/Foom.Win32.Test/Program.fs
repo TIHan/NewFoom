@@ -71,6 +71,12 @@ type ModelViewProjection =
         { model = this.model; view = invertedView; proj = this.proj }
 
 [<Struct>]
+type Projection =
+    {
+        proj: Matrix4x4
+    }
+
+[<Struct>]
 type Vertex =
     {
         position: Vector2
@@ -175,7 +181,7 @@ let textShader (instance: FalGraphics) =
 
     let vertex =
         <@
-            let proj = Variable<Matrix4x4> [Decoration.Binding 1u] StorageClass.Uniform
+            let proj = Variable<Projection> [Decoration.Binding 0u; Decoration.DescriptorSet 0u] StorageClass.Uniform
             let position = Variable<Vector2> [Decoration.Location 0u; Decoration.Binding 0u] StorageClass.Input
             let texCoord = Variable<Vector2> [Decoration.Location 1u; Decoration.Binding 1u] StorageClass.Input
             let mutable gl_Position  = Variable<Vector4> [Decoration.BuiltIn BuiltIn.Position] StorageClass.Output
@@ -483,7 +489,7 @@ let main argv =
                 let s = System.Diagnostics.Stopwatch.StartNew()
                 instance.SetupCommands()
                 s.Stop()
-                printfn "%A" (s.Elapsed.TotalMilliseconds)
+              //  printfn "%A" (s.Elapsed.TotalMilliseconds)
                 quit
 
             member __.OnRenderFrame (_, _, _, _) =

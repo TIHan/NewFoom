@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>netcoreapp3.0</TargetFrameworks>
+
   </PropertyGroup>
 
   <ItemGroup>
@@ -10,7 +11,6 @@
     <Compile Include="InternalDeviceHelpers.fs" />
     <Compile Include="VulkanDevice.fsi" />
     <Compile Include="VulkanDevice.fs" />
-    <Compile Include="DeviceMemory.fs" />
     <Compile Include="FalkanBuffer.fs" />
     <Compile Include="FalkanImage.fs" />
     <Compile Include="InternalPipelineHelpers.fs" />

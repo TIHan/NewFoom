@@ -107,11 +107,6 @@ type FalGraphics
                     images.Clear()
                 )
 
-                buckets.Values
-                |> Seq.iter (fun x -> 
-                    if x.IsValueCreated then
-                        (x.Value :> IDisposable).Dispose())
-
     member this.CreateShader(layout: FalkanShaderDescription, vertexSpirvSource: ReadOnlySpan<byte>, fragmentSpirvSource: ReadOnlySpan<byte>) =
         swapChain.CreateShader(layout, vertexSpirvSource, fragmentSpirvSource)
 

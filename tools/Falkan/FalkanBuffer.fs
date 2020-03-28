@@ -21,6 +21,11 @@ let mkBuffer device size usage =
     vkCreateBuffer(device, &&bufferInfo, vkNullPtr, &&vertexBuffer) |> checkResult
     vertexBuffer
 
+let getMemoryRequirements device buffer =
+    let mutable memRequirements = VkMemoryRequirements ()
+    vkGetBufferMemoryRequirements(device, buffer, &&memRequirements)
+    memRequirements
+
 let internal bindMemory physicalDevice device buffer properties =
     let memRequirements = getMemoryRequirements device buffer
     let memory = VulkanMemory.Allocate physicalDevice device memRequirements properties

@@ -5,6 +5,34 @@ open System
 open FSharp.Vulkan.Interop
 open InternalDeviceHelpers
 
+// ===============================================================
+
+[<Struct;NoEquality;NoComparison>]
+type internal Block =
+    {
+        Offset: int
+        Size: int
+        Order: int
+    }
+
+[<Sealed>]
+type internal Chunk
+
+[<Struct;NoEquality;NoComparison>]
+type VulkanMemory =
+    internal {
+        DeviceMemory: VkDeviceMemory
+        Block: Block
+        Chunk: Chunk
+        IsFree: bool ref
+    }
+
+    interface IDisposable
+
+    static member Allocate : VkPhysicalDevice -> VkDevice -> VkMemoryRequirements -> VkMemoryPropertyFlags -> VulkanMemory
+
+// ===============================================================
+
 type VulkanDeviceLayer =
     | LunarGStandardValidation
 
