@@ -176,19 +176,19 @@ let meshShader (instance: FalGraphics) =
     instance.CreateShader(layout, ReadOnlySpan vertexBytes, ReadOnlySpan fragmentBytes)
 
 let textShader (instance: FalGraphics) =
-    let input1 = FalkanShaderVertexInput(PerVertex, 0u, 0u, typeof<Vector2>)
+    let input1 = FalkanShaderVertexInput(PerVertex, 0u, 0u, typeof<Vector3>)
     let input2 = FalkanShaderVertexInput(PerVertex, 1u, 1u, typeof<Vector2>)
 
     let vertex =
         <@
-            let proj = Variable<Projection> [Decoration.Binding 0u; Decoration.DescriptorSet 0u] StorageClass.Uniform
-            let position = Variable<Vector2> [Decoration.Location 0u; Decoration.Binding 0u] StorageClass.Input
+            let proj = Variable<Projection> [Decoration.Binding 1u; Decoration.DescriptorSet 1u] StorageClass.Uniform
+            let position = Variable<Vector3> [Decoration.Location 0u; Decoration.Binding 0u] StorageClass.Input
             let texCoord = Variable<Vector2> [Decoration.Location 1u; Decoration.Binding 1u] StorageClass.Input
             let mutable gl_Position  = Variable<Vector4> [Decoration.BuiltIn BuiltIn.Position] StorageClass.Output
             let mutable fragTexCoord = Variable<Vector2> [Decoration.Location 0u] StorageClass.Output
 
             fun () ->
-                gl_Position <- Vector4(position, 0.f, 1.f)
+                gl_Position <- Vector4.Transform(Vector4(position, 1.f), proj.proj)
                 fragTexCoord <- texCoord
         @>
     let spvVertexInfo = SpirvGenInfo.Create(AddressingModel.Logical, MemoryModel.GLSL450, ExecutionModel.Vertex, [Capability.Shader], [])
@@ -232,6 +232,7 @@ let textShader (instance: FalGraphics) =
         Shader(0,true,
             [
                 FalkanShaderDescriptorLayout(CombinedImageSamplerDescriptor, FragmentStage, 0u)
+                FalkanShaderDescriptorLayout(UniformBufferDescriptor, VertexStage, 1u)
             ],
             [input1; input2])
 
@@ -350,18 +351,18 @@ let setRender (instance: FalGraphics) =
     let bmp = doot.Bitmap
     let shader = textShader instance
 
-    let verticesBuffer = instance.CreateBuffer<Vector2>(6, FalkanBufferFlags.None, VertexBuffer)
+    let verticesBuffer = instance.CreateBuffer<Vector3>(6, FalkanBufferFlags.None, VertexBuffer)
     let vertices =
         let xratio = (1024 - bmp.Width + doot.Left)
 
         [|
-            Vector2(-0.5f, -0.5f)
-            Vector2(0.5f, -0.5f)
-            Vector2(0.5f, 0.5f)
+            Vector3(-0.5f * 500.f, -0.5f * 500.f, -1.f)
+            Vector3(0.5f * 500.f, -0.5f * 500.f, -1.f)
+            Vector3(0.5f * 500.f, 0.5f * 500.f, -1.f)
 
-            Vector2(0.5f, 0.5f)
-            Vector2(-0.5f, 0.5f)
-            Vector2(-0.5f, -0.5f)
+            Vector3(0.5f * 500.f, 0.5f * 500.f, -1.f)
+            Vector3(-0.5f * 500.f, 0.5f * 500.f, -1.f)
+            Vector3(-0.5f * 500.f, -0.5f * 500.f, -1.f)
 
         |]
     instance.FillBuffer(verticesBuffer, ReadOnlySpan vertices)
@@ -386,8 +387,13 @@ let setRender (instance: FalGraphics) =
     instance.FillImage(image, ReadOnlySpan(ptr, data.Width * data.Height * 4))
     bmp.UnlockBits(data)
 
+    let ortho = Matrix4x4.CreateOrthographic(1280.f, 720.f, 0.1f, 100.f)
+    let orthoUniform = instance.CreateBuffer<Projection>(1, FalkanBufferFlags.None, FalkanBufferKind.UniformBuffer)
+    orthoUniform.SetData(ReadOnlySpan [|{ proj = ortho }|])
+
     let draw = shader.CreateDrawBuilder()
     let draw = draw.AddDescriptorImage(image)
+    let draw = draw.AddDescriptorBuffer(orthoUniform, 1)
     let draw = draw.Next.AddVertexBuffer(verticesBuffer)
     let draw = draw.AddVertexBuffer(uvBuffer)
     shader.AddDraw(draw, uint32 vertices.Length, 1u)
