@@ -204,9 +204,9 @@ let textShader (instance: FalGraphics) =
 
             fun () ->
                 let color = sampler.ImplicitLod fragTexCoord
-             //   if color.W < 0.5f then
-             //       kill ()
-                outColor <- Vector4(1.f, 0.f, 0.f, 0.f)
+                if color.W < 0.5f then
+                    kill ()
+                outColor <- color
         @>
     let spvFragmentInfo = SpirvGenInfo.Create(AddressingModel.Logical, MemoryModel.GLSL450, ExecutionModel.Fragment, [Capability.Shader], ["GLSL.std.450"], ExecutionMode.OriginUpperLeft)
     let spvFragment = 
@@ -355,9 +355,10 @@ let setRender (instance: FalGraphics) =
         let xratio = (1024 - bmp.Width + doot.Left)
 
         [|
-            //Vector2(-1.f, -0.5f)
-            //Vector2(0.5f, -0.5f)
-            //Vector2(0.5f, 0.5f)
+            Vector2(-0.5f, -0.5f)
+            Vector2(0.5f, -0.5f)
+            Vector2(0.5f, 0.5f)
+
             Vector2(0.5f, 0.5f)
             Vector2(-0.5f, 0.5f)
             Vector2(-0.5f, -0.5f)
@@ -368,9 +369,9 @@ let setRender (instance: FalGraphics) =
     let uvBuffer = instance.CreateBuffer<Vector2>(6, FalkanBufferFlags.None, VertexBuffer)
     let uv =
         [|
-            //Vector2(0.f, 0.f)
-            //Vector2(1.f, 0.f)          
-            //Vector2(1.f, -1.f)
+            Vector2(0.f, 0.f)
+            Vector2(1.f, 0.f)          
+            Vector2(1.f, -1.f)
 
             Vector2(1.f, -1.f)
             Vector2(0.f, -1.f)

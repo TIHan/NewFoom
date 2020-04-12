@@ -128,3 +128,5 @@ type ItemManager<'T>(capacity: int) =
             else
                 item <- items.[lookup]
                 true
+
+    member _.AsSpan() = items.AsSpan()

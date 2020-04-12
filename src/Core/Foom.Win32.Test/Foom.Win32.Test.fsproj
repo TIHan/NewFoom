@@ -15,7 +15,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="fonts\OpenSans\Apache License.txt" />
+    <Compile Include="Resources.fs" />
     <Compile Include="AbstractRenderer.fs" />
+    <Compile Include="VulkanRenderer.fs" />
     <Compile Include="RendererCore.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
@@ -30,6 +32,7 @@
     <ProjectReference Include="..\..\..\tools\FSharp.Vulkan\FSharp.Vulkan.fsproj" />
     <ProjectReference Include="..\..\Falkan.FreeType\FsGame.Graphics.FreeType.fsproj" />
     <ProjectReference Include="..\..\fmod\CSharpFMOD.csproj" />
+    <ProjectReference Include="..\..\FsGame.Core\FsGame.Core.fsproj" />
     <ProjectReference Include="..\..\Wad\Foom.Wad\Foom.Wad.fsproj" />
     <ProjectReference Include="..\Foom.Core\Foom.Core.fsproj" />
     <ProjectReference Include="..\Foom.Win32\Foom.Win32.fsproj" />
