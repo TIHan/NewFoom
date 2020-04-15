@@ -11,9 +11,14 @@ open FSharp.Spirv.Quotations
 open FsGame.Core.Collections
 
 [<Struct>]
-type UniformBufferId = private UniformBufferId of ItemId with
+type UniformBufferId<'T> = private UniformBufferId of ItemId with
 
     member this.ItemId = match this with UniformBufferId itemId -> itemId
+
+[<Struct>]
+type VertexBufferId<'T> = private VertexBufferId of ItemId with
+
+    member this.ItemId = match this with VertexBufferId itemId -> itemId
 
 [<Struct>]
 type TextureId = private TextureId of ItemId with
@@ -21,71 +26,65 @@ type TextureId = private TextureId of ItemId with
     member this.ItemId = match this with TextureId itemId -> itemId
 
 [<Struct>]
-type MeshId = private MeshId of ItemId with
-
-    member this.ItemId = match this with MeshId itemId -> itemId
-
-[<Struct>]
-type ShaderId = private ShaderId of ItemId with
+type ShaderId<'Uniform, 'Vertex> = private ShaderId of ItemId with
 
     member this.ItemId = match this with ShaderId itemId -> itemId
+
+[<Struct>]
+type DrawCallId = private DrawCallId of ItemId with
+
+    member this.ItemId = match this with DrawCallId itemId -> itemId
     
 [<AbstractClass>] 
-type AbstractRenderer<'UniformBuffer, 'Shader, 'Mesh, 'Texture>() =
+type AbstractRenderer<'UniformBuffer, 'VertexBuffer, 'Texture, 'Shader, 'DrawCall>() =
     
     let uniformBuffers = ItemManager<'UniformBuffer> 1
-    let shaders = ItemManager<'Shader> 1
-    let meshes = ItemManager<'Mesh> 1
+    let vertexBuffers = ItemManager<'VertexBuffer> 1
     let textures = ItemManager<'Texture> 1
+    let shaders = ItemManager<'Shader> 1
+    let drawCalls = ItemManager<'DrawCall> 1
 
     let getItem (manager: ItemManager<_>) id =
         match manager.TryGet(id) with
         | true, camera -> camera
         | _ -> invalidArg "id" "Item does not exist."
 
-    let getShader shaderId =
-        match shaders.TryGet(shaderId) with
-        | true, shader -> shader
-        | _ -> invalidArg "shaderId" "Shader does not exist."
-
-    let getMesh meshId =
-        match meshes.TryGet(meshId) with
-        | true, mesh -> mesh
-        | _ -> invalidArg "meshId" "Mesh does not exist."
-
-    let getTexture textureId =
-        match textures.TryGet(textureId) with
-        | true, texture -> texture
-        | _ -> invalidArg "textureId" "Texture does not exist."
-
     abstract CreateUniformBufferCore<'T when 'T : unmanaged> : value: 'T -> 'UniformBuffer
 
     abstract SetUniformBufferCore<'T when 'T : unmanaged> : uniformBuffer: 'UniformBuffer * value: 'T -> unit
 
-    member this.CreateUniformBuffer<'T when 'T : unmanaged>(value: 'T) =
+    member this.CreateUniformBuffer<'T when 'T : unmanaged>(value: 'T) : UniformBufferId<'T> =
         let internalUniformBuffer = this.CreateUniformBufferCore value
         UniformBufferId(uniformBuffers.Add internalUniformBuffer)
 
-    member this.SetUniformBuffer<'T when 'T : unmanaged>(uniformBufferId: UniformBufferId, value: 'T) =
+    member this.SetUniformBuffer<'T when 'T : unmanaged>(uniformBufferId: UniformBufferId<'T>, value: 'T) =
         this.SetUniformBufferCore(getItem uniformBuffers uniformBufferId.ItemId, value)
 
 
-    //abstract CreateVertexBufferCore<'T when 'T : unmanaged> : value: 'T -> 'UniformBuffer
+    abstract CreateVertexBufferCore<'T when 'T : unmanaged> : value: ReadOnlySpan<'T> -> 'VertexBuffer
 
-    //abstract SetUniformBufferCore<'T when 'T : unmanaged> : uniformBuffer: 'UniformBuffer * value: 'T -> unit
+    abstract SetVertexBufferCore<'T when 'T : unmanaged> : vertexBuffer: 'VertexBuffer * value: ReadOnlySpan<'T> -> unit
 
-    //member this.CreateUniformBuffer<'T when 'T : unmanaged>(value: 'T) =
-    //    let internalUniformBuffer = this.CreateUniformBufferCore value
-    //    UniformBufferId(uniformBuffers.Add internalUniformBuffer)
+    member this.CreateVertexBuffer<'T when 'T : unmanaged>(value: ReadOnlySpan<'T>) : VertexBufferId<'T> =
+        let internalVertexBuffer = this.CreateVertexBufferCore value
+        VertexBufferId(vertexBuffers.Add internalVertexBuffer)
 
-    //member this.SetUniformBuffer<'T when 'T : unmanaged>(uniformBufferId: UniformBufferId, value: 'T) =
-    //    this.SetUniformBufferCore(getItem uniformBuffers uniformBufferId.ItemId, value)
+    member this.SetVertexBuffer<'T when 'T : unmanaged>(vertexBufferId: VertexBufferId<'T>, value: ReadOnlySpan<'T>) =
+        this.SetVertexBufferCore(getItem vertexBuffers vertexBufferId.ItemId, value)
 
 
-    abstract CreateSpirvShaderCore<'T when 'T : unmanaged> : vertex: ReadOnlySpan<byte> * fragment: ReadOnlySpan<byte> -> 'Shader        
+    abstract CreateTextureCore: bitmap: Bitmap -> 'Texture
+
+    member this.CreateTexture(bitmap: Bitmap) =
+        let texture = this.CreateTextureCore bitmap
+        TextureId(textures.Add texture)
+
+
+
+    abstract CreateSpirvShaderCore<'Uniform, 'Vertex> : vertex: ReadOnlySpan<byte> * fragment: ReadOnlySpan<byte> -> 'Shader        
 
     [<RequiresExplicitTypeArguments>]
-    member this.CreateSpirvShader<'T when 'T : unmanaged>(vertex: Expr<unit -> unit>, fragment: Expr<unit -> unit>) =
+    member this.CreateSpirvShader<'Uniform, 'Vertex>(vertex: Expr<unit -> unit>, fragment: Expr<unit -> unit>) : ShaderId<'Uniform, 'Vertex> =
         let spvVertexInfo = SpirvGenInfo.Create(AddressingModel.Logical, MemoryModel.GLSL450, ExecutionModel.Vertex, [Capability.Shader], [])
         let spvVertex =
             Checker.Check vertex
@@ -111,26 +110,19 @@ type AbstractRenderer<'UniformBuffer, 'Shader, 'Mesh, 'Texture>() =
             ms.Read(bytes, 0, bytes.Length) |> ignore
             bytes
 
-        let shader = this.CreateSpirvShaderCore<'T>(ReadOnlySpan vertexBytes, ReadOnlySpan fragmentBytes)
+        let shader = this.CreateSpirvShaderCore<'Uniform, 'Vertex>(ReadOnlySpan vertexBytes, ReadOnlySpan fragmentBytes)
         ShaderId(shaders.Add shader)
 
 
-    abstract CreateMeshCore<'T when 'T : unmanaged> : uniformBuffer: 'UniformBuffer * shader: 'Shader * vertices: ReadOnlySpan<'T> * texture: 'Texture -> 'Mesh
+    abstract CreateDrawCallCore : uniformBuffer: 'UniformBuffer * vertexBuffer: 'VertexBuffer * texture: 'Texture * shader: 'Shader -> 'DrawCall
 
-    member this.CreateMesh<'T when 'T : unmanaged>(uniformBufferId: UniformBufferId, shaderId: ShaderId, vertices: ReadOnlySpan<'T>, textureId: TextureId) =
-        let camera = getItem uniformBuffers uniformBufferId.ItemId
-        let shader = getShader shaderId.ItemId
-        let texture = getTexture textureId.ItemId
-        let mesh = this.CreateMeshCore(camera, shader, vertices, texture)
-        MeshId(meshes.Add mesh)
-
-
-    abstract CreateTextureCore: bitmap: Bitmap -> 'Texture
-
-    member this.CreateTexture(bitmap: Bitmap) =
-        let texture = this.CreateTextureCore bitmap
-        TextureId(textures.Add texture)
-
+    member this.CreateDrawCall<'Uniform, 'Vertex>(uniformBufferId: UniformBufferId<'Uniform>, vertexBufferId: VertexBufferId<'Vertex>, textureId: TextureId, shaderId: ShaderId<'Uniform, 'Vertex>) =
+        let uniformBuffer = getItem uniformBuffers uniformBufferId.ItemId
+        let vertexBuffer = getItem vertexBuffers vertexBufferId.ItemId
+        let texture = getItem textures textureId.ItemId
+        let shader = getItem shaders shaderId.ItemId
+        let internalDrawCall = this.CreateDrawCallCore(uniformBuffer, vertexBuffer, texture, shader)
+        DrawCallId(drawCalls.Add internalDrawCall)
 
     abstract Refresh: unit -> unit
 

@@ -173,7 +173,7 @@ let textShader (instance: FalGraphics) =
 
     instance.CreateShader(layout, ReadOnlySpan vertexBytes, ReadOnlySpan fragmentBytes)
 
-let setRender (renderer: FsGame.Renderer.AbstractRenderer.AbstractRenderer<_, _, _, _>) =
+let setRender (renderer: FsGame.Renderer.AbstractRenderer.AbstractRenderer<_, _, _, _, _>) =
     let wad = Wad.FromFile("../../../../../../Foom-deps/testwads/doom1.wad")
     let e1m1 = wad.FindMap "e1m1"
     loadMusic wad
@@ -217,7 +217,7 @@ let setRender (renderer: FsGame.Renderer.AbstractRenderer.AbstractRenderer<_, _,
                 outColor <- color
         @>
 
-    let shader = renderer.CreateSpirvShader<Vertex>(vertex, fragment)
+    let shader = renderer.CreateSpirvShader<ModelViewProjection, Vertex>(vertex, fragment)
 
     let textureCache = Collections.Generic.Dictionary<string, TextureId * int * int>()
     let getImage name =
@@ -238,7 +238,8 @@ let setRender (renderer: FsGame.Renderer.AbstractRenderer.AbstractRenderer<_, _,
 
     let queueDraw (image: TextureId) (vertices: Vector3 []) (uv: Vector2 []) =
         let vertices = Array.init vertices.Length (fun i -> { position = vertices.[i]; uv = uv.[i] })
-        renderer.CreateMesh(mvpUniform, shader, ReadOnlySpan vertices, image) |> ignore
+        let vertexBuffer = renderer.CreateVertexBuffer(ReadOnlySpan vertices)
+        renderer.CreateDrawCall(mvpUniform, vertexBuffer, image, shader) |> ignore
 
     (e1m1.Sectors, e1m1.ComputeAllSectorGeometry())
     ||> Seq.iteri2 (fun i s geo ->

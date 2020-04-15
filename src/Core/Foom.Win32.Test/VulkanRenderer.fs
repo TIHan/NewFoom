@@ -17,7 +17,7 @@ open Microsoft.FSharp.NativeInterop
 
 [<Sealed>]
 type VulkanRenderer private (device: VulkanDevice, instance: FalGraphics) =
-    inherit AbstractRenderer<struct(FalkanBuffer * int), FalkanShader, struct(FalkanBuffer * int), FalkanImage>()
+    inherit AbstractRenderer<struct(FalkanBuffer * int), struct(FalkanBuffer * int), FalkanImage, FalkanShader, int>()
 
     override _.CreateUniformBufferCore<'T when 'T : unmanaged>(value: 'T) =
         let buffer = instance.CreateBuffer<'T>(1, FalkanBufferFlags.None, UniformBuffer)
@@ -27,28 +27,17 @@ type VulkanRenderer private (device: VulkanDevice, instance: FalGraphics) =
     override _.SetUniformBufferCore<'T when 'T : unmanaged>(struct(internalUniformBuffer, _), value: 'T) =
         internalUniformBuffer.SetData(ReadOnlySpan [|value|])
 
-    override _.CreateSpirvShaderCore<'T when 'T : unmanaged>(vertex, fragment) =
-        let input = FalkanShaderVertexInput(PerVertex, 0u, 0u, typeof<'T>)
 
-        let layout = 
-            Shader(0,true,
-                [
-                    FalkanShaderDescriptorLayout(UniformBufferDescriptor, VertexStage, 0u)
-                    FalkanShaderDescriptorLayout(CombinedImageSamplerDescriptor, FragmentStage, 1u)
-                ],
-                [input])
-        instance.CreateShader(layout, vertex, fragment)
+    override _.CreateVertexBufferCore<'T when 'T : unmanaged>(value: ReadOnlySpan<'T>) =
+        let buffer = instance.CreateBuffer<'T>(value.Length, FalkanBufferFlags.None, VertexBuffer)
+        buffer.SetData(value)
+        struct(buffer, value.Length)
 
-    override _.CreateMeshCore<'T when 'T : unmanaged>(struct(cameraUniform, cameraUniformSize), shader, vertices: ReadOnlySpan<'T>, texture) =
-        let verticesBuffer = instance.CreateBuffer<'T> (vertices.Length, FalkanBufferFlags.None, VertexBuffer)
-        instance.FillBuffer(verticesBuffer, vertices)
+    override _.SetVertexBufferCore<'T when 'T : unmanaged>(struct(internalVertexBuffer, count), value: ReadOnlySpan<'T>) =
+        if count <> value.Length then
+            invalidArg "value" "Value span must be the same length as the buffer."
+        internalVertexBuffer.SetData(value)
 
-        let draw = shader.CreateDrawBuilder()
-        let draw = draw.AddDescriptorBuffer(cameraUniform, cameraUniformSize)
-        let draw = draw.AddDescriptorImage(texture)
-        let draw = draw.Next.AddVertexBuffer(verticesBuffer)
-        let drawId = shader.AddDraw(draw, uint32 vertices.Length, 1u)
-        struct(verticesBuffer, drawId)
 
     override _.CreateTextureCore(bmp) =
         let rect = Rectangle(0, 0, bmp.Width, bmp.Height)
@@ -59,6 +48,26 @@ type VulkanRenderer private (device: VulkanDevice, instance: FalGraphics) =
         instance.FillImage(image, ReadOnlySpan(ptr, data.Width * data.Height * 4))
         bmp.UnlockBits(data)
         image
+
+
+    override _.CreateSpirvShaderCore<'Uniform, 'Vertex>(vertex, fragment) =
+        let input = FalkanShaderVertexInput(PerVertex, 0u, 0u, typeof<'Vertex>)
+
+        let layout = 
+            Shader(0,true,
+                [
+                    FalkanShaderDescriptorLayout(UniformBufferDescriptor, VertexStage, 0u)
+                    FalkanShaderDescriptorLayout(CombinedImageSamplerDescriptor, FragmentStage, 1u)
+                ],
+                [input])
+        instance.CreateShader(layout, vertex, fragment)
+
+    override _.CreateDrawCallCore(struct(uniformBuffer, uniformBufferSize), struct(vertexBuffer, vertexCount), texture, shader) =
+        let draw = shader.CreateDrawBuilder()
+        let draw = draw.AddDescriptorBuffer(uniformBuffer, uniformBufferSize)
+        let draw = draw.AddDescriptorImage(texture)
+        let draw = draw.Next.AddVertexBuffer(vertexBuffer)
+        shader.AddDraw(draw, uint32 vertexCount, 1u)
 
     override _.Refresh() =
         instance.SetupCommands()
