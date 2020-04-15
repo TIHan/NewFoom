@@ -17,13 +17,18 @@ open Microsoft.FSharp.NativeInterop
 
 [<Sealed>]
 type VulkanRenderer private (device: VulkanDevice, instance: FalGraphics) =
-    inherit AbstractRenderer<FalkanShader, struct(FalkanBuffer * FalkanBuffer), FalkanImage>()
+    inherit AbstractRenderer<struct(FalkanBuffer * int), FalkanShader, struct(FalkanBuffer * int), FalkanImage>()
 
-    let mvpUniform = instance.CreateBuffer<ModelViewProjection>(1, FalkanBufferFlags.None, UniformBuffer)
+    override _.CreateUniformBufferCore<'T when 'T : unmanaged>(value: 'T) =
+        let buffer = instance.CreateBuffer<'T>(1, FalkanBufferFlags.None, UniformBuffer)
+        buffer.SetData(ReadOnlySpan [|value|])
+        struct(buffer, sizeof<'T>)
 
-    override _.CreateSpirvShaderCore(vertex, fragment) =
-        let input1 = FalkanShaderVertexInput(PerVertex, 0u, 0u, typeof<Vector3>)
-        let input2 = FalkanShaderVertexInput(PerVertex, 1u, 1u, typeof<Vector2>)
+    override _.SetUniformBufferCore<'T when 'T : unmanaged>(struct(internalUniformBuffer, _), value: 'T) =
+        internalUniformBuffer.SetData(ReadOnlySpan [|value|])
+
+    override _.CreateSpirvShaderCore<'T when 'T : unmanaged>(vertex, fragment) =
+        let input = FalkanShaderVertexInput(PerVertex, 0u, 0u, typeof<'T>)
 
         let layout = 
             Shader(0,true,
@@ -31,23 +36,19 @@ type VulkanRenderer private (device: VulkanDevice, instance: FalGraphics) =
                     FalkanShaderDescriptorLayout(UniformBufferDescriptor, VertexStage, 0u)
                     FalkanShaderDescriptorLayout(CombinedImageSamplerDescriptor, FragmentStage, 1u)
                 ],
-                [input1; input2])
+                [input])
         instance.CreateShader(layout, vertex, fragment)
 
-    override _.CreateMeshCore(shader, vertices, uv, texture) =
-        let verticesBuffer = instance.CreateBuffer<Vector3> (vertices.Length, FalkanBufferFlags.None, VertexBuffer)
+    override _.CreateMeshCore<'T when 'T : unmanaged>(struct(cameraUniform, cameraUniformSize), shader, vertices: ReadOnlySpan<'T>, texture) =
+        let verticesBuffer = instance.CreateBuffer<'T> (vertices.Length, FalkanBufferFlags.None, VertexBuffer)
         instance.FillBuffer(verticesBuffer, vertices)
 
-        let uvBuffer = instance.CreateBuffer<Vector2> (uv.Length, FalkanBufferFlags.None, VertexBuffer)
-        instance.FillBuffer(uvBuffer, uv)
-
         let draw = shader.CreateDrawBuilder()
-        let draw = draw.AddDescriptorBuffer(mvpUniform, sizeof<ModelViewProjection>)
+        let draw = draw.AddDescriptorBuffer(cameraUniform, cameraUniformSize)
         let draw = draw.AddDescriptorImage(texture)
         let draw = draw.Next.AddVertexBuffer(verticesBuffer)
-        let draw = draw.AddVertexBuffer(uvBuffer)
-        shader.AddDraw(draw, uint32 vertices.Length, 1u)
-        struct(verticesBuffer, uvBuffer)
+        let drawId = shader.AddDraw(draw, uint32 vertices.Length, 1u)
+        struct(verticesBuffer, drawId)
 
     override _.CreateTextureCore(bmp) =
         let rect = Rectangle(0, 0, bmp.Width, bmp.Height)
@@ -59,6 +60,15 @@ type VulkanRenderer private (device: VulkanDevice, instance: FalGraphics) =
         bmp.UnlockBits(data)
         image
 
+    override _.Refresh() =
+        instance.SetupCommands()
+
+    override _.Draw() =
+        instance.DrawFrame()
+
+    override _.WaitIdle() =
+        instance.WaitIdle()
+
     override _.Dispose() =
         (instance :> IDisposable).Dispose()
         (device :> IDisposable).Dispose()
@@ -69,4 +79,5 @@ type VulkanRenderer private (device: VulkanDevice, instance: FalGraphics) =
             [RenderSubpass ColorDepthStencilSubpass]
 
         let instance = FalGraphics.Create (device, windowResized, subpasses)
+        instance.SetupCommands()
         new VulkanRenderer(device, instance)

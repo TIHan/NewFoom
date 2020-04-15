@@ -8,6 +8,7 @@ open FSharp.NativeInterop
 open FSharp.Vulkan.Interop
 open System.Collections.Generic
 open System.Collections.ObjectModel
+open FsGame.Core.Collections
 
 #nowarn "9"
 #nowarn "51"
@@ -129,7 +130,7 @@ type PipelineLayout =
         vkPipelineLayout: VkPipelineLayout
         vkDescriptorSetLayouts: struct(VkDescriptorSetLayout * VkDescriptorType) []
         pipelineFlags: PipelineFlags
-        draws: ResizeArray<Draw>
+        draws: SparseResizeArray<Draw>
     }
 
 [<Struct;NoEquality;NoComparison>]
@@ -207,7 +208,7 @@ let recordDraw extent (framebuffers: VkFramebuffer []) (commandBuffers: VkComman
                 vkCmdBindPipeline(commandBuffer, VkPipelineBindPoint.VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.vkPipeline)
 
 
-                for draw in pipeline.layout.draws do
+                for draw in pipeline.layout.draws.AsSpan() do
 
                     // REVIEW: Might be expensive per draw but it works.
                     // Bind descriptor sets

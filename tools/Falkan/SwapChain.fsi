@@ -52,7 +52,9 @@ type FalkanShader =
 
     member CreateDrawBuilder : unit -> FalkanShaderDrawDescriptorBuilder
 
-    member AddDraw : drawBuilder: FalkanShaderDrawVertexBuilder * vertexCount: uint32 * instanceCount: uint32 -> unit
+    member AddDraw : drawBuilder: FalkanShaderDrawVertexBuilder * vertexCount: uint32 * instanceCount: uint32 -> int
+
+    member RemoveDraw : drawId: int -> unit
 
 [<Sealed>]
 type internal SwapChain =

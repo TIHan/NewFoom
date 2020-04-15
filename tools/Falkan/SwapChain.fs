@@ -9,6 +9,7 @@ open FSharp.NativeInterop
 open FSharp.Vulkan.Interop
 open System.Collections.Generic
 open System.Collections.ObjectModel
+open FsGame.Core.Collections
 open InternalPipelineHelpers
 
 #nowarn "9"
@@ -568,6 +569,11 @@ type FalkanShader = private FalkanShader of ShaderId * struct(VkDescriptorSetLay
             let draw = drawBuilder.Build(swapChain.VkDevice, descriptorSetLayouts, swapChain.ImageCount, vertexCount, instanceCount)
             swapChain.RecordDraw(shaderId, draw)
 
+    member this.RemoveDraw drawId =
+        match this with
+        | FalkanShader(shaderId, _, swapChain) ->
+            swapChain.RemoveDraw(shaderId, drawId)
+
 and [<Sealed>] SwapChain private (fdevice: VulkanDevice, surface, sync, graphicsFamily, graphicsQueue, presentFamily, presentQueue, invalidate: IEvent<unit>) =
 
     let device = fdevice.Device
@@ -711,7 +717,7 @@ and [<Sealed>] SwapChain private (fdevice: VulkanDevice, surface, sync, graphics
                     vkPipelineLayout = mkPipelineLayout device (descriptorSetLayouts |> Array.map (fun struct(x, _) -> x))
                     vkDescriptorSetLayouts = descriptorSetLayouts
                     pipelineFlags = pipelineFlags
-                    draws = ResizeArray()
+                    draws = SparseResizeArray 1
                 }
 
             let pVertexBytes = Unsafe.AsPointer(&Unsafe.AsRef(&vertexBytes.GetPinnableReference())) |> NativePtr.ofVoidPtr
@@ -740,7 +746,19 @@ and [<Sealed>] SwapChain private (fdevice: VulkanDevice, surface, sync, graphics
         | true, (_, _, pipelineLayout) ->
             pipelineLayout.draws.Add draw
 
+    member x.RemoveDraw((ShaderId(subpassIndex, id)): ShaderId, drawId: int) =
+        lock gate |> fun _ ->
+
+        check ()
+
+        match renderSubpassShaders.[subpassIndex].TryGetValue id with
+        | false, _ -> failwith "Unable to find shader."
+        | true, (_, _, pipelineLayout) ->
+            pipelineLayout.draws.Remove drawId
+
     member x.SetupCommands() =
+        check ()
+        vkQueueWaitIdle(graphicsQueue) |> checkResult
         record ()
 
     member _.AddRenderSubpass(renderSubpassDesc: FalkanRenderSubpassDescription) =
@@ -789,10 +807,9 @@ and [<Sealed>] SwapChain private (fdevice: VulkanDevice, surface, sync, graphics
                     for shaders in renderSubpassShaders do
                         shaders.Values
                         |> Seq.iter (fun struct(_, shader, pipelineLayout) ->
-                            pipelineLayout.draws
-                            |> Seq.iter (fun x ->
+                            for x in pipelineLayout.draws.AsSpan() do
                                 x.vkDescriptorPools
-                                |> Array.iter (fun descriptorPool -> vkDestroyDescriptorPool(device, descriptorPool, vkNullPtr)))
+                                |> Array.iter (fun descriptorPool -> vkDestroyDescriptorPool(device, descriptorPool, vkNullPtr))
                             pipelineLayout.vkDescriptorSetLayouts
                             |> Array.iter (fun struct(descriptorSetLayout, _) -> vkDestroyDescriptorSetLayout(device, descriptorSetLayout, vkNullPtr))
                             vkDestroyPipelineLayout(device, pipelineLayout.vkPipelineLayout, vkNullPtr)
