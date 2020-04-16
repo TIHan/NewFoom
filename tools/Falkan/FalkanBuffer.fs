@@ -43,7 +43,7 @@ let mapMemory<'T when 'T : unmanaged> device memory offset (data: ReadOnlySpan<'
 
     vkUnmapMemory(device, memory)
 
-let recordCopyBuffer (commandBuffer: VkCommandBuffer) src dst size =
+let recordCopyBuffer (commandBuffer: VkCommandBuffer) src dst dstOffset size =
     let mutable beginInfo =
         VkCommandBufferBeginInfo (
             sType = VkStructureType.VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
@@ -56,7 +56,7 @@ let recordCopyBuffer (commandBuffer: VkCommandBuffer) src dst size =
     let mutable copyRegion =
         VkBufferCopy (
             srcOffset = 0UL, // Optional
-            dstOffset = 0UL, // Optional
+            dstOffset = dstOffset, // Optional
             size = size
         )
 
@@ -64,7 +64,7 @@ let recordCopyBuffer (commandBuffer: VkCommandBuffer) src dst size =
 
     vkEndCommandBuffer(commandBuffer) |> checkResult
 
-let copyBuffer device commandPool srcBuffer dstBuffer size queue =
+let copyBuffer device commandPool srcBuffer dstBuffer dstOffset size queue =
     let mutable allocInfo =
         VkCommandBufferAllocateInfo (
             sType = VkStructureType.VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
@@ -76,7 +76,7 @@ let copyBuffer device commandPool srcBuffer dstBuffer size queue =
     let mutable commandBuffer = VkCommandBuffer()
     vkAllocateCommandBuffers(device, &&allocInfo, &&commandBuffer) |> checkResult
     
-    recordCopyBuffer commandBuffer srcBuffer dstBuffer size
+    recordCopyBuffer commandBuffer srcBuffer dstBuffer dstOffset size
 
     let mutable submitInfo =
         VkSubmitInfo (
@@ -138,6 +138,8 @@ type FalkanBuffer =
 
     member x.IsShared = hasSharedMemoryFlag x.flags
 
+    member x.Size = x.memory.Block.Size
+
     member internal x.Destroy() =
         vkDestroyBuffer(x.device.Device, x.buffer, vkNullPtr)
         (x.memory :> IDisposable).Dispose()
@@ -170,15 +172,15 @@ type VulkanDevice with
 
 
 type FalkanBuffer with
-
-    member buffer.SetData<'T when 'T : unmanaged>(data) =
+    
+    member buffer.SetData<'T when 'T : unmanaged>(offset, data) =
         let physicalDevice = buffer.device.PhysicalDevice
         let device = buffer.device.Device
         let commandPool = buffer.device.VkCommandPool
         let transferQueue = buffer.device.VkTransferQueue
 
         if buffer.IsShared then
-            mapMemory<'T> device buffer.memory.DeviceMemory buffer.memory.Block.Offset data
+            mapMemory<'T> device buffer.memory.DeviceMemory (buffer.memory.Block.Offset + (sizeof<'T> * offset)) data
         else
             // Memory that is not shared can not be written directly to from the CPU.
             // In order to set it from the CPU, a temporary shared memory buffer is used as a staging buffer to transfer the data.
@@ -194,6 +196,9 @@ type FalkanBuffer with
             mapMemory device stagingMemory.DeviceMemory stagingMemory.Block.Offset data
         
             let size = uint64 (sizeof<'T> * count)
-            copyBuffer device commandPool stagingBuffer buffer.buffer size transferQueue
+            copyBuffer device commandPool stagingBuffer buffer.buffer (uint64 (sizeof<'T> * offset)) size transferQueue
 
             vkDestroyBuffer(device, stagingBuffer, vkNullPtr)
+
+    member buffer.SetData<'T when 'T : unmanaged>(data) =
+        buffer.SetData<'T>(0, data)

@@ -217,7 +217,7 @@ let setRender (renderer: FsGame.Renderer.AbstractRenderer.AbstractRenderer<_, _,
                 outColor <- color
         @>
 
-    let shader = renderer.CreateSpirvShader<ModelViewProjection, Vertex>(vertex, fragment)
+    let shader = renderer.CreateSpirvShader(vertex, fragment, typeof<Vertex>, None)
 
     let textureCache = Collections.Generic.Dictionary<string, TextureId * int * int>()
     let getImage name =
@@ -239,7 +239,7 @@ let setRender (renderer: FsGame.Renderer.AbstractRenderer.AbstractRenderer<_, _,
     let queueDraw (image: TextureId) (vertices: Vector3 []) (uv: Vector2 []) =
         let vertices = Array.init vertices.Length (fun i -> { position = vertices.[i]; uv = uv.[i] })
         let vertexBuffer = renderer.CreateVertexBuffer(ReadOnlySpan vertices)
-        renderer.CreateDrawCall(mvpUniform, vertexBuffer, image, shader) |> ignore
+        renderer.CreateDrawCall(mvpUniform, vertexBuffer, None, image, shader, 1) |> ignore
 
     (e1m1.Sectors, e1m1.ComputeAllSectorGeometry())
     ||> Seq.iteri2 (fun i s geo ->

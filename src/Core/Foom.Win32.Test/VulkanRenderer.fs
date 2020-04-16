@@ -50,8 +50,13 @@ type VulkanRenderer private (device: VulkanDevice, instance: FalGraphics) =
         image
 
 
-    override _.CreateSpirvShaderCore<'Uniform, 'Vertex>(vertex, fragment) =
-        let input = FalkanShaderVertexInput(PerVertex, 0u, 0u, typeof<'Vertex>)
+    override _.CreateSpirvShaderCore(vertex, fragment, vertexType, instanceTypeOpt) =
+        let inputs =
+            [
+                yield FalkanShaderVertexInput(PerVertex, 0u, 0u, vertexType)
+                if instanceTypeOpt.IsSome then
+                    yield FalkanShaderVertexInput(PerInstance, 0u, 0u, instanceTypeOpt.Value)
+            ]
 
         let layout = 
             Shader(0,true,
@@ -59,15 +64,22 @@ type VulkanRenderer private (device: VulkanDevice, instance: FalGraphics) =
                     FalkanShaderDescriptorLayout(UniformBufferDescriptor, VertexStage, 0u)
                     FalkanShaderDescriptorLayout(CombinedImageSamplerDescriptor, FragmentStage, 1u)
                 ],
-                [input])
+                inputs)
         instance.CreateShader(layout, vertex, fragment)
 
-    override _.CreateDrawCallCore(struct(uniformBuffer, uniformBufferSize), struct(vertexBuffer, vertexCount), texture, shader) =
+    override _.CreateDrawCallCore(struct(uniformBuffer, uniformBufferSize), struct(vertexBuffer, vertexCount), internalInstanceBufferOpt, texture, shader, instanceCount) =
         let draw = shader.CreateDrawBuilder()
         let draw = draw.AddDescriptorBuffer(uniformBuffer, uniformBufferSize)
         let draw = draw.AddDescriptorImage(texture)
         let draw = draw.Next.AddVertexBuffer(vertexBuffer)
-        shader.AddDraw(draw, uint32 vertexCount, 1u)
+
+        let draw =
+            match internalInstanceBufferOpt with
+            | Some struct(instanceBuffer, _) ->
+                draw.AddInstanceBuffer instanceBuffer
+            | _ ->
+                draw
+        shader.AddDraw(draw, uint32 vertexCount, uint32 instanceCount)
 
     override _.Refresh() =
         instance.SetupCommands()

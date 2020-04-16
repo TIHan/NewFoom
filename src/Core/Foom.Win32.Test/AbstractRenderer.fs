@@ -5,10 +5,12 @@ open System
 open System.Numerics
 open System.Drawing
 open System.Collections.Generic
+open System.Collections.Concurrent
 open FSharp.Quotations
 open FSharp.Spirv
 open FSharp.Spirv.Quotations
 open FsGame.Core.Collections
+open FsGame.Graphics.Vulkan
 
 [<Struct>]
 type UniformBufferId<'T> = private UniformBufferId of ItemId with
@@ -26,7 +28,7 @@ type TextureId = private TextureId of ItemId with
     member this.ItemId = match this with TextureId itemId -> itemId
 
 [<Struct>]
-type ShaderId<'Uniform, 'Vertex> = private ShaderId of ItemId with
+type ShaderId = private ShaderId of ItemId with
 
     member this.ItemId = match this with ShaderId itemId -> itemId
 
@@ -34,6 +36,7 @@ type ShaderId<'Uniform, 'Vertex> = private ShaderId of ItemId with
 type DrawCallId = private DrawCallId of ItemId with
 
     member this.ItemId = match this with DrawCallId itemId -> itemId
+    
     
 [<AbstractClass>] 
 type AbstractRenderer<'UniformBuffer, 'VertexBuffer, 'Texture, 'Shader, 'DrawCall>() =
@@ -81,10 +84,9 @@ type AbstractRenderer<'UniformBuffer, 'VertexBuffer, 'Texture, 'Shader, 'DrawCal
 
 
 
-    abstract CreateSpirvShaderCore<'Uniform, 'Vertex> : vertex: ReadOnlySpan<byte> * fragment: ReadOnlySpan<byte> -> 'Shader        
+    abstract CreateSpirvShaderCore : vertex: ReadOnlySpan<byte> * fragment: ReadOnlySpan<byte> * vertexType: Type * instanceTypeOpt: Type option -> 'Shader        
 
-    [<RequiresExplicitTypeArguments>]
-    member this.CreateSpirvShader<'Uniform, 'Vertex>(vertex: Expr<unit -> unit>, fragment: Expr<unit -> unit>) : ShaderId<'Uniform, 'Vertex> =
+    member this.CreateSpirvShader(vertex: Expr<unit -> unit>, fragment: Expr<unit -> unit>, vertexType, instanceTypeOpt) : ShaderId =
         let spvVertexInfo = SpirvGenInfo.Create(AddressingModel.Logical, MemoryModel.GLSL450, ExecutionModel.Vertex, [Capability.Shader], [])
         let spvVertex =
             Checker.Check vertex
@@ -110,18 +112,19 @@ type AbstractRenderer<'UniformBuffer, 'VertexBuffer, 'Texture, 'Shader, 'DrawCal
             ms.Read(bytes, 0, bytes.Length) |> ignore
             bytes
 
-        let shader = this.CreateSpirvShaderCore<'Uniform, 'Vertex>(ReadOnlySpan vertexBytes, ReadOnlySpan fragmentBytes)
+        let shader = this.CreateSpirvShaderCore(ReadOnlySpan vertexBytes, ReadOnlySpan fragmentBytes, vertexType, instanceTypeOpt)
         ShaderId(shaders.Add shader)
 
 
-    abstract CreateDrawCallCore : uniformBuffer: 'UniformBuffer * vertexBuffer: 'VertexBuffer * texture: 'Texture * shader: 'Shader -> 'DrawCall
+    abstract CreateDrawCallCore : uniformBuffer: 'UniformBuffer * vertexBuffer: 'VertexBuffer * instanceBuffer: 'VertexBuffer option * texture: 'Texture * shader: 'Shader * instanceCount: int -> 'DrawCall
 
-    member this.CreateDrawCall<'Uniform, 'Vertex>(uniformBufferId: UniformBufferId<'Uniform>, vertexBufferId: VertexBufferId<'Vertex>, textureId: TextureId, shaderId: ShaderId<'Uniform, 'Vertex>) =
+    member this.CreateDrawCall<'Uniform, 'Vertex, 'Instance>(uniformBufferId: UniformBufferId<'Uniform>, vertexBufferId: VertexBufferId<'Vertex>, instanceBufferIdOpt: VertexBufferId<'Instance> option, textureId: TextureId, shaderId: ShaderId, instanceCount: int) =
         let uniformBuffer = getItem uniformBuffers uniformBufferId.ItemId
         let vertexBuffer = getItem vertexBuffers vertexBufferId.ItemId
+        let instanceBufferOpt = instanceBufferIdOpt |> Option.map (fun instanceBufferId -> getItem vertexBuffers instanceBufferId.ItemId)
         let texture = getItem textures textureId.ItemId
         let shader = getItem shaders shaderId.ItemId
-        let internalDrawCall = this.CreateDrawCallCore(uniformBuffer, vertexBuffer, texture, shader)
+        let internalDrawCall = this.CreateDrawCallCore(uniformBuffer, vertexBuffer, instanceBufferOpt, texture, shader, instanceCount)
         DrawCallId(drawCalls.Add internalDrawCall)
 
     abstract Refresh: unit -> unit

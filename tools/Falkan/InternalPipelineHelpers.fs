@@ -116,6 +116,7 @@ type Draw =
         vkDescriptorPools: VkDescriptorPool []
         vertexVkBuffers: VkBuffer []
         vertexCount: uint32
+        instanceVkBuffers: VkBuffer []
         instanceCount: uint32
     }
 

@@ -33,6 +33,8 @@ type FalkanShaderDrawVertexBuilder =
 
     member AddVertexBuffer : FalkanBuffer -> FalkanShaderDrawVertexBuilder
 
+    member AddInstanceBuffer : FalkanBuffer -> FalkanShaderDrawVertexBuilder
+
 [<Sealed>]
 type FalkanShaderDrawDescriptorBuilder =
 

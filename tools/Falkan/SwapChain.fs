@@ -436,6 +436,7 @@ type ShaderId = ShaderId of subpassIndex: int * Guid
 
 type ShaderInput =
     | ShaderVertexInputBuffer of FalkanBuffer
+    | ShaderInstanceInputBuffer of FalkanBuffer
     | ShaderDescriptorInputBuffer of FalkanBuffer * size: int
     | ShaderDescriptorInputImage of FalkanImage
 
@@ -479,6 +480,10 @@ type FalkanShaderDrawVertexBuilder (inputs: ShaderInput list) =
     
     member _.AddVertexBuffer(buffer: FalkanBuffer) =
         ShaderVertexInputBuffer buffer :: inputs
+        |> FalkanShaderDrawVertexBuilder
+
+    member _.AddInstanceBuffer(buffer: FalkanBuffer) =
+        ShaderInstanceInputBuffer buffer :: inputs
         |> FalkanShaderDrawVertexBuilder
         
     member _.Build (vkDevice, vkDescriptorSetLayouts: struct(VkDescriptorSetLayout * VkDescriptorType) [], descriptorSetCount, vertexCount, instanceCount) =
@@ -529,11 +534,19 @@ type FalkanShaderDrawVertexBuilder (inputs: ShaderInput list) =
                 | ShaderVertexInputBuffer buffer -> Some buffer.buffer
                 | _ -> None)
 
+        let instanceVkBuffers =
+            inputs
+            |> Array.choose (fun x ->
+                match x with
+                | ShaderInstanceInputBuffer buffer -> Some buffer.buffer
+                | _ -> None)
+
         {
             vkDescriptorSets = descriptorSets
             vkDescriptorPools = descriptorPools
             vertexVkBuffers = vertexVkBuffers
             vertexCount = vertexCount
+            instanceVkBuffers = instanceVkBuffers
             instanceCount = instanceCount
         }
 
