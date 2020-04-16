@@ -409,6 +409,8 @@ and CheckIntrinsicCall env checkedArgs expr =
     | SpecificCall <@ (<) : float32 -> float32 -> bool @> _, _, [arg1;arg2] ->
         env, FloatUnorderedLessThan(arg1, arg2, mkSpirvType expr.Type) |> SpirvIntrinsicCall
         
+    | SpecificCall <@ Vector4.Multiply : Vector4 * float32 -> Vector4 @> _, _, [arg1;arg2] ->
+        env, VectorTimesScalar(arg1, arg2, mkSpirvType expr.Type) |> SpirvIntrinsicCall
 
     | _ ->
         failwithf "Call not supported: %A" expr

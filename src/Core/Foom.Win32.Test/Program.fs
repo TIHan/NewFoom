@@ -111,8 +111,8 @@ let createBitmap (pixels: Pixel [,]) =
     bitmap
 
 let textShader (instance: FalGraphics) =
-    let input1 = FalkanShaderVertexInput(PerVertex, 0u, 0u, typeof<Vector3>)
-    let input2 = FalkanShaderVertexInput(PerVertex, 1u, 1u, typeof<Vector2>)
+    let input1 = FalkanShaderVertexInput(PerVertex, 0u, typeof<Vector3>)
+    let input2 = FalkanShaderVertexInput(PerVertex, 1u, typeof<Vector2>)
 
     let vertex =
         <@
@@ -173,6 +173,9 @@ let textShader (instance: FalGraphics) =
 
     instance.CreateShader(layout, ReadOnlySpan vertexBytes, ReadOnlySpan fragmentBytes)
 
+let normalize (x: single) (min: single) (max: single) =
+    (x - min) / (max - min)
+
 let setRender (renderer: FsGame.Renderer.AbstractRenderer.AbstractRenderer<_, _, _, _, _>) =
     let wad = Wad.FromFile("../../../../../../Foom-deps/testwads/doom1.wad")
     let e1m1 = wad.FindMap "e1m1"
@@ -195,29 +198,34 @@ let setRender (renderer: FsGame.Renderer.AbstractRenderer.AbstractRenderer<_, _,
         <@
             let mvp = Variable<ModelViewProjection> [Decoration.Binding 0u; Decoration.DescriptorSet 0u] StorageClass.Uniform
             let position = Variable<Vector3> [Decoration.Location 0u; Decoration.Binding 0u] StorageClass.Input
-            let texCoord = Variable<Vector2> [Decoration.Location 1u; Decoration.Binding 1u] StorageClass.Input
+            let texCoord = Variable<Vector2> [Decoration.Location 1u; Decoration.Binding 0u] StorageClass.Input
+            let lightLevel = Variable<single> [Decoration.Location 2u; Decoration.Binding 1u] StorageClass.Input
             let mutable gl_Position  = Variable<Vector4> [Decoration.BuiltIn BuiltIn.Position] StorageClass.Output
             let mutable fragTexCoord = Variable<Vector2> [Decoration.Location 0u] StorageClass.Output
+            let mutable lightLevelOut = Variable<single> [Decoration.Location 1u] StorageClass.Output
 
             fun () ->
                 gl_Position <- Vector4.Transform(Vector4(position, 1.f), mvp.model * mvp.view * mvp.proj)
                 fragTexCoord <- texCoord
+                lightLevelOut <- lightLevel
         @>
 
     let fragment =
         <@ 
             let sampler = Variable<Sampler2d> [Decoration.Binding 1u; Decoration.DescriptorSet 1u] StorageClass.UniformConstant
             let fragTexCoord = Variable<Vector2> [Decoration.Location 0u] StorageClass.Input
+            let lightLevel = Variable<single> [Decoration.Location 1u] StorageClass.Input
             let mutable outColor = Variable<Vector4> [Decoration.Location 0u] StorageClass.Output
 
             fun () ->
                 let color = sampler.ImplicitLod fragTexCoord
                 if color.W < 0.5f then
                     kill ()
-                outColor <- color
+                outColor <- Vector4.Multiply(color, lightLevel)
+                outColor <- Vector4(outColor.X, outColor.Y, outColor.Z, color.W)
         @>
 
-    let shader = renderer.CreateSpirvShader(vertex, fragment, typeof<Vertex>, None)
+    let shader = renderer.CreateSpirvShader(vertex, fragment, typeof<Vertex>, Some typeof<single>)
 
     let textureCache = Collections.Generic.Dictionary<string, TextureId * int * int>()
     let getImage name =
@@ -236,20 +244,22 @@ let setRender (renderer: FsGame.Renderer.AbstractRenderer.AbstractRenderer<_, _,
             textureCache.[name] <- res
             res
 
-    let queueDraw (image: TextureId) (vertices: Vector3 []) (uv: Vector2 []) =
+    let queueDraw (image: TextureId) (lightLevel: int) (vertices: Vector3 []) (uv: Vector2 []) =
         let vertices = Array.init vertices.Length (fun i -> { position = vertices.[i]; uv = uv.[i] })
         let vertexBuffer = renderer.CreateVertexBuffer(ReadOnlySpan vertices)
-        renderer.CreateDrawCall(mvpUniform, vertexBuffer, None, image, shader, 1) |> ignore
+        let doot = Array.init 1 (fun _ -> normalize (single lightLevel) 0.f 255.f)
+        let dootBuffer = renderer.CreateVertexBuffer(ReadOnlySpan doot)
+        renderer.CreateDrawCall(mvpUniform, vertexBuffer, Some dootBuffer, image, shader, 1) |> ignore
 
     (e1m1.Sectors, e1m1.ComputeAllSectorGeometry())
     ||> Seq.iteri2 (fun i s geo ->
         let image, width, height = getImage s.FloorTextureName
         let uv = Map.CreateSectorUv(width, height, geo.FloorVertices)
-        queueDraw image geo.FloorVertices uv
+        queueDraw image s.LightLevel geo.FloorVertices uv
 
         let image, width, height = getImage s.CeilingTextureName
         let uv = Map.CreateSectorUv(width,height, geo.CeilingVertices)
-        queueDraw image geo.CeilingVertices uv
+        queueDraw image s.LightLevel geo.CeilingVertices uv
 
         )
 
@@ -262,7 +272,7 @@ let setRender (renderer: FsGame.Renderer.AbstractRenderer.AbstractRenderer<_, _,
             | Some upperTex ->
                 let image, width, height = getImage upperTex
                 let uv = e1m1.CreateUpperWallUv(ldef, sdef, width, height, vertices)
-                queueDraw image vertices uv
+                queueDraw image (e1m1.Sectors.[sdef.SectorNumber].LightLevel) vertices uv
             | _ -> ()
         | _ -> ()
         
@@ -273,7 +283,7 @@ let setRender (renderer: FsGame.Renderer.AbstractRenderer.AbstractRenderer<_, _,
             | Some upperTex ->
                 let image, width, height = getImage upperTex
                 let uv = e1m1.CreateMiddleWallUv(ldef, sdef, width, height, vertices)
-                queueDraw image vertices uv
+                queueDraw image (e1m1.Sectors.[sdef.SectorNumber].LightLevel) vertices uv
             | _ -> ()
         | _ -> ()
         
@@ -285,7 +295,7 @@ let setRender (renderer: FsGame.Renderer.AbstractRenderer.AbstractRenderer<_, _,
             | Some upperTex ->
                 let image, width, height = getImage upperTex
                 let uv = e1m1.CreateLowerWallUv(ldef, sdef, width, height, vertices)
-                queueDraw image vertices uv
+                queueDraw image (e1m1.Sectors.[sdef.SectorNumber].LightLevel) vertices uv
             | _ -> ()
         | _ -> ()
 

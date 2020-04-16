@@ -629,6 +629,22 @@ let rec GenExpr cenv (env: env) blockScope returnable expr =
             addInstructions cenv [OpFUnordLessThan(retTy, resultId, arg1, arg2)]
             resultId
 
+        | FloatMultiply(arg1, arg2, _) ->
+            let arg1 = GenExpr cenv env blockScope NotReturnable arg1 |> deref cenv
+            let arg2 = GenExpr cenv env blockScope NotReturnable arg2 |> deref cenv
+
+            let resultId = nextResultId cenv
+            addInstructions cenv [OpFMul(retTy, resultId, arg1, arg2)]
+            resultId
+
+        | VectorTimesScalar(arg1, arg2, _) ->
+            let arg1 = GenExpr cenv env blockScope NotReturnable arg1 |> deref cenv
+            let arg2 = GenExpr cenv env blockScope NotReturnable arg2 |> deref cenv
+
+            let resultId = nextResultId cenv
+            addInstructions cenv [OpVectorTimesScalar(retTy, resultId, arg1, arg2)]
+            resultId
+
     | SpirvIntrinsicFieldGet fieldGet ->
         let getComponent receiver fieldTy n =
             let receiverId = GenExpr cenv env blockScope NotReturnable receiver |> deref cenv

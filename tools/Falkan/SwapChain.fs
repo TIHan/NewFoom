@@ -397,18 +397,19 @@ type FalkanShaderVertexInputKind =
     | PerVertex
     | PerInstance
 
-type FalkanShaderVertexInput = FalkanShaderVertexInput of FalkanShaderVertexInputKind * binding: uint32 * location: uint32 * Type with
+type FalkanShaderVertexInput = FalkanShaderVertexInput of FalkanShaderVertexInputKind * binding: uint32 * Type with
 
-    member this.Build() =
+    member this.Build(location) =
         match this with
-        | FalkanShaderVertexInput(kind, binding, location, ty) ->
+        | FalkanShaderVertexInput(kind, binding, ty) ->
             let vkVertexInputRate =
                 match kind with
                 | PerVertex -> VkVertexInputRate.VK_VERTEX_INPUT_RATE_VERTEX
                 | PerInstance -> VkVertexInputRate.VK_VERTEX_INPUT_RATE_INSTANCE
             let vkVertexInputBindingDescription = mkVertexInputBinding binding vkVertexInputRate ty
             let vkVertexInputAttributeDescriptions = mkVertexAttributeDescriptions location binding ty
-            (vkVertexInputBindingDescription, vkVertexInputAttributeDescriptions)
+            let lastLocation = (vkVertexInputAttributeDescriptions |> Array.last).location
+            (vkVertexInputBindingDescription, vkVertexInputAttributeDescriptions), lastLocation
 
 type FalkanShaderDescription = Shader of subpassIndex: int * enableDepth: bool * descriptors: FalkanShaderDescriptorLayout list * vertexInputs: FalkanShaderVertexInput list with
 
@@ -421,8 +422,12 @@ type FalkanShaderDescription = Shader of subpassIndex: int * enableDepth: bool *
                 |> Array.ofList
 
             let bindingDescriptions, attributeDescriptions =
+                let mutable location = 0u
                 vertexInputs
-                |> List.map (fun x -> x.Build())
+                |> List.map (fun x -> 
+                    let res, currentLocation = x.Build location
+                    location <- currentLocation + 1u
+                    res)
                 |> Array.ofList
                 |> Array.unzip
 

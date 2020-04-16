@@ -18,7 +18,7 @@ type FalkanShaderVertexInputKind =
     | PerVertex
     | PerInstance
 
-type FalkanShaderVertexInput = FalkanShaderVertexInput of FalkanShaderVertexInputKind * binding: uint32 * location: uint32 * Type
+type FalkanShaderVertexInput = FalkanShaderVertexInput of FalkanShaderVertexInputKind * binding: uint32 * Type
 
 type FalkanShaderDescription = Shader of subpassIndex: int * enableDepth: bool * descriptors: FalkanShaderDescriptorLayout list * vertexInputs: FalkanShaderVertexInput list
 

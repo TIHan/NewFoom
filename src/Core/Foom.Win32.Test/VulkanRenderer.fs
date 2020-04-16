@@ -53,9 +53,9 @@ type VulkanRenderer private (device: VulkanDevice, instance: FalGraphics) =
     override _.CreateSpirvShaderCore(vertex, fragment, vertexType, instanceTypeOpt) =
         let inputs =
             [
-                yield FalkanShaderVertexInput(PerVertex, 0u, 0u, vertexType)
+                yield FalkanShaderVertexInput(PerVertex, 0u, vertexType)
                 if instanceTypeOpt.IsSome then
-                    yield FalkanShaderVertexInput(PerInstance, 0u, 0u, instanceTypeOpt.Value)
+                    yield FalkanShaderVertexInput(PerInstance, 1u, instanceTypeOpt.Value)
             ]
 
         let layout = 

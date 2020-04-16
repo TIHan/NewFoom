@@ -228,6 +228,12 @@ let recordDraw extent (framebuffers: VkFramebuffer []) (commandBuffers: VkComman
                         use pVertexBuffers = fixed draw.vertexVkBuffers
                         vkCmdBindVertexBuffers(commandBuffer, 0u, uint32 draw.vertexVkBuffers.Length, pVertexBuffers, pOffsets)
 
+                    if draw.instanceVkBuffers |> Array.isEmpty |> not then          
+                        let offsets = draw.instanceVkBuffers |> Array.map (fun _ -> 0UL) // REVIEW: Doesn't allocate much at all, but maybe a way to get rid of it regardless?
+                        use pOffsets = fixed offsets
+                        use pVertexBuffers = fixed draw.instanceVkBuffers
+                        vkCmdBindVertexBuffers(commandBuffer, 1u, uint32 draw.vertexVkBuffers.Length, pVertexBuffers, pOffsets)
+
                     // Draw
 
                     vkCmdDraw(commandBuffer, draw.vertexCount, draw.instanceCount, 0u, 0u)
