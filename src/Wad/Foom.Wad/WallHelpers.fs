@@ -1,5 +1,5 @@
 ﻿[<AutoOpen>]
-module internal Foom.Wad.WallHelpers
+module Foom.Wad.WallHelpers
 
 open System.Numerics
 
@@ -123,7 +123,7 @@ type TextureAlignment =
     | UpperUnpegged of offsetY: int
     | LowerUnpegged
 
-let getTextureAlignment (map: Map) (linedef: Linedef) (sidedef: Sidedef) (isFrontSide: bool) (section: WallSection) =
+let getTextureAlignment (map: Map) (linedef: Linedef) (isFrontSide: bool) (section: WallSection) =
     let isLowerUnpegged = linedef.Flags.HasFlag(LinedefFlags.LowerTextureUnpegged)
     let isUpperUnpegged = linedef.Flags.HasFlag(LinedefFlags.UpperTextureUnpegged)
 
@@ -213,7 +213,7 @@ let updateWallUv (sidedef: Sidedef) width height (vertices: Vector3 []) (texture
         i <- i + 3
 
 let createWallUv (map: Map) (linedef: Linedef) (sidedef: Sidedef) width height (vertices: Vector3 []) (section: WallSection) =
-    let textureAlignment = getTextureAlignment map linedef sidedef linedef.FrontSidedefIndex.IsSome section
+    let textureAlignment = getTextureAlignment map linedef linedef.FrontSidedefIndex.IsSome section
 
     let uv = Array.zeroCreate vertices.Length
     updateWallUv sidedef width height vertices textureAlignment uv
