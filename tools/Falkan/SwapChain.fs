@@ -368,7 +368,7 @@ let drawFrame device swapChain sync (commandBuffers: VkCommandBuffer []) graphic
 
     (currentFrame + 1) % MaxFramesInFlight, res
 
-type FalkanShaderDescriptorLayoutKind =
+type VulkanShaderDescriptorLayoutKind =
     | UniformBufferDescriptor
     | CombinedImageSamplerDescriptor
 
@@ -377,7 +377,7 @@ type FalkanShaderDescriptorLayoutKind =
         | UniformBufferDescriptor -> VkDescriptorType.VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER
         | CombinedImageSamplerDescriptor -> VkDescriptorType.VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER
 
-type FalkanShaderStage =
+type VulkanShaderStage =
     | VertexStage
     | FragmentStage
 
@@ -386,22 +386,22 @@ type FalkanShaderStage =
         | VertexStage -> VkShaderStageFlags.VK_SHADER_STAGE_VERTEX_BIT
         | FragmentStage -> VkShaderStageFlags.VK_SHADER_STAGE_FRAGMENT_BIT
 
-type FalkanShaderDescriptorLayout = FalkanShaderDescriptorLayout of FalkanShaderDescriptorLayoutKind * FalkanShaderStage * binding: uint32 with
+type VulkanShaderDescriptorLayout = ShaderDescriptorLayout of VulkanShaderDescriptorLayoutKind * VulkanShaderStage * binding: uint32 with
 
     member this.Build vkDevice =
         match this with
-        | FalkanShaderDescriptorLayout(kind, stage, binding) ->
+        | ShaderDescriptorLayout(kind, stage, binding) ->
             struct(mkDescriptorSetLayout vkDevice binding kind.VkDescriptorType stage.VkShaderStageFlags, kind.VkDescriptorType)
 
-type FalkanShaderVertexInputKind =
+type VulkanShaderVertexInputRate =
     | PerVertex
     | PerInstance
 
-type FalkanShaderVertexInput = FalkanShaderVertexInput of FalkanShaderVertexInputKind * binding: uint32 * Type with
+type VulkanShaderVertexInput = ShaderVertexInput of VulkanShaderVertexInputRate * Type * binding: uint32 with
 
     member this.Build(location) =
         match this with
-        | FalkanShaderVertexInput(kind, binding, ty) ->
+        | ShaderVertexInput(kind, ty, binding) ->
             let vkVertexInputRate =
                 match kind with
                 | PerVertex -> VkVertexInputRate.VK_VERTEX_INPUT_RATE_VERTEX
@@ -411,7 +411,7 @@ type FalkanShaderVertexInput = FalkanShaderVertexInput of FalkanShaderVertexInpu
             let lastLocation = (vkVertexInputAttributeDescriptions |> Array.last).location
             (vkVertexInputBindingDescription, vkVertexInputAttributeDescriptions), lastLocation
 
-type FalkanShaderDescription = Shader of subpassIndex: int * enableDepth: bool * descriptors: FalkanShaderDescriptorLayout list * vertexInputs: FalkanShaderVertexInput list with
+type VulkanShaderDescription = Shader of subpassIndex: int * enableDepth: bool * descriptors: VulkanShaderDescriptorLayout list * vertexInputs: VulkanShaderVertexInput list with
 
     member this.Build vkDevice =
         match this with
@@ -440,8 +440,7 @@ type FalkanShaderDescription = Shader of subpassIndex: int * enableDepth: bool *
 type ShaderId = ShaderId of subpassIndex: int * Guid
 
 type ShaderInput =
-    | ShaderVertexInputBuffer of FalkanBuffer
-    | ShaderInstanceInputBuffer of FalkanBuffer
+    | ShaderVertexInputBuffer of FalkanBuffer * VulkanShaderVertexInputRate
     | ShaderDescriptorInputBuffer of FalkanBuffer * size: int
     | ShaderDescriptorInputImage of FalkanImage
 
@@ -483,12 +482,8 @@ type FalkanShaderDrawVertexBuilder (inputs: ShaderInput list) =
 
     member _.Inputs = inputs
     
-    member _.AddVertexBuffer(buffer: FalkanBuffer) =
-        ShaderVertexInputBuffer buffer :: inputs
-        |> FalkanShaderDrawVertexBuilder
-
-    member _.AddInstanceBuffer(buffer: FalkanBuffer) =
-        ShaderInstanceInputBuffer buffer :: inputs
+    member _.AddVertexBuffer(buffer: FalkanBuffer, inputRate) =
+        ShaderVertexInputBuffer(buffer, inputRate) :: inputs
         |> FalkanShaderDrawVertexBuilder
         
     member _.Build (vkDevice, vkDescriptorSetLayouts: struct(VkDescriptorSetLayout * VkDescriptorType) [], descriptorSetCount, vertexCount, instanceCount) =
@@ -536,14 +531,14 @@ type FalkanShaderDrawVertexBuilder (inputs: ShaderInput list) =
             inputs
             |> Array.choose (fun x ->
                 match x with
-                | ShaderVertexInputBuffer buffer -> Some buffer.buffer
+                | ShaderVertexInputBuffer(buffer, PerVertex) -> Some buffer.buffer
                 | _ -> None)
 
         let instanceVkBuffers =
             inputs
             |> Array.choose (fun x ->
                 match x with
-                | ShaderInstanceInputBuffer buffer -> Some buffer.buffer
+                | ShaderVertexInputBuffer(buffer, PerInstance) -> Some buffer.buffer
                 | _ -> None)
 
         {
@@ -808,8 +803,8 @@ and [<Sealed>] SwapChain private (fdevice: VulkanDevice, surface, sync, graphics
         vkQueueWaitIdle(graphicsQueue) |> checkResult
         vkDeviceWaitIdle(device) |> checkResult
 
-    member this.CreateShader(layout: FalkanShaderDescription, vertexSpirvSource: ReadOnlySpan<byte>, fragmentSpirvSource: ReadOnlySpan<byte>) =
-        let subpassIndex, pipelineFlags, descriptorSetLayouts, bindingDescriptions, attributeDescriptions = layout.Build device
+    member this.CreateShader(shaderDesc: VulkanShaderDescription, vertexSpirvSource: ReadOnlySpan<byte>, fragmentSpirvSource: ReadOnlySpan<byte>) =
+        let subpassIndex, pipelineFlags, descriptorSetLayouts, bindingDescriptions, attributeDescriptions = shaderDesc.Build device
         let id = this.AddShader(subpassIndex, pipelineFlags, descriptorSetLayouts, bindingDescriptions, attributeDescriptions |> Array.concat, vertexSpirvSource, fragmentSpirvSource)
         FalkanShader(id, descriptorSetLayouts, this)
 

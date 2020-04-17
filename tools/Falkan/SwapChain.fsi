@@ -4,23 +4,23 @@ module FsGame.Graphics.Vulkan.SwapChain
 open System
 open FSharp.Vulkan.Interop
 
-type FalkanShaderDescriptorLayoutKind =
+type VulkanShaderDescriptorLayoutKind =
     | UniformBufferDescriptor
     | CombinedImageSamplerDescriptor
 
-type FalkanShaderStage =
+type VulkanShaderStage =
     | VertexStage
     | FragmentStage
 
-type FalkanShaderDescriptorLayout = FalkanShaderDescriptorLayout of FalkanShaderDescriptorLayoutKind * FalkanShaderStage * binding: uint32
+type VulkanShaderDescriptorLayout = ShaderDescriptorLayout of VulkanShaderDescriptorLayoutKind * VulkanShaderStage * binding: uint32
 
-type FalkanShaderVertexInputKind =
+type VulkanShaderVertexInputRate =
     | PerVertex
     | PerInstance
 
-type FalkanShaderVertexInput = FalkanShaderVertexInput of FalkanShaderVertexInputKind * binding: uint32 * Type
+type VulkanShaderVertexInput = ShaderVertexInput of VulkanShaderVertexInputRate * Type * binding: uint32
 
-type FalkanShaderDescription = Shader of subpassIndex: int * enableDepth: bool * descriptors: FalkanShaderDescriptorLayout list * vertexInputs: FalkanShaderVertexInput list
+type VulkanShaderDescription = Shader of subpassIndex: int * enableDepth: bool * descriptors: VulkanShaderDescriptorLayout list * vertexInputs: VulkanShaderVertexInput list
 
 type FalkanRenderSubpassKind =
     | ColorSubpass
@@ -31,9 +31,7 @@ type FalkanRenderSubpassDescription = RenderSubpass of FalkanRenderSubpassKind
 [<Sealed>]
 type FalkanShaderDrawVertexBuilder =
 
-    member AddVertexBuffer : FalkanBuffer -> FalkanShaderDrawVertexBuilder
-
-    member AddInstanceBuffer : FalkanBuffer -> FalkanShaderDrawVertexBuilder
+    member AddVertexBuffer : FalkanBuffer * VulkanShaderVertexInputRate -> FalkanShaderDrawVertexBuilder
 
 [<Sealed>]
 type FalkanShaderDrawDescriptorBuilder =
@@ -68,7 +66,7 @@ type internal SwapChain =
 
     member WaitIdle: unit -> unit
 
-    member CreateShader: layout: FalkanShaderDescription * vertexSpirvSource: ReadOnlySpan<byte> * fragmentSpirvSource: ReadOnlySpan<byte> -> FalkanShader
+    member CreateShader: shaderDesc: VulkanShaderDescription * vertexSpirvSource: ReadOnlySpan<byte> * fragmentSpirvSource: ReadOnlySpan<byte> -> FalkanShader
 
     member AddRenderSubpass : FalkanRenderSubpassDescription -> unit
 

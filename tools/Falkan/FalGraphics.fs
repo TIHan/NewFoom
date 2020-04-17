@@ -50,10 +50,10 @@ type FalGraphics
         buffers.Add (buffer.buffer, buffer)
         buffer
 
-    member _.FillBuffer<'T when 'T : unmanaged> (buffer: FalkanBuffer, data) =
-        checkDispose ()
-
-        buffer.SetData<'T>(data)
+    member this.CreateBuffer<'T when 'T : unmanaged> (size, flags, kind, data)  =
+        let buffer = this.CreateBuffer<'T>(size, flags, kind)
+        buffer.SetData<'T> data
+        buffer
 
     member _.DestroyBuffer (buffer: FalkanBuffer) =
         lock gate <| fun _ ->
@@ -65,19 +65,17 @@ type FalGraphics
         | _ ->
             failwith "Buffer is not in the vulkan instance."
 
-    member _.CreateImage (width, height)  =
-        lock gate <| fun _ ->
+    member _.CreateImage (width, height, data)  =
+        let image =
+            lock gate <| fun _ ->
 
-        checkDispose ()   
+            checkDispose ()   
 
-        let image = fdevice.CreateImage(width, height)
-        images.Add (image.vkImage, image)
+            let image = fdevice.CreateImage(width, height)
+            images.Add (image.vkImage, image)
+            image
+        fillImage physicalDevice device fdevice.VkCommandPool fdevice.VkTransferQueue image.vkImage image.format image.width image.height data
         image
-
-    member _.FillImage (buffer: FalkanImage, data) =
-        checkDispose ()
-
-        fillImage physicalDevice device fdevice.VkCommandPool fdevice.VkTransferQueue buffer.vkImage buffer.format buffer.width buffer.height data
 
     member _.AddRenderSubpass renderSubpassDesc =
         checkDispose ()
@@ -107,8 +105,8 @@ type FalGraphics
                     images.Clear()
                 )
 
-    member this.CreateShader(layout: FalkanShaderDescription, vertexSpirvSource: ReadOnlySpan<byte>, fragmentSpirvSource: ReadOnlySpan<byte>) =
-        swapChain.CreateShader(layout, vertexSpirvSource, fragmentSpirvSource)
+    member this.CreateShader(shaderDesc: VulkanShaderDescription, vertexSpirvSource: ReadOnlySpan<byte>, fragmentSpirvSource: ReadOnlySpan<byte>) =
+        swapChain.CreateShader(shaderDesc, vertexSpirvSource, fragmentSpirvSource)
 
     static member Create(falDevice: VulkanDevice, invalidate, renderSubpassDescs) =
         let indices = falDevice.Indices

@@ -56,255 +56,6 @@ let loadMusic (wad: Wad) =
     let res, v = channel.getVolume()
     ()
 
-[<Struct>]
-type ModelViewProjection =
-    {
-        model: Matrix4x4
-        view: Matrix4x4
-        proj: Matrix4x4
-    }
-    
-    member this.InvertedView =
-        let mutable invertedView = Matrix4x4.Identity
-        Matrix4x4.Invert(this.view, &invertedView) |> ignore
-        { model = this.model; view = invertedView; proj = this.proj }
-
-[<Struct>]
-type Projection =
-    {
-        proj: Matrix4x4
-    }
-
-[<Struct>]
-type Vertex =
-    {
-        position: Vector3
-        uv: Vector2
-    }
-
-type Sampler2d = SampledImage<single, DimKind.Two, ImageDepthKind.NoDepth, ImageArrayedKind.NonArrayed, ImageMultisampleKind.Single, ImageSampleKind.Sampler, ImageFormatKind.Unknown, AccessQualifierKind.None>
-
-let radians (degrees) = degrees * (MathF.PI / 180.f)
-
-
-let createBitmap (pixels: Pixel [,]) =
-    let mutable isTransparent = false
-
-    let width = Array2D.length1 pixels
-    let height = Array2D.length2 pixels
-
-    pixels
-    |> Array2D.iter (fun p ->
-        if p.Equals Pixel.Cyan then
-            isTransparent <- true
-    )
-
-    let bitmap = new Bitmap (width, height)
-    for i = 0 to width - 1 do
-        for j = 0 to height - 1 do
-            let pixel = pixels.[i, j]
-            if pixel = Pixel.Cyan then
-                bitmap.SetPixel (i, j, Color.FromArgb (0, 0, 0, 0))
-            else
-                bitmap.SetPixel (i, j, Color.FromArgb (int pixel.R, int pixel.G, int pixel.B))
-
-    bitmap
-
-let textShader (instance: FalGraphics) =
-    let input1 = FalkanShaderVertexInput(PerVertex, 0u, typeof<Vector3>)
-    let input2 = FalkanShaderVertexInput(PerVertex, 1u, typeof<Vector2>)
-
-    let vertex =
-        <@
-            let proj = Variable<Projection> [Decoration.Binding 1u; Decoration.DescriptorSet 1u] StorageClass.Uniform
-            let position = Variable<Vector3> [Decoration.Location 0u; Decoration.Binding 0u] StorageClass.Input
-            let texCoord = Variable<Vector2> [Decoration.Location 1u; Decoration.Binding 1u] StorageClass.Input
-            let mutable gl_Position  = Variable<Vector4> [Decoration.BuiltIn BuiltIn.Position] StorageClass.Output
-            let mutable fragTexCoord = Variable<Vector2> [Decoration.Location 0u] StorageClass.Output
-
-            fun () ->
-                gl_Position <- Vector4.Transform(Vector4(position, 1.f), proj.proj)
-                fragTexCoord <- texCoord
-        @>
-    let spvVertexInfo = SpirvGenInfo.Create(AddressingModel.Logical, MemoryModel.GLSL450, ExecutionModel.Vertex, [Capability.Shader], [])
-    let spvVertex =
-        Checker.Check vertex
-        |> SpirvGen.GenModule spvVertexInfo
-
-    let fragment =
-        <@ 
-            let sampler = Variable<Sampler2d> [Decoration.Binding 0u; Decoration.DescriptorSet 0u] StorageClass.UniformConstant
-            let fragTexCoord = Variable<Vector2> [Decoration.Location 0u] StorageClass.Input
-            let mutable outColor = Variable<Vector4> [Decoration.Location 0u] StorageClass.Output
-
-            fun () ->
-                let color = sampler.ImplicitLod fragTexCoord
-                if color.W < 0.5f then
-                    kill ()
-                outColor <- color
-        @>
-    let spvFragmentInfo = SpirvGenInfo.Create(AddressingModel.Logical, MemoryModel.GLSL450, ExecutionModel.Fragment, [Capability.Shader], ["GLSL.std.450"], ExecutionMode.OriginUpperLeft)
-    let spvFragment = 
-        Checker.Check fragment
-        |> SpirvGen.GenModule spvFragmentInfo
-
-    let vertexBytes =
-        use ms = new System.IO.MemoryStream 100
-        SpirvModule.Serialize (ms, spvVertex)
-        let bytes = Array.zeroCreate (int ms.Length)
-        ms.Position <- 0L
-        ms.Read(bytes, 0, bytes.Length) |> ignore
-        bytes
-    let fragmentBytes =
-        use ms = new System.IO.MemoryStream 100
-        SpirvModule.Serialize (ms, spvFragment)
-        let bytes = Array.zeroCreate (int ms.Length)
-        ms.Position <- 0L
-        ms.Read(bytes, 0, bytes.Length) |> ignore
-        bytes
-
-    let layout = 
-        Shader(0,true,
-            [
-                FalkanShaderDescriptorLayout(CombinedImageSamplerDescriptor, FragmentStage, 0u)
-                FalkanShaderDescriptorLayout(UniformBufferDescriptor, VertexStage, 1u)
-            ],
-            [input1; input2])
-
-    instance.CreateShader(layout, ReadOnlySpan vertexBytes, ReadOnlySpan fragmentBytes)
-
-let normalize (x: single) (min: single) (max: single) =
-    (x - min) / (max - min)
-
-let setRender (renderer: FsGame.Renderer.AbstractRenderer.AbstractRenderer<_, _, _, _, _>) =
-    let wad = Wad.FromFile("../../../../../../Foom-deps/testwads/doom1.wad")
-    let e1m1 = wad.FindMap "e1m1"
-    loadMusic wad
-    let start = e1m1.TryFindPlayer1Start().Value
-    let start = Vector3(float32 start.X, float32 start.Y, 28.f)
-
-    let mutable quat =  Matrix4x4.CreateFromAxisAngle (Vector3.UnitX, 90.f * (float32 Math.PI / 180.f))
-    quat.Translation <- Vector3(start.X, start.Y, 28.f)
-    let mvp =
-        {
-            model = Matrix4x4.Identity
-            view = quat
-            proj = Matrix4x4.CreatePerspectiveFieldOfView(radians 45.f, 1280.f / 720.f, 0.1f, 1000000.f)
-        }
-
-    let mvpUniform = renderer.CreateUniformBuffer(mvp.InvertedView)
-
-    let vertex =
-        <@
-            let mvp = Variable<ModelViewProjection> [Decoration.Binding 0u; Decoration.DescriptorSet 0u] StorageClass.Uniform
-            let position = Variable<Vector3> [Decoration.Location 0u; Decoration.Binding 0u] StorageClass.Input
-            let texCoord = Variable<Vector2> [Decoration.Location 1u; Decoration.Binding 0u] StorageClass.Input
-            let lightLevel = Variable<single> [Decoration.Location 2u; Decoration.Binding 1u] StorageClass.Input
-            let mutable gl_Position  = Variable<Vector4> [Decoration.BuiltIn BuiltIn.Position] StorageClass.Output
-            let mutable fragTexCoord = Variable<Vector2> [Decoration.Location 0u] StorageClass.Output
-            let mutable lightLevelOut = Variable<single> [Decoration.Location 1u] StorageClass.Output
-
-            fun () ->
-                gl_Position <- Vector4.Transform(Vector4(position, 1.f), mvp.model * mvp.view * mvp.proj)
-                fragTexCoord <- texCoord
-                lightLevelOut <- lightLevel
-        @>
-
-    let fragment =
-        <@ 
-            let sampler = Variable<Sampler2d> [Decoration.Binding 1u; Decoration.DescriptorSet 1u] StorageClass.UniformConstant
-            let fragTexCoord = Variable<Vector2> [Decoration.Location 0u] StorageClass.Input
-            let lightLevel = Variable<single> [Decoration.Location 1u] StorageClass.Input
-            let mutable outColor = Variable<Vector4> [Decoration.Location 0u] StorageClass.Output
-
-            fun () ->
-                let color = sampler.ImplicitLod fragTexCoord
-                if color.W < 0.5f then
-                    kill ()
-                outColor <- Vector4.Multiply(color, lightLevel)
-                outColor <- Vector4(outColor.X, outColor.Y, outColor.Z, color.W)
-        @>
-
-    let shader = renderer.CreateSpirvShader(vertex, fragment, typeof<Vertex>, Some typeof<single>)
-
-    let textureCache = Collections.Generic.Dictionary<string, TextureId * int * int>()
-    let getImage name =
-        match textureCache.TryGetValue name with
-        | true, res -> res
-        | _ ->
-            let texture = 
-                match wad.TryFindFlatTexture name with
-                | None ->
-                    (wad.TryFindTexture name).Value
-                | Some texture -> texture
-       
-            let data = texture.Data
-            use bmp = createBitmap data
-            let res = renderer.CreateTexture(bmp), bmp.Width, bmp.Height
-            textureCache.[name] <- res
-            res
-
-    let queueDraw (image: TextureId) (lightLevel: int) (vertices: Vector3 []) (uv: Vector2 []) =
-        let vertices = Array.init vertices.Length (fun i -> { position = vertices.[i]; uv = uv.[i] })
-        let vertexBuffer = renderer.CreateVertexBuffer(ReadOnlySpan vertices)
-        let doot = Array.init 1 (fun _ -> normalize (single lightLevel) 0.f 255.f)
-        let dootBuffer = renderer.CreateVertexBuffer(ReadOnlySpan doot)
-        renderer.CreateDrawCall(mvpUniform, vertexBuffer, Some dootBuffer, image, shader, 1) |> ignore
-
-    (e1m1.Sectors, e1m1.ComputeAllSectorGeometry())
-    ||> Seq.iteri2 (fun i s geo ->
-        let image, width, height = getImage s.FloorTextureName
-        let uv = Map.CreateSectorUv(width, height, geo.FloorVertices)
-        queueDraw image s.LightLevel geo.FloorVertices uv
-
-        let image, width, height = getImage s.CeilingTextureName
-        let uv = Map.CreateSectorUv(width,height, geo.CeilingVertices)
-        queueDraw image s.LightLevel geo.CeilingVertices uv
-
-        )
-
-
-    let queueLinedef geo (ldef: Linedef) sdefIndex =
-        match geo.Upper, sdefIndex with
-        | Some vertices, Some i ->
-            let sdef = e1m1.Sidedefs.[i]
-            match sdef.UpperTextureName with
-            | Some upperTex ->
-                let image, width, height = getImage upperTex
-                let uv = e1m1.CreateUpperWallUv(ldef, sdef, width, height, vertices)
-                queueDraw image (e1m1.Sectors.[sdef.SectorNumber].LightLevel) vertices uv
-            | _ -> ()
-        | _ -> ()
-        
-        match geo.Middle, sdefIndex with
-        | Some vertices, Some i ->
-            let sdef = e1m1.Sidedefs.[i]
-            match sdef.MiddleTextureName with
-            | Some upperTex ->
-                let image, width, height = getImage upperTex
-                let uv = e1m1.CreateMiddleWallUv(ldef, sdef, width, height, vertices)
-                queueDraw image (e1m1.Sectors.[sdef.SectorNumber].LightLevel) vertices uv
-            | _ -> ()
-        | _ -> ()
-        
-
-        match geo.Lower, sdefIndex with
-        | Some vertices, Some i ->
-            let sdef = e1m1.Sidedefs.[i]
-            match sdef.LowerTextureName with
-            | Some upperTex ->
-                let image, width, height = getImage upperTex
-                let uv = e1m1.CreateLowerWallUv(ldef, sdef, width, height, vertices)
-                queueDraw image (e1m1.Sectors.[sdef.SectorNumber].LightLevel) vertices uv
-            | _ -> ()
-        | _ -> ()
-
-    e1m1.Linedefs
-    |> Seq.iter (fun ldef ->
-        let geo = e1m1.ComputeFrontWallGeometry ldef
-        queueLinedef geo ldef ldef.FrontSidedefIndex        
-        )
-
    // let freeType = FreeType.Create()
    // let face = freeType.Load("fonts/OpenSans/OpenSans-Regular.ttf")
    //// face.SetCharSize(0, 16*64, 300u, 300u)
@@ -359,63 +110,42 @@ let setRender (renderer: FsGame.Renderer.AbstractRenderer.AbstractRenderer<_, _,
    // let draw = draw.AddVertexBuffer(uvBuffer)
    // shader.AddDraw(draw, uint32 vertices.Length, 1u) |> ignore
 
-    mvp, mvpUniform
-
-let createMvp (start: Vector2) =
-    let mutable quat =  Matrix4x4.CreateFromAxisAngle (Vector3.UnitX, 90.f * (float32 Math.PI / 180.f))
-    quat.Translation <- Vector3(start.X, start.Y, 28.f)
-    {
-        model = Matrix4x4.Identity
-        view = quat
-        proj = Matrix4x4.CreatePerspectiveFieldOfView(radians 45.f, 1280.f / 720.f, 0.1f, 1000000.f)
-    }
+//let createMvp (start: Vector2) =
+//    let mutable quat =  Matrix4x4.CreateFromAxisAngle (Vector3.UnitX, 90.f * (float32 Math.PI / 180.f))
+//    quat.Translation <- Vector3(start.X, start.Y, 28.f)
+//    {
+//        model = Matrix4x4.Identity
+//        view = quat
+//        proj = Matrix4x4.CreatePerspectiveFieldOfView(radians 45.f, 1280.f / 720.f, 0.1f, 1000000.f)
+//    }
 
 [<EntryPoint>]
 let main argv =
-    let title = "F# Vulkan"
-    let width = 1280
-    let height = 720
+    let wad = Wad.FromFile("../../../../../../Foom-deps/testwads/doom1.wad")
+    loadMusic wad
 
-    // Add dispose
-    let windowState = Win32WindowState (title, width, height)
-    windowState.Show ()
-
-  //  Console.ReadLine() |> ignore
-
-    let hwnd = windowState.Hwnd
-    let hinstance = windowState.Hinstance
-
-    //use device = VulkanDevice.CreateWin32(hwnd, hinstance, "App", "Engine", [VulkanDeviceLayer.LunarGStandardValidation], [])
-
-    //let subpasses =
-    //    [RenderSubpass ColorDepthStencilSubpass]
-
-    //use instance = FalGraphics.Create (device, windowState.WindowResized, subpasses)
-    //let mvp, mvpUniform = setRender instance
-    //instance.SetupCommands()
-
-    use renderer = FsGame.Renderer.VulkanRenderer.VulkanRenderer.CreateWin32(hwnd, hinstance, windowState.WindowResized)
-    let mvp, mvpUniform = setRender renderer
-    renderer.Refresh()
-
-    let mutable mvp = mvp
+    let mutable mvp = Unchecked.defaultof<_>
 
     let mutable yaw = 0.f
     let mutable pitch = 0.f
 
+    let eventQueue = System.Collections.Generic.Queue<FalGraphics -> unit>()
+
+    let mutable mvpUniform = Unchecked.defaultof<_>
+
+    eventQueue.Enqueue(fun graphics ->
+        let mvpUniform2, mvp2 = FsGame.Renderer.Vulkan.loadMap "e1m1" wad graphics
+        graphics.SetupCommands()
+        mvpUniform <- mvpUniform2
+        mvp <- mvp2
+    )
+
     let windowEvents = 
-        let gate = obj ()
-        let mutable quit = false
+        { new FsGame.Renderer.Vulkan.IVulkanWindowEvents with
 
-        { new IWindowEvents with
+            member __.OnWindowClosing _ = ()
 
-            member __.OnWindowClosing () =
-                lock gate (fun () ->
-                    quit <- true
-                    renderer.WaitIdle()
-                )
-
-            member __.OnInputEvents events = 
+            member __.OnInputEvents(_, events) = 
                 let mutable acc = Vector3.Zero
 
                 let mutable view = mvp.view
@@ -462,22 +192,21 @@ let main argv =
 
                 view.Translation <- view.Translation + acc
                 mvp <-
-                    { mvp with view = view }
+                    { mvp with view = view }               
+
+            member __.OnUpdateFrame (graphics, time, interval) =
+                match eventQueue.TryDequeue() with
+                | true, f -> f graphics
+                | _ -> ()
+                if not (obj.ReferenceEquals(mvpUniform, null)) then
+                    mvpUniform.SetData(ReadOnlySpan [|mvp.InvertedView|])
+                false 
                 
+            member _.OnRenderFrame(graphics, _, _, _, _) =
+                graphics.DrawFrame() }
 
-            member __.OnUpdateFrame (time, interval) =
-                renderer.SetUniformBuffer(mvpUniform, mvp.InvertedView)
-                quit
-
-            member __.OnRenderFrame (_, _, _, _) =
-                lock gate (fun () ->
-                    if not quit then
-                        renderer.Draw()
-                ) }
-    windowState.WindowClosing.Add(windowEvents.OnWindowClosing)
-
-    let window = Window (title, 30., width, height, windowEvents, windowState)
-    window.Start ()
-
+    let window, graphics = FsGame.Renderer.Vulkan.createVulkanWin32Window "F# Vulkan" "HealthyCore" 30. 1280 720 windowEvents
+    use graphics = graphics
+    window.Start()
     printfn "F# Vulkan ended...."
     0

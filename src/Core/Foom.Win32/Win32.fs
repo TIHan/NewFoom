@@ -202,6 +202,10 @@ type Win32WindowState (title: string, width: int, weight: int) as this =
 
         member __.ShowWindow () = () // TODO:
 
+        member this.WindowClosing = this.WindowClosing
+        
+        member this.WindowResized = this.WindowResized
+
         member __.PollInput () =
 
             let inputs = ResizeArray ()

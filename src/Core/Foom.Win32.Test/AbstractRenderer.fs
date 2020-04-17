@@ -11,82 +11,15 @@ open FSharp.Spirv
 open FSharp.Spirv.Quotations
 open FsGame.Core.Collections
 open FsGame.Graphics.Vulkan
+open System.Drawing.Imaging
+open Microsoft.FSharp.NativeInterop
 
-[<Struct>]
-type UniformBufferId<'T> = private UniformBufferId of ItemId with
+#nowarn "9"
 
-    member this.ItemId = match this with UniformBufferId itemId -> itemId
+type FalGraphics with
 
-[<Struct>]
-type VertexBufferId<'T> = private VertexBufferId of ItemId with
-
-    member this.ItemId = match this with VertexBufferId itemId -> itemId
-
-[<Struct>]
-type TextureId = private TextureId of ItemId with
-
-    member this.ItemId = match this with TextureId itemId -> itemId
-
-[<Struct>]
-type ShaderId = private ShaderId of ItemId with
-
-    member this.ItemId = match this with ShaderId itemId -> itemId
-
-[<Struct>]
-type DrawCallId = private DrawCallId of ItemId with
-
-    member this.ItemId = match this with DrawCallId itemId -> itemId
-    
-    
-[<AbstractClass>] 
-type AbstractRenderer<'UniformBuffer, 'VertexBuffer, 'Texture, 'Shader, 'DrawCall>() =
-    
-    let uniformBuffers = ItemManager<'UniformBuffer> 1
-    let vertexBuffers = ItemManager<'VertexBuffer> 1
-    let textures = ItemManager<'Texture> 1
-    let shaders = ItemManager<'Shader> 1
-    let drawCalls = ItemManager<'DrawCall> 1
-
-    let getItem (manager: ItemManager<_>) id =
-        match manager.TryGet(id) with
-        | true, camera -> camera
-        | _ -> invalidArg "id" "Item does not exist."
-
-    abstract CreateUniformBufferCore<'T when 'T : unmanaged> : value: 'T -> 'UniformBuffer
-
-    abstract SetUniformBufferCore<'T when 'T : unmanaged> : uniformBuffer: 'UniformBuffer * value: 'T -> unit
-
-    member this.CreateUniformBuffer<'T when 'T : unmanaged>(value: 'T) : UniformBufferId<'T> =
-        let internalUniformBuffer = this.CreateUniformBufferCore value
-        UniformBufferId(uniformBuffers.Add internalUniformBuffer)
-
-    member this.SetUniformBuffer<'T when 'T : unmanaged>(uniformBufferId: UniformBufferId<'T>, value: 'T) =
-        this.SetUniformBufferCore(getItem uniformBuffers uniformBufferId.ItemId, value)
-
-
-    abstract CreateVertexBufferCore<'T when 'T : unmanaged> : value: ReadOnlySpan<'T> -> 'VertexBuffer
-
-    abstract SetVertexBufferCore<'T when 'T : unmanaged> : vertexBuffer: 'VertexBuffer * value: ReadOnlySpan<'T> -> unit
-
-    member this.CreateVertexBuffer<'T when 'T : unmanaged>(value: ReadOnlySpan<'T>) : VertexBufferId<'T> =
-        let internalVertexBuffer = this.CreateVertexBufferCore value
-        VertexBufferId(vertexBuffers.Add internalVertexBuffer)
-
-    member this.SetVertexBuffer<'T when 'T : unmanaged>(vertexBufferId: VertexBufferId<'T>, value: ReadOnlySpan<'T>) =
-        this.SetVertexBufferCore(getItem vertexBuffers vertexBufferId.ItemId, value)
-
-
-    abstract CreateTextureCore: bitmap: Bitmap -> 'Texture
-
-    member this.CreateTexture(bitmap: Bitmap) =
-        let texture = this.CreateTextureCore bitmap
-        TextureId(textures.Add texture)
-
-
-
-    abstract CreateSpirvShaderCore : vertex: ReadOnlySpan<byte> * fragment: ReadOnlySpan<byte> * vertexType: Type * instanceTypeOpt: Type option -> 'Shader        
-
-    member this.CreateSpirvShader(vertex: Expr<unit -> unit>, fragment: Expr<unit -> unit>, vertexType, instanceTypeOpt) : ShaderId =
+    member this.CreateShader(vertex: Expr<unit -> unit>, fragment: Expr<unit -> unit>, shaderDesc) =
+        
         let spvVertexInfo = SpirvGenInfo.Create(AddressingModel.Logical, MemoryModel.GLSL450, ExecutionModel.Vertex, [Capability.Shader], [])
         let spvVertex =
             Checker.Check vertex
@@ -112,31 +45,38 @@ type AbstractRenderer<'UniformBuffer, 'VertexBuffer, 'Texture, 'Shader, 'DrawCal
             ms.Read(bytes, 0, bytes.Length) |> ignore
             bytes
 
-        let shader = this.CreateSpirvShaderCore(ReadOnlySpan vertexBytes, ReadOnlySpan fragmentBytes, vertexType, instanceTypeOpt)
-        ShaderId(shaders.Add shader)
+        this.CreateShader(shaderDesc, ReadOnlySpan vertexBytes, ReadOnlySpan fragmentBytes)
 
+    member this.CreateImage(bmp: Bitmap) =
+        let rect = Rectangle(0, 0, bmp.Width, bmp.Height)
+        let data = bmp.LockBits(rect, ImageLockMode.ReadWrite, PixelFormat.Format32bppArgb)
 
-    abstract CreateDrawCallCore : uniformBuffer: 'UniformBuffer * vertexBuffer: 'VertexBuffer * instanceBuffer: 'VertexBuffer option * texture: 'Texture * shader: 'Shader * instanceCount: int -> 'DrawCall
+        let ptr = data.Scan0 |> NativePtr.ofNativeInt<byte> |> NativePtr.toVoidPtr
+        let image = this.CreateImage(bmp.Width, bmp.Height, ReadOnlySpan(ptr, data.Width * data.Height * 4))
+        bmp.UnlockBits(data)
+        image
 
-    member this.CreateDrawCall<'Uniform, 'Vertex, 'Instance>(uniformBufferId: UniformBufferId<'Uniform>, vertexBufferId: VertexBufferId<'Vertex>, instanceBufferIdOpt: VertexBufferId<'Instance> option, textureId: TextureId, shaderId: ShaderId, instanceCount: int) =
-        let uniformBuffer = getItem uniformBuffers uniformBufferId.ItemId
-        let vertexBuffer = getItem vertexBuffers vertexBufferId.ItemId
-        let instanceBufferOpt = instanceBufferIdOpt |> Option.map (fun instanceBufferId -> getItem vertexBuffers instanceBufferId.ItemId)
-        let texture = getItem textures textureId.ItemId
-        let shader = getItem shaders shaderId.ItemId
-        let internalDrawCall = this.CreateDrawCallCore(uniformBuffer, vertexBuffer, instanceBufferOpt, texture, shader, instanceCount)
-        DrawCallId(drawCalls.Add internalDrawCall)
+[<Struct>]
+type UniformBufferId<'T> = private UniformBufferId of ItemId with
 
-    abstract Refresh: unit -> unit
+    member this.ItemId = match this with UniformBufferId itemId -> itemId
 
-    abstract Draw: unit -> unit
+[<Struct>]
+type VertexBufferId<'T> = private VertexBufferId of ItemId with
 
-    abstract WaitIdle: unit -> unit
+    member this.ItemId = match this with VertexBufferId itemId -> itemId
 
-    abstract Dispose: unit -> unit
+[<Struct>]
+type TextureId = private TextureId of ItemId with
 
-    interface IDisposable with
+    member this.ItemId = match this with TextureId itemId -> itemId
 
-        member this.Dispose() = this.Dispose()
+[<Struct>]
+type ShaderId = private ShaderId of ItemId with
 
+    member this.ItemId = match this with ShaderId itemId -> itemId
 
+[<Struct>]
+type DrawCallId = private DrawCallId of ItemId with
+
+    member this.ItemId = match this with DrawCallId itemId -> itemId

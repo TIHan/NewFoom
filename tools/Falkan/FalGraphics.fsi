@@ -13,18 +13,17 @@ type FalGraphics =
 
     member WaitIdle: unit -> unit
 
+    [<RequiresExplicitTypeArguments>]
     member CreateBuffer<'T when 'T : unmanaged> : size: int * FalkanBufferFlags * FalkanBufferKind -> FalkanBuffer
 
-    member FillBuffer<'T when 'T : unmanaged> : FalkanBuffer * ReadOnlySpan<'T> -> unit
+    member CreateBuffer<'T when 'T : unmanaged> : size: int * FalkanBufferFlags * FalkanBufferKind * data: ReadOnlySpan<'T> -> FalkanBuffer
 
     member DestroyBuffer : FalkanBuffer -> unit
 
-    member CreateImage : width: int * height: int -> FalkanImage
-
-    member FillImage : FalkanImage * ReadOnlySpan<byte> -> unit
+    member CreateImage : width: int * height: int * data: ReadOnlySpan<byte> -> FalkanImage
 
     member AddRenderSubpass : FalkanRenderSubpassDescription -> unit
 
-    member CreateShader: FalkanShaderDescription * vertexSpirvSource: ReadOnlySpan<byte> * fragmentSpirvSource: ReadOnlySpan<byte> -> FalkanShader
+    member CreateShader: VulkanShaderDescription * vertexSpirvSource: ReadOnlySpan<byte> * fragmentSpirvSource: ReadOnlySpan<byte> -> FalkanShader
 
     static member Create : VulkanDevice * invalidate: IEvent<unit> * renderSubpassDescs: FalkanRenderSubpassDescription list -> FalGraphics

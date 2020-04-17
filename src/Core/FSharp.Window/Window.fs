@@ -32,6 +32,10 @@ type IWindowEvents =
 
 type IWindowState =
 
+    abstract WindowClosing: IEvent<unit>
+
+    abstract WindowResized: IEvent<unit>
+
     abstract ShowWindow: unit -> unit
 
     abstract PollInput: unit -> InputEvent list
@@ -49,6 +53,7 @@ type CreateStateArgs internal (title: string, width: int, height: int) =
 type Window (title: string, updateInterval: float, width: int, height: int, events: IWindowEvents, state: IWindowState) =
 
     member __.Start () =
+        state.WindowClosing.Add(events.OnWindowClosing)
         GameLoop.start
             updateInterval
             (fun () -> events.OnInputEvents (state.PollInput ()))

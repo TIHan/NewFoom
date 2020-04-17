@@ -17,7 +17,6 @@
     <Content Include="fonts\OpenSans\Apache License.txt" />
     <Compile Include="Resources.fs" />
     <Compile Include="AbstractRenderer.fs" />
-    <Compile Include="VulkanRenderer.fs" />
     <Compile Include="RendererCore.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
