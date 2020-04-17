@@ -218,3 +218,71 @@ let createWallUv (map: Map) (linedef: Linedef) (sidedef: Sidedef) width height (
     let uv = Array.zeroCreate vertices.Length
     updateWallUv sidedef width height vertices textureAlignment uv
     uv
+
+
+let updateWallUv2 (sidedef: Sidedef) width height (vertices: Vector2 []) (positionZ: single[]) (textureAlignment: TextureAlignment) (uv: Vector2 []) =
+    let textureOffsetX = sidedef.OffsetX
+    let textureOffsetY = sidedef.OffsetY
+
+    let mutable i = 0
+    while (i < vertices.Length) do
+        let p1 = vertices.[i]
+        let p2 = vertices.[i + 1]
+        let p3 = vertices.[i + 2]
+
+        let z1 = positionZ.[i]
+        let z3 = positionZ.[i + 2]
+
+        let width = single width
+        let height = single height
+
+        let v1 = Vector2 (p1.X, p1.Y)
+        let v2 = Vector2 (p2.X, p2.Y)
+
+        let one = 0.f + single textureOffsetX
+        let two = (v2 - v1).Length ()
+
+        let x, y, z1, z3 =
+
+            // lower unpeg
+            match textureAlignment with
+            | LowerUnpegged ->
+                let ofsY = single textureOffsetY / height * -1.f
+                if z3 < z1 then
+                    (one + two) / width, 
+                    one / width, 
+                    0.f - ofsY,
+                    ((abs (z1 - z3)) / height * -1.f) - ofsY
+                else
+                    one / width, 
+                    (one + two) / width, 
+                    ((abs (z1 - z3)) / height * -1.f) - ofsY,
+                    0.f - ofsY
+
+            // upper unpeg
+            | UpperUnpegged offsetY ->
+                let z = single offsetY / height * -1.f
+                let ofsY = single textureOffsetY / height * -1.f
+                if z3 < z1 then
+                    (one + two) / width, 
+                    one / width, 
+                    (1.f - ((abs (z1 - z3)) / height * -1.f)) - z - ofsY,
+                    1.f - z - ofsY
+                else
+                    one / width, 
+                    (one + two) / width, 
+                    1.f - z - ofsY,
+                    (1.f - ((abs (z1 - z3)) / height * -1.f)) - z - ofsY
+
+        uv.[i] <- Vector2 (x, z3)
+        uv.[i + 1] <- Vector2(y, z3)
+        uv.[i + 2] <- Vector2(y, z1)
+
+        i <- i + 3
+
+let createWallUv2 (map: Map) (linedef: Linedef) (sidedef: Sidedef) width height (vertices: Vector2 []) (positionZ: single[]) (section: WallSection) =
+    let textureAlignment = getTextureAlignment map linedef linedef.FrontSidedefIndex.IsSome section
+
+    let uv = Array.zeroCreate vertices.Length
+    updateWallUv2 sidedef width height vertices positionZ textureAlignment uv
+    uv

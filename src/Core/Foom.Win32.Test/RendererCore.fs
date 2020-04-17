@@ -342,13 +342,14 @@ let load (graphics: FalGraphics) (wad: Wad) (map: Map) (mvpBuffer: FalkanBuffer)
     
                     let position = Variable<Vector2> [Decoration.Location 0u; Decoration.Binding 0u] StorageClass.Input
                     let z = Variable<single> [Decoration.Location 1u; Decoration.Binding 1u] StorageClass.Input
+                    let uv = Variable<Vector2> [Decoration.Location 2u; Decoration.Binding 2u] StorageClass.Input
     
                     let mutable gl_Position  = Variable<Vector4> [Decoration.BuiltIn BuiltIn.Position] StorageClass.Output
                     let mutable fragTexCoord = Variable<Vector2> [Decoration.Location 0u] StorageClass.Output
     
                     fun () ->
                         gl_Position <- Vector4.Transform(Vector4(position, z, 1.f), mvp.model * mvp.view * mvp.proj)
-                        fragTexCoord <- Vector2(0.f, 0.f)
+                        fragTexCoord <- uv
                 @>
     
             let fragment =
@@ -373,7 +374,8 @@ let load (graphics: FalGraphics) (wad: Wad) (map: Map) (mvpBuffer: FalkanBuffer)
                         [ ShaderDescriptorLayout(UniformBufferDescriptor, VertexStage, 0u)
                           ShaderDescriptorLayout(CombinedImageSamplerDescriptor, FragmentStage, 1u) ],
                         [ ShaderVertexInput(PerVertex, typeof<Vector2>, 0u)
-                          ShaderVertexInput(PerVertex, typeof<single>, 1u) ]))
+                          ShaderVertexInput(PerVertex, typeof<single>, 1u)
+                          ShaderVertexInput(PerVertex, typeof<Vector2>, 2u) ]))
     
             mapViewShader <- Some shader
             shader
@@ -394,7 +396,10 @@ let load (graphics: FalGraphics) (wad: Wad) (map: Map) (mvpBuffer: FalkanBuffer)
         map.Linedefs
         |> Seq.mapi (fun lineViewId ldef ->
     
-            let positionXY = createVar graphics (createFrontSidePositionXY ldef)
+            let positionXY = createFrontSidePositionXY ldef
+            let positionXYVar = createVar graphics (createFrontSidePositionXY ldef)
+
+            let textureAlignment = getTextureAlignment map ldef ldef.FrontSidedefIndex.IsSome WallSection.Middle
     
             let frontSide =
                 ldef.FrontSidedefIndex
@@ -405,20 +410,24 @@ let load (graphics: FalGraphics) (wad: Wad) (map: Map) (mvpBuffer: FalkanBuffer)
 
                     match sdef.MiddleTextureName with
                     | Some texName ->
-                        let image, _, _ = getImage graphics wad texName
+                        let image, width, height = getImage graphics wad texName
+
+                        let positionZ = Array.zeroCreate<single> 6
+
+                        let uvVertices = createWallUv2 map ldef sdef width height positionXY positionZ WallSection.Middle
 
                         let partRender =
                             {
-                                PositionXY = positionXY
-                                PositionZ = createVar graphics (Array.zeroCreate<single> 6)
-                                UV = createVar graphics (Array.zeroCreate<Vector2> 6)
+                                PositionXY = positionXYVar
+                                PositionZ = createVar graphics positionZ
+                                UV = createVar graphics uvVertices
                                 Image = image
                             }
 
                         let draw = shader.CreateDrawBuilder()
                         let draw = draw.AddDescriptorBuffer(mvpBuffer, sizeof<ModelViewProjection>).AddDescriptorImage(image).Next
-                        let draw = draw.AddVertexBuffer(partRender.PositionXY.Buffer, PerVertex).AddVertexBuffer(partRender.PositionZ.Buffer, PerVertex)
-                        let vertexCount = positionXY.Buffer.Size / sizeof<Vector2>                        
+                        let draw = draw.AddVertexBuffer(partRender.PositionXY.Buffer, PerVertex).AddVertexBuffer(partRender.PositionZ.Buffer, PerVertex).AddVertexBuffer(partRender.UV.Buffer, PerVertex)
+                        let vertexCount = positionXY.Length                       
                         shader.AddDraw(draw, uint32 vertexCount, 1u) |> ignore
 
                         //let textureAlignment = getTextureAlignment map ldef ldef.FrontSidedefIndex.IsSome WallSection.Middle
