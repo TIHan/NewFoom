@@ -439,21 +439,28 @@ let GenGlobalVar cenv spvVar =
         cenv.debugNames.Add(string resultId + "_" + spvVar.Name, resultId)
         resultId
 
-let getAccessChainResultType cenv pointer index =
+let getAccessChainResultType cenv pointer fieldIndex =
     let resultType = 
         match cenv.localVariables.TryGetValue pointer with
         | true, OpVariable(resultType, _, _, _) -> resultType
         | _ ->
             match cenv.globalVariables.TryGetValue pointer with
             | true, (OpVariable(resultType, _, _, _), _) -> resultType
-            | _ ->  failwithf "Unable to find variable: %A" pointer
+            | _ ->
+                match cenv.locals.TryGetValue pointer with
+                | true, OpAccessChain(resultType, _, _, _) -> resultType
+                | _ -> failwithf "Unable to find variable: %A" pointer
 
     match cenv.typePointers.TryGetValue resultType with
     | true, OpTypePointer(_, storageClass, baseType) -> 
         match cenv.types.TryGetValue baseType with
-        | true, OpTypeArray (_, elementType, _) when index = 0 -> elementType
-        | true, OpTypeStruct (_, fields) when index >= 0 && index < fields.Length -> fields.[index]
-        | _ -> failwith "Unable to get backing type for pointer."
+        | true, OpTypeRuntimeArray(_, elementType)
+        | true, OpTypeArray (_, elementType, _) when fieldIndex = 0 -> elementType
+        | true, OpTypeStruct (_, fields) when fieldIndex >= 0 && fieldIndex < fields.Length -> fields.[fieldIndex]
+        | true, ty ->
+            failwithf "Found type, %A, but unable to get backing pointer type on field index %i." ty fieldIndex
+        | _ -> 
+            failwith "Unable to get backing type for pointer."
         |> emitPointer cenv storageClass
     | _ ->
         failwith "Invalid pointer type."
@@ -475,7 +482,7 @@ let tryEmitLoad cenv pointer =
         let baseType =
             match cenv.typePointers.TryGetValue resultType with
             | true, OpTypePointer(_, _, baseType) -> baseType |> Some
-            | _ -> None //failwith "Invalid pointer type."
+            | _ -> failwith "Invalid pointer type."
 
         match baseType with
         | Some baseType ->
@@ -545,8 +552,7 @@ let rec GenExpr cenv (env: env) blockScope returnable expr =
         let receiverId = GenExpr cenv env blockScope NotReturnable receiver
         let argId = GenExpr cenv env blockScope NotReturnable arg |> deref cenv
 
-        let resultType = emitPointer cenv StorageClass.StorageBuffer (emitType cenv retTy) //getAccessChainResultType cenv receiverId 0
-     //   let index = emit //emitLoad cenv argId
+        let resultType = getAccessChainResultType cenv receiverId 0
         let resultId = nextResultId cenv
         let op = OpAccessChain(resultType, resultId, receiverId, [argId])
         addInstructions cenv [op]
