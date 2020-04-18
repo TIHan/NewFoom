@@ -348,7 +348,7 @@ let updateLineView (sectorViews: Span<SectorView>) (lineView: inref<LineView>) =
 
             let bottomScale =
                 if origHeight = 0.f then
-                    1.f
+                    height
                     //1.f
                 else
                     (height / origHeight)
@@ -401,19 +401,19 @@ let updateLineView (sectorViews: Span<SectorView>) (lineView: inref<LineView>) =
                         frontSide.CeilingHeight
                 else
                     frontSide.CeilingHeight
-            ()
-            //let positionZ =
-            //    [|
-            //        floorHeight
-            //        floorHeight
-            //        ceilingHeight
+         //   ()
+            let positionZ =
+                [|
+                    floorHeight
+                    floorHeight
+                    ceilingHeight
 
-            //        ceilingHeight
-            //        ceilingHeight
-            //        floorHeight        
-            //    |]
+                    ceilingHeight
+                    ceilingHeight
+                    floorHeight        
+                |]
 
-           // lineView.FrontSide.Middle.PositionZ.Set(ReadOnlySpan positionZ)
+            lineView.FrontSide.Middle.PositionZ.Set(ReadOnlySpan positionZ)
 
 let updateLineViews (sectorViews: Span<SectorView>) (lineViews: Span<LineView>) (lineViewIds: ResizeArray<int>) =
     for i = 0 to lineViewIds.Count - 1 do
