@@ -233,7 +233,10 @@ and SpirvIntrinsicCall =
     | ImplicitLod of arg1: SpirvExpr * arg2: SpirvExpr * retTy: SpirvType
     | Kill
     | FloatUnorderedLessThan of arg1: SpirvExpr * arg2: SpirvExpr * retTy: SpirvType
+    | FloatAdd of arg1: SpirvExpr * arg2: SpirvExpr * retTy: SpirvType
+    | FloatSubtract of arg1: SpirvExpr * arg2: SpirvExpr * retTy: SpirvType
     | FloatMultiply of arg1: SpirvExpr * arg2: SpirvExpr * retTy: SpirvType
+    | FloatDivide of arg1: SpirvExpr * arg2: SpirvExpr * retTy: SpirvType
     | VectorTimesScalar of arg1: SpirvExpr * arg2: SpirvExpr * retTy: SpirvType
 
     member x.ReturnType =
@@ -271,7 +274,10 @@ and SpirvIntrinsicCall =
         | ImplicitLod (_, _, retTy) -> retTy
         | Kill -> SpirvType.SpirvTypeVoid
         | FloatUnorderedLessThan(_, _, retTy) -> retTy
+        | FloatAdd(_, _, retTy) -> retTy
+        | FloatSubtract(_, _, retTy) -> retTy
         | FloatMultiply(_, _, retTy) -> retTy
+        | FloatDivide(_, _, retTy) -> retTy
         | VectorTimesScalar(_, _, retTy) -> retTy
 
     member x.Arguments =
@@ -287,7 +293,10 @@ and SpirvIntrinsicCall =
         | ImplicitLod (arg1, arg2, _) -> [arg1;arg2]
         | Kill -> []
         | FloatUnorderedLessThan(arg1, arg2, _) -> [arg1;arg2]
+        | FloatAdd(arg1, arg2, _) -> [arg1;arg2]
+        | FloatSubtract(arg1, arg2, _) -> [arg1;arg2]
         | FloatMultiply(arg1, arg2, _) -> [arg1;arg2]
+        | FloatDivide(arg1, arg2, _) -> [arg1;arg2]
         | VectorTimesScalar(arg1, arg2, _) -> [arg1;arg2]
 
 

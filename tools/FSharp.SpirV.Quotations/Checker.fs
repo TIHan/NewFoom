@@ -384,10 +384,39 @@ and CheckIntrinsicCall env checkedArgs expr =
     | SpecificCall <@ Vector4.Transform(Unchecked.defaultof<Vector4>, Unchecked.defaultof<Matrix4x4>) @> _, _, [arg1;arg2] ->
         env, Transform__Vector4_Matrix4x4__Vector4 (arg1, arg2) |> SpirvIntrinsicCall
 
+    //| SpecificCall <@ (*) : float32 -> float32 -> float32 @> _, _, [arg1;arg2] ->
+    //    env, FloatMultiply(arg1, arg2, mkSpirvType expr.Type) |> SpirvIntrinsicCall
+
+    //| SpecificCall <@ (/) : float32 -> float32 -> float32 @> _, _, [arg1;arg2] ->
+    //    env, FloatDivide(arg1, arg2, mkSpirvType expr.Type) |> SpirvIntrinsicCall
+
+    | SpecificCall <@ (+) @> (_, tyArgs, _), _, [arg1;arg2] ->
+        match tyArgs with
+        | _ when tyArgs = [typeof<float32>;typeof<float32>;typeof<float32>] ->
+            env, FloatAdd(arg1, arg2, mkSpirvType expr.Type) |> SpirvIntrinsicCall
+        | _ ->
+            failwithf "Call not supported: %A" expr
+
+    | SpecificCall <@ (-) @> (_, tyArgs, _), _, [arg1;arg2] ->
+        match tyArgs with
+        | _ when tyArgs = [typeof<float32>;typeof<float32>;typeof<float32>] ->
+            env, FloatSubtract(arg1, arg2, mkSpirvType expr.Type) |> SpirvIntrinsicCall
+        | _ ->
+            failwithf "Call not supported: %A" expr
+
     | SpecificCall <@ (*) @> (_, tyArgs, _), _, [arg1;arg2] ->
         match tyArgs with
         | _ when tyArgs = [typeof<Matrix4x4>;typeof<Matrix4x4>;typeof<Matrix4x4>] ->
             env, Multiply__Matrix4x4_Matrix4x4__Matrix4x4 (arg1, arg2) |> SpirvIntrinsicCall
+        | _ when tyArgs = [typeof<float32>;typeof<float32>;typeof<float32>] ->
+            env, FloatMultiply(arg1, arg2, mkSpirvType expr.Type) |> SpirvIntrinsicCall
+        | _ ->
+            failwithf "Call not supported: %A" expr
+
+    | SpecificCall <@ (/) @> (_, tyArgs, _), _, [arg1;arg2] ->
+        match tyArgs with
+        | _ when tyArgs = [typeof<float32>;typeof<float32>;typeof<float32>] ->
+            env, FloatDivide(arg1, arg2, mkSpirvType expr.Type) |> SpirvIntrinsicCall
         | _ ->
             failwithf "Call not supported: %A" expr
 

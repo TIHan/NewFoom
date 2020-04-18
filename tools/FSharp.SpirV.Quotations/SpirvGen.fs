@@ -629,12 +629,36 @@ let rec GenExpr cenv (env: env) blockScope returnable expr =
             addInstructions cenv [OpFUnordLessThan(retTy, resultId, arg1, arg2)]
             resultId
 
+        | FloatAdd(arg1, arg2, _) ->
+            let arg1 = GenExpr cenv env blockScope NotReturnable arg1 |> deref cenv
+            let arg2 = GenExpr cenv env blockScope NotReturnable arg2 |> deref cenv
+
+            let resultId = nextResultId cenv
+            addInstructions cenv [OpFAdd(retTy, resultId, arg1, arg2)]
+            resultId
+
+        | FloatSubtract(arg1, arg2, _) ->
+            let arg1 = GenExpr cenv env blockScope NotReturnable arg1 |> deref cenv
+            let arg2 = GenExpr cenv env blockScope NotReturnable arg2 |> deref cenv
+
+            let resultId = nextResultId cenv
+            addInstructions cenv [OpFSub(retTy, resultId, arg1, arg2)]
+            resultId
+
         | FloatMultiply(arg1, arg2, _) ->
             let arg1 = GenExpr cenv env blockScope NotReturnable arg1 |> deref cenv
             let arg2 = GenExpr cenv env blockScope NotReturnable arg2 |> deref cenv
 
             let resultId = nextResultId cenv
             addInstructions cenv [OpFMul(retTy, resultId, arg1, arg2)]
+            resultId
+
+        | FloatDivide(arg1, arg2, _) ->
+            let arg1 = GenExpr cenv env blockScope NotReturnable arg1 |> deref cenv
+            let arg2 = GenExpr cenv env blockScope NotReturnable arg2 |> deref cenv
+
+            let resultId = nextResultId cenv
+            addInstructions cenv [OpFDiv(retTy, resultId, arg1, arg2)]
             resultId
 
         | VectorTimesScalar(arg1, arg2, _) ->
