@@ -13,6 +13,7 @@ type VulkanShaderDescriptorLayoutKind =
 type VulkanShaderStage =
     | VertexStage
     | FragmentStage
+    | AllGraphicsStage
 
 type VulkanShaderDescriptorLayout = ShaderDescriptorLayout of VulkanShaderDescriptorLayoutKind * VulkanShaderStage * binding: uint32
 

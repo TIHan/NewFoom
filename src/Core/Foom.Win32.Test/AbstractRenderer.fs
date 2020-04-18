@@ -45,6 +45,17 @@ type FalGraphics with
             ms.Read(bytes, 0, bytes.Length) |> ignore
             bytes
 
+        //graphics.CreateShader(vertex, fragment,
+        //    Shader(0, true, 
+        //        [ ShaderDescriptorLayout(StorageBufferDescriptor, VertexStage, 0u)
+        //          ShaderDescriptorLayout(CombinedImageSamplerDescriptor, FragmentStage, 1u)
+        //          ShaderDescriptorLayout(StorageBufferDescriptor, VertexStage, 2u) ],
+        //        [ ShaderVertexInput(PerVertex, typeof<Vector2>, 0u)
+        //          ShaderVertexInput(PerVertex, typeof<single>, 1u)
+        //          ShaderVertexInput(PerVertex, typeof<single>, 2u)
+        //          ShaderVertexInput(PerVertex, typeof<int>, 3u)
+        //          ShaderVertexInput(PerVertex, typeof<Vector2>, 4u) ]))
+
         this.CreateShader(shaderDesc, ReadOnlySpan vertexBytes, ReadOnlySpan fragmentBytes)
 
     member this.CreateImage(bmp: Bitmap) =
@@ -55,28 +66,3 @@ type FalGraphics with
         let image = this.CreateImage(bmp.Width, bmp.Height, ReadOnlySpan(ptr, data.Width * data.Height * 4))
         bmp.UnlockBits(data)
         image
-
-[<Struct>]
-type UniformBufferId<'T> = private UniformBufferId of ItemId with
-
-    member this.ItemId = match this with UniformBufferId itemId -> itemId
-
-[<Struct>]
-type VertexBufferId<'T> = private VertexBufferId of ItemId with
-
-    member this.ItemId = match this with VertexBufferId itemId -> itemId
-
-[<Struct>]
-type TextureId = private TextureId of ItemId with
-
-    member this.ItemId = match this with TextureId itemId -> itemId
-
-[<Struct>]
-type ShaderId = private ShaderId of ItemId with
-
-    member this.ItemId = match this with ShaderId itemId -> itemId
-
-[<Struct>]
-type DrawCallId = private DrawCallId of ItemId with
-
-    member this.ItemId = match this with DrawCallId itemId -> itemId

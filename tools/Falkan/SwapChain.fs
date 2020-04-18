@@ -384,11 +384,13 @@ type VulkanShaderDescriptorLayoutKind =
 type VulkanShaderStage =
     | VertexStage
     | FragmentStage
+    | AllGraphicsStage
 
     member this.VkShaderStageFlags =
         match this with
         | VertexStage -> VkShaderStageFlags.VK_SHADER_STAGE_VERTEX_BIT
         | FragmentStage -> VkShaderStageFlags.VK_SHADER_STAGE_FRAGMENT_BIT
+        | AllGraphicsStage -> VkShaderStageFlags.VK_SHADER_STAGE_ALL_GRAPHICS
 
 type VulkanShaderDescriptorLayout = ShaderDescriptorLayout of VulkanShaderDescriptorLayoutKind * VulkanShaderStage * binding: uint32 with
 
