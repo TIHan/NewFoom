@@ -70,7 +70,7 @@ let mkDescriptorBufferInfo buffer size =
         VkDescriptorBufferInfo(
             buffer = buffer,
             offset = 0UL,
-            range = uint64 size)
+            range = size)
     bufferInfo
 
 let updateDescriptorSet device binding descriptorSet descriptorType pBufferInfo =

@@ -435,7 +435,7 @@ let updateLineViews (sectorViews: Span<SectorView>) (lineViews: Span<LineView>) 
         updateLineView sectorViews &lineViews.[lineViewIds.[i]]
 
 [<Sealed>]
-type MapView(sectors: SectorView [], lineViews: LineView []) =
+type MapView(sectors: SectorView [], lineViews: LineView [], sectorRendersBuffer: FalkanBuffer) =
 
     member this.GetSectorHeights(sectorId: int) =
         sectors.[sectorId].Heights
@@ -443,7 +443,8 @@ type MapView(sectors: SectorView [], lineViews: LineView []) =
     member this.SetSectorHeights(sectorId: int, heights: Heights) =
         let sectorView = { sectors.[sectorId]with Heights = heights }
         sectors.[sectorId] <- sectorView
-        updateLineViews (Span sectors) (Span lineViews) sectorView.LineViewIds
+      //  updateLineViews (Span sectors) (Span lineViews) sectorView.LineViewIds
+    //    sectorRendersBuffer.SetData(sectorId, ReadOnlySpan [|{ OriginalCeilingHeight = sectorView.OriginalHeights.CeilingHeight; OriginalFloorHeight = sectorView.OriginalHeights.FloorHeight; FloorHeight = heights.FloorHeight; CeilingHeight = heights.CeilingHeight  }|])
 
 let createVar (graphics: FalGraphics) (data: 'T[]) : VulkanVarListSegment<'T> =
     let buffer = graphics.CreateBuffer(data.Length, FalkanBufferFlags.None, VertexBuffer, ReadOnlySpan(data))
@@ -472,7 +473,7 @@ let load (graphics: FalGraphics) (wad: Wad) (map: Map) (mvpBuffer: FalkanBuffer)
                     let position = Variable<Vector2> [Decoration.Location 0u; Decoration.Binding 0u] StorageClass.Input
                     let z = Variable<single> [Decoration.Location 1u; Decoration.Binding 1u] StorageClass.Input
                     let uv = Variable<single> [Decoration.Location 2u; Decoration.Binding 2u] StorageClass.Input
-                    let sesctorId = Variable<int> [Decoration.Location 3u; Decoration.Binding 3u] StorageClass.Input
+                    let sectorId = Variable<int> [Decoration.Location 3u; Decoration.Binding 3u] StorageClass.Input
                     let origUv = Variable<Vector2> [Decoration.Location 4u; Decoration.Binding 4u] StorageClass.Input
     
                     let mutable gl_Position  = Variable<Vector4> [Decoration.BuiltIn BuiltIn.Position] StorageClass.Output
@@ -480,6 +481,8 @@ let load (graphics: FalGraphics) (wad: Wad) (map: Map) (mvpBuffer: FalkanBuffer)
     
                     fun () ->
                         let beef = sectors.SectorRenders.[0]
+                        let z = z + beef.OriginalCeilingHeight
+                        //let z = beef.FloorHeight // ((beef.CeilingHeight - beef.FloorHeight) / (beef.OriginalCeilingHeight - beef.OriginalFloorHeight))
                         let ycoord = origUv.Y * uv
                         gl_Position <- Vector4.Transform(Vector4(position, z, 1.f), mvp.model * mvp.view * mvp.proj)
                         fragTexCoord <- Vector2(origUv.X, ycoord)
@@ -572,7 +575,7 @@ let load (graphics: FalGraphics) (wad: Wad) (map: Map) (mvpBuffer: FalkanBuffer)
                                 }
 
                             let draw = shader.CreateDrawBuilder()
-                            let draw = draw.AddDescriptorBuffer(mvpBuffer, sizeof<ModelViewProjection>).AddDescriptorImage(image).AddDescriptorBuffer(sectorRendersBuffer, sizeof<SectorRender>).Next
+                            let draw = draw.AddDescriptorBuffer(mvpBuffer, sizeof<ModelViewProjection>).AddDescriptorImage(image).AddDescriptorBuffer(sectorRendersBuffer, sizeof<SectorRender> * map.Sectors.Length).Next
                             let draw = draw.AddVertexBuffer(partRender.PositionXY.Buffer, PerVertex).AddVertexBuffer(partRender.PositionZ.Buffer, PerVertex).AddVertexBuffer(partRender.UV.Buffer, PerVertex).AddVertexBuffer(graphics.CreateBuffer(origZ.Length, FalkanBufferFlags.None, VertexBuffer, ReadOnlySpan origZ), PerVertex).AddVertexBuffer(origUv.Buffer, PerVertex)
                             let vertexCount = positionXY.Length                       
                             shader.AddDraw(draw, uint32 vertexCount, 1u) |> ignore
@@ -603,7 +606,7 @@ let load (graphics: FalGraphics) (wad: Wad) (map: Map) (mvpBuffer: FalkanBuffer)
                                 }
 
                             let draw = shader.CreateDrawBuilder()
-                            let draw = draw.AddDescriptorBuffer(mvpBuffer, sizeof<ModelViewProjection>).AddDescriptorImage(image).AddDescriptorBuffer(sectorRendersBuffer, sizeof<SectorRender>).Next
+                            let draw = draw.AddDescriptorBuffer(mvpBuffer, sizeof<ModelViewProjection>).AddDescriptorImage(image).AddDescriptorBuffer(sectorRendersBuffer, sizeof<SectorRender> * map.Sectors.Length).Next
                             let draw = draw.AddVertexBuffer(partRender.PositionXY.Buffer, PerVertex).AddVertexBuffer(partRender.PositionZ.Buffer, PerVertex).AddVertexBuffer(partRender.UV.Buffer, PerVertex).AddVertexBuffer(graphics.CreateBuffer(origZ.Length, FalkanBufferFlags.None, VertexBuffer, ReadOnlySpan origZ), PerVertex).AddVertexBuffer(origUv.Buffer, PerVertex)
                             let vertexCount = positionXY.Length                       
                             shader.AddDraw(draw, uint32 vertexCount, 1u) |> ignore
@@ -638,12 +641,12 @@ let load (graphics: FalGraphics) (wad: Wad) (map: Map) (mvpBuffer: FalkanBuffer)
     
             let lineView = { HasFrontSide = hasFrontSide; FrontSide = frontSide; HasBackSide = hasBackSide; BackSide = backSide }
             
-            updateLineView (Span sectorViews) &lineView
+          //  updateLineView (Span sectorViews) &lineView
 
             lineView)
         |> Array.ofSeq
 
-    MapView(sectorViews, lineViews)
+    MapView(sectorViews, lineViews, sectorRendersBuffer)
 
 let loadMap mapName (wad: Wad) (graphics: FalGraphics) =
     let e1m1 = wad.FindMap mapName

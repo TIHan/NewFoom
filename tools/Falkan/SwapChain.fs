@@ -506,6 +506,7 @@ type FalkanShaderDrawVertexBuilder (inputs: ShaderInput list) =
 
                     vkDescriptorSets
                     |> Array.iter (fun d ->
+                        let size = uint64 size
                         let mutable info = mkDescriptorBufferInfo buffer.buffer size
                         updateDescriptorSet vkDevice (uint32 i) d vkDescriptorType &&info
                         () (* prevent tail-call *))
