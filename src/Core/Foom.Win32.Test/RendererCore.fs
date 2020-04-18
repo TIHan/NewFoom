@@ -142,7 +142,7 @@ type TextureInfo =
         Height: single
     }
 
-let textureCache = Collections.Generic.Dictionary<string, FalkanImage * TextureInfo * FalkanBuffer>()
+let textureCache = Collections.Generic.Dictionary<string, FalkanImage * TextureInfo * VulkanBuffer<TextureInfo>>()
 let getImage (graphics: FalGraphics) (wad: Wad) name =
     match textureCache.TryGetValue name with
     | true, res -> res
@@ -155,12 +155,12 @@ let getImage (graphics: FalGraphics) (wad: Wad) name =
    
         let data = texture.Data
         use bmp = createBitmap data
-        let res = graphics.CreateImage bmp, { Width = single bmp.Width; Height = single bmp.Height }, (graphics.CreateBuffer(1, FalkanBufferFlags.None, UniformBuffer, ReadOnlySpan [|{ Width = single bmp.Width; Height = single bmp.Height }|]))
+        let res = graphics.CreateImage bmp, { Width = single bmp.Width; Height = single bmp.Height }, (graphics.CreateBuffer(UniformBuffer, VulkanBufferFlags.None, [|{ Width = single bmp.Width; Height = single bmp.Height }|]))
         textureCache.[name] <- res
         res
 
 [<Struct;NoComparison;NoEquality>]
-type VulkanVar<'T when 'T : unmanaged> = VulkanVar of FalkanBuffer with
+type VulkanVar<'T when 'T : unmanaged> = VulkanVar of VulkanBuffer<'T> with
 
     member this.Set(value: 'T) =
         match this with
@@ -175,13 +175,13 @@ type VulkanVar<'T when 'T : unmanaged> = VulkanVar of FalkanBuffer with
         | VulkanVar buffer -> buffer
 
 [<Struct;NoComparison;NoEquality>]
-type VulkanVarList<'T when 'T : unmanaged> = VulkanVarList of FalkanBuffer with
+type VulkanVarList<'T when 'T : unmanaged> = VulkanVarList of VulkanBuffer<'T> with
 
-    member this.Set value =
+    member this.Set(value: ReadOnlySpan<'T>) =
         match this with
         | VulkanVarList buffer -> buffer.SetData(value)
 
-    member this.Set(offset, value) =
+    member this.Set(offset, value: ReadOnlySpan<'T>) =
         match this with
         | VulkanVarList buffer -> buffer.SetData(offset, value)
 
@@ -435,7 +435,7 @@ let updateLineViews (sectorViews: Span<SectorView>) (lineViews: Span<LineView>) 
         updateLineView sectorViews &lineViews.[lineViewIds.[i]]
 
 [<Sealed>]
-type MapView(sectors: SectorView [], lineViews: LineView [], sectorRendersBuffer: FalkanBuffer) =
+type MapView(sectors: SectorView [], lineViews: LineView [], sectorRendersBuffer: VulkanBuffer<SectorRender>) =
 
     member this.GetSectorHeights(sectorId: int) =
         sectors.[sectorId].Heights
@@ -447,7 +447,7 @@ type MapView(sectors: SectorView [], lineViews: LineView [], sectorRendersBuffer
     //    sectorRendersBuffer.SetData(sectorId, ReadOnlySpan [|{ OriginalCeilingHeight = sectorView.OriginalHeights.CeilingHeight; OriginalFloorHeight = sectorView.OriginalHeights.FloorHeight; FloorHeight = heights.FloorHeight; CeilingHeight = heights.CeilingHeight  }|])
 
 let createVar (graphics: FalGraphics) (data: 'T[]) : VulkanVarListSegment<'T> =
-    let buffer = graphics.CreateBuffer(data.Length, FalkanBufferFlags.None, VertexBuffer, ReadOnlySpan(data))
+    let buffer = graphics.CreateBuffer(VertexBuffer, VulkanBufferFlags.None, data)
     let var = VulkanVarList buffer
     VulkanVarListSegment(var, 0, data.Length)
 
@@ -460,7 +460,7 @@ let createFrontSidePositionXY (ldef: Linedef) =
     |]
 
 let mutable mapViewShader = None
-let load (graphics: FalGraphics) (wad: Wad) (map: Map) (mvpBuffer: FalkanBuffer) =
+let load (graphics: FalGraphics) (wad: Wad) (map: Map) (mvpBuffer: VulkanBuffer<ModelViewProjection>) =
     let shader =
         match mapViewShader with
         | Some shader -> shader
@@ -537,7 +537,7 @@ let load (graphics: FalGraphics) (wad: Wad) (map: Map) (mvpBuffer: FalkanBuffer)
                 CeilingHeight = heights.CeilingHeight
             }
 
-    let sectorRendersBuffer = graphics.CreateBuffer(sectorRenders.Length, FalkanBufferFlags.None, StorageBuffer, ReadOnlySpan sectorRenders)
+    let sectorRendersBuffer = graphics.CreateBuffer(StorageBuffer, VulkanBufferFlags.None, sectorRenders)
 
     let addLineViewId (sectorViewId: int) (lineViewId: int) =
         sectorViews.[sectorViewId].LineViewIds.Add lineViewId
@@ -575,8 +575,8 @@ let load (graphics: FalGraphics) (wad: Wad) (map: Map) (mvpBuffer: FalkanBuffer)
                                 }
 
                             let draw = shader.CreateDrawBuilder()
-                            let draw = draw.AddDescriptorBuffer(mvpBuffer, sizeof<ModelViewProjection>).AddDescriptorImage(image).AddDescriptorBuffer(sectorRendersBuffer, sizeof<SectorRender> * map.Sectors.Length).Next
-                            let draw = draw.AddVertexBuffer(partRender.PositionXY.Buffer, PerVertex).AddVertexBuffer(partRender.PositionZ.Buffer, PerVertex).AddVertexBuffer(partRender.UV.Buffer, PerVertex).AddVertexBuffer(graphics.CreateBuffer(origZ.Length, FalkanBufferFlags.None, VertexBuffer, ReadOnlySpan origZ), PerVertex).AddVertexBuffer(origUv.Buffer, PerVertex)
+                            let draw = draw.AddDescriptorBuffer(mvpBuffer).AddDescriptorImage(image).AddDescriptorBuffer(sectorRendersBuffer).Next
+                            let draw = draw.AddVertexBuffer(partRender.PositionXY.Buffer, PerVertex).AddVertexBuffer(partRender.PositionZ.Buffer, PerVertex).AddVertexBuffer(partRender.UV.Buffer, PerVertex).AddVertexBuffer(graphics.CreateBuffer(VertexBuffer, VulkanBufferFlags.None, origZ), PerVertex).AddVertexBuffer(origUv.Buffer, PerVertex)
                             let vertexCount = positionXY.Length                       
                             shader.AddDraw(draw, uint32 vertexCount, 1u) |> ignore
 
@@ -606,8 +606,8 @@ let load (graphics: FalGraphics) (wad: Wad) (map: Map) (mvpBuffer: FalkanBuffer)
                                 }
 
                             let draw = shader.CreateDrawBuilder()
-                            let draw = draw.AddDescriptorBuffer(mvpBuffer, sizeof<ModelViewProjection>).AddDescriptorImage(image).AddDescriptorBuffer(sectorRendersBuffer, sizeof<SectorRender> * map.Sectors.Length).Next
-                            let draw = draw.AddVertexBuffer(partRender.PositionXY.Buffer, PerVertex).AddVertexBuffer(partRender.PositionZ.Buffer, PerVertex).AddVertexBuffer(partRender.UV.Buffer, PerVertex).AddVertexBuffer(graphics.CreateBuffer(origZ.Length, FalkanBufferFlags.None, VertexBuffer, ReadOnlySpan origZ), PerVertex).AddVertexBuffer(origUv.Buffer, PerVertex)
+                            let draw = draw.AddDescriptorBuffer(mvpBuffer).AddDescriptorImage(image).AddDescriptorBuffer(sectorRendersBuffer).Next
+                            let draw = draw.AddVertexBuffer(partRender.PositionXY.Buffer, PerVertex).AddVertexBuffer(partRender.PositionZ.Buffer, PerVertex).AddVertexBuffer(partRender.UV.Buffer, PerVertex).AddVertexBuffer(graphics.CreateBuffer(VertexBuffer, VulkanBufferFlags.None, origZ), PerVertex).AddVertexBuffer(origUv.Buffer, PerVertex)
                             let vertexCount = positionXY.Length                       
                             shader.AddDraw(draw, uint32 vertexCount, 1u) |> ignore
 
@@ -662,7 +662,7 @@ let loadMap mapName (wad: Wad) (graphics: FalGraphics) =
             proj = Matrix4x4.CreatePerspectiveFieldOfView(radians 45.f, 1280.f / 720.f, 0.1f, 1000000.f)
         }
 
-    let mvpUniform = graphics.CreateBuffer<ModelViewProjection>(1, FalkanBufferFlags.None, UniformBuffer, ReadOnlySpan [|mvp.InvertedView|])
+    let mvpUniform = graphics.CreateBuffer<ModelViewProjection>(UniformBuffer, VulkanBufferFlags.None, [|mvp.InvertedView|])
 
     let vertex =
         <@
@@ -705,12 +705,12 @@ let loadMap mapName (wad: Wad) (graphics: FalGraphics) =
 
     let queueDraw (image: FalkanImage) (lightLevel: int) (vertices: Vector3 []) (uv: Vector2 []) =
         let vertices = Array.init vertices.Length (fun i -> { position = vertices.[i]; uv = uv.[i] })
-        let vertexBuffer = graphics.CreateBuffer(vertices.Length, FalkanBufferFlags.None, VertexBuffer, ReadOnlySpan vertices) 
+        let vertexBuffer = graphics.CreateBuffer(VertexBuffer, VulkanBufferFlags.None, vertices) 
         let doot = Array.init 1 (fun _ -> normalize (single lightLevel) 0.f 255.f)
-        let dootBuffer = graphics.CreateBuffer(doot.Length, FalkanBufferFlags.None, VertexBuffer, ReadOnlySpan doot)
+        let dootBuffer = graphics.CreateBuffer(VertexBuffer, VulkanBufferFlags.None, doot)
         
         let draw = shader.CreateDrawBuilder()
-        let draw = draw.AddDescriptorBuffer(mvpUniform, sizeof<ModelViewProjection>).AddDescriptorImage(image).Next
+        let draw = draw.AddDescriptorBuffer(mvpUniform).AddDescriptorImage(image).Next
         let draw = draw.AddVertexBuffer(vertexBuffer, PerVertex).AddVertexBuffer(dootBuffer, PerInstance)
            
         shader.AddDraw(draw, uint32 vertices.Length, 1u) |> ignore

@@ -113,14 +113,14 @@ let copyBuffer device commandPool srcBuffer dstBuffer dstOffset size queue =
 //        vkDestroyBuffer(device, stagingBuffer, vkNullPtr)
 
 [<Flags>]
-type FalkanBufferFlags =
+type VulkanBufferFlags =
     | None = 0b0uy
     | SharedMemory = 0b1uy
 
 let inline hasSharedMemoryFlag flags =
-    flags &&& FalkanBufferFlags.SharedMemory = FalkanBufferFlags.SharedMemory
+    flags &&& VulkanBufferFlags.SharedMemory = VulkanBufferFlags.SharedMemory
 
-type FalkanBufferKind =
+type VulkanBufferKind =
     | UnspecifiedBuffer
     | VertexBuffer
     | IndexBuffer
@@ -128,26 +128,23 @@ type FalkanBufferKind =
     | StorageBuffer
 
 [<Struct;NoComparison>]
-type FalkanBuffer =
+type VulkanBuffer<'T when 'T : unmanaged> =
     internal {
         device: VulkanDevice
         buffer: VkBuffer
         memory: VulkanMemory
-        flags: FalkanBufferFlags
-        kind: FalkanBufferKind
+        flags: VulkanBufferFlags
+        kind: VulkanBufferKind
     }
 
     member x.IsShared = hasSharedMemoryFlag x.flags
 
     member x.Size = x.memory.Block.Size
 
-    member internal x.Destroy() =
-        vkDestroyBuffer(x.device.Device, x.buffer, vkNullPtr)
-        (x.memory :> IDisposable).Dispose()
-
 type VulkanDevice with
 
-    member this.CreateBuffer(kind, flags, size) =
+    [<RequiresExplicitTypeArguments>]
+    member this.CreateBuffer<'T when 'T : unmanaged>(kind, flags, size) : VulkanBuffer<'T> =
         let physicalDevice = this.PhysicalDevice
         let device = this.Device
 
@@ -173,9 +170,9 @@ type VulkanDevice with
             { device = this; buffer = buffer; memory = memory; flags = flags; kind = kind }
 
 
-type FalkanBuffer with
+type VulkanBuffer<'T when 'T : unmanaged> with
     
-    member buffer.SetData<'T when 'T : unmanaged>(offset, data) =
+    member buffer.SetData(offset, data) =
         let physicalDevice = buffer.device.PhysicalDevice
         let device = buffer.device.Device
         let commandPool = buffer.device.VkCommandPool
@@ -202,5 +199,19 @@ type FalkanBuffer with
 
             vkDestroyBuffer(device, stagingBuffer, vkNullPtr)
 
-    member buffer.SetData<'T when 'T : unmanaged>(data) =
-        buffer.SetData<'T>(0, data)
+    member buffer.SetData(data: ReadOnlySpan<'T>) =
+        buffer.SetData(0, data)
+
+    member buffer.SetData(offset, data: 'T[]) =
+        buffer.SetData(offset, ReadOnlySpan data)
+
+    member buffer.SetData(data: 'T[]) =
+        buffer.SetData(ReadOnlySpan data)
+
+    member buffer.SetData(data: inref<'T>) =
+        let stack = NativePtr.stackalloc 1
+        NativePtr.set stack 0 data
+        buffer.SetData(ReadOnlySpan<'T>(NativePtr.toVoidPtr stack, 1))
+
+    member inline buffer.SetData(data: 'T) =
+        buffer.SetData(&data)

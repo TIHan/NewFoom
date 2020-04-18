@@ -444,8 +444,8 @@ type VulkanShaderDescription = Shader of subpassIndex: int * enableDepth: bool *
 type ShaderId = ShaderId of subpassIndex: int * Guid
 
 type ShaderInput =
-    | ShaderVertexInputBuffer of FalkanBuffer * VulkanShaderVertexInputRate
-    | ShaderDescriptorInputBuffer of FalkanBuffer * size: int
+    | ShaderVertexInputBuffer of VkBuffer * VulkanShaderVertexInputRate
+    | ShaderDescriptorInputBuffer of VkBuffer * size: uint64
     | ShaderDescriptorInputImage of FalkanImage
 
 type FalkanRenderSubpassKind =
@@ -486,8 +486,8 @@ type FalkanShaderDrawVertexBuilder (inputs: ShaderInput list) =
 
     member _.Inputs = inputs
     
-    member _.AddVertexBuffer(buffer: FalkanBuffer, inputRate) =
-        ShaderVertexInputBuffer(buffer, inputRate) :: inputs
+    member _.AddVertexBuffer(buffer: VulkanBuffer<_>, inputRate) =
+        ShaderVertexInputBuffer(buffer.buffer, inputRate) :: inputs
         |> FalkanShaderDrawVertexBuilder
         
     member _.Build (vkDevice, vkDescriptorSetLayouts: struct(VkDescriptorSetLayout * VkDescriptorType) [], descriptorSetCount, vertexCount, instanceCount) =
@@ -498,7 +498,7 @@ type FalkanShaderDrawVertexBuilder (inputs: ShaderInput list) =
             inputs
             |> Array.choose (fun x ->
                 match x with
-                | ShaderDescriptorInputBuffer (buffer, size) ->    
+                | ShaderDescriptorInputBuffer(buffer, size) ->    
                     let struct(vkDescriptorSetLayout, vkDescriptorType) = vkDescriptorSetLayouts.[i]
                     let vkDescriptorPool = mkDescriptorPool vkDevice vkDescriptorType descriptorSetCount
                     let vkDescriptorSetLayouts = Array.init (int descriptorSetCount) (fun _ -> vkDescriptorSetLayout)
@@ -507,7 +507,7 @@ type FalkanShaderDrawVertexBuilder (inputs: ShaderInput list) =
                     vkDescriptorSets
                     |> Array.iter (fun d ->
                         let size = uint64 size
-                        let mutable info = mkDescriptorBufferInfo buffer.buffer size
+                        let mutable info = mkDescriptorBufferInfo buffer size
                         updateDescriptorSet vkDevice (uint32 i) d vkDescriptorType &&info
                         () (* prevent tail-call *))
 
@@ -536,14 +536,14 @@ type FalkanShaderDrawVertexBuilder (inputs: ShaderInput list) =
             inputs
             |> Array.choose (fun x ->
                 match x with
-                | ShaderVertexInputBuffer(buffer, PerVertex) -> Some buffer.buffer
+                | ShaderVertexInputBuffer(buffer, PerVertex) -> Some buffer
                 | _ -> None)
 
         let instanceVkBuffers =
             inputs
             |> Array.choose (fun x ->
                 match x with
-                | ShaderVertexInputBuffer(buffer, PerInstance) -> Some buffer.buffer
+                | ShaderVertexInputBuffer(buffer, PerInstance) -> Some buffer
                 | _ -> None)
 
         {
@@ -560,8 +560,8 @@ type FalkanShaderDrawDescriptorBuilder (inputs: ShaderInput list) =
 
     member _.Inputs = inputs
 
-    member _.AddDescriptorBuffer(buffer: FalkanBuffer, size) =
-         ShaderDescriptorInputBuffer(buffer, size) :: inputs
+    member _.AddDescriptorBuffer(buffer: VulkanBuffer<'T>) =
+         ShaderDescriptorInputBuffer(buffer.buffer, uint64 (buffer.Size / sizeof<'T>)) :: inputs
         |> FalkanShaderDrawDescriptorBuilder
 
     member _.AddDescriptorImage(image: FalkanImage) =

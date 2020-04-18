@@ -33,12 +33,12 @@ type FalkanRenderSubpassDescription = RenderSubpass of FalkanRenderSubpassKind
 [<Sealed>]
 type FalkanShaderDrawVertexBuilder =
 
-    member AddVertexBuffer : FalkanBuffer * VulkanShaderVertexInputRate -> FalkanShaderDrawVertexBuilder
+    member AddVertexBuffer : VulkanBuffer<'T> * VulkanShaderVertexInputRate -> FalkanShaderDrawVertexBuilder
 
 [<Sealed>]
 type FalkanShaderDrawDescriptorBuilder =
 
-    member AddDescriptorBuffer : FalkanBuffer * size: int -> FalkanShaderDrawDescriptorBuilder
+    member AddDescriptorBuffer : VulkanBuffer<'T> -> FalkanShaderDrawDescriptorBuilder
 
     member AddDescriptorImage : FalkanImage -> FalkanShaderDrawDescriptorBuilder
 

@@ -14,11 +14,15 @@ type FalGraphics =
     member WaitIdle: unit -> unit
 
     [<RequiresExplicitTypeArguments>]
-    member CreateBuffer<'T when 'T : unmanaged> : size: int * FalkanBufferFlags * FalkanBufferKind -> FalkanBuffer
+    member CreateBuffer<'T when 'T : unmanaged> : VulkanBufferKind * VulkanBufferFlags * count: int -> VulkanBuffer<'T>
+                                               
+    member CreateBuffer<'T when 'T : unmanaged> : VulkanBufferKind * VulkanBufferFlags * data: ReadOnlySpan<'T> -> VulkanBuffer<'T>
+                                                      
+    member CreateBuffer<'T when 'T : unmanaged> : VulkanBufferKind * VulkanBufferFlags * data: 'T[] -> VulkanBuffer<'T>
+                                                     
+    member CreateBuffer<'T when 'T : unmanaged> : VulkanBufferKind * VulkanBufferFlags * data: 'T -> VulkanBuffer<'T>
 
-    member CreateBuffer<'T when 'T : unmanaged> : size: int * FalkanBufferFlags * FalkanBufferKind * data: ReadOnlySpan<'T> -> FalkanBuffer
-
-    member DestroyBuffer : FalkanBuffer -> unit
+    member DestroyBuffer : VulkanBuffer<_> -> unit
 
     member CreateImage : width: int * height: int * data: ReadOnlySpan<byte> -> FalkanImage
 

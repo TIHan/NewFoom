@@ -21,13 +21,17 @@ type FalGraphics
     let device = fdevice.Device
     let physicalDevice = fdevice.PhysicalDevice
     let gate = obj ()
-    let buffers = Collections.Generic.Dictionary<VkBuffer, FalkanBuffer> ()
+    let buffers = Collections.Generic.Dictionary<VkBuffer, VulkanMemory>()
     let images = Collections.Generic.Dictionary<VkImage, FalkanImage> ()
     let mutable isDisposed = 0
 
     let checkDispose () =
         if isDisposed <> 0 then
             failwith "Vulkan instance is disposed."
+
+    let destroyBuffer (buffer: VkBuffer) (memory: VulkanMemory) =
+        vkDestroyBuffer(device, buffer, vkNullPtr)
+        (memory :> IDisposable).Dispose()
 
     member _.SetupCommands() =
         swapChain.SetupCommands()
@@ -41,27 +45,35 @@ type FalGraphics
         swapChain.WaitIdle ()
 
     [<RequiresExplicitTypeArguments>]
-    member _.CreateBuffer<'T when 'T : unmanaged> (size, flags, kind)  =
+    member _.CreateBuffer<'T when 'T : unmanaged> (kind, flags, count)  =
         lock gate <| fun _ ->
 
         checkDispose ()   
 
-        let buffer = fdevice.CreateBuffer(kind, flags, sizeof<'T> * size)
-        buffers.Add (buffer.buffer, buffer)
+        let buffer = fdevice.CreateBuffer<'T>(kind, flags, sizeof<'T> * count)
+        buffers.Add(buffer.buffer, buffer.memory)
         buffer
 
-    member this.CreateBuffer<'T when 'T : unmanaged> (size, flags, kind, data)  =
-        let buffer = this.CreateBuffer<'T>(size, flags, kind)
-        buffer.SetData<'T> data
+    member this.CreateBuffer<'T when 'T : unmanaged> (kind, flags, data: ReadOnlySpan<'T>) =
+        let buffer = this.CreateBuffer<'T>(kind, flags, sizeof<'T> * data.Length)
+        buffer.SetData data
         buffer
 
-    member _.DestroyBuffer (buffer: FalkanBuffer) =
+    member this.CreateBuffer<'T when 'T : unmanaged> (kind, flags, data: 'T[]) =
+        this.CreateBuffer<'T>(kind, flags, ReadOnlySpan data)
+
+    member this.CreateBuffer<'T when 'T : unmanaged> (kind, flags, data: 'T) =
+        let buffer = this.CreateBuffer<'T>(kind, flags, sizeof<'T>)
+        buffer.SetData data
+        buffer
+
+    member _.DestroyBuffer (buffer: VulkanBuffer<_>) =
         lock gate <| fun _ ->
 
         checkDispose ()
         match buffers.Remove buffer.buffer with
         | true ->
-            buffer.Destroy()
+            destroyBuffer buffer.buffer buffer.memory
         | _ ->
             failwith "Buffer is not in the vulkan instance."
 
@@ -92,8 +104,9 @@ type FalGraphics
                 (swapChain :> IDisposable).Dispose ()
 
                 lock gate (fun () ->
-                    buffers.Values
-                    |> Seq.iter (fun x -> x.Destroy())
+
+                    buffers
+                    |> Seq.iter (fun pair -> destroyBuffer pair.Key pair.Value)
 
                     buffers.Clear()
                 )
