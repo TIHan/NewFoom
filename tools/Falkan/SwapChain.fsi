@@ -6,6 +6,8 @@ open FSharp.Vulkan.Interop
 
 type VulkanShaderDescriptorLayoutKind =
     | UniformBufferDescriptor
+    | StorageBufferDescriptor
+    | StorageBufferDynamicDescriptor
     | CombinedImageSamplerDescriptor
 
 type VulkanShaderStage =

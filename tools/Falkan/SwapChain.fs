@@ -370,11 +370,15 @@ let drawFrame device swapChain sync (commandBuffers: VkCommandBuffer []) graphic
 
 type VulkanShaderDescriptorLayoutKind =
     | UniformBufferDescriptor
+    | StorageBufferDescriptor
+    | StorageBufferDynamicDescriptor
     | CombinedImageSamplerDescriptor
 
     member this.VkDescriptorType =
         match this with
         | UniformBufferDescriptor -> VkDescriptorType.VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER
+        | StorageBufferDescriptor -> VkDescriptorType.VK_DESCRIPTOR_TYPE_STORAGE_BUFFER
+        | StorageBufferDynamicDescriptor -> VkDescriptorType.VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC
         | CombinedImageSamplerDescriptor -> VkDescriptorType.VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER
 
 type VulkanShaderStage =
@@ -503,7 +507,7 @@ type FalkanShaderDrawVertexBuilder (inputs: ShaderInput list) =
                     vkDescriptorSets
                     |> Array.iter (fun d ->
                         let mutable info = mkDescriptorBufferInfo buffer.buffer size
-                        updateDescriptorSet vkDevice (uint32 i) d &&info
+                        updateDescriptorSet vkDevice (uint32 i) d vkDescriptorType &&info
                         () (* prevent tail-call *))
 
                     i <- i + 1

@@ -75,8 +75,9 @@ let rec mkSpirvType ty =
         let tyArgs = ty.GenericTypeArguments
         let imageTy = mkSpirvImageType tyArgs.[0] tyArgs.[1] tyArgs.[2] tyArgs.[3] tyArgs.[4] tyArgs.[5] tyArgs.[6] tyArgs.[7]
         SpirvTypeSampledImage imageTy
-    | _ when ty.IsArray ->
-        failwith "Array can not be made here as it needs a specific length."
+    | _ when ty.IsArray && ty.HasElementType ->
+        let elementTy = ty.GetElementType()
+        SpirvTypeRuntimeArray(mkSpirvType elementTy)
     | _ when ty.IsValueType ->
         let fields =
             getFields ty
@@ -379,7 +380,13 @@ and CheckIntrinsicCall env checkedArgs expr =
         env, ConvertSIntToFloat arg |> SpirvIntrinsicCall
 
     | SpecificCall <@ Unchecked.defaultof<_[]>.[0] @> _, _, [receiver;arg] ->
-        env, SpirvArrayIndexerGet (receiver, arg)
+        //let receiver =
+        //    match receiver with
+        //    | SpirvExpr.SpirvFieldGet(SpirvVar var, _) when var.StorageClass = StorageClass.Uniform || var.StorageClass = StorageClass.StorageBuffer ->
+        //        SpirvVar var
+        //    | _ -> receiver
+                
+        env, SpirvArrayIndexerGet (receiver, arg, mkSpirvType expr.Type)
 
     | SpecificCall <@ Vector4.Transform(Unchecked.defaultof<Vector4>, Unchecked.defaultof<Matrix4x4>) @> _, _, [arg1;arg2] ->
         env, Transform__Vector4_Matrix4x4__Vector4 (arg1, arg2) |> SpirvIntrinsicCall

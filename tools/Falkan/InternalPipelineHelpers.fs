@@ -65,22 +65,22 @@ let mkDescriptorSets device size descriptorPool (setLayouts: VkDescriptorSetLayo
     vkAllocateDescriptorSets(device, &&allocInfo, pDescriptorSets) |> checkResult
     descriptorSets
 
-let mkDescriptorBufferInfo uniformBuffer size =
+let mkDescriptorBufferInfo buffer size =
     let mutable bufferInfo =
         VkDescriptorBufferInfo(
-            buffer = uniformBuffer,
+            buffer = buffer,
             offset = 0UL,
             range = uint64 size)
     bufferInfo
 
-let updateDescriptorSet device binding descriptorSet pBufferInfo =
+let updateDescriptorSet device binding descriptorSet descriptorType pBufferInfo =
     let mutable descriptorWrite =
         VkWriteDescriptorSet(
             sType = VkStructureType.VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
             dstSet = descriptorSet,
             dstBinding = binding,
             dstArrayElement = 0u,
-            descriptorType = VkDescriptorType.VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            descriptorType = descriptorType,
             descriptorCount = 1u,
             pBufferInfo = pBufferInfo,
             pImageInfo = vkNullPtr, // optional

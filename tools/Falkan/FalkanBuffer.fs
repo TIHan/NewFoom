@@ -125,6 +125,7 @@ type FalkanBufferKind =
     | VertexBuffer
     | IndexBuffer
     | UniformBuffer
+    | StorageBuffer
 
 [<Struct;NoComparison>]
 type FalkanBuffer =
@@ -156,6 +157,7 @@ type VulkanDevice with
             | VertexBuffer -> VkBufferUsageFlags.VK_BUFFER_USAGE_VERTEX_BUFFER_BIT
             | IndexBuffer -> VkBufferUsageFlags.VK_BUFFER_USAGE_INDEX_BUFFER_BIT
             | UniformBuffer -> VkBufferUsageFlags.VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT
+            | StorageBuffer -> VkBufferUsageFlags.VK_BUFFER_USAGE_STORAGE_BUFFER_BIT
             | _ -> Unchecked.defaultof<_>
         let memProperties = 
              VkMemoryPropertyFlags.VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT ||| 

@@ -159,20 +159,33 @@ let emitTypeAux cenv ty f =
         match ty with
         | SpirvType.SpirvTypeStruct(_, fields) ->
             let mutable offset = 0u
-            fields
-            |> List.iteri (fun i (SpirvField(_, fieldTy, _)) ->
-                let i = uint32 i
-                match fieldTy with
-                | SpirvTypeBool -> addDecorationInstructions cenv [OpMemberDecorate(resultId, i, Decoration.Offset offset)]
-                | SpirvTypeInt _ -> addDecorationInstructions cenv [OpMemberDecorate(resultId, i, Decoration.Offset offset)]
-                | SpirvTypeFloat _ -> addDecorationInstructions cenv [OpMemberDecorate(resultId, i, Decoration.Offset offset)]
-                | SpirvTypeVector2 -> addDecorationInstructions cenv [OpMemberDecorate(resultId, i, Decoration.Offset offset)]
-                | SpirvTypeVector3 -> addDecorationInstructions cenv [OpMemberDecorate(resultId, i, Decoration.Offset offset)]
-                | SpirvTypeVector4 -> addDecorationInstructions cenv [OpMemberDecorate(resultId, i, Decoration.Offset offset)]
-                | SpirvTypeMatrix4x4 -> addDecorationInstructions cenv [OpMemberDecorate(resultId, i, Decoration.Offset offset)]
-                | _ -> failwithf "Invalid field type, %A." fieldTy // TODO
-                offset <- offset + uint32 fieldTy.Size)
-            addDecorationInstructions cenv [OpDecorate(resultId, Decoration.Block)]
+            let mutable isRuntimeArray = None
+            let rec computeFields (fields: SpirvField list) =
+                fields
+                |> List.iteri (fun i (SpirvField(_, fieldTy, _)) ->
+                    let i = uint32 i
+                    match fieldTy with
+                    | SpirvTypeBool -> addDecorationInstructions cenv [OpMemberDecorate(resultId, i, Decoration.Offset offset)]
+                    | SpirvTypeInt _ -> addDecorationInstructions cenv [OpMemberDecorate(resultId, i, Decoration.Offset offset)]
+                    | SpirvTypeFloat _ -> addDecorationInstructions cenv [OpMemberDecorate(resultId, i, Decoration.Offset offset)]
+                    | SpirvTypeVector2 -> addDecorationInstructions cenv [OpMemberDecorate(resultId, i, Decoration.Offset offset)]
+                    | SpirvTypeVector3 -> addDecorationInstructions cenv [OpMemberDecorate(resultId, i, Decoration.Offset offset)]
+                    | SpirvTypeVector4 -> addDecorationInstructions cenv [OpMemberDecorate(resultId, i, Decoration.Offset offset)]
+                    | SpirvTypeMatrix4x4 -> addDecorationInstructions cenv [OpMemberDecorate(resultId, i, Decoration.Offset offset)]
+                    | SpirvTypeRuntimeArray elementTy -> 
+                        isRuntimeArray <- Some elementTy.Size
+                        addDecorationInstructions cenv [OpDecorate(cenv.typesByType.[fieldTy], Decoration.ArrayStride(uint32 isRuntimeArray.Value))]
+                        addDecorationInstructions cenv [OpMemberDecorate(resultId, i, Decoration.Offset offset)]
+                    | SpirvTypeStruct(_, _) ->
+                        failwithf "Cannot have nested structs."
+                    | _ -> failwithf "Invalid field type, %A." fieldTy // TODO
+                    if isRuntimeArray.IsNone then
+                        offset <- offset + uint32 fieldTy.Size)
+            computeFields fields
+            if isRuntimeArray.IsSome then
+                addDecorationInstructions cenv [OpDecorate(resultId, Decoration.Block)]
+            else
+                addDecorationInstructions cenv [OpDecorate(resultId, Decoration.Block)]
         | SpirvType.SpirvTypeMatrix4x4 ->
             addDecorationInstructions cenv [OpDecorate(resultId, Decoration.MatrixStride 0u)]
         | _ -> ()       
@@ -251,6 +264,7 @@ let rec emitType cenv ty =
     | SpirvTypeVector4 -> emitTypeVector4 cenv
     | SpirvTypeMatrix4x4 -> emitTypeMatrix4x4 cenv
     | SpirvTypeArray (elementTy, length) -> emitArrayType cenv elementTy length
+    | SpirvTypeRuntimeArray elementTy -> emitRuntimeArrayType cenv elementTy
     | SpirvTypeStruct (_, fields) -> emitStructType cenv ty fields
     | SpirvTypeImage imageTy -> emitTypeImage cenv imageTy
     | SpirvTypeSampler -> emitTypeSampler cenv
@@ -286,6 +300,13 @@ and emitArrayType cenv elementTy length =
         let elementTyId = emitType cenv elementTy
         let lengthId = uint32 length |> emitConstantUInt32 cenv
         emitTypeAux cenv (SpirvTypeArray (elementTy, length)) (fun arrayTyId -> OpTypeArray(arrayTyId, elementTyId, lengthId))
+
+and emitRuntimeArrayType cenv elementTy =
+    match elementTy with
+    | SpirvTypeVoid -> failwithf "Element type, %A, is not valid." elementTy
+    | _ ->
+        let elementTyId = emitType cenv elementTy
+        emitTypeAux cenv (SpirvTypeRuntimeArray elementTy) (fun arrayTyId -> OpTypeRuntimeArray(arrayTyId, elementTyId))
 
 and emitStructType cenv ty fields =
     let idRefs =
@@ -453,16 +474,20 @@ let tryEmitLoad cenv pointer =
     | Some resultType ->
         let baseType =
             match cenv.typePointers.TryGetValue resultType with
-            | true, OpTypePointer(_, _, baseType) -> baseType
-            | _ -> failwith "Invalid pointer type."
+            | true, OpTypePointer(_, _, baseType) -> baseType |> Some
+            | _ -> None //failwith "Invalid pointer type."
 
-        match cenv.loadedPointers.TryGetValue pointer with
-        | true, resultId -> Some resultId
+        match baseType with
+        | Some baseType ->
+            match cenv.loadedPointers.TryGetValue pointer with
+            | true, resultId -> Some resultId
+            | _ ->
+                let resultId = nextResultId cenv
+                addInstructions cenv [OpLoad(baseType, resultId, pointer, None)]
+                cenv.loadedPointers.[pointer] <- resultId
+                Some resultId
         | _ ->
-            let resultId = nextResultId cenv
-            addInstructions cenv [OpLoad(baseType, resultId, pointer, None)]
-            cenv.loadedPointers.[pointer] <- resultId
-            Some resultId
+            failwith "Invalid pointer type."
     | _ ->
         None
 
@@ -516,14 +541,14 @@ let rec GenExpr cenv (env: env) blockScope returnable expr =
     | SpirvNewVector4 args ->
         GenVector cenv env blockScope returnable expr.Type args
 
-    | SpirvArrayIndexerGet (receiver, arg) ->
+    | SpirvArrayIndexerGet (receiver, arg, retTy) ->
         let receiverId = GenExpr cenv env blockScope NotReturnable receiver
-        let argId = GenExpr cenv env blockScope NotReturnable arg
+        let argId = GenExpr cenv env blockScope NotReturnable arg |> deref cenv
 
-        let resultType = getAccessChainResultType cenv receiverId 0
-        let index = emitLoad cenv argId
+        let resultType = emitPointer cenv StorageClass.StorageBuffer (emitType cenv retTy) //getAccessChainResultType cenv receiverId 0
+     //   let index = emit //emitLoad cenv argId
         let resultId = nextResultId cenv
-        let op = OpAccessChain(resultType, resultId, receiverId, [index])
+        let op = OpAccessChain(resultType, resultId, receiverId, [argId])
         addInstructions cenv [op]
         cenv.locals.[resultId] <- op
         resultId
@@ -706,7 +731,7 @@ let rec GenExpr cenv (env: env) blockScope returnable expr =
         let op = OpAccessChain(resultType, accessChainPointerId, receiverId, [indexId])
         addInstructions cenv [op]
         cenv.locals.[accessChainPointerId] <- op
-        emitLoad cenv accessChainPointerId
+        accessChainPointerId
 
     | SpirvIfThenElse(condExpr, trueExpr, falseExpr) ->
         let resultIdCond = GenExpr cenv env blockScope NotReturnable condExpr
@@ -829,7 +854,8 @@ let GenModule (info: SpirvGenInfo) expr =
             | OpVariable (_, _, StorageClass.Private, _)
             | OpVariable (_, _, StorageClass.Uniform, _) 
             | OpVariable (_, _, StorageClass.UniformConstant, _) 
-            | OpVariable (_, _, StorageClass.Image, _) ->
+            | OpVariable (_, _, StorageClass.Image, _)
+            | OpVariable (_, _, StorageClass.StorageBuffer, _) ->
                 decorations
                 |> List.iter (fun decoration ->
                     OpDecorate(resultId, decoration)

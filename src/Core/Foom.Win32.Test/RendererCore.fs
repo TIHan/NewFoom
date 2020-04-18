@@ -260,6 +260,21 @@ type SectorView =
         LineViewIds: ResizeArray<int>
     }
 
+[<Struct;NoComparison;NoEquality>]
+type SectorRender =
+    {
+        OriginalFloorHeight: single
+        OriginalCeilingHeight: single
+        FloorHeight: single
+        CeilingHeight: single
+    }
+
+[<Struct;NoComparison;NoEquality>]
+type SectorRendersBlock =
+    {
+        SectorRenders: SectorRender[]
+    }
+
 let tryInitializeUpperFront map linedef =
     match (map, linedef) with
     | FrontBack(Some frontSideSector, Some backSideSector) ->
@@ -452,17 +467,19 @@ let load (graphics: FalGraphics) (wad: Wad) (map: Map) (mvpBuffer: FalkanBuffer)
             let vertex =
                 <@
                     let mvp = Variable<ModelViewProjection> [Decoration.Binding 0u; Decoration.DescriptorSet 0u] StorageClass.Uniform
-    
+                    let sectors = Variable<SectorRendersBlock> [Decoration.Binding 2u; Decoration.DescriptorSet 2u] StorageClass.StorageBuffer
+
                     let position = Variable<Vector2> [Decoration.Location 0u; Decoration.Binding 0u] StorageClass.Input
                     let z = Variable<single> [Decoration.Location 1u; Decoration.Binding 1u] StorageClass.Input
                     let uv = Variable<single> [Decoration.Location 2u; Decoration.Binding 2u] StorageClass.Input
-                    let origZ = Variable<single> [Decoration.Location 3u; Decoration.Binding 3u] StorageClass.Input
+                    let sesctorId = Variable<int> [Decoration.Location 3u; Decoration.Binding 3u] StorageClass.Input
                     let origUv = Variable<Vector2> [Decoration.Location 4u; Decoration.Binding 4u] StorageClass.Input
     
                     let mutable gl_Position  = Variable<Vector4> [Decoration.BuiltIn BuiltIn.Position] StorageClass.Output
                     let mutable fragTexCoord = Variable<Vector2> [Decoration.Location 0u] StorageClass.Output
     
                     fun () ->
+                        let beef = sectors.SectorRenders.[0]
                         let ycoord = origUv.Y * uv
                         gl_Position <- Vector4.Transform(Vector4(position, z, 1.f), mvp.model * mvp.view * mvp.proj)
                         fragTexCoord <- Vector2(origUv.X, ycoord)
@@ -471,7 +488,6 @@ let load (graphics: FalGraphics) (wad: Wad) (map: Map) (mvpBuffer: FalkanBuffer)
             let fragment =
                 <@ 
                     let sampler = Variable<Sampler2d> [Decoration.Binding 1u; Decoration.DescriptorSet 1u] StorageClass.UniformConstant
-                    let info = Variable<TextureInfo> [Decoration.Binding 2u; Decoration.DescriptorSet 2u] StorageClass.Uniform
                     let fragTexCoord = Variable<Vector2> [Decoration.Location 0u] StorageClass.Input
     
                     let mutable outColor = Variable<Vector4> [Decoration.Location 0u] StorageClass.Output
@@ -489,26 +505,36 @@ let load (graphics: FalGraphics) (wad: Wad) (map: Map) (mvpBuffer: FalkanBuffer)
                     Shader(0, true, 
                         [ ShaderDescriptorLayout(UniformBufferDescriptor, VertexStage, 0u)
                           ShaderDescriptorLayout(CombinedImageSamplerDescriptor, FragmentStage, 1u)
-                          ShaderDescriptorLayout(UniformBufferDescriptor, FragmentStage, 2u) ],
+                          ShaderDescriptorLayout(StorageBufferDescriptor, VertexStage, 2u) ],
                         [ ShaderVertexInput(PerVertex, typeof<Vector2>, 0u)
                           ShaderVertexInput(PerVertex, typeof<single>, 1u)
                           ShaderVertexInput(PerVertex, typeof<single>, 2u)
-                          ShaderVertexInput(PerVertex, typeof<single>, 3u)
+                          ShaderVertexInput(PerVertex, typeof<int>, 3u)
                           ShaderVertexInput(PerVertex, typeof<Vector2>, 4u) ]))
     
             mapViewShader <- Some shader
             shader
 
     let sectorViews = Array.zeroCreate map.Sectors.Length
+    let sectorRenders = Array.zeroCreate map.Sectors.Length
     for i = 0 to map.Sectors.Length - 1 do
         let sector = map.Sectors.[i]
+        let heights = { FloorHeight = single sector.FloorHeight; CeilingHeight = single sector.CeilingHeight }
         sectorViews.[i] <- 
-            let heights = { FloorHeight = single sector.FloorHeight; CeilingHeight = single sector.CeilingHeight }
             { 
                 OriginalHeights = heights
                 Heights = heights
                 LineViewIds = ResizeArray()
             }
+        sectorRenders.[i] <-
+            { 
+                OriginalFloorHeight = heights.FloorHeight
+                OriginalCeilingHeight = heights.CeilingHeight
+                FloorHeight = heights.FloorHeight
+                CeilingHeight = heights.CeilingHeight
+            }
+
+    let sectorRendersBuffer = graphics.CreateBuffer(sectorRenders.Length, FalkanBufferFlags.None, StorageBuffer, ReadOnlySpan sectorRenders)
 
     let addLineViewId (sectorViewId: int) (lineViewId: int) =
         sectorViews.[sectorViewId].LineViewIds.Add lineViewId
@@ -533,7 +559,7 @@ let load (graphics: FalGraphics) (wad: Wad) (map: Map) (mvpBuffer: FalkanBuffer)
                             let image, info, infoBuffer = getImage graphics wad texName
 
                             let positionZ = (tryInitializeUpperFront map ldef).Value
-                            let origZ = positionZ
+                            let origZ = Array.init positionZ.Length (fun _ -> sdef.SectorNumber)
                             let uvVertices: Vector2 [] = createWallUv2 map ldef sdef (int info.Width) (int info.Height) positionXY positionZ WallSection.Upper
                             let origUv = createVar graphics uvVertices
 
@@ -546,7 +572,7 @@ let load (graphics: FalGraphics) (wad: Wad) (map: Map) (mvpBuffer: FalkanBuffer)
                                 }
 
                             let draw = shader.CreateDrawBuilder()
-                            let draw = draw.AddDescriptorBuffer(mvpBuffer, sizeof<ModelViewProjection>).AddDescriptorImage(image).AddDescriptorBuffer(infoBuffer, sizeof<TextureInfo>).Next
+                            let draw = draw.AddDescriptorBuffer(mvpBuffer, sizeof<ModelViewProjection>).AddDescriptorImage(image).AddDescriptorBuffer(sectorRendersBuffer, sizeof<SectorRender>).Next
                             let draw = draw.AddVertexBuffer(partRender.PositionXY.Buffer, PerVertex).AddVertexBuffer(partRender.PositionZ.Buffer, PerVertex).AddVertexBuffer(partRender.UV.Buffer, PerVertex).AddVertexBuffer(graphics.CreateBuffer(origZ.Length, FalkanBufferFlags.None, VertexBuffer, ReadOnlySpan origZ), PerVertex).AddVertexBuffer(origUv.Buffer, PerVertex)
                             let vertexCount = positionXY.Length                       
                             shader.AddDraw(draw, uint32 vertexCount, 1u) |> ignore
@@ -564,7 +590,7 @@ let load (graphics: FalGraphics) (wad: Wad) (map: Map) (mvpBuffer: FalkanBuffer)
                             let image, info, infoBuffer = getImage graphics wad texName
 
                             let positionZ = (tryInitializeMiddleFront map ldef).Value
-                            let origZ = positionZ
+                            let origZ = Array.init positionZ.Length (fun _ -> sdef.SectorNumber)
                             let uvVertices: Vector2 [] = createWallUv2 map ldef sdef (int info.Width) (int info.Height) positionXY positionZ WallSection.Middle
                             let origUv = createVar graphics uvVertices
 
@@ -577,7 +603,7 @@ let load (graphics: FalGraphics) (wad: Wad) (map: Map) (mvpBuffer: FalkanBuffer)
                                 }
 
                             let draw = shader.CreateDrawBuilder()
-                            let draw = draw.AddDescriptorBuffer(mvpBuffer, sizeof<ModelViewProjection>).AddDescriptorImage(image).AddDescriptorBuffer(infoBuffer, sizeof<TextureInfo>).Next
+                            let draw = draw.AddDescriptorBuffer(mvpBuffer, sizeof<ModelViewProjection>).AddDescriptorImage(image).AddDescriptorBuffer(sectorRendersBuffer, sizeof<SectorRender>).Next
                             let draw = draw.AddVertexBuffer(partRender.PositionXY.Buffer, PerVertex).AddVertexBuffer(partRender.PositionZ.Buffer, PerVertex).AddVertexBuffer(partRender.UV.Buffer, PerVertex).AddVertexBuffer(graphics.CreateBuffer(origZ.Length, FalkanBufferFlags.None, VertexBuffer, ReadOnlySpan origZ), PerVertex).AddVertexBuffer(origUv.Buffer, PerVertex)
                             let vertexCount = positionXY.Length                       
                             shader.AddDraw(draw, uint32 vertexCount, 1u) |> ignore

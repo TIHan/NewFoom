@@ -26,6 +26,7 @@ and SpirvType =
     | SpirvTypeVector4
     | SpirvTypeMatrix4x4
     | SpirvTypeArray of SpirvType * length: int
+    | SpirvTypeRuntimeArray of SpirvType
     | SpirvTypeStruct of name: string * fields: SpirvField list
     | SpirvTypeImage of SpirvImageType
     | SpirvTypeSampler
@@ -43,6 +44,7 @@ and SpirvType =
         | SpirvTypeVector4 -> "Vector4"
         | SpirvTypeMatrix4x4 -> "Matrix4x4"
         | SpirvTypeArray (elementTy, length) -> elementTy.Name + "[" + string length + "]"
+        | SpirvTypeRuntimeArray elementTy -> elementTy.Name + "[]"
         | SpirvTypeStruct (name=name) -> name
         | SpirvTypeImage _ -> "Image"
         | SpirvTypeSampler -> "Sampler"
@@ -63,6 +65,7 @@ and SpirvType =
         | SpirvTypeStruct(_, fields) ->
             fields
             |> List.sumBy(fun (field: SpirvField) -> field.Type.Size)
+        | SpirvTypeRuntimeArray _
         | SpirvTypeImage _
         | SpirvTypeSampler
         | SpirvTypeSampledImage _ -> failwith "Unable to get size of opaque type."
@@ -159,7 +162,7 @@ type SpirvExpr =
     | SpirvNewVector2Int of args: SpirvExpr list
     | SpirvNewVector3 of args: SpirvExpr list
     | SpirvNewVector4 of args: SpirvExpr list
-    | SpirvArrayIndexerGet of receiver: SpirvExpr * arg: SpirvExpr
+    | SpirvArrayIndexerGet of receiver: SpirvExpr * arg: SpirvExpr * retTy: SpirvType
     | SpirvVar of SpirvVar
     | SpirvVarSet of SpirvVar * SpirvExpr
     | SpirvIntrinsicCall of SpirvIntrinsicCall
@@ -202,8 +205,8 @@ type SpirvExpr =
                 SpirvTypeVector3
             | SpirvNewVector4 _ ->
                 SpirvTypeVector4
-            | SpirvArrayIndexerGet _ ->
-                SpirvTypeVoid
+            | SpirvArrayIndexerGet(_, _, retTy) ->
+                retTy
             | SpirvVar spvVar ->
                 spvVar.Type
             | SpirvVarSet _ ->
