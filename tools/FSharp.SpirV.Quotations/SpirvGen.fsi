@@ -2,6 +2,6 @@
 module FSharp.Spirv.Quotations.SpirvGen
 
 open FSharp.Spirv
-open Tast
+open TypedTree
 
 val GenModule: SpirvGenInfo -> SpirvTopLevelExpr -> SpirvModule

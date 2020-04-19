@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="Tast.fs" />
+    <Compile Include="TypedTree.fs" />
     <Compile Include="SpirvGenInfo.fs" />
     <Compile Include="SpirvGen.fsi" />
     <Compile Include="SpirvGen.fs" />

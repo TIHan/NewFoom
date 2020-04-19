@@ -15,7 +15,11 @@ type VulkanShaderStage =
     | FragmentStage
     | AllGraphicsStage
 
-type VulkanShaderDescriptorLayout = ShaderDescriptorLayout of VulkanShaderDescriptorLayoutKind * VulkanShaderStage * binding: uint32
+type VulkanShaderDescriptorLayout = ShaderDescriptorLayout of VulkanShaderDescriptorLayoutKind * VulkanShaderStage * binding: uint32 with
+
+    member Kind: VulkanShaderDescriptorLayoutKind
+
+    member Binding: uint32
 
 type VulkanShaderVertexInputRate =
     | PerVertex

@@ -394,6 +394,14 @@ type VulkanShaderStage =
 
 type VulkanShaderDescriptorLayout = ShaderDescriptorLayout of VulkanShaderDescriptorLayoutKind * VulkanShaderStage * binding: uint32 with
 
+    member this.Kind =
+        match this with
+        | ShaderDescriptorLayout(kind, _, _) -> kind
+
+    member this.Binding =
+        match this with
+        | ShaderDescriptorLayout(_, _, binding) -> binding
+
     member this.Build vkDevice =
         match this with
         | ShaderDescriptorLayout(kind, stage, binding) ->

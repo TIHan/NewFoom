@@ -6,7 +6,7 @@ open System.Collections.Generic
 open System.Numerics
 open FSharp.NativeInterop
 open FSharp.Spirv
-open Tast
+open TypedTree
 
 [<NoEquality;NoComparison>]
 type cenv =
@@ -426,7 +426,7 @@ let GenLocalVar cenv spvVar =
     cenv.debugNames.Add(string resultId + "_" + spvVar.Name, resultId)
     resultId
 
-let GenGlobalVar cenv spvVar =
+let rec GenGlobalVar cenv spvVar =
     match cenv.globalVariablesByVar.TryGetValue spvVar with
     | true, resultId -> resultId
     | _ ->
@@ -437,6 +437,28 @@ let GenGlobalVar cenv spvVar =
         cenv.globalVariables.[resultId] <- (OpVariable(resultType, resultId, storageClass, None), spvVar.Decorations)
         cenv.globalVariablesByVar.[spvVar] <- resultId
         cenv.debugNames.Add(string resultId + "_" + spvVar.Name, resultId)
+
+        if storageClass = StorageClass.Input then
+            match spvVar.Type with
+            | SpirvTypeStruct(_, fields) ->
+                // TODO: Maybe refactor this a bit better? Maybe put it into SpirvVar as a lazy evaluated member?
+                // Review: This creates dummy variables if we have an input variable that is a struct. This ensures we get locations right.
+                match spvVar.Decorations |> List.tryPick (function Decoration.Location n -> Some n | _ -> None) with
+                | Some location ->
+                    match spvVar.Decorations |> List.tryPick (function Decoration.Binding n -> Some n | _ -> None) with
+                    | Some binding ->
+                        let mutable location = location
+                        fields
+                        |> List.iter (fun field ->
+                            GenGlobalVar 
+                                cenv 
+                                (mkSpirvVar("__" + spvVar.Name + "_" + field.Name, field.Type, [Decoration.Binding binding; Decoration.Location location], storageClass, spvVar.IsMutable)) |> ignore
+                            location <- location + 1u)
+                    | _ -> ()
+                | _ -> ()
+            | _ -> ()
+
+
         resultId
 
 let getAccessChainResultType cenv pointer fieldIndex =

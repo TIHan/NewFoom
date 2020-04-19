@@ -14,7 +14,7 @@ open FSharp.Spirv
 let private ErrorMessage = "Do not call outside the code quotation."
 
 [<RequiresExplicitTypeArguments>]
-let Variable<'T> (_decorations: Decoration list) (_storageClass: StorageClass) : 'T = failwith ErrorMessage
+let Variable<'T> (_decorations: Decoration list) (_storageClass: StorageClass) (_customAnnoations: obj list) : 'T = failwith ErrorMessage
 
 [<Struct;NoComparison>]
 type Vector2Int =

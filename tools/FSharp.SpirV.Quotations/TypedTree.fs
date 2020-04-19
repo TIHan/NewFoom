@@ -1,4 +1,4 @@
-﻿module FSharp.Spirv.Quotations.Tast
+﻿module FSharp.Spirv.Quotations.TypedTree
 
 open System.Numerics
 open FSharp.Spirv

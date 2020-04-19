@@ -467,17 +467,17 @@ let load (graphics: FalGraphics) (wad: Wad) (map: Map) (mvpBuffer: VulkanBuffer<
         | _ ->
             let vertex =
                 <@
-                    let mvp = Variable<ModelViewProjection> [Decoration.Binding 0u; Decoration.DescriptorSet 0u] StorageClass.Uniform
-                    let sectors = Variable<SectorRendersBlock> [Decoration.Binding 2u; Decoration.DescriptorSet 2u] StorageClass.StorageBuffer
+                    let mvp = Variable<ModelViewProjection> [Decoration.Binding 0u; Decoration.DescriptorSet 0u] StorageClass.Uniform []
+                    let sectors = Variable<SectorRendersBlock> [Decoration.Binding 2u; Decoration.DescriptorSet 2u] StorageClass.StorageBuffer []
 
-                    let position = Variable<Vector2> [Decoration.Location 0u; Decoration.Binding 0u] StorageClass.Input
-                    let z = Variable<single> [Decoration.Location 1u; Decoration.Binding 1u] StorageClass.Input
-                    let uv = Variable<single> [Decoration.Location 2u; Decoration.Binding 2u] StorageClass.Input
-                    let sectorId = Variable<int> [Decoration.Location 3u; Decoration.Binding 3u] StorageClass.Input
-                    let origUv = Variable<Vector2> [Decoration.Location 4u; Decoration.Binding 4u] StorageClass.Input
+                    let position = Variable<Vector2> [Decoration.Location 0u; Decoration.Binding 0u] StorageClass.Input []
+                    let z = Variable<single> [Decoration.Location 1u; Decoration.Binding 1u] StorageClass.Input []
+                    let uv = Variable<single> [Decoration.Location 2u; Decoration.Binding 2u] StorageClass.Input []
+                    let sectorId = Variable<int> [Decoration.Location 3u; Decoration.Binding 3u] StorageClass.Input []
+                    let origUv = Variable<Vector2> [Decoration.Location 4u; Decoration.Binding 4u] StorageClass.Input []
     
-                    let mutable gl_Position  = Variable<Vector4> [Decoration.BuiltIn BuiltIn.Position] StorageClass.Output
-                    let mutable fragTexCoord = Variable<Vector2> [Decoration.Location 0u] StorageClass.Output
+                    let mutable gl_Position  = Variable<Vector4> [Decoration.BuiltIn BuiltIn.Position] StorageClass.Output []
+                    let mutable fragTexCoord = Variable<Vector2> [Decoration.Location 0u] StorageClass.Output []
     
                     fun () ->
                         let beef = sectors.SectorRenders.[0]
@@ -490,10 +490,10 @@ let load (graphics: FalGraphics) (wad: Wad) (map: Map) (mvpBuffer: VulkanBuffer<
     
             let fragment =
                 <@ 
-                    let sampler = Variable<Sampler2d> [Decoration.Binding 1u; Decoration.DescriptorSet 1u] StorageClass.UniformConstant
-                    let fragTexCoord = Variable<Vector2> [Decoration.Location 0u] StorageClass.Input
+                    let sampler = Variable<Sampler2d> [Decoration.Binding 1u; Decoration.DescriptorSet 1u] StorageClass.UniformConstant []
+                    let fragTexCoord = Variable<Vector2> [Decoration.Location 0u] StorageClass.Input []
     
-                    let mutable outColor = Variable<Vector4> [Decoration.Location 0u] StorageClass.Output
+                    let mutable outColor = Variable<Vector4> [Decoration.Location 0u] StorageClass.Output []
     
                     fun () ->
                         let color = sampler.ImplicitLod fragTexCoord
@@ -503,17 +503,7 @@ let load (graphics: FalGraphics) (wad: Wad) (map: Map) (mvpBuffer: VulkanBuffer<
                         outColor <- Vector4(outColor.X, outColor.Y, outColor.Z, color.W)
                 @>
     
-            let shader = 
-                graphics.CreateShader(vertex, fragment,
-                    Shader(0, true, 
-                        [ ShaderDescriptorLayout(UniformBufferDescriptor, VertexStage, 0u)
-                          ShaderDescriptorLayout(CombinedImageSamplerDescriptor, FragmentStage, 1u)
-                          ShaderDescriptorLayout(StorageBufferDescriptor, VertexStage, 2u) ],
-                        [ ShaderVertexInput(PerVertex, typeof<Vector2>, 0u)
-                          ShaderVertexInput(PerVertex, typeof<single>, 1u)
-                          ShaderVertexInput(PerVertex, typeof<single>, 2u)
-                          ShaderVertexInput(PerVertex, typeof<int>, 3u)
-                          ShaderVertexInput(PerVertex, typeof<Vector2>, 4u) ]))
+            let shader = graphics.CreateShader(vertex, fragment)
     
             mapViewShader <- Some shader
             shader
@@ -666,26 +656,25 @@ let loadMap mapName (wad: Wad) (graphics: FalGraphics) =
 
     let vertex =
         <@
-            let mvp = Variable<ModelViewProjection> [Decoration.Binding 0u; Decoration.DescriptorSet 0u] StorageClass.Uniform
-            let position = Variable<Vector3> [Decoration.Location 0u; Decoration.Binding 0u] StorageClass.Input
-            let texCoord = Variable<Vector2> [Decoration.Location 1u; Decoration.Binding 0u] StorageClass.Input
-            let lightLevel = Variable<single> [Decoration.Location 2u; Decoration.Binding 1u] StorageClass.Input
-            let mutable gl_Position  = Variable<Vector4> [Decoration.BuiltIn BuiltIn.Position] StorageClass.Output
-            let mutable fragTexCoord = Variable<Vector2> [Decoration.Location 0u] StorageClass.Output
-            let mutable lightLevelOut = Variable<single> [Decoration.Location 1u] StorageClass.Output
+            let mvp = Variable<ModelViewProjection> [Decoration.Binding 0u; Decoration.DescriptorSet 0u] StorageClass.Uniform []
+            let vertex = Variable<Vertex> [Decoration.Location 0u; Decoration.Binding 0u] StorageClass.Input []
+            let lightLevel = Variable<single> [Decoration.Location 2u; Decoration.Binding 1u] StorageClass.Input [PerInstance]
+            let mutable gl_Position  = Variable<Vector4> [Decoration.BuiltIn BuiltIn.Position] StorageClass.Output []
+            let mutable fragTexCoord = Variable<Vector2> [Decoration.Location 0u] StorageClass.Output []
+            let mutable lightLevelOut = Variable<single> [Decoration.Location 1u] StorageClass.Output []
 
             fun () ->
-                gl_Position <- Vector4.Transform(Vector4(position, 1.f), mvp.model * mvp.view * mvp.proj)
-                fragTexCoord <- texCoord
+                gl_Position <- Vector4.Transform(Vector4(vertex.position, 1.f), mvp.model * mvp.view * mvp.proj)
+                fragTexCoord <- vertex.uv
                 lightLevelOut <- lightLevel
         @>
 
     let fragment =
         <@ 
-            let sampler = Variable<Sampler2d> [Decoration.Binding 1u; Decoration.DescriptorSet 1u] StorageClass.UniformConstant
-            let fragTexCoord = Variable<Vector2> [Decoration.Location 0u] StorageClass.Input
-            let lightLevel = Variable<single> [Decoration.Location 1u] StorageClass.Input
-            let mutable outColor = Variable<Vector4> [Decoration.Location 0u] StorageClass.Output
+            let sampler = Variable<Sampler2d> [Decoration.Binding 1u; Decoration.DescriptorSet 1u] StorageClass.UniformConstant []
+            let fragTexCoord = Variable<Vector2> [Decoration.Location 0u] StorageClass.Input []
+            let lightLevel = Variable<single> [Decoration.Location 1u] StorageClass.Input []
+            let mutable outColor = Variable<Vector4> [Decoration.Location 0u] StorageClass.Output []
 
             fun () ->
                 let color = sampler.ImplicitLod fragTexCoord
@@ -695,13 +684,7 @@ let loadMap mapName (wad: Wad) (graphics: FalGraphics) =
                 outColor <- Vector4(outColor.X, outColor.Y, outColor.Z, color.W)
         @>
 
-    let shader = 
-        graphics.CreateShader(vertex, fragment,
-            Shader(0, true, 
-                [ ShaderDescriptorLayout(UniformBufferDescriptor, VertexStage, 0u)
-                  ShaderDescriptorLayout(CombinedImageSamplerDescriptor, FragmentStage, 1u) ],
-                [ ShaderVertexInput(PerVertex, typeof<Vertex>, 0u) 
-                  ShaderVertexInput(PerInstance, typeof<single>, 1u) ]))
+    let shader = graphics.CreateShader(vertex, fragment)
 
     let queueDraw (image: FalkanImage) (lightLevel: int) (vertices: Vector3 []) (uv: Vector2 []) =
         let vertices = Array.init vertices.Length (fun i -> { position = vertices.[i]; uv = uv.[i] })

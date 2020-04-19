@@ -2,6 +2,8 @@
 module FSharp.Spirv.Quotations.Checker
 
 open FSharp.Quotations
-open Tast
+open TypedTree
+
+val CheckVariable: Var -> Expr list -> SpirvVar * Expr list
 
 val Check: Expr -> SpirvTopLevelExpr

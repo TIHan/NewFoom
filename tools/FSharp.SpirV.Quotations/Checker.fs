@@ -12,7 +12,7 @@ open FSharp.Quotations.DerivedPatterns
 open FSharp.Spirv
 open FSharp.Spirv.Specification
 open FSharp.Reflection
-open Tast
+open TypedTree
 
 [<NoEquality;NoComparison>]
 type env =
@@ -198,7 +198,7 @@ let mkSpirvVarOfVarAux env decorations storageClass var getSpvTy =
 let mkSpirvVarOfVar env decorations storageClass var =
     mkSpirvVarOfVarAux env decorations storageClass var (fun () -> mkSpirvType var.Type)
 
-let mkSpirvVarOfVarWithArrayType env decorations storageClass var elementSpvTy arrayLen =
+let mkSpirvVarOfVarWithArrayType env decorations storageClass customAnnotations var elementSpvTy arrayLen =
     mkSpirvVarOfVarAux env decorations storageClass var (fun () -> mkSpirvArrayType elementSpvTy arrayLen)
 
 let rec mkSpirvConst expr =
@@ -255,7 +255,7 @@ let addSpirvDeclConst env var rhs =
     let env, spvVar =
         match spvConst with
         | SpirvConstArray (elementTy, constants, _) -> 
-            mkSpirvVarOfVarWithArrayType env [] StorageClass.Private var elementTy constants.Length
+            mkSpirvVarOfVarWithArrayType env [] StorageClass.Private [] var elementTy constants.Length
         | _ -> 
             mkSpirvVarOfVar env [] StorageClass.Private var
 
@@ -379,18 +379,14 @@ and CheckIntrinsicCall env checkedArgs expr =
     | SpecificCall <@ float32 @> _, _, [arg] ->
         env, ConvertSIntToFloat arg |> SpirvIntrinsicCall
 
-    | SpecificCall <@ Unchecked.defaultof<_[]>.[0] @> _, _, [receiver;arg] ->
-        //let receiver =
-        //    match receiver with
-        //    | SpirvExpr.SpirvFieldGet(SpirvVar var, _) when var.StorageClass = StorageClass.Uniform || var.StorageClass = StorageClass.StorageBuffer ->
-        //        SpirvVar var
-        //    | _ -> receiver
-                
+    | SpecificCall <@ Unchecked.defaultof<_[]>.[0] @> _, _, [receiver;arg] -> 
         env, SpirvArrayIndexerGet (receiver, arg, mkSpirvType expr.Type)
 
     | SpecificCall <@ Vector4.Transform(Unchecked.defaultof<Vector4>, Unchecked.defaultof<Matrix4x4>) @> _, _, [arg1;arg2] ->
         env, Transform__Vector4_Matrix4x4__Vector4 (arg1, arg2) |> SpirvIntrinsicCall
 
+
+    // TODO: Use witness passing for arithmetic.
     //| SpecificCall <@ (*) : float32 -> float32 -> float32 @> _, _, [arg1;arg2] ->
     //    env, FloatMultiply(arg1, arg2, mkSpirvType expr.Type) |> SpirvIntrinsicCall
 
@@ -492,7 +488,7 @@ and CheckExprs (env: env) exprs =
 let rec CheckTopLevelExpr env expr =
     match expr with
     | Let(var, SpecificCall <@ Variable<_> @> (None, [_], args), body) ->
-        let env, spvExpr1 = CheckVariable env var args
+        let env, spvExpr1 = CheckTopLevelVariable env var args
         let env, spvExpr2 = CheckTopLevelExpr env body
         env, SpirvTopLevelSequential(spvExpr1, spvExpr2)
                 
@@ -508,8 +504,7 @@ let rec CheckTopLevelExpr env expr =
     | _ ->
         failwithf "Top-level expression not supported: %A" expr
 
-and CheckVariable env var args =
-
+and CheckVariableAux env var args =
     let rec flattenList x acc =
         match x with
         | NewUnionCase(caseInfo, [arg0;arg1]) when caseInfo.DeclaringType.GetGenericTypeDefinition() = typeof<_ list>.GetGenericTypeDefinition() && caseInfo.Name = "Cons" ->
@@ -537,15 +532,24 @@ and CheckVariable env var args =
         | _ -> failwith "Invalid storage class."
 
     match args with
-    | [listArg;storageClassArg] ->
+    | [listArg;storageClassArg;customAnnotationsArg] ->
         let flatArgs = flattenList listArg []
         let decorations = flatArgs |> List.map checkDecoration
         let storageClass = checkStorageClass storageClassArg
+        let customAnnotations = flattenList customAnnotationsArg []
         let env, spvVar = mkSpirvVarOfVar env decorations storageClass var
         let env, spvVar = addSpirvDeclVar env spvVar
-        env, SpirvDeclVar spvVar |> SpirvTopLevelDecl
+        env, spvVar, customAnnotations
     | _ ->
-        failwith "Invalid new decorate."
+        failwith "Invalid input or output variable."
+
+and CheckTopLevelVariable env var args =
+    let env, spvVar, _ = CheckVariableAux env var args
+    env, spvVar |> SpirvDeclVar |> SpirvTopLevelDecl
+
+and CheckVariable var (args: Expr list) =
+    let _, spvVar, customAnnoations = CheckVariableAux env.Default var args
+    spvVar, customAnnoations
 
 let Check expr =
     let env, checkedExpr = CheckTopLevelExpr env.Default expr
