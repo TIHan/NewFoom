@@ -547,6 +547,9 @@ type Returnable =
     | BlockReturnable
     | NotReturnable
 
+let onBlockFinished cenv =
+    cenv.ignoreAddingInstructions <- false
+
 let GetVarResult cenv var =
     let id =
         match cenv.localVariablesByVar.TryGetValue var with
@@ -783,22 +786,23 @@ let rec GenExpr cenv (env: env) blockScope returnable expr =
 
     | SpirvIfThenElse(condExpr, trueExpr, falseExpr) ->
         let resultIdCond = GenExpr cenv env blockScope NotReturnable condExpr
+
         let contLabel = nextResultId cenv
-
-        let cenvTrue = { cenv with currentInstructions = ResizeArray () } // TODO: instead of creating a new cenv, put currentInstructions somewhere else? pass as an argument?
-        let cenvFalse = { cenv with currentInstructions = ResizeArray () }
-
-        let trueLabel = emitLabel cenvTrue
-        let trueResult = GenExpr cenvTrue env (blockScope + 1) BlockReturnable trueExpr
-        addInstructions cenvTrue [OpBranch contLabel]
-
-        let falseLabel = emitLabel cenvFalse
-        let falseResult = GenExpr cenvFalse env (blockScope + 1) BlockReturnable falseExpr
-        addInstructions cenvFalse [OpBranch contLabel]
+        let trueLabel = nextResultId cenv
+        let falseLabel = nextResultId cenv
 
         addInstructions cenv [OpSelectionMerge(contLabel, SelectionControl.None);OpBranchConditional(resultIdCond, trueLabel, falseLabel, [])]
-        addInstructions cenv cenvTrue.currentInstructions
-        addInstructions cenv cenvFalse.currentInstructions
+
+        addInstructions cenv [OpLabel trueLabel]
+        let trueResult = GenExpr cenv env (blockScope + 1) BlockReturnable trueExpr |> deref cenv
+        addInstructions cenv [OpBranch contLabel]
+        onBlockFinished cenv
+
+        addInstructions cenv [OpLabel falseLabel]
+        let falseResult = GenExpr cenv env (blockScope + 1) BlockReturnable falseExpr |> deref cenv
+        addInstructions cenv [OpBranch contLabel]
+        onBlockFinished cenv
+
         addInstructions cenv [OpLabel contLabel]
 
         let retTy = expr.Type
@@ -858,7 +862,7 @@ let rec GenTopLevelExpr cenv env expr =
             addInstructions cenv [OpReturn]
         else
             addInstructions cenv [OpReturnValue resultId]
-        cenv.ignoreAddingInstructions <- false
+        onBlockFinished cenv
 
 and GenMain cenv env expr =
     GenTopLevelExpr cenv env expr |> ignore

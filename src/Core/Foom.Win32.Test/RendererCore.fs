@@ -487,33 +487,32 @@ let load (graphics: FalGraphics) (wad: Wad) (map: Map) (mvpBuffer: VulkanBuffer<
                     let mutable fragTexCoord = Variable<Vector2> [Decoration.Location 0u] StorageClass.Output []
     
                     fun () ->
-                        let mutable beef = Vector2(1.f, 1.f)
-                        if sectorId.BackSideIndex <> -1 && sectorId.BackSideIndex <> -1 then
-                            //let frontSide = sectors.SectorRenders.[sectorId.FrontSideIndex]
-                            //let backSide = sectors.SectorRenders.[sectorId.BackSideIndex]
+                        let beef =
+                            if sectorId.BackSideIndex <> -1 && sectorId.BackSideIndex <> -1 then
+                                let frontSide = sectors.SectorRenders.[sectorId.FrontSideIndex]
+                                let backSide = sectors.SectorRenders.[sectorId.BackSideIndex]
 
-                            //let origBottom = backSide.OriginalCeilingHeight
-                            //let origTop = frontSide.OriginalCeilingHeight
+                                let origBottom = backSide.OriginalCeilingHeight
+                                let origTop = frontSide.OriginalCeilingHeight
 
-                            //let bottom = backSide.CeilingHeight
-                            //let top = frontSide.CeilingHeight
+                                let bottom = backSide.CeilingHeight
+                                let top = frontSide.CeilingHeight
 
-                            //let height = top - bottom
-                            //let origHeight = origTop - origBottom
+                                let height = top - bottom
+                                let origHeight = origTop - origBottom
 
-                            //let bottomScale =
-                            //    if origHeight = 0.f then
-                            //        height
-                            //        //1.f
-                            //    else
-                            //        (height / origHeight)
-
-                            beef <- Vector2(0.5f, 0.5f) // Vector2(uv.X * bottomScale, uv.Y * bottomScale)
-                            //    Vector2(1.f, 1.f)
-                            //else
-                            //    Vector2(1.f, 1.f
-                        else
-                            beef <- Vector2(1.f, 0.5f)
+                                let mutable bottomScale = height
+                               // if origHeight <> 0.f then
+                              //      ()
+                                //let bottomScale =
+                                //    if origHeight = 0.f then
+                                //        height
+                                //    else
+                                //        (height / origHeight)
+                                Vector2(1.f, 1.f)
+                              //  Vector2(uv.X * bottomScale, uv.Y * bottomScale)
+                            else
+                                Vector2(1.f, 1.f)
 
                         gl_Position <- Vector4.Transform(Vector4(position, z * beef.X, 1.f), mvp.model * mvp.view * mvp.proj)
                         fragTexCoord <- Vector2(origUv.X, origUv.Y * beef.Y)
