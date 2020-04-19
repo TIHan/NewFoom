@@ -85,7 +85,10 @@ let rec mkSpirvType ty =
                 SpirvField (field.Name, mkSpirvType field.FieldType, [])
             )
             |> List.ofSeq
-        SpirvTypeStruct (ty.FullName, fields)
+        let isBlock =
+            ty.GetCustomAttributesData()
+            |> Seq.exists (fun x -> x.AttributeType = typeof<BlockAttribute>)
+        SpirvTypeStruct (ty.FullName, fields, isBlock)
     | _ -> 
         failwithf "Unable to make SpirvType from Type: %A" ty
 

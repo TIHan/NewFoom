@@ -27,7 +27,7 @@ and SpirvType =
     | SpirvTypeMatrix4x4
     | SpirvTypeArray of SpirvType * length: int
     | SpirvTypeRuntimeArray of SpirvType
-    | SpirvTypeStruct of name: string * fields: SpirvField list
+    | SpirvTypeStruct of name: string * fields: SpirvField list * isBlock: bool
     | SpirvTypeImage of SpirvImageType
     | SpirvTypeSampler
     | SpirvTypeSampledImage of SpirvImageType
@@ -54,15 +54,15 @@ and SpirvType =
         match x with
         | SpirvTypeVoid -> failwith "Unable to get size of void type."
         | SpirvTypeBool -> sizeof<bool>
-        | SpirvTypeInt (width, _) -> width / sizeof<byte>
-        | SpirvTypeFloat width -> width / sizeof<byte>
+        | SpirvTypeInt (width, _) -> width / 8
+        | SpirvTypeFloat width -> width / 8
         | SpirvTypeVector2
         | SpirvTypeVector2Int -> sizeof<Vector2>
         | SpirvTypeVector3 -> sizeof<Vector3>
         | SpirvTypeVector4 -> sizeof<Vector4>
         | SpirvTypeMatrix4x4 -> sizeof<Matrix4x4>
         | SpirvTypeArray(ty, length) -> ty.Size * length
-        | SpirvTypeStruct(_, fields) ->
+        | SpirvTypeStruct(_, fields, _) ->
             fields
             |> List.sumBy(fun (field: SpirvField) -> field.Type.Size)
         | SpirvTypeRuntimeArray _
@@ -76,6 +76,7 @@ and SpirvType =
 
     member x.IsOpaque =
         match x with
+        | SpirvTypeRuntimeArray _
         | SpirvTypeImage _
         | SpirvTypeSampler
         | SpirvTypeSampledImage _ -> true
@@ -217,7 +218,7 @@ type SpirvExpr =
                 fieldGet.Type
             | SpirvFieldGet (receiver, index) ->
                 match receiver.Type with
-                | SpirvTypeStruct (_, fields) -> fields.[index].Type
+                | SpirvTypeStruct (_, fields, _) -> fields.[index].Type
                 | _ -> failwith "Invalid field get."
             | SpirvIfThenElse _ -> 
                 SpirvTypeVoid

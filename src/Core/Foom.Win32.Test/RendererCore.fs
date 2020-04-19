@@ -75,14 +75,14 @@ let createVulkanWin32Window title engineName updateInterval width height (window
 
 //
 
-[<Struct>]
+[<Struct;Block>]
 type Vertex =
     {
         position: Vector3
         uv: Vector2
     }
 
-[<Struct>]
+[<Struct;Block>]
 type ModelViewProjection =
     {
         model: Matrix4x4
@@ -269,7 +269,7 @@ type SectorRender =
         CeilingHeight: single
     }
 
-[<Struct;NoComparison;NoEquality>]
+[<Struct;NoComparison;NoEquality;Block>]
 type SectorRendersBlock =
     {
         SectorRenders: SectorRender[]
@@ -444,7 +444,7 @@ type MapView(sectors: SectorView [], lineViews: LineView [], sectorRendersBuffer
         let sectorView = { sectors.[sectorId]with Heights = heights }
         sectors.[sectorId] <- sectorView
       //  updateLineViews (Span sectors) (Span lineViews) sectorView.LineViewIds
-    //    sectorRendersBuffer.SetData(sectorId, ReadOnlySpan [|{ OriginalCeilingHeight = sectorView.OriginalHeights.CeilingHeight; OriginalFloorHeight = sectorView.OriginalHeights.FloorHeight; FloorHeight = heights.FloorHeight; CeilingHeight = heights.CeilingHeight  }|])
+        sectorRendersBuffer.SetData(sectorId, ReadOnlySpan [|{ OriginalCeilingHeight = sectorView.OriginalHeights.CeilingHeight; OriginalFloorHeight = sectorView.OriginalHeights.FloorHeight; FloorHeight = heights.FloorHeight; CeilingHeight = heights.CeilingHeight  }|])
 
 let createVar (graphics: FalGraphics) (data: 'T[]) : VulkanVarListSegment<'T> =
     let buffer = graphics.CreateBuffer(VertexBuffer, VulkanBufferFlags.None, data)
@@ -480,7 +480,7 @@ let load (graphics: FalGraphics) (wad: Wad) (map: Map) (mvpBuffer: VulkanBuffer<
                     let mutable fragTexCoord = Variable<Vector2> [Decoration.Location 0u] StorageClass.Output []
     
                     fun () ->
-                        let beef = sectors.SectorRenders.[0]
+                        let beef = sectors.SectorRenders.[sectorId]
                         let z = z + beef.OriginalCeilingHeight
                         //let z = beef.FloorHeight // ((beef.CeilingHeight - beef.FloorHeight) / (beef.OriginalCeilingHeight - beef.OriginalFloorHeight))
                         let ycoord = origUv.Y * uv
@@ -524,9 +524,9 @@ let load (graphics: FalGraphics) (wad: Wad) (map: Map) (mvpBuffer: VulkanBuffer<
                 OriginalFloorHeight = heights.FloorHeight
                 OriginalCeilingHeight = heights.CeilingHeight
                 FloorHeight = heights.FloorHeight
-                CeilingHeight = heights.CeilingHeight
+                CeilingHeight = heights.CeilingHeight     
             }
-
+        
     let sectorRendersBuffer = graphics.CreateBuffer(StorageBuffer, VulkanBufferFlags.None, sectorRenders)
 
     let addLineViewId (sectorViewId: int) (lineViewId: int) =

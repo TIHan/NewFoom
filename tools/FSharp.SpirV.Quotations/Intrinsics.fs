@@ -10,6 +10,10 @@ open FSharp.Quotations.Patterns
 open FSharp.Quotations.DerivedPatterns
 open FSharp.Spirv
 
+[<Sealed;AttributeUsage(AttributeTargets.Struct)>]
+type BlockAttribute() =
+    inherit Attribute()
+
 [<Literal>]
 let private ErrorMessage = "Do not call outside the code quotation."
 

@@ -157,9 +157,9 @@ let emitTypeAux cenv ty f =
         cenv.debugNames.Add("type_" + ty.Name, resultId)
 
         match ty with
-        | SpirvType.SpirvTypeStruct(_, fields) ->
+        | SpirvType.SpirvTypeStruct(name, fields, isBlock) ->
             let mutable offset = 0u
-            let mutable isRuntimeArray = None
+            let mutable hasRuntimeArray = false
             let rec computeFields (fields: SpirvField list) =
                 fields
                 |> List.iteri (fun i (SpirvField(_, fieldTy, _)) ->
@@ -172,22 +172,24 @@ let emitTypeAux cenv ty f =
                     | SpirvTypeVector3 -> addDecorationInstructions cenv [OpMemberDecorate(resultId, i, Decoration.Offset offset)]
                     | SpirvTypeVector4 -> addDecorationInstructions cenv [OpMemberDecorate(resultId, i, Decoration.Offset offset)]
                     | SpirvTypeMatrix4x4 -> addDecorationInstructions cenv [OpMemberDecorate(resultId, i, Decoration.Offset offset)]
-                    | SpirvTypeRuntimeArray elementTy -> 
-                        isRuntimeArray <- Some elementTy.Size
-                        addDecorationInstructions cenv [OpDecorate(cenv.typesByType.[fieldTy], Decoration.ArrayStride(uint32 isRuntimeArray.Value))]
+                    | SpirvTypeRuntimeArray _ -> 
+                        hasRuntimeArray <- true
                         addDecorationInstructions cenv [OpMemberDecorate(resultId, i, Decoration.Offset offset)]
-                    | SpirvTypeStruct(_, _) ->
-                        failwithf "Cannot have nested structs."
+                    | SpirvTypeStruct(_, fields, _) ->
+                        computeFields fields
                     | _ -> failwithf "Invalid field type, %A." fieldTy // TODO
-                    if isRuntimeArray.IsNone then
+                    if not fieldTy.IsOpaque then
                         offset <- offset + uint32 fieldTy.Size)
             computeFields fields
-            if isRuntimeArray.IsSome then
+            if isBlock then
                 addDecorationInstructions cenv [OpDecorate(resultId, Decoration.Block)]
             else
-                addDecorationInstructions cenv [OpDecorate(resultId, Decoration.Block)]
+                if hasRuntimeArray then
+                    failwithf "Struct type, %s, must be marked as a block because it contains a runtime array." name
         | SpirvType.SpirvTypeMatrix4x4 ->
             addDecorationInstructions cenv [OpDecorate(resultId, Decoration.MatrixStride 0u)]
+        | SpirvType.SpirvTypeRuntimeArray elementTy ->
+            addDecorationInstructions cenv [OpDecorate(resultId, Decoration.ArrayStride(uint32 elementTy.Size))]
         | _ -> ()       
 
         resultId
@@ -265,7 +267,7 @@ let rec emitType cenv ty =
     | SpirvTypeMatrix4x4 -> emitTypeMatrix4x4 cenv
     | SpirvTypeArray (elementTy, length) -> emitArrayType cenv elementTy length
     | SpirvTypeRuntimeArray elementTy -> emitRuntimeArrayType cenv elementTy
-    | SpirvTypeStruct (_, fields) -> emitStructType cenv ty fields
+    | SpirvTypeStruct (_, fields, _) -> emitStructType cenv ty fields
     | SpirvTypeImage imageTy -> emitTypeImage cenv imageTy
     | SpirvTypeSampler -> emitTypeSampler cenv
     | SpirvTypeSampledImage imageTy -> emitTypeSampledImage cenv imageTy
@@ -440,8 +442,8 @@ let rec GenGlobalVar cenv spvVar =
 
         if storageClass = StorageClass.Input then
             match spvVar.Type with
-            | SpirvTypeStruct(_, fields) ->
-                // TODO: Maybe refactor this a bit better? Maybe put it into SpirvVar as a lazy evaluated member?
+            | SpirvTypeStruct(_, fields, _) ->
+                // TODO: Maybe refactor this a bit better? Maybe lazily evaluate the existence of location and binding and put it into SpirvVar as a lazy evaluated member?
                 // Review: This creates dummy variables if we have an input variable that is a struct. This ensures we get locations right.
                 match spvVar.Decorations |> List.tryPick (function Decoration.Location n -> Some n | _ -> None) with
                 | Some location ->
