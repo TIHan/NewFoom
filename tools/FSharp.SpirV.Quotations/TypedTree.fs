@@ -220,8 +220,8 @@ type SpirvExpr =
                 match receiver.Type with
                 | SpirvTypeStruct (_, fields, _) -> fields.[index].Type
                 | _ -> failwith "Invalid field get."
-            | SpirvIfThenElse _ -> 
-                SpirvTypeVoid
+            | SpirvIfThenElse(_, trueExpr, _) -> 
+                trueExpr.Type
         getType x
 
 and SpirvIntrinsicCall =
@@ -242,6 +242,7 @@ and SpirvIntrinsicCall =
     | FloatMultiply of arg1: SpirvExpr * arg2: SpirvExpr * retTy: SpirvType
     | FloatDivide of arg1: SpirvExpr * arg2: SpirvExpr * retTy: SpirvType
     | VectorTimesScalar of arg1: SpirvExpr * arg2: SpirvExpr * retTy: SpirvType
+    | CommonInstruction of (IdResultType * IdResult * IdRef * IdRef -> Instruction) * arg1: SpirvExpr * arg2: SpirvExpr * retTy: SpirvType
 
     member x.ReturnType =
         match x with
@@ -283,6 +284,7 @@ and SpirvIntrinsicCall =
         | FloatMultiply(_, _, retTy) -> retTy
         | FloatDivide(_, _, retTy) -> retTy
         | VectorTimesScalar(_, _, retTy) -> retTy
+        | CommonInstruction(_, _, _, retTy) -> retTy
 
     member x.Arguments =
         match x with
@@ -302,6 +304,7 @@ and SpirvIntrinsicCall =
         | FloatMultiply(arg1, arg2, _) -> [arg1;arg2]
         | FloatDivide(arg1, arg2, _) -> [arg1;arg2]
         | VectorTimesScalar(arg1, arg2, _) -> [arg1;arg2]
+        | CommonInstruction(_, arg1, arg2, _) -> [arg1;arg2]
 
 
 and SpirvIntrinsicFieldGet =

@@ -342,6 +342,12 @@ let rec CheckExpr env isReturnable expr =
         let env, spvCondExpr = CheckExpr env false condExpr
         let env, spvTrueExpr = CheckExpr env isReturnable trueExpr
         let env, spvFalseExpr = CheckExpr env isReturnable falseExpr
+        //let retTy = expr.Type
+        //if retTy <> typeof<unit> then
+        //    let spvVar = mkSpirvVar(Guid.NewGuid().ToString(), mkSpirvType retTy, [], StorageClass.Function, true)
+        //    let spvReturnExpr = SpirvSequential(SpirvIfThenElse(spvCondExpr, SpirvVarSet(spvVar, spvTrueExpr), SpirvVarSet(spvVar, spvFalseExpr)), SpirvVar spvVar)
+        //    env, SpirvLet(spvVar, )
+        //else
         env, SpirvIfThenElse(spvCondExpr, spvTrueExpr, spvFalseExpr)
 
     | _ ->
@@ -395,6 +401,24 @@ and CheckIntrinsicCall env checkedArgs expr =
 
     //| SpecificCall <@ (/) : float32 -> float32 -> float32 @> _, _, [arg1;arg2] ->
     //    env, FloatDivide(arg1, arg2, mkSpirvType expr.Type) |> SpirvIntrinsicCall
+
+    | SpecificCall <@ (<>) @> (_, tyArgs, _), _, [arg1;arg2] ->
+        match tyArgs with
+        | _ when tyArgs = [typeof<float32>] ->
+            env, CommonInstruction(OpFOrdNotEqual, arg1, arg2, mkSpirvType expr.Type) |> SpirvIntrinsicCall
+        | _ when tyArgs = [typeof<int>] ->
+            env, CommonInstruction(OpINotEqual, arg1, arg2, mkSpirvType expr.Type) |> SpirvIntrinsicCall
+        | _ ->
+            failwithf "Call not supported: %A" expr
+
+    | SpecificCall <@ (=) @> (_, tyArgs, _), _, [arg1;arg2] ->
+        match tyArgs with
+        | _ when tyArgs = [typeof<float32>] ->
+            env, CommonInstruction(OpFOrdEqual, arg1, arg2, mkSpirvType expr.Type) |> SpirvIntrinsicCall
+        | _ when tyArgs = [typeof<int>] ->
+            env, CommonInstruction(OpIEqual, arg1, arg2, mkSpirvType expr.Type) |> SpirvIntrinsicCall
+        | _ ->
+            failwithf "Call not supported: %A" expr
 
     | SpecificCall <@ (+) @> (_, tyArgs, _), _, [arg1;arg2] ->
         match tyArgs with

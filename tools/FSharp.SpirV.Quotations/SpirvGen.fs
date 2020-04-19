@@ -434,6 +434,9 @@ let rec GenGlobalVar cenv spvVar =
     | _ ->
         let storageClass = spvVar.StorageClass
 
+        if storageClass = StorageClass.Function then
+            failwith "Invalid storage class for global variable."
+
         let resultType = emitType cenv spvVar.Type |> emitPointer cenv storageClass
         let resultId = nextResultId cenv
         cenv.globalVariables.[resultId] <- (OpVariable(resultType, resultId, storageClass, None), spvVar.Decorations)
@@ -544,6 +547,15 @@ type Returnable =
     | BlockReturnable
     | NotReturnable
 
+let GetVarResult cenv var =
+    let id =
+        match cenv.localVariablesByVar.TryGetValue var with
+        | true, resultId -> resultId
+        | _ -> cenv.globalVariablesByVar.[var]
+    if id = 0u then
+        failwithf "Invalid id: %i" id
+    id
+
 let rec GenExpr cenv (env: env) blockScope returnable expr =
     match expr with
 
@@ -583,17 +595,15 @@ let rec GenExpr cenv (env: env) blockScope returnable expr =
         cenv.locals.[resultId] <- op
         resultId
 
-    | SpirvVar spvVar ->
-        match cenv.localVariablesByVar.TryGetValue spvVar with
-        | true, resultId -> resultId
-        | _ -> cenv.globalVariablesByVar.[spvVar]
+    | SpirvVar var ->
+        GetVarResult cenv var
 
     | SpirvVarSet (var, rhs) ->
         if not var.IsMutable then
             failwithf "'%s' is not mutable." var.Name
 
         let rhsId = GenExpr cenv env blockScope NotReturnable rhs |> deref cenv
-        let id = GenGlobalVar cenv var
+        let id = GetVarResult cenv var
         addInstructions cenv [OpStore(id, rhsId, None)]
         ZeroResultId
 
@@ -724,6 +734,14 @@ let rec GenExpr cenv (env: env) blockScope returnable expr =
             addInstructions cenv [OpVectorTimesScalar(retTy, resultId, arg1, arg2)]
             resultId
 
+        | CommonInstruction(op, arg1, arg2, _) ->
+            let arg1 = GenExpr cenv env blockScope NotReturnable arg1 |> deref cenv
+            let arg2 = GenExpr cenv env blockScope NotReturnable arg2 |> deref cenv
+
+            let resultId = nextResultId cenv
+            addInstructions cenv [op(retTy, resultId, arg1, arg2)]
+            resultId
+
     | SpirvIntrinsicFieldGet fieldGet ->
         let getComponent receiver fieldTy n =
             let receiverId = GenExpr cenv env blockScope NotReturnable receiver |> deref cenv
@@ -771,11 +789,11 @@ let rec GenExpr cenv (env: env) blockScope returnable expr =
         let cenvFalse = { cenv with currentInstructions = ResizeArray () }
 
         let trueLabel = emitLabel cenvTrue
-        GenExpr cenvTrue env (blockScope + 1) BlockReturnable trueExpr |> ignore
+        let trueResult = GenExpr cenvTrue env (blockScope + 1) BlockReturnable trueExpr
         addInstructions cenvTrue [OpBranch contLabel]
 
         let falseLabel = emitLabel cenvFalse
-        GenExpr cenvFalse env (blockScope + 1) BlockReturnable falseExpr |> ignore
+        let falseResult = GenExpr cenvFalse env (blockScope + 1) BlockReturnable falseExpr
         addInstructions cenvFalse [OpBranch contLabel]
 
         addInstructions cenv [OpSelectionMerge(contLabel, SelectionControl.None);OpBranchConditional(resultIdCond, trueLabel, falseLabel, [])]
@@ -783,7 +801,15 @@ let rec GenExpr cenv (env: env) blockScope returnable expr =
         addInstructions cenv cenvFalse.currentInstructions
         addInstructions cenv [OpLabel contLabel]
 
-        ZeroResultId
+        let retTy = expr.Type
+        if retTy = SpirvTypeVoid then
+            ZeroResultId
+        else
+            let resultType = emitType cenv retTy
+            let operands = [PairIdRefIdRef(trueResult, trueLabel);PairIdRefIdRef(falseResult, falseLabel)]
+            let resultId = nextResultId cenv
+            addInstructions cenv [OpPhi(resultType, resultId, operands)]
+            resultId
 
 and GenVector cenv env blockScope returnable retTy args =
     let constituents =

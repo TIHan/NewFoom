@@ -228,7 +228,7 @@ type SidePartRender =
     {
         PositionXY: VulkanVarListSegment<Vector2>
         PositionZ: VulkanVarListSegment<single>
-        UV: VulkanVarListSegment<single>
+        UV: VulkanVarListSegment<Vector2>
         Image: FalkanImage
     }
 
@@ -273,6 +273,13 @@ type SectorRender =
 type SectorRendersBlock =
     {
         SectorRenders: SectorRender[]
+    }
+
+[<Struct;NoComparison;NoEquality;Block>]
+type SideSectors =
+    {
+        FrontSideIndex: int
+        BackSideIndex: int
     }
 
 let tryInitializeUpperFront map linedef =
@@ -383,17 +390,16 @@ let updateLineView (sectorViews: Span<SectorView>) (lineView: inref<LineView>) =
 
             let uv =
                 [|
-                    topScale
-                    topScale
-                    bottomScale
+                    Vector2(1.f, 0.f)
+                    Vector2(1.f, 0.f)
+                    Vector2(0.f, 1.f)
 
-                    bottomScale
-                    bottomScale
-                    topScale
-                
+                    Vector2(0.f, 1.f)
+                    Vector2(0.f, 1.f)
+                    Vector2(1.f, 0.f)
                 |]
 
-            lineView.FrontSide.Upper.PositionZ.Set(ReadOnlySpan positionZ)
+          //  lineView.FrontSide.Upper.PositionZ.Set(ReadOnlySpan positionZ)
             lineView.FrontSide.Upper.UV.Set(ReadOnlySpan uv)
 
         if lineView.FrontSide.HasMiddle then
@@ -416,19 +422,20 @@ let updateLineView (sectorViews: Span<SectorView>) (lineView: inref<LineView>) =
                         frontSide.CeilingHeight
                 else
                     frontSide.CeilingHeight
+            ()
          //   ()
-            let positionZ =
-                [|
-                    floorHeight
-                    floorHeight
-                    ceilingHeight
+            //let positionZ =
+            //    [|
+            //        floorHeight
+            //        floorHeight
+            //        ceilingHeight
 
-                    ceilingHeight
-                    ceilingHeight
-                    floorHeight        
-                |]
+            //        ceilingHeight
+            //        ceilingHeight
+            //        floorHeight        
+            //    |]
 
-            lineView.FrontSide.Middle.PositionZ.Set(ReadOnlySpan positionZ)
+          //  lineView.FrontSide.Middle.PositionZ.Set(ReadOnlySpan positionZ)
 
 let updateLineViews (sectorViews: Span<SectorView>) (lineViews: Span<LineView>) (lineViewIds: ResizeArray<int>) =
     for i = 0 to lineViewIds.Count - 1 do
@@ -472,20 +479,44 @@ let load (graphics: FalGraphics) (wad: Wad) (map: Map) (mvpBuffer: VulkanBuffer<
 
                     let position = Variable<Vector2> [Decoration.Location 0u; Decoration.Binding 0u] StorageClass.Input []
                     let z = Variable<single> [Decoration.Location 1u; Decoration.Binding 1u] StorageClass.Input []
-                    let uv = Variable<single> [Decoration.Location 2u; Decoration.Binding 2u] StorageClass.Input []
-                    let sectorId = Variable<int> [Decoration.Location 3u; Decoration.Binding 3u] StorageClass.Input []
-                    let origUv = Variable<Vector2> [Decoration.Location 4u; Decoration.Binding 4u] StorageClass.Input []
+                    let uv = Variable<Vector2> [Decoration.Location 2u; Decoration.Binding 2u] StorageClass.Input []
+                    let sectorId = Variable<SideSectors> [Decoration.Location 3u; Decoration.Binding 3u] StorageClass.Input []
+                    let origUv = Variable<Vector2> [Decoration.Location 5u; Decoration.Binding 4u] StorageClass.Input []
     
                     let mutable gl_Position  = Variable<Vector4> [Decoration.BuiltIn BuiltIn.Position] StorageClass.Output []
                     let mutable fragTexCoord = Variable<Vector2> [Decoration.Location 0u] StorageClass.Output []
     
                     fun () ->
-                        let beef = sectors.SectorRenders.[sectorId]
-                        let z = z + beef.OriginalCeilingHeight
-                        //let z = beef.FloorHeight // ((beef.CeilingHeight - beef.FloorHeight) / (beef.OriginalCeilingHeight - beef.OriginalFloorHeight))
-                        let ycoord = origUv.Y * uv
-                        gl_Position <- Vector4.Transform(Vector4(position, z, 1.f), mvp.model * mvp.view * mvp.proj)
-                        fragTexCoord <- Vector2(origUv.X, ycoord)
+                        let mutable beef = Vector2(1.f, 1.f)
+                        if sectorId.BackSideIndex <> -1 && sectorId.BackSideIndex <> -1 then
+                            //let frontSide = sectors.SectorRenders.[sectorId.FrontSideIndex]
+                            //let backSide = sectors.SectorRenders.[sectorId.BackSideIndex]
+
+                            //let origBottom = backSide.OriginalCeilingHeight
+                            //let origTop = frontSide.OriginalCeilingHeight
+
+                            //let bottom = backSide.CeilingHeight
+                            //let top = frontSide.CeilingHeight
+
+                            //let height = top - bottom
+                            //let origHeight = origTop - origBottom
+
+                            //let bottomScale =
+                            //    if origHeight = 0.f then
+                            //        height
+                            //        //1.f
+                            //    else
+                            //        (height / origHeight)
+
+                            beef <- Vector2(0.5f, 0.5f) // Vector2(uv.X * bottomScale, uv.Y * bottomScale)
+                            //    Vector2(1.f, 1.f)
+                            //else
+                            //    Vector2(1.f, 1.f
+                        else
+                            beef <- Vector2(1.f, 0.5f)
+
+                        gl_Position <- Vector4.Transform(Vector4(position, z * beef.X, 1.f), mvp.model * mvp.view * mvp.proj)
+                        fragTexCoord <- Vector2(origUv.X, origUv.Y * beef.Y)
                 @>
     
             let fragment =
@@ -546,13 +577,19 @@ let load (graphics: FalGraphics) (wad: Wad) (map: Map) (mvpBuffer: VulkanBuffer<
 
                     addLineViewId sdef.SectorNumber lineViewId
 
+                    let x =
+                        {
+                            FrontSideIndex = ldef.FrontSidedefIndex |> Option.map (fun _ -> sdef.SectorNumber) |> Option.defaultValue -1
+                            BackSideIndex = ldef.BackSidedefIndex |> Option.map (fun _ -> sdef.SectorNumber) |> Option.defaultValue -1
+                        }
+
                     let upper =
                         match sdef.UpperTextureName with
                         | Some texName ->
                             let image, info, infoBuffer = getImage graphics wad texName
 
                             let positionZ = (tryInitializeUpperFront map ldef).Value
-                            let origZ = Array.init positionZ.Length (fun _ -> sdef.SectorNumber)
+                            let origZ = Array.init positionZ.Length (fun _ -> x)
                             let uvVertices: Vector2 [] = createWallUv2 map ldef sdef (int info.Width) (int info.Height) positionXY positionZ WallSection.Upper
                             let origUv = createVar graphics uvVertices
 
@@ -560,7 +597,7 @@ let load (graphics: FalGraphics) (wad: Wad) (map: Map) (mvpBuffer: VulkanBuffer<
                                 {
                                     PositionXY = positionXYVar
                                     PositionZ = createVar graphics positionZ
-                                    UV = createVar graphics (Array.init positionZ.Length (fun _ -> 1.f))
+                                    UV = createVar graphics (Array.init positionZ.Length (fun _ -> Vector2.Zero))
                                     Image = image
                                 }
 
@@ -583,7 +620,7 @@ let load (graphics: FalGraphics) (wad: Wad) (map: Map) (mvpBuffer: VulkanBuffer<
                             let image, info, infoBuffer = getImage graphics wad texName
 
                             let positionZ = (tryInitializeMiddleFront map ldef).Value
-                            let origZ = Array.init positionZ.Length (fun _ -> sdef.SectorNumber)
+                            let origZ = Array.init positionZ.Length (fun _ -> x)
                             let uvVertices: Vector2 [] = createWallUv2 map ldef sdef (int info.Width) (int info.Height) positionXY positionZ WallSection.Middle
                             let origUv = createVar graphics uvVertices
 
@@ -591,7 +628,7 @@ let load (graphics: FalGraphics) (wad: Wad) (map: Map) (mvpBuffer: VulkanBuffer<
                                 {
                                     PositionXY = positionXYVar
                                     PositionZ = createVar graphics positionZ
-                                    UV = createVar graphics (Array.init positionZ.Length (fun _ -> 1.f))
+                                    UV = createVar graphics (Array.init positionZ.Length (fun _ -> Vector2.Zero))
                                     Image = image
                                 }
 
@@ -631,7 +668,7 @@ let load (graphics: FalGraphics) (wad: Wad) (map: Map) (mvpBuffer: VulkanBuffer<
     
             let lineView = { HasFrontSide = hasFrontSide; FrontSide = frontSide; HasBackSide = hasBackSide; BackSide = backSide }
             
-          //  updateLineView (Span sectorViews) &lineView
+            updateLineView (Span sectorViews) &lineView
 
             lineView)
         |> Array.ofSeq
