@@ -48,6 +48,7 @@ type cenv =
 
         // Other
 
+        mutable lastLabel: IdRef
         mutable ignoreAddingInstructions: bool
     }
 
@@ -72,6 +73,7 @@ type cenv =
             currentInstructions = ResizeArray ()
             locals = Dictionary ()
             debugNames = ResizeArray ()
+            lastLabel = 0u
             ignoreAddingInstructions = false
         }
 
@@ -794,24 +796,29 @@ let rec GenExpr cenv (env: env) blockScope returnable expr =
         addInstructions cenv [OpSelectionMerge(contLabel, SelectionControl.None);OpBranchConditional(resultIdCond, trueLabel, falseLabel, [])]
 
         addInstructions cenv [OpLabel trueLabel]
+        cenv.lastLabel <- trueLabel
         let trueResult = GenExpr cenv env (blockScope + 1) BlockReturnable trueExpr |> deref cenv
         addInstructions cenv [OpBranch contLabel]
         onBlockFinished cenv
+        let lastTrueLabel = cenv.lastLabel
 
         addInstructions cenv [OpLabel falseLabel]
+        cenv.lastLabel <- falseLabel
         let falseResult = GenExpr cenv env (blockScope + 1) BlockReturnable falseExpr |> deref cenv
         addInstructions cenv [OpBranch contLabel]
         onBlockFinished cenv
+        let lastFalseLabel = cenv.lastLabel
 
         addInstructions cenv [OpLabel contLabel]
+        cenv.lastLabel <- contLabel
 
         let retTy = expr.Type
         if retTy = SpirvTypeVoid then
             ZeroResultId
         else
             let resultType = emitType cenv retTy
-            let operands = [PairIdRefIdRef(trueResult, trueLabel);PairIdRefIdRef(falseResult, falseLabel)]
             let resultId = nextResultId cenv
+            let operands = [PairIdRefIdRef(trueResult, lastTrueLabel);PairIdRefIdRef(falseResult, lastFalseLabel)]
             addInstructions cenv [OpPhi(resultType, resultId, operands)]
             resultId
 

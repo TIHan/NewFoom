@@ -451,7 +451,7 @@ type MapView(sectors: SectorView [], lineViews: LineView [], sectorRendersBuffer
         let sectorView = { sectors.[sectorId]with Heights = heights }
         sectors.[sectorId] <- sectorView
       //  updateLineViews (Span sectors) (Span lineViews) sectorView.LineViewIds
-        sectorRendersBuffer.SetData(sectorId, ReadOnlySpan [|{ OriginalCeilingHeight = sectorView.OriginalHeights.CeilingHeight; OriginalFloorHeight = sectorView.OriginalHeights.FloorHeight; FloorHeight = heights.FloorHeight; CeilingHeight = heights.CeilingHeight  }|])
+      //  sectorRendersBuffer.SetData(sectorId, ReadOnlySpan [|{ OriginalCeilingHeight = sectorView.OriginalHeights.CeilingHeight; OriginalFloorHeight = sectorView.OriginalHeights.FloorHeight; FloorHeight = heights.FloorHeight; CeilingHeight = heights.CeilingHeight  }|])
 
 let createVar (graphics: FalGraphics) (data: 'T[]) : VulkanVarListSegment<'T> =
     let buffer = graphics.CreateBuffer(VertexBuffer, VulkanBufferFlags.None, data)
@@ -502,15 +502,9 @@ let load (graphics: FalGraphics) (wad: Wad) (map: Map) (mvpBuffer: VulkanBuffer<
                                 let origHeight = origTop - origBottom
 
                                 let mutable bottomScale = height
-                               // if origHeight <> 0.f then
-                              //      ()
-                                //let bottomScale =
-                                //    if origHeight = 0.f then
-                                //        height
-                                //    else
-                                //        (height / origHeight)
-                                Vector2(1.f, 1.f)
-                              //  Vector2(uv.X * bottomScale, uv.Y * bottomScale)
+                                if origHeight <> 0.f then
+                                    bottomScale <- (height / origHeight)
+                                Vector2(uv.X * bottomScale, uv.Y * bottomScale)
                             else
                                 Vector2(1.f, 1.f)
 
