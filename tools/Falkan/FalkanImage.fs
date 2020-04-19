@@ -13,10 +13,10 @@ let getImageMemoryRequirements device image =
     vkGetImageMemoryRequirements(device, image, &&memRequirements)
     memRequirements
 
-let internal bindImage physicalDevice device image properties =
-    let memRequirements = getImageMemoryRequirements device image
-    let memory = VulkanMemory.Allocate physicalDevice device memRequirements properties
-    vkBindImageMemory(device, image, memory.DeviceMemory, uint64 memory.Block.Offset) |> checkResult
+let internal bindImage (vulkanDevice: VulkanDevice) image properties =
+    let memRequirements = getImageMemoryRequirements vulkanDevice.Device image
+    let memory = VulkanMemory.Allocate vulkanDevice memRequirements properties
+    vkBindImageMemory(vulkanDevice.Device, image, memory.NativeDeviceMemory, uint64 memory.Block.Offset) |> checkResult
     memory
 
 let mkImage device width height format tiling usage =
@@ -169,7 +169,9 @@ let copyImage device commandPool format width height srcBuffer dstImage queue =
 
     vkFreeCommandBuffers(device, commandPool, 1u, &&commandBuffer)
 
-let fillImage physicalDevice device commandPool transferQueue (vkImage: VkImage) format width height (data: ReadOnlySpan<byte>) =
+let fillImage (vulkanDevice: VulkanDevice) commandPool transferQueue (vkImage: VkImage) format width height (data: ReadOnlySpan<byte>) =
+    let device = vulkanDevice.Device
+
     // Memory that is not shared can not be written directly to from the CPU.
     // In order to set it from the CPU, a temporary shared memory buffer is used as a staging buffer to transfer the data.
     // This means that write times to local memory is more expensive but is highly-performant when read from the GPU.
@@ -178,9 +180,12 @@ let fillImage physicalDevice device commandPool transferQueue (vkImage: VkImage)
     let stagingProperties = 
             VkMemoryPropertyFlags.VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT ||| 
             VkMemoryPropertyFlags.VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
-    use stagingMemory = bindMemory physicalDevice device stagingBuffer stagingProperties
+    use stagingMemory = bindMemory vulkanDevice stagingBuffer stagingProperties
 
-    mapMemory device stagingMemory.DeviceMemory stagingMemory.Block.Offset data
+    let span = stagingMemory.MapAsSpan<byte>(data.Length)
+    data.CopyTo span
+    stagingMemory.Unmap()
+
     copyImage device commandPool format width height stagingBuffer vkImage transferQueue
 
     vkDestroyBuffer(device, stagingBuffer, vkNullPtr)
@@ -229,7 +234,7 @@ type VulkanDevice with
                 VkFormat.VK_FORMAT_D24_UNORM_S8_UINT
                 VkImageTiling.VK_IMAGE_TILING_OPTIMAL 
                 VkImageUsageFlags.VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT
-        let memory = bindImage this.PhysicalDevice this.Device image VkMemoryPropertyFlags.VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+        let memory = bindImage this image VkMemoryPropertyFlags.VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
         let imageView = mkImageView this.Device VkFormat.VK_FORMAT_D24_UNORM_S8_UINT image
 
         { vkDevice = this.Device
@@ -272,7 +277,7 @@ type VulkanDevice with
                 defaultImageFormat
                 VkImageTiling.VK_IMAGE_TILING_OPTIMAL 
                 (VkImageUsageFlags.VK_IMAGE_USAGE_TRANSFER_DST_BIT ||| VkImageUsageFlags.VK_IMAGE_USAGE_SAMPLED_BIT)
-        let memory = bindImage this.PhysicalDevice this.Device image VkMemoryPropertyFlags.VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+        let memory = bindImage this image VkMemoryPropertyFlags.VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
         let imageView = mkImageView this.Device defaultImageFormat image
         let sampler = mkSampler this.Device
 

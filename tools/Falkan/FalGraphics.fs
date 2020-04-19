@@ -56,7 +56,7 @@ type FalGraphics
 
     member this.CreateBuffer<'T when 'T : unmanaged> (kind, flags, data: ReadOnlySpan<'T>) =
         let buffer = this.CreateBuffer<'T>(kind, flags, sizeof<'T> * data.Length)
-        buffer.SetData data
+        buffer.Upload data
         buffer
 
     member this.CreateBuffer<'T when 'T : unmanaged> (kind, flags, data: 'T[]) =
@@ -64,7 +64,7 @@ type FalGraphics
 
     member this.CreateBuffer<'T when 'T : unmanaged> (kind, flags, data: 'T) =
         let buffer = this.CreateBuffer<'T>(kind, flags, sizeof<'T>)
-        buffer.SetData data
+        buffer.Upload data
         buffer
 
     member _.DestroyBuffer (buffer: VulkanBuffer<_>) =
@@ -86,7 +86,7 @@ type FalGraphics
             let image = fdevice.CreateImage(width, height)
             images.Add (image.vkImage, image)
             image
-        fillImage physicalDevice device fdevice.VkCommandPool fdevice.VkTransferQueue image.vkImage image.format image.width image.height data
+        fillImage fdevice fdevice.VkCommandPool fdevice.VkTransferQueue image.vkImage image.format image.width image.height data
         image
 
     member _.AddRenderSubpass renderSubpassDesc =

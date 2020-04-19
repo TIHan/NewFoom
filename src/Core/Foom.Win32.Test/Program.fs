@@ -199,7 +199,7 @@ let main argv =
                 | true, f -> f graphics
                 | _ -> ()
                 if not (obj.ReferenceEquals(mvpUniform, null)) then
-                    mvpUniform.SetData(ReadOnlySpan [|mvp.InvertedView|])
+                    mvpUniform.Upload(ReadOnlySpan [|mvp.InvertedView|])
                 false 
                 
             member _.OnRenderFrame(graphics, _, _, _, _) =

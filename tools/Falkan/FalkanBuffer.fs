@@ -26,22 +26,11 @@ let getMemoryRequirements device buffer =
     vkGetBufferMemoryRequirements(device, buffer, &&memRequirements)
     memRequirements
 
-let internal bindMemory physicalDevice device buffer properties =
-    let memRequirements = getMemoryRequirements device buffer
-    let memory = VulkanMemory.Allocate physicalDevice device memRequirements properties
-    vkBindBufferMemory(device, buffer, memory.DeviceMemory, uint64 memory.Block.Offset) |> checkResult
+let internal bindMemory (vulkanDevice: VulkanDevice) buffer properties =
+    let memRequirements = getMemoryRequirements vulkanDevice.Device buffer
+    let memory = VulkanMemory.Allocate vulkanDevice memRequirements properties
+    vkBindBufferMemory(vulkanDevice.Device, buffer, memory.NativeDeviceMemory, uint64 memory.Block.Offset) |> checkResult
     memory
-
-let mapMemory<'T when 'T : unmanaged> device memory offset (data: ReadOnlySpan<'T>) =
-    let mutable deviceData = nativeint 0
-    let pDeviceData = &&deviceData |> NativePtr.toNativeInt
-
-    vkMapMemory(device, memory, uint64 offset, uint64 (sizeof<'T> * data.Length), VkMemoryMapFlags.MinValue, pDeviceData) |> checkResult
-
-    let deviceDataSpan = Span<'T>(deviceData |> NativePtr.ofNativeInt<'T> |> NativePtr.toVoidPtr, data.Length)
-    data.CopyTo deviceDataSpan
-
-    vkUnmapMemory(device, memory)
 
 let recordCopyBuffer (commandBuffer: VkCommandBuffer) src dst dstOffset size =
     let mutable beginInfo =
@@ -112,10 +101,11 @@ let copyBuffer device commandPool srcBuffer dstBuffer dstOffset size queue =
 
 //        vkDestroyBuffer(device, stagingBuffer, vkNullPtr)
 
+// TODO: Change this to VulkanUsage
 [<Flags>]
 type VulkanBufferFlags =
-    | None = 0b0uy
-    | SharedMemory = 0b1uy
+    | None =           0b0uy
+    | SharedMemory =   0b1uy
 
 let inline hasSharedMemoryFlag flags =
     flags &&& VulkanBufferFlags.SharedMemory = VulkanBufferFlags.SharedMemory
@@ -130,7 +120,6 @@ type VulkanBufferKind =
 [<Struct;NoComparison>]
 type VulkanBuffer<'T when 'T : unmanaged> =
     internal {
-        device: VulkanDevice
         buffer: VkBuffer
         memory: VulkanMemory
         flags: VulkanBufferFlags
@@ -140,12 +129,12 @@ type VulkanBuffer<'T when 'T : unmanaged> =
     member x.IsShared = hasSharedMemoryFlag x.flags
 
     member x.Size = x.memory.Block.Size
+        
 
 type VulkanDevice with
 
     [<RequiresExplicitTypeArguments>]
     member this.CreateBuffer<'T when 'T : unmanaged>(kind, flags, size) : VulkanBuffer<'T> =
-        let physicalDevice = this.PhysicalDevice
         let device = this.Device
 
         let isShared = hasSharedMemoryFlag flags
@@ -162,56 +151,59 @@ type VulkanDevice with
 
         let buffer = mkBuffer device size (usage ||| VkBufferUsageFlags.VK_BUFFER_USAGE_TRANSFER_DST_BIT)
         if isShared then
-            let memory = bindMemory physicalDevice device buffer memProperties
-            { device = this; buffer = buffer; memory = memory; flags = flags; kind = kind }
+            let memory = bindMemory this buffer memProperties
+            { buffer = buffer; memory = memory; flags = flags; kind = kind }
         else
             // High-performance GPU memory
-            let memory = bindMemory physicalDevice device buffer VkMemoryPropertyFlags.VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
-            { device = this; buffer = buffer; memory = memory; flags = flags; kind = kind }
-
+            let memory = bindMemory this buffer VkMemoryPropertyFlags.VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+            { buffer = buffer; memory = memory; flags = flags; kind = kind }
 
 type VulkanBuffer<'T when 'T : unmanaged> with
     
-    member buffer.SetData(offset, data) =
-        let physicalDevice = buffer.device.PhysicalDevice
-        let device = buffer.device.Device
-        let commandPool = buffer.device.VkCommandPool
-        let transferQueue = buffer.device.VkTransferQueue
+    member buffer.Upload(offset, data: ReadOnlySpan<'T>) =
+        let device = buffer.memory.Device.Device
+        let commandPool = buffer.memory.Device.VkCommandPool
+        let transferQueue = buffer.memory.Device.VkTransferQueue
+
+        let count = data.Length
 
         if buffer.IsShared then
-            mapMemory<'T> device buffer.memory.DeviceMemory (buffer.memory.Block.Offset + (sizeof<'T> * offset)) data
+            let span = buffer.memory.MapAsSpan<'T>(offset, count)
+            data.CopyTo span
+            buffer.memory.Unmap()
         else
             // Memory that is not shared can not be written directly to from the CPU.
             // In order to set it from the CPU, a temporary shared memory buffer is used as a staging buffer to transfer the data.
             // This means that write times to local memory is more expensive but is highly-performant when read from the GPU.
             // Effectively, local memory is great for static data and shared memory is great for dynamic data.
-            let count = data.Length
-            let stagingBuffer = mkBuffer device (sizeof<'T> * count) VkBufferUsageFlags.VK_BUFFER_USAGE_TRANSFER_SRC_BIT
+            let size = sizeof<'T> * count
+            let stagingBuffer = mkBuffer device size VkBufferUsageFlags.VK_BUFFER_USAGE_TRANSFER_SRC_BIT
             let stagingProperties = 
                     VkMemoryPropertyFlags.VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT ||| 
                     VkMemoryPropertyFlags.VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
-            use stagingMemory = bindMemory physicalDevice device stagingBuffer stagingProperties
+            use stagingMemory = bindMemory buffer.memory.Device stagingBuffer stagingProperties
         
-            mapMemory device stagingMemory.DeviceMemory stagingMemory.Block.Offset data
+            let span = stagingMemory.MapAsSpan<'T>(count)
+            data.CopyTo span
+            stagingMemory.Unmap()
         
-            let size = uint64 (sizeof<'T> * count)
-            copyBuffer device commandPool stagingBuffer buffer.buffer (uint64 (sizeof<'T> * offset)) size transferQueue
+            copyBuffer device commandPool stagingBuffer buffer.buffer (uint64 (sizeof<'T> * offset)) (uint64 size) transferQueue
 
             vkDestroyBuffer(device, stagingBuffer, vkNullPtr)
 
-    member buffer.SetData(data: ReadOnlySpan<'T>) =
-        buffer.SetData(0, data)
+    member buffer.Upload(data: ReadOnlySpan<'T>) =
+        buffer.Upload(0, data)
 
-    member buffer.SetData(offset, data: 'T[]) =
-        buffer.SetData(offset, ReadOnlySpan data)
+    member buffer.Upload(offset, data: 'T[]) =
+        buffer.Upload(offset, ReadOnlySpan data)
 
-    member buffer.SetData(data: 'T[]) =
-        buffer.SetData(ReadOnlySpan data)
+    member buffer.Upload(data: 'T[]) =
+        buffer.Upload(ReadOnlySpan data)
 
-    member buffer.SetData(data: inref<'T>) =
+    member buffer.Upload(data: inref<'T>) =
         let stack = NativePtr.stackalloc 1
         NativePtr.set stack 0 data
-        buffer.SetData(ReadOnlySpan<'T>(NativePtr.toVoidPtr stack, 1))
+        buffer.Upload(ReadOnlySpan<'T>(NativePtr.toVoidPtr stack, 1))
 
-    member inline buffer.SetData(data: 'T) =
-        buffer.SetData(&data)
+    member inline buffer.Upload(data: 'T) =
+        buffer.Upload(&data)

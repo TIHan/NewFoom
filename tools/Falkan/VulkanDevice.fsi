@@ -18,19 +18,6 @@ type internal Block =
 [<Sealed>]
 type internal Chunk
 
-[<Struct;NoEquality;NoComparison>]
-type VulkanMemory =
-    internal {
-        DeviceMemory: VkDeviceMemory
-        Block: Block
-        Chunk: Chunk
-        IsFree: bool ref
-    }
-
-    interface IDisposable
-
-    static member Allocate : VkPhysicalDevice -> VkDevice -> VkMemoryRequirements -> VkMemoryPropertyFlags -> VulkanMemory
-
 // ===============================================================
 
 type VulkanDeviceLayer =
@@ -59,3 +46,28 @@ type VulkanDevice =
     member internal VkTransferQueue: VkQueue
 
     static member CreateWin32 : hWnd: nativeint * hInstance: nativeint * appName: string * engineName: string * deviceLayers: VulkanDeviceLayer list * deviceExtensions: VulkanDeviceExtension list -> VulkanDevice
+
+
+[<Struct;NoEquality;NoComparison>]
+type VulkanMemory =
+    internal {
+        Device: VulkanDevice
+        NativeDeviceMemory: VkDeviceMemory
+        Block: Block
+        Chunk: Chunk
+        IsFree: bool ref
+    }
+
+    interface IDisposable
+
+    static member internal Allocate : VulkanDevice -> VkMemoryRequirements -> VkMemoryPropertyFlags -> VulkanMemory
+
+    member Map : offset: int * size: int -> nativeint
+
+    [<RequiresExplicitTypeArguments>]
+    member MapAsSpan<'T when 'T : unmanaged> : offset: int * count: int -> Span<'T>
+
+    [<RequiresExplicitTypeArguments>]
+    member MapAsSpan<'T when 'T : unmanaged> : count: int -> Span<'T>
+
+    member Unmap : unit -> unit

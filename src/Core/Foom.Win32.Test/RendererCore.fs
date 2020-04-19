@@ -164,11 +164,11 @@ type VulkanVar<'T when 'T : unmanaged> = VulkanVar of VulkanBuffer<'T> with
 
     member this.Set(value: 'T) =
         match this with
-        | VulkanVar buffer -> buffer.SetData(ReadOnlySpan [|value|])
+        | VulkanVar buffer -> buffer.Upload(ReadOnlySpan [|value|])
 
     member this.Set(offset, value: 'T) =
         match this with
-        | VulkanVar buffer -> buffer.SetData(offset, ReadOnlySpan [|value|])
+        | VulkanVar buffer -> buffer.Upload(offset, ReadOnlySpan [|value|])
 
     member this.Buffer =
         match this with
@@ -179,11 +179,11 @@ type VulkanVarList<'T when 'T : unmanaged> = VulkanVarList of VulkanBuffer<'T> w
 
     member this.Set(value: ReadOnlySpan<'T>) =
         match this with
-        | VulkanVarList buffer -> buffer.SetData(value)
+        | VulkanVarList buffer -> buffer.Upload(value)
 
     member this.Set(offset, value: ReadOnlySpan<'T>) =
         match this with
-        | VulkanVarList buffer -> buffer.SetData(offset, value)
+        | VulkanVarList buffer -> buffer.Upload(offset, value)
 
     member this.Set(offset, value: 'T) =
         this.Set(offset, ReadOnlySpan [|value|])
@@ -451,7 +451,7 @@ type MapView(sectors: SectorView [], lineViews: LineView [], sectorRendersBuffer
         let sectorView = { sectors.[sectorId]with Heights = heights }
         sectors.[sectorId] <- sectorView
       //  updateLineViews (Span sectors) (Span lineViews) sectorView.LineViewIds
-      //  sectorRendersBuffer.SetData(sectorId, ReadOnlySpan [|{ OriginalCeilingHeight = sectorView.OriginalHeights.CeilingHeight; OriginalFloorHeight = sectorView.OriginalHeights.FloorHeight; FloorHeight = heights.FloorHeight; CeilingHeight = heights.CeilingHeight  }|])
+        sectorRendersBuffer.Upload(sectorId, ReadOnlySpan [|{ OriginalCeilingHeight = sectorView.OriginalHeights.CeilingHeight; OriginalFloorHeight = sectorView.OriginalHeights.FloorHeight; FloorHeight = heights.FloorHeight; CeilingHeight = heights.CeilingHeight  }|])
 
 let createVar (graphics: FalGraphics) (data: 'T[]) : VulkanVarListSegment<'T> =
     let buffer = graphics.CreateBuffer(VertexBuffer, VulkanBufferFlags.None, data)
@@ -501,10 +501,19 @@ let load (graphics: FalGraphics) (wad: Wad) (map: Map) (mvpBuffer: VulkanBuffer<
                                 let height = top - bottom
                                 let origHeight = origTop - origBottom
 
-                                let mutable bottomScale = height
+                                let mutable bottomScale = 1.f
                                 if origHeight <> 0.f then
                                     bottomScale <- (height / origHeight)
-                                Vector2(uv.X * bottomScale, uv.Y * bottomScale)
+
+                                ////let mutable x = uv.X
+                                //if uv.X = 0.f then
+                                //    bottomScale <- 0.f
+
+                                ////let mutable y = uv.Y
+                                //if uv.Y = 0.f then
+                                //    y <- bottomScale
+
+                                Vector2(bottomScale, bottomScale)
                             else
                                 Vector2(1.f, 1.f)
 

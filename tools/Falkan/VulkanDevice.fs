@@ -6,6 +6,7 @@ open System.Threading
 open System.Runtime.InteropServices
 open FSharp.Vulkan.Interop
 open InternalDeviceHelpers
+open Microsoft.FSharp.NativeInterop
 
 #nowarn "9"
 #nowarn "51"
@@ -148,64 +149,16 @@ let getSuitableMemoryTypeIndex physicalDevice typeFilter properties =
                 yield uint32 i |]
     |> Array.head
 
-let gate = obj ()
+let mapMemory device deviceMemory offset size =
+    let mutable deviceData = nativeint 0
+    let data = &&deviceData |> NativePtr.toNativeInt
 
-[<Struct;NoEquality;NoComparison>]
-type VulkanMemory =
-    {
-        DeviceMemory: VkDeviceMemory
-        Block: Block
-        Chunk: Chunk
-        IsFree: bool ref
-    }
+    vkMapMemory(device, deviceMemory, uint64 offset, uint64 size, VkMemoryMapFlags.MinValue, data) |> checkResult
 
-    member this.Free() =
-        let isFree = this.IsFree
-        let chunk = this.Chunk
-        let block = this.Block
-        lock gate <| fun _ ->
-            if not !isFree then
-                isFree := true
-                assert (chunk.Free block)
+    deviceData
 
-    interface IDisposable with
-
-        member this.Dispose() =
-            this.Free()
-
-    static member Allocate physicalDevice device (memRequirements: VkMemoryRequirements) properties =
-        lock gate <| fun _ ->
-            let memTypeIndex = 
-                getSuitableMemoryTypeIndex 
-                    physicalDevice memRequirements.memoryTypeBits 
-                    properties
-
-            let factory = System.Func<_, _> (fun _ -> lazy ResizeArray())
-            let chunks = chunks.GetOrAdd((memTypeIndex, memRequirements.alignment), factory).Value
-
-            let requestSize = int memRequirements.size
-
-            let blockOpt =
-                chunks
-                |> Seq.tryPick (fun (chunk, deviceMemory) -> 
-                    match chunk.TryRequest (int memRequirements.size) with
-                    | Some block -> Some (block, chunk, deviceMemory)
-                    | _ -> None)
-
-            match blockOpt with
-            | Some (block, chunk, deviceMemory) -> { DeviceMemory = deviceMemory; Block = block; Chunk = chunk; IsFree = ref false }
-            | _ ->
-                let alignment = int memRequirements.alignment
-                let size = requestSize
-                let upperLimit = 20
-
-                let chunk = Chunk(alignment, upperLimit)
-                let block = (chunk.TryRequest size).Value
-                let deviceMemory = allocateDeviceMemory device memTypeIndex (pown 2 20 * (int alignment))
-
-                chunks.Add(chunk, deviceMemory)
-
-                { DeviceMemory = deviceMemory; Block = block; Chunk = chunk; IsFree = ref false }
+let unmapMemory device deviceMemory =
+    vkUnmapMemory(device, deviceMemory)
 
 // ===============================================================
 
@@ -325,3 +278,85 @@ type VulkanDevice private
 
     static member CreateWin32 (hwnd, hinstance, appName, engineName, deviceLayers, deviceExtensions) =
         VulkanDevice.Create (appName, engineName, deviceLayers, deviceExtensions, createVkSurface = createWin32Surface hwnd hinstance)
+
+let gate = obj ()
+
+[<Struct;NoEquality;NoComparison>]
+type VulkanMemory =
+    {
+        Device: VulkanDevice
+        NativeDeviceMemory: VkDeviceMemory
+        Block: Block
+        Chunk: Chunk
+        IsFree: bool ref
+    }
+
+    member this.Free() =
+        let isFree = this.IsFree
+        let chunk = this.Chunk
+        let block = this.Block
+        lock gate <| fun _ ->
+            if not !isFree then
+                isFree := true
+                assert (chunk.Free block)
+
+    interface IDisposable with
+
+        member this.Dispose() =
+            this.Free()
+
+    static member Allocate (vulkanDevice: VulkanDevice) (memRequirements: VkMemoryRequirements) properties =
+        let physicalDevice = vulkanDevice.PhysicalDevice
+        let device = vulkanDevice.Device
+
+        lock gate <| fun _ ->
+            let memTypeIndex = 
+                getSuitableMemoryTypeIndex 
+                    physicalDevice memRequirements.memoryTypeBits 
+                    properties
+
+            let factory = System.Func<_, _> (fun _ -> lazy ResizeArray())
+            let chunks = chunks.GetOrAdd((memTypeIndex, memRequirements.alignment), factory).Value
+
+            let requestSize = int memRequirements.size
+
+            let blockOpt =
+                chunks
+                |> Seq.tryPick (fun (chunk, deviceMemory) -> 
+                    match chunk.TryRequest (int memRequirements.size) with
+                    | Some block -> Some (block, chunk, deviceMemory)
+                    | _ -> None)
+
+            match blockOpt with
+            | Some (block, chunk, deviceMemory) -> { Device = vulkanDevice; NativeDeviceMemory = deviceMemory; Block = block; Chunk = chunk; IsFree = ref false }
+            | _ ->
+                let alignment = int memRequirements.alignment
+                let size = requestSize
+                let upperLimit = 20
+
+                let chunk = Chunk(alignment, upperLimit)
+                let block = (chunk.TryRequest size).Value
+                let deviceMemory = allocateDeviceMemory device memTypeIndex (pown 2 20 * (int alignment))
+
+                chunks.Add(chunk, deviceMemory)
+
+                { Device = vulkanDevice; NativeDeviceMemory = deviceMemory; Block = block; Chunk = chunk; IsFree = ref false }
+
+type VulkanMemory with
+
+    member this.Map(offset, size) =
+        mapMemory this.Device.Device this.NativeDeviceMemory (this.Block.Offset + offset) size
+
+    [<RequiresExplicitTypeArguments>]
+    member this.MapAsSpan<'T when 'T : unmanaged>(offset, count) =
+        let offset = sizeof<'T> * offset
+        let size = sizeof<'T> * count
+        let deviceData = this.Map(offset, size)
+        Span<'T>(deviceData |> NativePtr.ofNativeInt<'T> |> NativePtr.toVoidPtr, count)
+
+    [<RequiresExplicitTypeArguments>]
+    member this.MapAsSpan<'T when 'T : unmanaged>(count) =
+        this.MapAsSpan<'T>(0, count)
+
+    member this.Unmap() =
+        unmapMemory this.Device.Device this.NativeDeviceMemory
