@@ -509,22 +509,22 @@ let load (graphics: FalGraphics) (wad: Wad) (map: Map) (mvpBuffer: VulkanBuffer<
                                 let origHeight = origTop - origBottom
 
                                 if origHeight = 0.f then
-                                    height
+                                    Vector2(height, bottom)
                                 else
-                                    (height / origHeight)
+                                    Vector2(height / origHeight, bottom)
                             else
-                                1.f
+                                Vector2(1.f, z)
 
-                        let mutable x = 1.f
+                        let mutable x = z
                         if uv.X = 1.f then
-                            x <- transform
+                            x <- transform.Y
 
                         let mutable y = 1.f
                         if uv.Y = 1.f then
-                            y <- transform
+                            y <- transform.X
 
 
-                        gl_Position <- Vector4.Transform(Vector4(position, z * x, 1.f), mvp.model * mvp.view * mvp.proj)
+                        gl_Position <- Vector4.Transform(Vector4(position, x, 1.f), mvp.model * mvp.view * mvp.proj)
                         fragTexCoord <- Vector2(origUv.X, origUv.Y * y)
                 @>
     
@@ -597,26 +597,30 @@ let load (graphics: FalGraphics) (wad: Wad) (map: Map) (mvpBuffer: VulkanBuffer<
                         | Some texName ->
                             let image, info, infoBuffer = getImage graphics wad texName
 
-                            let positionZ = (tryInitializeUpperFront map ldef).Value
-                            let origZ = Array.init positionZ.Length (fun _ -> x)
-                            let uvVertices: Vector2 [] = createWallUv2 map ldef sdef (int info.Width) (int info.Height) positionXY positionZ WallSection.Upper
-                            let origUv = createVar graphics uvVertices
+                            let positionZ = (tryInitializeUpperFront map ldef)
+                            match positionZ with
+                            | Some positionZ ->
+                                let origZ = Array.init positionZ.Length (fun _ -> x)
+                                let uvVertices: Vector2 [] = createWallUv2 map ldef sdef (int info.Width) (int info.Height) positionXY positionZ WallSection.Upper
+                                let origUv = createVar graphics uvVertices
 
-                            let partRender =
-                                {
-                                    PositionXY = positionXYVar
-                                    PositionZ = createVar graphics positionZ
-                                    UV = createVar graphics (Array.init positionZ.Length (fun _ -> Vector2.Zero))
-                                    Image = image
-                                }
+                                let partRender =
+                                    {
+                                        PositionXY = positionXYVar
+                                        PositionZ = createVar graphics positionZ
+                                        UV = createVar graphics (Array.init positionZ.Length (fun _ -> Vector2.Zero))
+                                        Image = image
+                                    }
 
-                            let draw = shader.CreateDrawBuilder()
-                            let draw = draw.AddDescriptorBuffer(mvpBuffer).AddDescriptorImage(image).AddDescriptorBuffer(sectorRendersBuffer).Next
-                            let draw = draw.AddVertexBuffer(partRender.PositionXY.Buffer, PerVertex).AddVertexBuffer(partRender.PositionZ.Buffer, PerVertex).AddVertexBuffer(partRender.UV.Buffer, PerVertex).AddVertexBuffer(graphics.CreateBuffer(VertexBuffer, VulkanBufferFlags.None, origZ), PerVertex).AddVertexBuffer(origUv.Buffer, PerVertex)
-                            let vertexCount = positionXY.Length                       
-                            shader.AddDraw(draw, uint32 vertexCount, 1u) |> ignore
+                                let draw = shader.CreateDrawBuilder()
+                                let draw = draw.AddDescriptorBuffer(mvpBuffer).AddDescriptorImage(image).AddDescriptorBuffer(sectorRendersBuffer).Next
+                                let draw = draw.AddVertexBuffer(partRender.PositionXY.Buffer, PerVertex).AddVertexBuffer(partRender.PositionZ.Buffer, PerVertex).AddVertexBuffer(partRender.UV.Buffer, PerVertex).AddVertexBuffer(graphics.CreateBuffer(VertexBuffer, VulkanBufferFlags.None, origZ), PerVertex).AddVertexBuffer(origUv.Buffer, PerVertex)
+                                let vertexCount = positionXY.Length                       
+                                shader.AddDraw(draw, uint32 vertexCount, 1u) |> ignore
 
-                            Some partRender
+                                Some partRender
+                            | _ ->
+                                None
                             //let textureAlignment = getTextureAlignment map ldef ldef.FrontSidedefIndex.IsSome WallSection.Middle
                     
                         

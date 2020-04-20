@@ -134,7 +134,7 @@ let main argv =
     let mutable mvpUniform = Unchecked.defaultof<_>
 
     eventQueue.Enqueue(fun graphics ->
-        let mvpUniform2, mvp2 = FsGame.Renderer.Vulkan.loadMap "e1m1" wad graphics
+        let mvpUniform2, mvp2 = FsGame.Renderer.Vulkan.loadMap "e1m2" wad graphics
         graphics.SetupCommands()
         mvpUniform <- mvpUniform2
         mvp <- mvp2
