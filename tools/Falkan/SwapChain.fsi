@@ -67,7 +67,7 @@ type FalkanShader =
 type internal SwapChain =
     interface IDisposable
 
-    member DrawFrame: unit -> unit
+    member Run: unit -> unit
 
     member SetupCommands: unit -> unit
 
@@ -75,6 +75,10 @@ type internal SwapChain =
 
     member CreateShader: shaderDesc: VulkanShaderDescription * vertexSpirvSource: ReadOnlySpan<byte> * fragmentSpirvSource: ReadOnlySpan<byte> -> FalkanShader
 
+    member CreateComputeShader: shaderDesc: VulkanShaderDescription * vertexSpirvSource: ReadOnlySpan<byte> -> FalkanShader
+
     member AddRenderSubpass : FalkanRenderSubpassDescription -> unit
 
     static member Create : VulkanDevice * VkSurfaceKHR * graphicsFamily: uint32 * presentFamily: uint32 * invalidate: IEvent<unit> * renderSubpasDescs: FalkanRenderSubpassDescription list -> SwapChain
+
+    static member CreateCompute : VulkanDevice * computeFamily: uint32 * invalidate: IEvent<unit> -> SwapChain

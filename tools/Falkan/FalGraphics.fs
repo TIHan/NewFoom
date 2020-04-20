@@ -38,7 +38,7 @@ type FalGraphics
 
     member __.DrawFrame () =
         checkDispose ()
-        swapChain.DrawFrame ()
+        swapChain.Run ()
 
     member __.WaitIdle () =
         checkDispose ()
@@ -137,5 +137,15 @@ type FalGraphics
             failwith "Currently not able to handle concurrent graphics and present families."
 
         let swapChain = SwapChain.Create(falDevice, surface, graphicsFamily, presentFamily, invalidate, renderSubpassDescs)
+
+        new FalGraphics(falDevice, swapChain)
+
+    static member CreateCompute(falDevice: VulkanDevice, invalidate) =
+        let indices = falDevice.Indices
+
+        if not indices.HasCompute then
+            failwith "Compute is not available."
+
+        let swapChain = SwapChain.CreateCompute(falDevice, indices.computeFamily.Value, invalidate)
 
         new FalGraphics(falDevice, swapChain)

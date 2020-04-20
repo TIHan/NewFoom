@@ -47,6 +47,7 @@ type VulkanDevice =
 
     static member CreateWin32 : hWnd: nativeint * hInstance: nativeint * appName: string * engineName: string * deviceLayers: VulkanDeviceLayer list * deviceExtensions: VulkanDeviceExtension list -> VulkanDevice
 
+    static member CreateCompute : appName: string * engineName: string * deviceLayers: VulkanDeviceLayer list * deviceExtensions: VulkanDeviceExtension list -> VulkanDevice
 
 [<Struct;NoEquality;NoComparison>]
 type VulkanMemory =

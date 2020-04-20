@@ -263,21 +263,29 @@ type VulkanDevice private
         let _transferFamily =
             match indices.transferFamily with
             | Some transferQueueFamily -> transferQueueFamily
-            | _ -> failwith "Unable to create FalkanGraphicsDevice: Transfer queue not available on physical device."
+            | _ -> failwith "Unable to create VulkanDevice: Transfer queue not available on physical device."
 
-        let graphicsFamily =
-            match indices.graphicsFamily with
-            | Some graphicsQueueFamily -> graphicsQueueFamily
-            | _ -> failwith "Unable to create FalkanGraphicsDevice: Graphics queue not available on physical device."
+        let family =
+            if createVkSurface.IsSome then
+                match indices.graphicsFamily with
+                | Some graphicsQueueFamily -> graphicsQueueFamily
+                | _ -> failwith "Unable to create VulkanDevice: Graphics queue not available on physical device."
+            else
+                match indices.computeFamily with
+                | Some computeQueueFamily -> computeQueueFamily
+                | _ -> failwith "Unable to create VulkanDevice: Compute queue not available on physical device."
 
-        let commandPool = mkCommandPool device graphicsFamily
+        let commandPool = mkCommandPool device family
         // TODO: We should try to use a transfer queue instead of a graphics queue. This works for now.
-        let transferQueue = mkQueue device graphicsFamily
+        let transferQueue = mkQueue device family
 
         new VulkanDevice (instance, surfaceOpt, debugMessenger, physicalDevice, indices, device, commandPool, transferQueue, [|debugCallbackHandle|])
 
     static member CreateWin32 (hwnd, hinstance, appName, engineName, deviceLayers, deviceExtensions) =
         VulkanDevice.Create (appName, engineName, deviceLayers, deviceExtensions, createVkSurface = createWin32Surface hwnd hinstance)
+
+    static member CreateCompute (appName, engineName, deviceLayers, deviceExtensions) =
+        VulkanDevice.Create (appName, engineName, deviceLayers, deviceExtensions)
 
 let gate = obj ()
 

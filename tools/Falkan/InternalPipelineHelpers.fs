@@ -252,6 +252,49 @@ let recordDraw extent (framebuffers: VkFramebuffer []) (commandBuffers: VkComman
         vkEndCommandBuffer(commandBuffer) |> checkResult
 
 
+let recordComputeCommands (commandBuffers: VkCommandBuffer []) (pipelineSets: ResizeArray<ResizeArray<Pipeline>>) =
+    for i = 0 to commandBuffers.Length - 1 do
+        let commandBuffer = commandBuffers.[i]
+
+        // Begin command buffer
+
+        let mutable beginInfo =
+            VkCommandBufferBeginInfo (
+                sType = VkStructureType.VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+                flags = VkCommandBufferUsageFlags (), // Optional
+                pInheritanceInfo = vkNullPtr
+            )
+
+        vkBeginCommandBuffer(commandBuffer, &&beginInfo) |> checkResult
+
+        for pipelines in pipelineSets do
+
+            for pipeline in pipelines do
+
+                // Bind pipeline
+
+                vkCmdBindPipeline(commandBuffer, VkPipelineBindPoint.VK_PIPELINE_BIND_POINT_COMPUTE, pipeline.vkPipeline)
+
+                for draw in pipeline.layout.draws.AsSpan() do
+
+                    // REVIEW: Might be expensive per draw but it works.
+                    // Bind descriptor sets
+
+                    let sets =
+                        draw.vkDescriptorSets
+                        |> Array.map (fun x -> x.[i])
+                    use pDescriptorSets = fixed sets
+                    vkCmdBindDescriptorSets(commandBuffer, VkPipelineBindPoint.VK_PIPELINE_BIND_POINT_COMPUTE, pipeline.layout.vkPipelineLayout, 0u, uint32 draw.vkDescriptorSets.Length, pDescriptorSets, 0u, vkNullPtr)
+
+                    // Bind vertex buffers
+
+                    vkCmdDispatch(commandBuffer, 1u, 1u, 1u)
+
+        // Finish recording
+
+        vkEndCommandBuffer(commandBuffer) |> checkResult
+
+
 let mkShaderStageInfo stage pName shaderModule =
     VkPipelineShaderStageCreateInfo (
         sType = VkStructureType.VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
@@ -382,7 +425,7 @@ type Shader =
         vertexAttributes: VkVertexInputAttributeDescription []
 
         vertex: VkShaderModule
-        fragment: VkShaderModule
+        fragment: VkShaderModule voption
     }
 
 let mkShaderModule device (code: nativeptr<byte>) (codeSize: uint32) =
@@ -404,7 +447,16 @@ let mkShader device vertexBindings vertexAttributes vert vertSize frag fragSize 
         vertexBindings = vertexBindings
         vertexAttributes = vertexAttributes
         vertex = vertShaderModule
-        fragment = fragShaderModule
+        fragment = ValueSome fragShaderModule
+    }
+
+let mkComputeShader device vertexBindings vertexAttributes vert vertSize =
+    let vertShaderModule = mkShaderModule device vert vertSize
+    {
+        vertexBindings = vertexBindings
+        vertexAttributes = vertexAttributes
+        vertex = vertShaderModule
+        fragment = ValueNone
     }
 
 let mkGraphicsPipeline device extent pipelineLayout renderPass subpassIndex flags group =
@@ -413,7 +465,7 @@ let mkGraphicsPipeline device extent pipelineLayout renderPass subpassIndex flag
     let stages =
         [|
             mkShaderStageInfo VkShaderStageFlags.VK_SHADER_STAGE_VERTEX_BIT pNameMain group.vertex
-            mkShaderStageInfo VkShaderStageFlags.VK_SHADER_STAGE_FRAGMENT_BIT pNameMain group.fragment
+            mkShaderStageInfo VkShaderStageFlags.VK_SHADER_STAGE_FRAGMENT_BIT pNameMain group.fragment.Value // TODO: Add safety.
         |]
 
     use pVertexBindingDescriptions = fixed group.vertexBindings

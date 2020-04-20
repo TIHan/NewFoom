@@ -240,9 +240,15 @@ let getDeviceLayers physicalDevice deviceLayers =
     layers
     |> Array.filter (fun x -> deviceLayers |> Array.exists (fun y -> x.layerName.ToString() = y))
 
-let mkLogicalDevice physicalDevice indices deviceLayers deviceExtensions =
+let mkLogicalDevice physicalDevice (indices: QueueFamilyIndices) deviceLayers deviceExtensions =
     let queueCreateInfos = 
-        [|indices.graphicsFamily.Value; indices.presentFamily.Value|]
+        [|
+            if indices.HasGraphics then
+                yield indices.graphicsFamily.Value
+                yield indices.presentFamily.Value
+            else
+                yield indices.computeFamily.Value
+        |]
         |> Array.distinct // we need to be distinct so we do not create duplicate create infos
         |> Array.map (fun familyIndex ->
             let mutable queuePriority = 1.f

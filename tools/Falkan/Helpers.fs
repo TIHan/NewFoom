@@ -27,8 +27,8 @@ let mkCommandPool device queueFamilyIndex =
     vkCreateCommandPool(device, &&poolCreateInfo, vkNullPtr, &&commandPool) |> checkResult
     commandPool
 
-let mkCommandBuffers device commandPool (framebuffers: VkFramebuffer []) =
-    let commandBuffers = Array.zeroCreate framebuffers.Length
+let mkCommandBuffers device commandPool count =
+    let commandBuffers = Array.zeroCreate count
 
     let mutable allocCreateInfo =
         VkCommandBufferAllocateInfo (
