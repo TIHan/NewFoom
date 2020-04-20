@@ -505,15 +505,15 @@ let load (graphics: FalGraphics) (wad: Wad) (map: Map) (mvpBuffer: VulkanBuffer<
                                 if origHeight <> 0.f then
                                     bottomScale <- (height / origHeight)
 
-                                ////let mutable x = uv.X
-                                //if uv.X = 0.f then
-                                //    bottomScale <- 0.f
+                                let mutable x = 1.f
+                                if uv.X = 1.f then
+                                    x <- bottomScale
 
-                                ////let mutable y = uv.Y
-                                //if uv.Y = 0.f then
-                                //    y <- bottomScale
+                                let mutable y = 1.f
+                                if uv.Y = 1.f then
+                                    y <- bottomScale
 
-                                Vector2(bottomScale, bottomScale)
+                                Vector2(x, y)
                             else
                                 Vector2(1.f, 1.f)
 
