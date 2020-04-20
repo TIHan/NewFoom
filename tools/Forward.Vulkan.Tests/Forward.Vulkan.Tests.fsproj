@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
@@ -29,6 +29,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Falkan\FsGame.Graphics.Vulkan.fsproj" />
+    <ProjectReference Include="..\FSharp.SpirV.Quotations\FSharp.Spirv.Quotations.fsproj" />
   </ItemGroup>
 
 </Project>

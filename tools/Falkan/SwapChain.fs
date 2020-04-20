@@ -385,12 +385,14 @@ type VulkanShaderStage =
     | VertexStage
     | FragmentStage
     | AllGraphicsStage
+    | ComputeStage
 
     member this.VkShaderStageFlags =
         match this with
         | VertexStage -> VkShaderStageFlags.VK_SHADER_STAGE_VERTEX_BIT
         | FragmentStage -> VkShaderStageFlags.VK_SHADER_STAGE_FRAGMENT_BIT
         | AllGraphicsStage -> VkShaderStageFlags.VK_SHADER_STAGE_ALL_GRAPHICS
+        | ComputeStage -> VkShaderStageFlags.VK_SHADER_STAGE_COMPUTE_BIT
 
 type VulkanShaderDescriptorLayout = ShaderDescriptorLayout of VulkanShaderDescriptorLayoutKind * VulkanShaderStage * binding: uint32 with
 
@@ -676,7 +678,12 @@ and [<Sealed>] SwapChain private (fdevice: VulkanDevice, sync, kind: DeviceKind,
     let addPipeline subpassIndex pipelineLayout shader =
         match state with
         | Some state ->
-            let vkPipeline = mkGraphicsPipeline device state.extent pipelineLayout.vkPipelineLayout state.renderPass subpassIndex pipelineLayout.pipelineFlags shader
+            let vkPipeline = 
+                match shader.fragment with
+                | ValueSome _ ->
+                    mkGraphicsPipeline device state.extent pipelineLayout.vkPipelineLayout state.renderPass subpassIndex pipelineLayout.pipelineFlags shader
+                | _ ->
+                    mkComputePipeline device pipelineLayout.vkPipelineLayout shader
             let pipeline = { layout = pipelineLayout; vkPipeline = vkPipeline }
             renderSubpassPipelines.[subpassIndex].Add pipeline
         | _ ->
@@ -955,5 +962,6 @@ and [<Sealed>] SwapChain private (fdevice: VulkanDevice, sync, kind: DeviceKind,
         let sync = mkSync device.Device
         let computeQueue = mkQueue device.Device computeFamily
         let swapChain = new SwapChain(device, sync, ComputeDevice(computeFamily, computeQueue), invalidate)
+        swapChain.AddRenderSubpass(RenderSubpass(ColorSubpass))
         swapChain.Recreate ()
         swapChain

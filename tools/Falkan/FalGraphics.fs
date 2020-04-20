@@ -121,6 +121,9 @@ type FalGraphics
     member this.CreateShader(shaderDesc: VulkanShaderDescription, vertexSpirvSource: ReadOnlySpan<byte>, fragmentSpirvSource: ReadOnlySpan<byte>) =
         swapChain.CreateShader(shaderDesc, vertexSpirvSource, fragmentSpirvSource)
 
+    member this.CreateComputeShader(shaderDesc: VulkanShaderDescription, vertexSpirvSource: ReadOnlySpan<byte>) =
+        swapChain.CreateComputeShader(shaderDesc, vertexSpirvSource)
+
     static member Create(falDevice: VulkanDevice, invalidate, renderSubpassDescs) =
         let indices = falDevice.Indices
         let surface =

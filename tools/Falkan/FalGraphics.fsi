@@ -30,6 +30,8 @@ type FalGraphics =
 
     member CreateShader: VulkanShaderDescription * vertexSpirvSource: ReadOnlySpan<byte> * fragmentSpirvSource: ReadOnlySpan<byte> -> FalkanShader
 
+    member CreateComputeShader: VulkanShaderDescription * vertexSpirvSource: ReadOnlySpan<byte> -> FalkanShader
+
     static member Create : VulkanDevice * invalidate: IEvent<unit> * renderSubpassDescs: FalkanRenderSubpassDescription list -> FalGraphics
 
     static member CreateCompute : VulkanDevice * invalidate: IEvent<unit> -> FalGraphics

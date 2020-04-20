@@ -529,3 +529,19 @@ let mkGraphicsPipeline device extent pipelineLayout renderPass subpassIndex flag
     let mutable graphicsPipeline = VkPipeline ()
     vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1u, &&createInfo, vkNullPtr, &&graphicsPipeline) |> checkResult
     graphicsPipeline
+
+let mkComputePipeline device pipelineLayout group =
+    use pNameMain = fixed vkBytesOfString "main"
+
+    let mutable createInfo =
+        VkComputePipelineCreateInfo (
+            sType = VkStructureType.VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
+            stage = mkShaderStageInfo VkShaderStageFlags.VK_SHADER_STAGE_COMPUTE_BIT pNameMain group.vertex,
+            layout = pipelineLayout,
+            basePipelineHandle = VK_NULL_HANDLE, // Optional
+            basePipelineIndex = -1 // Optional
+        )
+
+    let mutable computePipeline = VkPipeline ()
+    vkCreateComputePipelines(device, VK_NULL_HANDLE, 1u, &&createInfo, vkNullPtr, &&computePipeline) |> checkResult
+    computePipeline
