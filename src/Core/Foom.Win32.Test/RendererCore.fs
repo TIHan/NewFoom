@@ -399,7 +399,7 @@ let updateLineView (sectorViews: Span<SectorView>) (lineView: inref<LineView>) =
                     Vector2(1.f, 0.f)
                 |]
 
-          //  lineView.FrontSide.Upper.PositionZ.Set(ReadOnlySpan positionZ)
+            lineView.FrontSide.Upper.PositionZ.Set(ReadOnlySpan positionZ)
             lineView.FrontSide.Upper.UV.Set(ReadOnlySpan uv)
 
         if lineView.FrontSide.HasMiddle then
@@ -450,8 +450,12 @@ type MapView(sectors: SectorView [], lineViews: LineView [], sectorRendersBuffer
     member this.SetSectorHeights(sectorId: int, heights: Heights) =
         let sectorView = { sectors.[sectorId]with Heights = heights }
         sectors.[sectorId] <- sectorView
-      //  updateLineViews (Span sectors) (Span lineViews) sectorView.LineViewIds
-        let v = { OriginalCeilingHeight = sectorView.OriginalHeights.CeilingHeight; OriginalFloorHeight = sectorView.OriginalHeights.FloorHeight; FloorHeight = heights.FloorHeight; CeilingHeight = heights.CeilingHeight }
+    //    updateLineViews (Span sectors) (Span lineViews) sectorView.LineViewIds
+        let v = { 
+            OriginalCeilingHeight = 5.f //sectorView.OriginalHeights.CeilingHeight
+            OriginalFloorHeight = sectorView.OriginalHeights.FloorHeight
+            FloorHeight = heights.FloorHeight
+            CeilingHeight = heights.CeilingHeight }
         sectorRendersBuffer.Upload(sectorId, ReadOnlySpan [|v|])
 
 let createVar (graphics: FalGraphics) (data: 'T[]) : VulkanVarListSegment<'T> =
@@ -488,10 +492,12 @@ let load (graphics: FalGraphics) (wad: Wad) (map: Map) (mvpBuffer: VulkanBuffer<
                     let mutable fragTexCoord = Variable<Vector2> [Decoration.Location 0u] StorageClass.Output []
     
                     fun () ->
+                        let front = sectorId.FrontSideIndex
+                        let back = sectorId.BackSideIndex
                         let transform =
-                            if sectorId.BackSideIndex <> -1 && sectorId.BackSideIndex <> -1 then
-                                let frontSide = sectors.SectorRenders.[sectorId.FrontSideIndex]
-                                let backSide = sectors.SectorRenders.[sectorId.BackSideIndex]
+                            if front <> -1 && back <> -1 then
+                                let frontSide = sectors.SectorRenders.[front]
+                                let backSide = sectors.SectorRenders.[back]
 
                                 let origBottom = backSide.OriginalCeilingHeight
                                 let origTop = frontSide.OriginalCeilingHeight
@@ -502,16 +508,14 @@ let load (graphics: FalGraphics) (wad: Wad) (map: Map) (mvpBuffer: VulkanBuffer<
                                 let height = top - bottom
                                 let origHeight = origTop - origBottom
 
-                                if origHeight = height then
-                                    1.f
+                                if origBottom = 5.f then
+                                    0.f
                                 else
-                                    (height / origHeight)
+                                   1.f // (height / origHeight)
                             else
                                 1.f
 
-                        let mutable x = 1.f
-                        if uv.X = 1.f then
-                            x <- transform
+                        let mutable x = transform
 
                         let mutable y = 1.f
 

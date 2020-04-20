@@ -307,3 +307,40 @@ let ``My test 4`` () =
     let data = test2Buffer.Memory.MapAsSpan<single>(16)
 
     Assert.Equal(203.f, data.[1])
+
+
+[<Fact>]
+let ``My test 5`` () =
+    use device = createDevice ()
+    use compute = createCompute device
+
+    let computeShader =
+        <@
+            let test1 = Variable<SectorRendersBlock> [Decoration.Binding 0u; Decoration.DescriptorSet 0u] StorageClass.StorageBuffer []
+            let test2 = Variable<TestBlock2> [Decoration.Binding 1u; Decoration.DescriptorSet 1u] StorageClass.StorageBuffer []
+            let test3 = Variable<TestBlock> [Decoration.Binding 2u; Decoration.DescriptorSet 2u] StorageClass.StorageBuffer []
+    
+            fun () ->
+                test2.x.[1] <- test1.SectorRenders.[test3.x.[200]].OriginalCeilingHeight + test1.SectorRenders.[1].OriginalFloorHeight + test1.SectorRenders.[1].FloorHeight + test1.SectorRenders.[1].CeilingHeight
+        @>
+
+    let test1Buffer = compute.CreateBuffer(StorageBuffer, VulkanBufferFlags.SharedMemory, Array.init 1600 (fun i -> { OriginalCeilingHeight = single i; OriginalFloorHeight = single i; FloorHeight = single i; CeilingHeight = single i }))
+    let test2Buffer = compute.CreateBuffer(StorageBuffer, VulkanBufferFlags.SharedMemory, Array.init 1600 (fun i -> single i))
+    let test3Buffer = compute.CreateBuffer(StorageBuffer, VulkanBufferFlags.SharedMemory, Array.init 1600 (fun i -> i))
+
+    let computeShader = compute.CreateShader computeShader
+
+    let draw = computeShader.CreateDrawBuilder()
+    let draw = draw.AddDescriptorBuffer test1Buffer
+    let draw = draw.AddDescriptorBuffer test2Buffer
+    let draw = draw.AddDescriptorBuffer test3Buffer
+    let draw = draw.Next
+
+    computeShader.AddDraw(draw, 0u, 1u) |> ignore
+    compute.SetupCommands()
+
+    compute.DrawFrame()
+    compute.WaitIdle()
+    let data = test2Buffer.Memory.MapAsSpan<single>(16)
+
+    Assert.Equal(203.f, data.[1])
