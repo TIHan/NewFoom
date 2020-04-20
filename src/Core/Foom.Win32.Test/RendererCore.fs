@@ -487,7 +487,7 @@ let load (graphics: FalGraphics) (wad: Wad) (map: Map) (mvpBuffer: VulkanBuffer<
                     let mutable fragTexCoord = Variable<Vector2> [Decoration.Location 0u] StorageClass.Output []
     
                     fun () ->
-                        let beef =
+                        let transform =
                             if sectorId.BackSideIndex <> -1 && sectorId.BackSideIndex <> -1 then
                                 let frontSide = sectors.SectorRenders.[sectorId.FrontSideIndex]
                                 let backSide = sectors.SectorRenders.[sectorId.BackSideIndex]
@@ -501,24 +501,22 @@ let load (graphics: FalGraphics) (wad: Wad) (map: Map) (mvpBuffer: VulkanBuffer<
                                 let height = top - bottom
                                 let origHeight = origTop - origBottom
 
-                                let mutable bottomScale = 1.f
                                 if origHeight <> 0.f then
-                                    bottomScale <- (height / origHeight)
-
-                                let mutable x = 1.f
-                                if uv.X = 1.f then
-                                    x <- bottomScale
-
-                                let mutable y = 1.f
-                                if uv.Y = 1.f then
-                                    y <- bottomScale
-
-                                Vector2(x, y)
+                                    0.f//(height / origHeight)
+                                else
+                                    1.f
                             else
-                                Vector2(1.f, 1.f)
+                                0.f
 
-                        gl_Position <- Vector4.Transform(Vector4(position, z * beef.X, 1.f), mvp.model * mvp.view * mvp.proj)
-                        fragTexCoord <- Vector2(origUv.X, origUv.Y * beef.Y)
+                        let mutable x = 1.f
+                        if uv.X = 1.f then
+                            x <- transform
+
+                        let mutable y = 1.f
+
+
+                        gl_Position <- Vector4.Transform(Vector4(position, z * x, 1.f), mvp.model * mvp.view * mvp.proj)
+                        fragTexCoord <- Vector2(origUv.X, origUv.Y * y)
                 @>
     
             let fragment =
