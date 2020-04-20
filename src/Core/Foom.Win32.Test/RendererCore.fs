@@ -451,7 +451,8 @@ type MapView(sectors: SectorView [], lineViews: LineView [], sectorRendersBuffer
         let sectorView = { sectors.[sectorId]with Heights = heights }
         sectors.[sectorId] <- sectorView
       //  updateLineViews (Span sectors) (Span lineViews) sectorView.LineViewIds
-        sectorRendersBuffer.Upload(sectorId, ReadOnlySpan [|{ OriginalCeilingHeight = sectorView.OriginalHeights.CeilingHeight; OriginalFloorHeight = sectorView.OriginalHeights.FloorHeight; FloorHeight = heights.FloorHeight; CeilingHeight = heights.CeilingHeight  }|])
+        let v = { OriginalCeilingHeight = sectorView.OriginalHeights.CeilingHeight; OriginalFloorHeight = sectorView.OriginalHeights.FloorHeight; FloorHeight = heights.FloorHeight; CeilingHeight = heights.CeilingHeight }
+        sectorRendersBuffer.Upload(sectorId, ReadOnlySpan [|v|])
 
 let createVar (graphics: FalGraphics) (data: 'T[]) : VulkanVarListSegment<'T> =
     let buffer = graphics.CreateBuffer(VertexBuffer, VulkanBufferFlags.None, data)
@@ -501,12 +502,12 @@ let load (graphics: FalGraphics) (wad: Wad) (map: Map) (mvpBuffer: VulkanBuffer<
                                 let height = top - bottom
                                 let origHeight = origTop - origBottom
 
-                                if origHeight <> 0.f then
-                                    0.f//(height / origHeight)
-                                else
+                                if origHeight = height then
                                     1.f
+                                else
+                                    (height / origHeight)
                             else
-                                0.f
+                                1.f
 
                         let mutable x = 1.f
                         if uv.X = 1.f then
@@ -558,7 +559,7 @@ let load (graphics: FalGraphics) (wad: Wad) (map: Map) (mvpBuffer: VulkanBuffer<
                 CeilingHeight = heights.CeilingHeight     
             }
         
-    let sectorRendersBuffer = graphics.CreateBuffer(StorageBuffer, VulkanBufferFlags.None, sectorRenders)
+    let sectorRendersBuffer = graphics.CreateBuffer(StorageBuffer, VulkanBufferFlags.SharedMemory, sectorRenders)
 
     let addLineViewId (sectorViewId: int) (lineViewId: int) =
         sectorViews.[sectorViewId].LineViewIds.Add lineViewId
