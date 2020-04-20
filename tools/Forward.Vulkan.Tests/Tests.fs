@@ -140,31 +140,32 @@ type TestBlock =
 
 [<Fact>]
 let ``My test`` () =
-    use device = createDevice ()
-    use compute = createCompute device
+    for i = 0 to 10 do
+        use device = createDevice ()
+        use compute = createCompute device
 
-    let computeShader =
-        <@
-            let test = Variable<TestBlock> [Decoration.Binding 0u; Decoration.DescriptorSet 0u] StorageClass.StorageBuffer []
+        let computeShader =
+            <@
+                let test = Variable<TestBlock> [Decoration.Binding 0u; Decoration.DescriptorSet 0u] StorageClass.StorageBuffer []
     
-            fun () ->
-                test.x.[16] <- 5
-        @>
+                fun () ->
+                    test.x.[16] <- 5
+            @>
 
-    let testBuffer = compute.CreateBuffer(StorageBuffer, VulkanBufferFlags.SharedMemory, Array.init 10000 (fun _ -> 0))
+        let testBuffer = compute.CreateBuffer(StorageBuffer, VulkanBufferFlags.SharedMemory, Array.init 10000 (fun _ -> 0))
 
-    let computeShader = compute.CreateShader computeShader
+        let computeShader = compute.CreateShader computeShader
 
-    let draw = computeShader.CreateDrawBuilder()
-    let draw = draw.AddDescriptorBuffer testBuffer
-    let draw = draw.Next
+        let draw = computeShader.CreateDrawBuilder()
+        let draw = draw.AddDescriptorBuffer testBuffer
+        let draw = draw.Next
 
-    computeShader.AddDraw(draw, 0u, 1u) |> ignore
-    compute.SetupCommands()
+        computeShader.AddDraw(draw, 0u, 1u) |> ignore
+        compute.SetupCommands()
 
-    compute.DrawFrame()
+        compute.DrawFrame()
 
-    let doot = testBuffer.Memory.MapAsSpan<int>(20)
+        let doot = testBuffer.Memory.MapAsSpan<int>(20)
 
 
-    Assert.True(true)
+        Assert.True(true)

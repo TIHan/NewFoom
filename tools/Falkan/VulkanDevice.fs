@@ -233,6 +233,8 @@ type VulkanDevice private
                         chunks.Value
                         |> Seq.iter (fun (_, deviceMemory) -> vkFreeMemory(device, deviceMemory, vkNullPtr)))
 
+                chunks.Clear()
+
                 vkDestroyCommandPool(device, vkCommandPool, vkNullPtr)
                 vkDestroyDevice(device, vkNullPtr)
 
