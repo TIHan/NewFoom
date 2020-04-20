@@ -18,6 +18,7 @@ open InternalPipelineHelpers
 [<NoEquality;NoComparison>]
 type SwapChainState =
     {
+        count: int
         extent: VkExtent2D
         swapChain: VkSwapchainKHR
         imageViews: VkImageView []
@@ -368,6 +369,34 @@ let drawFrame device swapChain sync (commandBuffers: VkCommandBuffer []) graphic
 
     (currentFrame + 1) % MaxFramesInFlight, res
 
+let computeFrame device sync (commandBuffers: VkCommandBuffer []) computeQueue =
+    use pFences = fixed &sync.inFlightFences.[0]
+    vkWaitForFences(device, 1u, pFences, VK_TRUE, UInt64.MaxValue) |> checkResult
+    vkResetFences(device, 1u, pFences) |> checkResult
+
+    let waitSemaphores = [|sync.imageAvailableSemaphores.[0]|]
+    let waitStages = [|VkPipelineStageFlags.VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT|]
+
+    let signalSemaphores = [|sync.renderFinishedSemaphores.[0]|]
+
+    use pWaitSemaphores = fixed waitSemaphores
+    use waitStages = fixed waitStages
+    use pSignalSemaphores = fixed signalSemaphores
+    use pCommandBuffers = fixed &commandBuffers.[0]
+    let mutable submitInfo =
+        VkSubmitInfo (
+            sType = VkStructureType.VK_STRUCTURE_TYPE_SUBMIT_INFO,
+            //waitSemaphoreCount = uint32 waitSemaphores.Length,
+            //pWaitSemaphores = pWaitSemaphores,
+            //pWaitDstStageMask = waitStages,
+            commandBufferCount = 1u,
+            pCommandBuffers = pCommandBuffers
+            //signalSemaphoreCount = uint32 signalSemaphores.Length,
+            //pSignalSemaphores = pSignalSemaphores
+        )
+
+    vkQueueSubmit(computeQueue, 1u, &&submitInfo, sync.inFlightFences.[0]) |> checkResult
+
 type VulkanShaderDescriptorLayoutKind =
     | UniformBufferDescriptor
     | StorageBufferDescriptor
@@ -573,7 +602,7 @@ type FalkanShaderDrawDescriptorBuilder (inputs: ShaderInput list) =
     member _.Inputs = inputs
 
     member _.AddDescriptorBuffer(buffer: VulkanBuffer<'T>) =
-         ShaderDescriptorInputBuffer(buffer.buffer, uint64 (buffer.Size / sizeof<'T>)) :: inputs
+         ShaderDescriptorInputBuffer(buffer.buffer, uint64 (sizeof<'T>)) :: inputs
         |> FalkanShaderDrawDescriptorBuilder
 
     member _.AddDescriptorImage(image: FalkanImage) =
@@ -691,7 +720,11 @@ and [<Sealed>] SwapChain private (fdevice: VulkanDevice, sync, kind: DeviceKind,
 
     let record () =
         let state = state.Value
-        recordDraw state.extent state.framebuffers state.commandBuffers state.imageDepthAttachment.vkImage state.renderPass renderSubpassPipelines
+        match kind with
+        | GraphicsDevice _ ->
+            recordDraw state.extent state.framebuffers state.commandBuffers state.imageDepthAttachment.vkImage state.renderPass renderSubpassPipelines
+        | ComputeDevice _ ->
+            recordComputeCommands state.commandBuffers renderSubpassPipelines
 
     do
         invalidate.Add(fun () -> isInvalidated <- true)
@@ -701,7 +734,7 @@ and [<Sealed>] SwapChain private (fdevice: VulkanDevice, sync, kind: DeviceKind,
 
         match state with
         | None -> failwith "Swap chain not initialized."
-        | Some state -> state.imageViews.Length
+        | Some state -> state.count
 
     member _.VkDevice = device
 
@@ -725,6 +758,7 @@ and [<Sealed>] SwapChain private (fdevice: VulkanDevice, sync, kind: DeviceKind,
                 isInvalidated <- false
                 state <- 
                     { 
+                        count = imageViews.Length
                         extent = extent
                         swapChain = swapChain
                         imageViews = imageViews
@@ -748,6 +782,7 @@ and [<Sealed>] SwapChain private (fdevice: VulkanDevice, sync, kind: DeviceKind,
                 isInvalidated <- false
                 state <- 
                     { 
+                        count = 1
                         extent = Unchecked.defaultof<_>
                         swapChain = Unchecked.defaultof<_>
                         imageViews = Unchecked.defaultof<_>
@@ -763,6 +798,8 @@ and [<Sealed>] SwapChain private (fdevice: VulkanDevice, sync, kind: DeviceKind,
                     |> Seq.iter (fun struct(subpassIndex, shader, pipelineLayout) -> 
                         addPipeline subpassIndex pipelineLayout shader
                     )
+
+                record ()
 
         finally
             Monitor.Exit gate
@@ -881,7 +918,8 @@ and [<Sealed>] SwapChain private (fdevice: VulkanDevice, sync, kind: DeviceKind,
             else
                 checkResult res
                 currentFrame <- nextFrame
-        | _ -> ()
+        | ComputeDevice(_, computeQueue) ->
+            computeFrame device sync commandBuffers computeQueue
 
     member _.WaitIdle () =
         check ()
