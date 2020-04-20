@@ -169,3 +169,43 @@ let ``My test`` () =
 
 
         Assert.True(true)
+
+
+[<Struct;Block>]
+type TestBlock2 =
+    {
+        x: single[]
+    }
+
+
+[<Fact>]
+let ``My test 2`` () =
+    use device = createDevice ()
+    use compute = createCompute device
+
+    let computeShader =
+        <@
+            let test = Variable<TestBlock2> [Decoration.Binding 0u; Decoration.DescriptorSet 0u] StorageClass.StorageBuffer []
+    
+            fun () ->
+                if test.x.[0] = 1.f then
+                    if test.x.[1] = 2.f then
+                        test.x.[4] <- 100.f
+        @>
+
+    let testBuffer = compute.CreateBuffer(StorageBuffer, VulkanBufferFlags.SharedMemory, [|1.f;2.f;3.f;4.f;5.f|])
+
+    let computeShader = compute.CreateShader computeShader
+
+    let draw = computeShader.CreateDrawBuilder()
+    let draw = draw.AddDescriptorBuffer testBuffer
+    let draw = draw.Next
+
+    computeShader.AddDraw(draw, 0u, 1u) |> ignore
+    compute.SetupCommands()
+
+    compute.DrawFrame()
+    compute.WaitIdle()
+    let data = testBuffer.Memory.MapAsSpan<single>(5)
+
+    Assert.Equal(100.f, data.[4])
