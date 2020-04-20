@@ -246,8 +246,12 @@ let mkLogicalDevice physicalDevice (indices: QueueFamilyIndices) deviceLayers de
             if indices.HasGraphics then
                 yield indices.graphicsFamily.Value
                 yield indices.presentFamily.Value
-            else
+            
+            if indices.HasCompute then
                 yield indices.computeFamily.Value
+
+            if indices.HasTransfer then
+                yield indices.transferFamily.Value
         |]
         |> Array.distinct // we need to be distinct so we do not create duplicate create infos
         |> Array.map (fun familyIndex ->

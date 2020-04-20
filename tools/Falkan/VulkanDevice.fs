@@ -247,6 +247,9 @@ type VulkanDevice private
                 |> Array.iter (fun x -> x.Free())
 
     static member Create (appName, engineName, deviceLayers: VulkanDeviceLayer list, deviceExtensions: VulkanDeviceExtension list, ?createVkSurface) =
+        if sizeof<nativeint> <> 8 then
+            failwith "This specific Vulkan API only runs on 64-bit."
+
         let deviceLayers = deviceLayers |> List.map (fun x -> x.ToString()) |> Array.ofList
         let deviceExtensions = (VK_KHR_SWAPCHAIN_EXTENSION_NAME :: (deviceExtensions |> List.map (fun x -> x.ToString()))) |> Array.ofList
         let debugCallbackHandle, debugCallback =
@@ -275,9 +278,10 @@ type VulkanDevice private
                 | Some computeQueueFamily -> computeQueueFamily
                 | _ -> failwith "Unable to create VulkanDevice: Compute queue not available on physical device."
 
-        let commandPool = mkCommandPool device family
         // TODO: We should try to use a transfer queue instead of a graphics queue. This works for now.
         let transferQueue = mkQueue device family
+
+        let commandPool = mkCommandPool device family
 
         new VulkanDevice (instance, surfaceOpt, debugMessenger, physicalDevice, indices, device, commandPool, transferQueue, [|debugCallbackHandle|])
 

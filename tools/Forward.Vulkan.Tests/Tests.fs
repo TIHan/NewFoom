@@ -13,6 +13,6 @@ let createCompute device =
 
 [<Fact>]
 let ``My test`` () =
-    use device = createDevice ()
-    use compute = createCompute device
+    let device = createDevice ()
+    let compute = createCompute device
     Assert.True(true)
