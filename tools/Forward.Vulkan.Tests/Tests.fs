@@ -127,7 +127,7 @@ let createCompute device =
 [<Struct;Block>]
 type TestBlock =
     {
-        x: int
+        x: int[]
     }
 
 [<Fact>]
@@ -138,12 +138,13 @@ let ``My test`` () =
 
     let computeShader =
         <@
-            let test = Variable<TestBlock> [Decoration.Binding 0u; Decoration.DescriptorSet 0u] StorageClass.Uniform []
+            let test = Variable<TestBlock> [Decoration.Binding 0u; Decoration.DescriptorSet 0u] StorageClass.StorageBuffer []
     
-            fun () -> ()
+            fun () ->
+                test.x.[0] <- 5
         @>
 
-    let testBuffer = compute.CreateBuffer(UniformBuffer, VulkanBufferFlags.None, { x = 1 })
+    let testBuffer = compute.CreateBuffer(StorageBuffer, VulkanBufferFlags.SharedMemory, [|1|])
 
     let computeShader = compute.CreateShader computeShader
 
@@ -152,9 +153,11 @@ let ``My test`` () =
     let draw = draw.Next
 
     computeShader.AddDraw(draw, 0u, 1u) |> ignore
-
+    compute.SetupCommands()
 
     compute.DrawFrame()
+
+    let doot = testBuffer.Memory.MapAsSpan<int>(1)
 
 
     Assert.True(true)

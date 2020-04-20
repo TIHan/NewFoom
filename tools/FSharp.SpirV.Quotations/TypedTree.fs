@@ -164,6 +164,7 @@ type SpirvExpr =
     | SpirvNewVector3 of args: SpirvExpr list
     | SpirvNewVector4 of args: SpirvExpr list
     | SpirvArrayIndexerGet of receiver: SpirvExpr * arg: SpirvExpr * retTy: SpirvType
+    | SpirvArrayIndexerSet of receiver: SpirvExpr * indexArg: SpirvExpr * valueArg: SpirvExpr
     | SpirvVar of SpirvVar
     | SpirvVarSet of SpirvVar * SpirvExpr
     | SpirvIntrinsicCall of SpirvIntrinsicCall
@@ -208,6 +209,8 @@ type SpirvExpr =
                 SpirvTypeVector4
             | SpirvArrayIndexerGet(_, _, retTy) ->
                 retTy
+            | SpirvArrayIndexerSet _ ->
+                SpirvTypeVoid
             | SpirvVar spvVar ->
                 spvVar.Type
             | SpirvVarSet _ ->

@@ -128,6 +128,8 @@ type VulkanBuffer<'T when 'T : unmanaged> =
 
     member x.IsShared = hasSharedMemoryFlag x.flags
 
+    member x.Memory = x.memory
+
 type VulkanDevice with
 
     [<RequiresExplicitTypeArguments>]

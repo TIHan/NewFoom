@@ -600,6 +600,17 @@ let rec GenExpr cenv (env: env) blockScope returnable expr =
         cenv.locals.[resultId] <- op
         resultId
 
+    | SpirvArrayIndexerSet (receiver, indexArg, valueArg) ->
+        let receiverId = GenExpr cenv env blockScope NotReturnable receiver
+        let argId = GenExpr cenv env blockScope NotReturnable indexArg |> deref cenv
+        let valueArg = GenExpr cenv env blockScope NotReturnable valueArg |> deref cenv
+
+        let resultType = getAccessChainResultType cenv receiverId 0
+        let resultId = nextResultId cenv
+        let op = OpAccessChain(resultType, resultId, receiverId, [argId])
+        addInstructions cenv [op;OpStore(resultId, valueArg, None)]
+        ZeroResultId
+
     | SpirvVar var ->
         GetVarResult cenv var
 

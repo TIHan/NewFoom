@@ -391,6 +391,9 @@ and CheckIntrinsicCall env checkedArgs expr =
     | SpecificCall <@ Unchecked.defaultof<_[]>.[0] @> _, _, [receiver;arg] -> 
         env, SpirvArrayIndexerGet (receiver, arg, mkSpirvType expr.Type)
 
+    | SpecificCall <@ Unchecked.defaultof<_[]>.[0] <- Unchecked.defaultof<_> @> _, _, [receiver;indexArg;valueArg] -> 
+        env, SpirvArrayIndexerSet (receiver, indexArg, valueArg)
+
     | SpecificCall <@ Vector4.Transform(Unchecked.defaultof<Vector4>, Unchecked.defaultof<Matrix4x4>) @> _, _, [arg1;arg2] ->
         env, Transform__Vector4_Matrix4x4__Vector4 (arg1, arg2) |> SpirvIntrinsicCall
 
