@@ -246,14 +246,14 @@ type VulkanDevice private
                 handles
                 |> Array.iter (fun x -> x.Free())
 
-    static member Create (appName, engineName, deviceLayers: VulkanDeviceLayer list, deviceExtensions: VulkanDeviceExtension list, ?createVkSurface) =
+    static member Create (appName, engineName, deviceLayers: VulkanDeviceLayer list, deviceExtensions: VulkanDeviceExtension list, debugCallback, ?createVkSurface) =
         if sizeof<nativeint> <> 8 then
             failwith "This specific Vulkan API only runs on 64-bit."
 
         let deviceLayers = deviceLayers |> List.map (fun x -> x.ToString()) |> Array.ofList
         let deviceExtensions = (VK_KHR_SWAPCHAIN_EXTENSION_NAME :: (deviceExtensions |> List.map (fun x -> x.ToString()))) |> Array.ofList
         let debugCallbackHandle, debugCallback =
-            createVkDebugUtilsMessengerCallback (fun str -> printfn "validation layer: %s" str)
+            createVkDebugUtilsMessengerCallback debugCallback
 
         let instance = mkInstance appName engineName deviceLayers
         // must create surface right after instance - influences device calls
@@ -285,11 +285,11 @@ type VulkanDevice private
 
         new VulkanDevice (instance, surfaceOpt, debugMessenger, physicalDevice, indices, device, commandPool, transferQueue, [|debugCallbackHandle|])
 
-    static member CreateWin32 (hwnd, hinstance, appName, engineName, deviceLayers, deviceExtensions) =
-        VulkanDevice.Create (appName, engineName, deviceLayers, deviceExtensions, createVkSurface = createWin32Surface hwnd hinstance)
+    static member CreateWin32 (hwnd, hinstance, appName, engineName, deviceLayers, deviceExtensions, debugCallback) =
+        VulkanDevice.Create (appName, engineName, deviceLayers, deviceExtensions, debugCallback, createVkSurface = createWin32Surface hwnd hinstance)
 
-    static member CreateCompute (appName, engineName, deviceLayers, deviceExtensions) =
-        VulkanDevice.Create (appName, engineName, deviceLayers, deviceExtensions)
+    static member CreateCompute (appName, engineName, deviceLayers, debugCallback, deviceExtensions) =
+        VulkanDevice.Create (appName, engineName, deviceLayers, debugCallback, deviceExtensions)
 
 let gate = obj ()
 

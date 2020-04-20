@@ -689,20 +689,28 @@ and [<Sealed>] SwapChain private (fdevice: VulkanDevice, sync, kind: DeviceKind,
         use pCommandBuffers = fixed commandBuffers
         vkFreeCommandBuffers(device, fdevice.VkCommandPool, uint32 commandBuffers.Length, pCommandBuffers)
 
-        framebuffers
-        |> Array.iter (fun framebuffer ->
-            vkDestroyFramebuffer(device, framebuffer, vkNullPtr)
-        )
+        match kind with
+        | GraphicsDevice _ ->
 
-        vkDestroyRenderPass(device, renderPass, vkNullPtr)
+            framebuffers
+            |> Array.iter (fun framebuffer ->
+                vkDestroyFramebuffer(device, framebuffer, vkNullPtr)
+            )
 
-        imageDepthAttachment.Destroy()
-        imageViews
-        |> Array.iter (fun imageView ->
-            vkDestroyImageView(device, imageView, vkNullPtr)
-        )
+            vkDestroyRenderPass(device, renderPass, vkNullPtr)
 
-        vkDestroySwapchainKHR(device, swapChain, vkNullPtr)
+            imageDepthAttachment.Destroy()
+            imageViews
+            |> Array.iter (fun imageView ->
+                vkDestroyImageView(device, imageView, vkNullPtr)
+            )
+
+            vkDestroySwapchainKHR(device, swapChain, vkNullPtr)
+
+        | ComputeDevice _ ->
+            ()
+            
+
 
     let addPipeline subpassIndex pipelineLayout shader =
         match state with
@@ -725,6 +733,15 @@ and [<Sealed>] SwapChain private (fdevice: VulkanDevice, sync, kind: DeviceKind,
             recordDraw state.extent state.framebuffers state.commandBuffers state.imageDepthAttachment.vkImage state.renderPass renderSubpassPipelines
         | ComputeDevice _ ->
             recordComputeCommands state.commandBuffers renderSubpassPipelines
+
+    let wait () =
+        match kind with
+        | GraphicsDevice(_, _, graphicsQueue, _, presentQueue) ->
+            vkQueueWaitIdle(presentQueue) |> checkResult
+            vkQueueWaitIdle(graphicsQueue) |> checkResult
+        | ComputeDevice(_, computeQueue) ->
+            vkQueueWaitIdle(computeQueue) |> checkResult
+        vkDeviceWaitIdle(device) |> checkResult
 
     do
         invalidate.Add(fun () -> isInvalidated <- true)
@@ -923,13 +940,7 @@ and [<Sealed>] SwapChain private (fdevice: VulkanDevice, sync, kind: DeviceKind,
 
     member _.WaitIdle () =
         check ()
-        match kind with
-        | GraphicsDevice(_, _, graphicsQueue, _, presentQueue) ->
-            vkQueueWaitIdle(presentQueue) |> checkResult
-            vkQueueWaitIdle(graphicsQueue) |> checkResult
-        | ComputeDevice(_, computeQueue) ->
-            vkQueueWaitIdle(computeQueue) |> checkResult
-        vkDeviceWaitIdle(device) |> checkResult
+        wait ()
 
     member this.CreateShader(shaderDesc: VulkanShaderDescription, vertexSpirvSource: ReadOnlySpan<byte>, fragmentSpirvSource: ReadOnlySpan<byte>) =
         let subpassIndex, pipelineFlags, descriptorSetLayouts, bindingDescriptions, attributeDescriptions = shaderDesc.Build device
@@ -948,6 +959,8 @@ and [<Sealed>] SwapChain private (fdevice: VulkanDevice, sync, kind: DeviceKind,
                 failwith "SwapChain already disposed"
             else
                 GC.SuppressFinalize x
+
+                wait ()
 
                 lock gate (fun () ->
                     for shaders in renderSubpassShaders do

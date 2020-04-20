@@ -19,7 +19,6 @@ type FalGraphics
      swapChain: SwapChain) =
 
     let device = fdevice.Device
-    let physicalDevice = fdevice.PhysicalDevice
     let gate = obj ()
     let buffers = Collections.Generic.Dictionary<VkBuffer, VulkanMemory>()
     let images = Collections.Generic.Dictionary<VkImage, FalkanImage> ()

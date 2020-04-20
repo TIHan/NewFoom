@@ -119,7 +119,10 @@ type FalGraphics with
         this.CreateComputeShader(shaderDesc, ReadOnlySpan vertexBytes)
 
 let createDevice () =
-    VulkanDevice.CreateCompute("Vulkan Tests", "forward", [VulkanDeviceLayer.LunarGStandardValidation], [])
+    let evt = Event<string>()
+    let device = VulkanDevice.CreateCompute("Vulkan Tests", "forward", [VulkanDeviceLayer.LunarGStandardValidation], [], evt.Trigger)
+    evt.Publish.Add(fun str -> failwithf "%s" str)
+    device
 
 let createCompute device =
     FalGraphics.CreateCompute(device, Event<unit>().Publish)
@@ -137,9 +140,8 @@ type TestBlock =
 
 [<Fact>]
 let ``My test`` () =
-    let device = createDevice ()
-    let compute = createCompute device
-
+    use device = createDevice ()
+    use compute = createCompute device
 
     let computeShader =
         <@

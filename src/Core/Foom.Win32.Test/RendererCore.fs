@@ -37,7 +37,7 @@ let createVulkanWin32Window title engineName updateInterval width height (window
     let hwnd = windowState.Hwnd
     let hinstance = windowState.Hinstance
 
-    let device = VulkanDevice.CreateWin32(hwnd, hinstance, title, engineName, [VulkanDeviceLayer.LunarGStandardValidation], [])
+    let device = VulkanDevice.CreateWin32(hwnd, hinstance, title, engineName, [VulkanDeviceLayer.LunarGStandardValidation], [], fun str -> printfn "validation layer: %s" str)
     let subpasses =
         [RenderSubpass ColorDepthStencilSubpass]
 
