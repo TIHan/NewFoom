@@ -602,7 +602,7 @@ type FalkanShaderDrawDescriptorBuilder (inputs: ShaderInput list) =
     member _.Inputs = inputs
 
     member _.AddDescriptorBuffer(buffer: VulkanBuffer<'T>) =
-         ShaderDescriptorInputBuffer(buffer.buffer, uint64 (sizeof<'T>)) :: inputs
+         ShaderDescriptorInputBuffer(buffer.buffer, uint64 (buffer.Length * sizeof<'T>)) :: inputs
         |> FalkanShaderDrawDescriptorBuilder
 
     member _.AddDescriptorImage(image: FalkanImage) =

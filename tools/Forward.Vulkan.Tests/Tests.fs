@@ -124,6 +124,11 @@ let createDevice () =
 let createCompute device =
     FalGraphics.CreateCompute(device, Event<unit>().Publish)
 
+
+
+
+
+
 [<Struct;Block>]
 type TestBlock =
     {
@@ -141,10 +146,10 @@ let ``My test`` () =
             let test = Variable<TestBlock> [Decoration.Binding 0u; Decoration.DescriptorSet 0u] StorageClass.StorageBuffer []
     
             fun () ->
-                test.x.[0] <- 5
+                test.x.[16] <- 5
         @>
 
-    let testBuffer = compute.CreateBuffer(StorageBuffer, VulkanBufferFlags.SharedMemory, [|1|])
+    let testBuffer = compute.CreateBuffer(StorageBuffer, VulkanBufferFlags.SharedMemory, Array.init 10000 (fun _ -> 0))
 
     let computeShader = compute.CreateShader computeShader
 
@@ -157,7 +162,7 @@ let ``My test`` () =
 
     compute.DrawFrame()
 
-    let doot = testBuffer.Memory.MapAsSpan<int>(1)
+    let doot = testBuffer.Memory.MapAsSpan<int>(20)
 
 
     Assert.True(true)

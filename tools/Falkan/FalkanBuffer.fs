@@ -124,11 +124,14 @@ type VulkanBuffer<'T when 'T : unmanaged> =
         memory: VulkanMemory
         flags: VulkanBufferFlags
         kind: VulkanBufferKind
+        length: int
     }
 
     member x.IsShared = hasSharedMemoryFlag x.flags
 
     member x.Memory = x.memory
+
+    member x.Length = x.length
 
 type VulkanDevice with
 
@@ -136,6 +139,7 @@ type VulkanDevice with
     member this.CreateBuffer<'T when 'T : unmanaged>(kind, flags, size) : VulkanBuffer<'T> =
         let device = this.Device
 
+        let length = size / sizeof<'T>
         let isShared = hasSharedMemoryFlag flags
         let usage =
             match kind with
@@ -151,11 +155,11 @@ type VulkanDevice with
         let buffer = mkBuffer device size (usage ||| VkBufferUsageFlags.VK_BUFFER_USAGE_TRANSFER_DST_BIT)
         if isShared then
             let memory = bindMemory this buffer memProperties
-            { buffer = buffer; memory = memory; flags = flags; kind = kind }
+            { buffer = buffer; memory = memory; flags = flags; kind = kind; length = length }
         else
             // High-performance GPU memory
             let memory = bindMemory this buffer VkMemoryPropertyFlags.VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
-            { buffer = buffer; memory = memory; flags = flags; kind = kind }
+            { buffer = buffer; memory = memory; flags = flags; kind = kind; length = length }
 
 type VulkanBuffer<'T when 'T : unmanaged> with
     
