@@ -15,13 +15,11 @@ type SpirvImageType = SpirvImageType of sampledType: SpirvType * dim: Dim * dept
 and SpirvType =
     | SpirvTypeVoid
 
-    /// 32-bit boolean.
-    | SpirvTypeBool
+    | SpirvTypeBool of sizeHint: int
 
     | SpirvTypeInt of width: int * sign: bool
     | SpirvTypeFloat of width: int
     | SpirvTypeVector2
-    | SpirvTypeVector2Int
     | SpirvTypeVector3
     | SpirvTypeVector4
     | SpirvTypeMatrix4x4
@@ -34,12 +32,11 @@ and SpirvType =
 
     member x.Name =
         match x with
-        | SpirvTypeVoid -> "void"
-        | SpirvTypeBool -> "bool"
-        | SpirvTypeInt (width, sign) -> "int" + string width + "(" + string sign + ")"
-        | SpirvTypeFloat width -> "float" + string width
+        | SpirvTypeVoid -> "Void"
+        | SpirvTypeBool _ -> "Bool"
+        | SpirvTypeInt (width, sign) -> "Int" + string width + "(" + string sign + ")"
+        | SpirvTypeFloat width -> "Float" + string width
         | SpirvTypeVector2 -> "Vector2"
-        | SpirvTypeVector2Int -> "Vector2<int>"
         | SpirvTypeVector3 -> "Vector3"
         | SpirvTypeVector4 -> "Vector4"
         | SpirvTypeMatrix4x4 -> "Matrix4x4"
@@ -50,21 +47,20 @@ and SpirvType =
         | SpirvTypeSampler -> "Sampler"
         | SpirvTypeSampledImage _ -> "SampledImage"
 
-    member x.Size: int =
+    member x.SizeHint: int =
         match x with
         | SpirvTypeVoid -> failwith "Unable to get size of void type."
-        | SpirvTypeBool -> sizeof<bool>
+        | SpirvTypeBool sizeHint -> sizeHint
         | SpirvTypeInt (width, _) -> width / 8
         | SpirvTypeFloat width -> width / 8
-        | SpirvTypeVector2
-        | SpirvTypeVector2Int -> sizeof<Vector2>
-        | SpirvTypeVector3 -> sizeof<Vector3>
-        | SpirvTypeVector4 -> sizeof<Vector4>
-        | SpirvTypeMatrix4x4 -> sizeof<Matrix4x4>
-        | SpirvTypeArray(ty, length) -> ty.Size * length
+        | SpirvTypeVector2 -> 8
+        | SpirvTypeVector3 -> 12
+        | SpirvTypeVector4 -> 16
+        | SpirvTypeMatrix4x4 -> 64
+        | SpirvTypeArray(ty, length) -> ty.SizeHint * length
         | SpirvTypeStruct(_, fields, _) ->
             fields
-            |> List.sumBy(fun (field: SpirvField) -> field.Type.Size)
+            |> List.sumBy(fun (field: SpirvField) -> field.Type.SizeHint)
         | SpirvTypeRuntimeArray _
         | SpirvTypeImage _
         | SpirvTypeSampler
@@ -90,9 +86,7 @@ and SpirvType =
         | _ -> false
 
     member x.IsVectorInt =
-        match x with
-        | SpirvTypeVector2Int -> true
-        | _ -> false
+        false
 
     member x.IsVectorFloat =
         match x with
@@ -151,12 +145,11 @@ let SpirvTypeUInt32 = SpirvTypeInt (32, false)
 let SpirvTypeFloat32 = SpirvTypeFloat 32
 
 type SpirvConst =
-    | SpirvConstBool of bool * decorations: Decorations
+    | SpirvConstBool of bool * sizeHint: int * decorations: Decorations
     | SpirvConstInt of int * decorations: Decorations
     | SpirvConstUInt32 of uint32 * decorations: Decorations
     | SpirvConstSingle of single * decorations: Decorations
     | SpirvConstVector2 of single * single * decorations: Decorations
-    | SpirvConstVector2Int of int * int * decorations: Decorations
     | SpirvConstVector3 of single * single * single * decorations: Decorations
     | SpirvConstVector4 of single * single * single * single * decorations: Decorations
     | SpirvConstMatrix4x4 of single * single * single * single *
@@ -173,7 +166,6 @@ type SpirvConst =
         | SpirvConstUInt32 (decorations=decorations)
         | SpirvConstSingle (decorations=decorations)
         | SpirvConstVector2 (decorations=decorations)
-        | SpirvConstVector2Int (decorations=decorations)
         | SpirvConstVector3 (decorations=decorations)
         | SpirvConstVector4 (decorations=decorations)
         | SpirvConstMatrix4x4 (decorations=decorations)
@@ -192,7 +184,6 @@ type SpirvExpr =
     | SpirvLet of SpirvVar * rhs: SpirvExpr * body: SpirvExpr
     | SpirvSequential of SpirvExpr * SpirvExpr
     | SpirvNewVector2 of args: SpirvExpr list
-    | SpirvNewVector2Int of args: SpirvExpr list
     | SpirvNewVector3 of args: SpirvExpr list
     | SpirvNewVector4 of args: SpirvExpr list
     | SpirvArrayIndexerGet of receiver: SpirvExpr * arg: SpirvExpr * retTy: SpirvType
@@ -216,12 +207,11 @@ type SpirvExpr =
                 SpirvTypeVoid
             | SpirvConst spvConst ->
                 match spvConst with
-                | SpirvConstBool _ -> SpirvTypeBool
+                | SpirvConstBool(_, sizeHint, _) -> SpirvTypeBool sizeHint
                 | SpirvConstInt _ -> SpirvTypeInt32
                 | SpirvConstUInt32 _ -> SpirvTypeUInt32
                 | SpirvConstSingle _ -> SpirvTypeFloat 32
                 | SpirvConstVector2 _ -> SpirvTypeVector2
-                | SpirvConstVector2Int _ -> SpirvTypeVector2Int
                 | SpirvConstVector3 _ -> SpirvTypeVector3
                 | SpirvConstVector4 _ -> SpirvTypeVector4
                 | SpirvConstMatrix4x4 _ -> SpirvTypeMatrix4x4
@@ -233,8 +223,6 @@ type SpirvExpr =
                 getType expr2
             | SpirvNewVector2 _ ->
                 SpirvTypeVector2
-            | SpirvNewVector2Int _ ->
-                SpirvTypeVector2Int
             | SpirvNewVector3 _ ->
                 SpirvTypeVector3
             | SpirvNewVector4 _ ->
@@ -260,10 +248,6 @@ type SpirvExpr =
         getType x
 
 and SpirvExprOp =
-    | GetImage of arg: SpirvExpr
-    | ImageFetch of image: SpirvExpr * coordinate: SpirvExpr * retTy: SpirvType
-    | ImageGather of sampledImage: SpirvExpr * coordinate: SpirvExpr * comp: SpirvExpr * retTy: SpirvType
-    | ImplicitLod of arg1: SpirvExpr * arg2: SpirvExpr * retTy: SpirvType
     | SpirvOpKill
     | FloatUnorderedLessThan of arg1: SpirvExpr * arg2: SpirvExpr * retTy: SpirvType
     | SpirvOp of (IdResultType -> IdResult -> IdRef list -> Instruction) * args: SpirvExpr list * retTy: SpirvType
@@ -290,26 +274,12 @@ and SpirvExprOp =
 
     member x.ReturnType =
         match x with
-        | GetImage arg ->
-            match arg.Type with
-            | SpirvTypeSampledImage imageTy -> SpirvTypeImage imageTy
-            | _ -> failwith "GetImage: Expected SpirvTypeSampledImage."
-        | ImageFetch (_, _, retTy) ->
-            match retTy with
-            | SpirvTypeVector4 _ -> retTy
-            | _ -> failwith "ImageFetch: Expected SpirvTypeVector4."
-        | ImageGather (_, _, _, retTy) -> retTy
-        | ImplicitLod (_, _, retTy) -> retTy
         | SpirvOpKill -> SpirvType.SpirvTypeVoid
         | FloatUnorderedLessThan(_, _, retTy) -> retTy
         | SpirvOp(_, _, retTy) -> retTy
 
     member x.Arguments =
         match x with
-        | GetImage arg -> [arg]
-        | ImageFetch (arg1, arg2, _) -> [arg1;arg2]
-        | ImageGather (arg1, arg2, arg3, _) -> [arg1;arg2;arg3]
-        | ImplicitLod (arg1, arg2, _) -> [arg1;arg2]
         | SpirvOpKill -> []
         | FloatUnorderedLessThan(arg1, arg2, _) -> [arg1;arg2]
         | SpirvOp(_, args, _) -> args

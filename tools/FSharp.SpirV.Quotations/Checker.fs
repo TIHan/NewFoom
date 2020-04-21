@@ -13,6 +13,7 @@ open FSharp.Spirv
 open FSharp.Spirv.Specification
 open FSharp.Reflection
 open TypedTree
+open Intrinsics
 
 [<NoEquality;NoComparison>]
 type env =
@@ -46,7 +47,7 @@ let tryGetIndexForBackingField (propInfo: PropertyInfo) =
 let rec mkSpirvType ty =
     match ty with
     | _ when ty = typeof<bool> ->
-        SpirvTypeBool
+        SpirvTypeBool sizeof<bool>
     | _ when ty = typeof<byte> ->
         SpirvTypeUInt8
     | _ when ty = typeof<int> -> 
@@ -55,8 +56,6 @@ let rec mkSpirvType ty =
         SpirvTypeFloat32
     | _ when ty = typeof<Vector2> ->
         SpirvTypeVector2
-    | _ when ty = typeof<Vector2Int> ->
-        SpirvTypeVector2Int
     | _ when ty = typeof<Vector3> ->
         SpirvTypeVector3
     | _ when ty = typeof<Vector4> ->
@@ -242,10 +241,10 @@ let rec mkSpirvConst expr =
         SpirvConstArray(elementSpvTy, exprs |> List.map mkSpirvConst, [])
 
     | Value(x, _) when x.GetType() = typeof<bool> && unbox x = false ->
-        SpirvConstBool(false, [])
+        SpirvConstBool(false, sizeof<bool>, [])
 
     | Value(x, _) when x.GetType() = typeof<bool> && unbox x = true ->
-        SpirvConstBool(true, [])
+        SpirvConstBool(true, sizeof<bool>, [])
 
     | _ ->
         failwithf "Invalid expression for constant: %A" expr
@@ -292,7 +291,21 @@ let rec CheckExpr env isReturnable expr =
         env, SpirvSequential (spvExpr1, spvExpr2)
 
     | Call (receiver, methInfo, args) ->
-        let checkedTyArgs = methInfo.GetGenericArguments() |> Array.map (mkSpirvType) |> List.ofArray
+        let checkedTyArgs = 
+            methInfo.GetGenericArguments()
+            |> Array.choose (fun ty ->
+                // Ignore these kinds of generic type arguments because they are only used for the Image and SampledImage types.
+                if ty.BaseType = typeof<DimKind> || 
+                   ty.BaseType = typeof<ImageDepthKind> || 
+                   ty.BaseType = typeof<ImageArrayedKind> || 
+                   ty.BaseType = typeof<ImageMultisampleKind> ||
+                   ty.BaseType = typeof<ImageSampleKind> ||
+                   ty.BaseType = typeof<ImageFormatKind> || 
+                   ty.BaseType = typeof<AccessQualifierKind> then
+                    None
+                else
+                    mkSpirvType ty |> Some)
+            |> List.ofArray
         let args =
             match receiver with
             | Some receiver -> [receiver] @ args
@@ -306,10 +319,6 @@ let rec CheckExpr env isReturnable expr =
         | SpirvTypeVector2, args -> 
             let env, spvArgs = CheckExprs env args
             env, SpirvNewVector2 spvArgs
-
-        | SpirvTypeVector2Int, args -> 
-            let env, spvArgs = CheckExprs env args
-            env, SpirvNewVector2Int spvArgs
 
         | SpirvTypeVector3, args -> 
             let env, spvArgs = CheckExprs env args
@@ -359,8 +368,6 @@ and CheckPropertyGet env receiver propInfo args =
     else
         let env, checkedArgs = CheckExprs env ([receiver] @ args)
         match checkedArgs with
-        | [arg] when propInfo.DeclaringType.FullName.StartsWith(typedefof<SampledImage<_, _, _, _, _, _, _, _>>.FullName) && propInfo.Name = "Image" ->
-            env, GetImage arg |> SpirvExprOp
         | _ ->
             failwithf "Property get '%s' not supported." propInfo.Name
 
@@ -506,14 +513,8 @@ and CheckIntrinsicCall env checkedTyArgs checkedArgs checkedRetTy expr =
             | SpecificCall <@ (<) : float32 -> float32 -> bool @> _, _, [arg1;arg2] ->
                 env, FloatUnorderedLessThan(arg1, arg2, checkedRetTy)
 
-            | Call(_, methInfo, _), _, [arg1;arg2] when methInfo.DeclaringType.FullName.StartsWith(typedefof<Image<_, _, _, _, _, _, _, _>>.FullName) && methInfo.Name = "Fetch" ->
-                env, ImageFetch (arg1, arg2, checkedRetTy)
-
-            | Call(_, methInfo, _), _, [arg1;arg2;arg3] when methInfo.DeclaringType.FullName.StartsWith(typedefof<SampledImage<_, _, _, _, _, _, _, _>>.FullName) && methInfo.Name = "Gather" ->
-                env, ImageGather (arg1, arg2, arg3, checkedRetTy)
-
-            | Call(_, methInfo, _), _, [arg1;arg2] when methInfo.DeclaringType.FullName.StartsWith(typedefof<SampledImage<_, _, _, _, _, _, _, _>>.FullName) && methInfo.Name = "ImplicitLod" ->
-                env, ImplicitLod (arg1, arg2, checkedRetTy)
+            | SpecificCall <@ imageSampleImplicitLod @> _, _, [coordinate;sampledImage] ->
+                env, SpirvExprOp.Create((fun (idResType, idRes, arg1, arg2) -> OpImageSampleImplicitLod(idResType, idRes, arg1, arg2, None)), sampledImage, coordinate, checkedRetTy)
 
             | SpecificCall <@ kill @> _, [], [] ->
                 env, SpirvOpKill
@@ -532,11 +533,6 @@ and CheckIntrinsicField env receiver fieldInfo =
         env, Vector2_Get_X(spvReceiver, SpirvTypeFloat32)
     | "Y" when receiver.Type = typeof<Vector2> ->
         env, Vector2_Get_Y(spvReceiver, SpirvTypeFloat32)
-
-    | "X" when receiver.Type = typeof<Vector2Int> ->
-        env, Vector2Int_Get_X(spvReceiver, SpirvTypeInt32)
-    | "Y" when receiver.Type = typeof<Vector2Int> ->
-        env, Vector2Int_Get_Y(spvReceiver, SpirvTypeInt32)
 
     | "X" when receiver.Type = typeof<Vector3> ->
         env, Vector3_Get_X(spvReceiver, SpirvTypeFloat32)

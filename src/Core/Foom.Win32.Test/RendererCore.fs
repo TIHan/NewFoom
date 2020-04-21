@@ -8,6 +8,7 @@ open FSharp.Window
 open FSharp.Spirv
 open FSharp.Spirv.Specification
 open FSharp.Spirv.Quotations
+open FSharp.Spirv.Quotations.Intrinsics
 open System
 open System.Numerics
 open System.Drawing
@@ -536,7 +537,7 @@ let load (graphics: FalGraphics) (wad: Wad) (map: Map) (mvpBuffer: VulkanBuffer<
                     let mutable outColor = Variable<Vector4> [Decoration.Location 0u] StorageClass.Output []
     
                     fun () ->
-                        let color = sampler.ImplicitLod fragTexCoord
+                        let color = imageSampleImplicitLod fragTexCoord sampler
                         if color.W < 0.5f then
                             kill ()
                         outColor <- color //Vector4.Multiply(color, sectorRenderInfo.LightLevel)
@@ -727,7 +728,7 @@ let loadMap mapName (wad: Wad) (graphics: FalGraphics) =
             let mutable outColor = Variable<Vector4> [Decoration.Location 0u] StorageClass.Output []
 
             fun () ->
-                let color = sampler.ImplicitLod fragTexCoord
+                let color = imageSampleImplicitLod fragTexCoord sampler
                 if color.W < 0.5f then
                     kill ()
                 outColor <- Vector4.Multiply(color, lightLevel)

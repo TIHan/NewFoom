@@ -1,5 +1,4 @@
-﻿[<AutoOpen>]
-module FSharp.Spirv.Quotations.Intrinsics
+﻿module FSharp.Spirv.Quotations.Intrinsics
 
 open System
 open System.Numerics
@@ -19,21 +18,6 @@ let private ErrorMessage = "Do not call outside the code quotation."
 
 [<RequiresExplicitTypeArguments>]
 let Variable<'T> (_decorations: Decoration list) (_storageClass: StorageClass) (_customAnnoations: obj list) : 'T = failwith ErrorMessage
-
-[<Struct;NoComparison>]
-type Vector2Int =
-    val mutable X: int
-    val mutable Y: int
-
-    new (x, y) = { X = x; Y = y }
-
-type Vector2 with
-
-    member x.ToInt() = Vector2Int(int x.X, int x.Y) 
-
-type Vector2Int with
-
-    member x.ToFloat() = Vector2(float32 x.X, float32 x.Y)
 
 [<Sealed>]
 type Sampler = class end
@@ -209,9 +193,7 @@ type Image<'SampledType, 'Dim, 'Depth, 'Arrayed, 'Multisampled, 'Sampled, 'Forma
     and  'Sampled :> ImageSampleKind
     and  'Format :> ImageFormatKind
     and  'AccessQualifier :> AccessQualifierKind
-    > =
-
-    member _.Fetch(_coordinate: Vector2Int) : Vector4 = failwith ErrorMessage
+    > = class end
 
 [<Sealed>]
 type SampledImage<'SampledType, 'Dim, 'Depth, 'Arrayed, 'Multisampled, 'Sampled, 'Format, 'AccessQualifier
@@ -222,15 +204,11 @@ type SampledImage<'SampledType, 'Dim, 'Depth, 'Arrayed, 'Multisampled, 'Sampled,
     and  'Sampled :> ImageSampleKind
     and  'Format :> ImageFormatKind
     and  'AccessQualifier :> AccessQualifierKind
-    > =
-
-    member _.Image: Image<'SampledType, 'Dim, 'Depth, 'Arrayed, 'Multisampled, 'Sampled, 'Format, 'AccessQualifier> = failwith ErrorMessage
-
-    member _.Gather(_coordinate: Vector2, _comp: int): Vector4 = failwith ErrorMessage
-
-    /// Analogous to 'OpImageSampleImplicitLod'.
-    member _.ImplicitLod(_coordinate: Vector2) : Vector4 = failwith ErrorMessage
+    > = class end
 
 /// Only valid in the Fragment Execution Model.
 /// Analogous to 'OpKill'.
 let kill () : unit = failwith ErrorMessage
+
+/// Analogous to 'OpImageSampleImplicitLod'.
+let imageSampleImplicitLod (_coordinate: Vector2) (_sampledImage: SampledImage<_, _, _, _, _, _, _, _>) : Vector4 = failwith ErrorMessage

@@ -120,7 +120,6 @@ let isAggregateType ty =
 let isCompositeType ty =
     match ty with
     | SpirvTypeVector2
-    | SpirvTypeVector2Int
     | SpirvTypeVector3
     | SpirvTypeVector4 -> true
     | _ -> isAggregateType ty
@@ -167,7 +166,7 @@ let emitTypeAux cenv ty f =
                 |> List.iteri (fun i (SpirvField(_, fieldTy, _)) ->
                     let i = uint32 i
                     match fieldTy with
-                    | SpirvTypeBool -> addDecorationInstructions cenv [OpMemberDecorate(resultId, i, Decoration.Offset offset)]
+                    | SpirvTypeBool _ -> addDecorationInstructions cenv [OpMemberDecorate(resultId, i, Decoration.Offset offset)]
                     | SpirvTypeInt _ -> addDecorationInstructions cenv [OpMemberDecorate(resultId, i, Decoration.Offset offset)]
                     | SpirvTypeFloat _ -> addDecorationInstructions cenv [OpMemberDecorate(resultId, i, Decoration.Offset offset)]
                     | SpirvTypeVector2 -> addDecorationInstructions cenv [OpMemberDecorate(resultId, i, Decoration.Offset offset)]
@@ -181,7 +180,7 @@ let emitTypeAux cenv ty f =
                         computeFields fields
                     | _ -> failwithf "Invalid field type, %A." fieldTy // TODO
                     if not fieldTy.IsOpaque then
-                        offset <- offset + uint32 fieldTy.Size)
+                        offset <- offset + uint32 fieldTy.SizeHint)
             computeFields fields
             if isBlock then
                 addDecorationInstructions cenv [OpDecorate(resultId, Decoration.Block)]
@@ -191,7 +190,7 @@ let emitTypeAux cenv ty f =
         | SpirvType.SpirvTypeMatrix4x4 ->
             addDecorationInstructions cenv [OpDecorate(resultId, Decoration.MatrixStride 0u)]
         | SpirvType.SpirvTypeRuntimeArray elementTy ->
-            addDecorationInstructions cenv [OpDecorate(resultId, Decoration.ArrayStride(uint32 elementTy.Size))]
+            addDecorationInstructions cenv [OpDecorate(resultId, Decoration.ArrayStride(uint32 elementTy.SizeHint))]
         | _ -> ()       
 
         resultId
@@ -244,7 +243,7 @@ let emitConstantAux cenv resultType debugName literal =
             let valuePtr = &&value |> NativePtr.toVoidPtr
             BitConverter.ToUInt32(ReadOnlySpan(valuePtr, 4))
             |> create
-        | SpirvConstBool (value, _) -> if value then createBoolTrue () else createBoolFalse ()
+        | SpirvConstBool (value, _, _) -> if value then createBoolTrue () else createBoolFalse ()
         | _ -> failwith "Invalid constant."
 
 let emitConstantComposite cenv resultType debugName constituents =
@@ -259,11 +258,10 @@ let emitConstantComposite cenv resultType debugName constituents =
 let rec emitType cenv ty =
     match ty with
     | SpirvTypeVoid -> emitTypeVoid cenv
-    | SpirvTypeBool -> emitTypeAux cenv ty (fun resultId -> OpTypeBool resultId)
+    | SpirvTypeBool _ -> emitTypeAux cenv ty (fun resultId -> OpTypeBool resultId)
     | SpirvTypeInt (width, sign) -> emitTypeAux cenv ty (fun resultId -> OpTypeInt(resultId, uint32 width, if sign then 1u else 0u))
     | SpirvTypeFloat width -> emitTypeAux cenv ty (fun resultId -> OpTypeFloat(resultId, uint32 width))
     | SpirvTypeVector2 -> emitTypeVector2 cenv
-    | SpirvTypeVector2Int -> emitTypeVector2Int cenv
     | SpirvTypeVector3 -> emitTypeVector3 cenv
     | SpirvTypeVector4 -> emitTypeVector4 cenv
     | SpirvTypeMatrix4x4 -> emitTypeMatrix4x4 cenv
@@ -277,10 +275,6 @@ let rec emitType cenv ty =
 and emitTypeVector2 cenv =
     let componentType = emitType cenv SpirvTypeFloat32
     emitTypeAux cenv SpirvTypeVector2 (fun resultId -> OpTypeVector(resultId, componentType, 2u))
-
-and emitTypeVector2Int cenv =
-    let componentType = emitType cenv SpirvTypeInt32
-    emitTypeAux cenv SpirvTypeVector2Int (fun resultId -> OpTypeVector(resultId, componentType, 2u))
 
 and emitTypeVector3 cenv =
     let componentType = emitType cenv SpirvTypeFloat32
@@ -348,23 +342,20 @@ and emitTypeFunction cenv paramTys retTy =
         cenv.typeFunctions.[tys] <- (resultId, [OpTypeFunction(resultId, retTyId, paramTyIds)])
         resultId
 
-and emitConstantBool cenv (v: bool) =
-    emitConstantAux cenv (emitType cenv SpirvTypeBool) "bool" (SpirvConstBool(v, []))
+and emitConstantBool cenv sizeHint (v: bool) =
+    emitConstantAux cenv (emitType cenv (SpirvTypeBool sizeHint)) "bool" (SpirvConstBool(v, sizeHint, []))
 
 and emitConstantInt cenv (n: int) =
-    emitConstantAux cenv (emitType cenv SpirvTypeInt32) "int" (SpirvConstInt(n, []))
+    emitConstantAux cenv (emitType cenv SpirvTypeInt32) "Int32" (SpirvConstInt(n, []))
 
 and emitConstantUInt32 cenv (n: uint32) =
-    emitConstantAux cenv (emitType cenv SpirvTypeInt32) "uint32" (SpirvConstUInt32(n, []))
+    emitConstantAux cenv (emitType cenv SpirvTypeInt32) "UInt32" (SpirvConstUInt32(n, []))
 
 let emitConstantSingle cenv (n: single) =
-    emitConstantAux cenv (emitType cenv SpirvTypeFloat32) "single" (SpirvConstSingle(n, []))
+    emitConstantAux cenv (emitType cenv SpirvTypeFloat32) "Float32" (SpirvConstSingle(n, []))
 
 let emitConstantVector2 cenv (constituents: IdRef list) =
     emitConstantComposite cenv (emitTypeVector2 cenv) "Vector2" constituents
-
-let emitConstantVector2Int cenv (constituents: IdRef list) =
-    emitConstantComposite cenv (emitTypeVector2Int cenv) "Vector2<int>" constituents
 
 let emitConstantVector3 cenv (constituents: IdRef list) =
     emitConstantComposite cenv (emitTypeVector3 cenv) "Vector3" constituents
@@ -382,8 +373,8 @@ let rec isConstant expr =
 
 let rec GenConst cenv spvConst =
     match spvConst with
-    | SpirvConstBool (n, decorations) ->
-        emitConstantBool cenv n
+    | SpirvConstBool (n, sizeHint, decorations) ->
+        emitConstantBool cenv sizeHint n
         
     | SpirvConstInt (n, decorations) ->
         emitConstantInt cenv n
@@ -396,9 +387,6 @@ let rec GenConst cenv spvConst =
 
     | SpirvConstVector2 (n1, n2, decorations) ->
         emitConstantVector2 cenv ([n1;n2] |> List.map (emitConstantSingle cenv))
-
-    | SpirvConstVector2Int (n1, n2, decorations) ->
-        emitConstantVector2Int cenv ([n1;n2] |> List.map (emitConstantInt cenv))
 
     | SpirvConstVector3 (n1, n2, n3, decorations) ->
         emitConstantVector3 cenv ([n1;n2;n3] |> List.map (emitConstantSingle cenv))
@@ -584,7 +572,6 @@ let rec GenExpr cenv (env: env) blockScope returnable expr =
         GenExpr cenv env blockScope returnable expr2
 
     | SpirvNewVector2 args
-    | SpirvNewVector2Int args
     | SpirvNewVector3 args 
     | SpirvNewVector4 args ->
         GenVector cenv env blockScope returnable expr.Type args
@@ -625,39 +612,7 @@ let rec GenExpr cenv (env: env) blockScope returnable expr =
 
     | SpirvExprOp op ->
         let retTy = emitType cenv op.ReturnType
-        match op with            
-        | GetImage arg ->
-            let arg = GenExpr cenv env blockScope NotReturnable arg |> deref cenv
-
-            let resultId = nextResultId cenv
-            addInstructions cenv [OpImage(retTy, resultId, arg)]
-            resultId
-
-        | ImageFetch (arg1, arg2, _) ->
-            let arg1 = GenExpr cenv env blockScope NotReturnable arg1 |> deref cenv
-            let arg2 = GenExpr cenv env blockScope NotReturnable arg2 |> deref cenv
-
-            let resultId = nextResultId cenv
-            addInstructions cenv [OpImageFetch(retTy, resultId, arg1, arg2, None)]
-            resultId
-
-        | ImageGather (arg1, arg2, arg3, _) ->
-            let arg1 = GenExpr cenv env blockScope NotReturnable arg1 |> deref cenv
-            let arg2 = GenExpr cenv env blockScope NotReturnable arg2 |> deref cenv
-            let arg3 = GenExpr cenv env blockScope NotReturnable arg3 |> deref cenv
-
-            let resultId = nextResultId cenv
-            addInstructions cenv [OpImageGather(retTy, resultId, arg1, arg2, arg3, None)]
-            resultId
-
-        | ImplicitLod (arg1, arg2, _) ->
-            let arg1 = GenExpr cenv env blockScope NotReturnable arg1 |> deref cenv
-            let arg2 = GenExpr cenv env blockScope NotReturnable arg2 |> deref cenv
-
-            let resultId = nextResultId cenv
-            addInstructions cenv [OpImageSampleImplicitLod(retTy, resultId, arg1, arg2, None)]
-            resultId
-
+        match op with
         | SpirvOpKill ->
             // TODO: Add check that disallows this in non-Fragment Execution Models.
             addInstructions cenv [OpKill]
