@@ -167,7 +167,7 @@ type SpirvExpr =
     | SpirvArrayIndexerSet of receiver: SpirvExpr * indexArg: SpirvExpr * valueArg: SpirvExpr
     | SpirvVar of SpirvVar
     | SpirvVarSet of SpirvVar * SpirvExpr
-    | SpirvIntrinsicCall of SpirvIntrinsicCall
+    | SpirvExprOp of SpirvExprOp
     | SpirvIntrinsicFieldGet of SpirvIntrinsicFieldGet
     | SpirvFieldGet of receiver: SpirvExpr * index: int
 
@@ -215,7 +215,7 @@ type SpirvExpr =
                 spvVar.Type
             | SpirvVarSet _ ->
                 SpirvTypeVoid
-            | SpirvIntrinsicCall call ->
+            | SpirvExprOp call ->
                 call.ReturnType
             | SpirvIntrinsicFieldGet fieldGet ->
                 fieldGet.Type
@@ -227,7 +227,7 @@ type SpirvExpr =
                 trueExpr.Type
         getType x
 
-and SpirvIntrinsicCall =
+and SpirvExprOp =
     // TODO: Fix transform and multiply names
     | Transform__Vector4_Matrix4x4__Vector4 of vector4: SpirvExpr * matrix4x4: SpirvExpr
     | Multiply__Matrix4x4_Matrix4x4__Matrix4x4 of matrix4x4_1: SpirvExpr * matrix4x4_2: SpirvExpr
@@ -245,7 +245,23 @@ and SpirvIntrinsicCall =
     | FloatMultiply of arg1: SpirvExpr * arg2: SpirvExpr * retTy: SpirvType
     | FloatDivide of arg1: SpirvExpr * arg2: SpirvExpr * retTy: SpirvType
     | VectorTimesScalar of arg1: SpirvExpr * arg2: SpirvExpr * retTy: SpirvType
-    | CommonInstruction of (IdResultType * IdResult * IdRef * IdRef -> Instruction) * arg1: SpirvExpr * arg2: SpirvExpr * retTy: SpirvType
+    | SpirvOp of (IdResultType -> IdResult -> IdRef list -> Instruction) * args: SpirvExpr list * retTy: SpirvType
+
+    static member Create(op, retTy) =
+        let op = fun idResTy idRes _ -> op(idResTy, idRes)
+        SpirvOp(op, [], retTy)
+
+    static member Create(op, arg, retTy) =
+        let op = 
+            fun idResTy idRes args ->
+                match args with [arg] -> op(idResTy, idRes, [arg]) | _ -> failwith "should not happen"
+        SpirvOp(op, [arg], retTy)
+
+    static member Create(op, arg1, arg2, retTy) =
+        let op = 
+            fun idResTy idRes args ->
+                match args with [arg1;arg2] -> op(idResTy, idRes, arg1, arg2) | _ -> failwith "should not happen"
+        SpirvOp(op, [arg1;arg2], retTy)
 
     member x.ReturnType =
         match x with
@@ -287,7 +303,7 @@ and SpirvIntrinsicCall =
         | FloatMultiply(_, _, retTy) -> retTy
         | FloatDivide(_, _, retTy) -> retTy
         | VectorTimesScalar(_, _, retTy) -> retTy
-        | CommonInstruction(_, _, _, retTy) -> retTy
+        | SpirvOp(_, _, retTy) -> retTy
 
     member x.Arguments =
         match x with
@@ -307,7 +323,7 @@ and SpirvIntrinsicCall =
         | FloatMultiply(arg1, arg2, _) -> [arg1;arg2]
         | FloatDivide(arg1, arg2, _) -> [arg1;arg2]
         | VectorTimesScalar(arg1, arg2, _) -> [arg1;arg2]
-        | CommonInstruction(_, arg1, arg2, _) -> [arg1;arg2]
+        | SpirvOp(_, args, _) -> args
 
 
 and SpirvIntrinsicFieldGet =

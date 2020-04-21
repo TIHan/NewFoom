@@ -595,9 +595,9 @@ let rec GenExpr cenv (env: env) blockScope returnable expr =
 
         let resultType = getAccessChainResultType cenv receiverId 0
         let resultId = nextResultId cenv
-        let op = OpAccessChain(resultType, resultId, receiverId, [argId])
-        addInstructions cenv [op]
-        cenv.locals.[resultId] <- op
+        let instr = OpAccessChain(resultType, resultId, receiverId, [argId])
+        addInstructions cenv [instr]
+        cenv.locals.[resultId] <- instr
         resultId
 
     | SpirvArrayIndexerSet (receiver, indexArg, valueArg) ->
@@ -607,8 +607,8 @@ let rec GenExpr cenv (env: env) blockScope returnable expr =
 
         let resultType = getAccessChainResultType cenv receiverId 0
         let resultId = nextResultId cenv
-        let op = OpAccessChain(resultType, resultId, receiverId, [argId])
-        addInstructions cenv [op;OpStore(resultId, valueArg, None)]
+        let instr = OpAccessChain(resultType, resultId, receiverId, [argId])
+        addInstructions cenv [instr;OpStore(resultId, valueArg, None)]
         ZeroResultId
 
     | SpirvVar var ->
@@ -623,9 +623,9 @@ let rec GenExpr cenv (env: env) blockScope returnable expr =
         addInstructions cenv [OpStore(id, rhsId, None)]
         ZeroResultId
 
-    | SpirvIntrinsicCall call ->
-        let retTy = emitType cenv call.ReturnType
-        match call with
+    | SpirvExprOp op ->
+        let retTy = emitType cenv op.ReturnType
+        match op with
         | Transform__Vector4_Matrix4x4__Vector4 (arg1, arg2) ->
             let arg1 = GenExpr cenv env blockScope NotReturnable arg1 |> deref cenv
             let arg2 = GenExpr cenv env blockScope NotReturnable arg2 |> deref cenv
@@ -750,12 +750,13 @@ let rec GenExpr cenv (env: env) blockScope returnable expr =
             addInstructions cenv [OpVectorTimesScalar(retTy, resultId, arg1, arg2)]
             resultId
 
-        | CommonInstruction(op, arg1, arg2, _) ->
-            let arg1 = GenExpr cenv env blockScope NotReturnable arg1 |> deref cenv
-            let arg2 = GenExpr cenv env blockScope NotReturnable arg2 |> deref cenv
+        | SpirvOp(op, args, _) ->
+            let args =
+                args 
+                |> List.map (fun arg -> GenExpr cenv env blockScope NotReturnable arg |> deref cenv)
 
             let resultId = nextResultId cenv
-            addInstructions cenv [op(retTy, resultId, arg1, arg2)]
+            addInstructions cenv [op retTy resultId args]
             resultId
 
     | SpirvIntrinsicFieldGet fieldGet ->
@@ -792,9 +793,9 @@ let rec GenExpr cenv (env: env) blockScope returnable expr =
 
         let indexId = GenExpr cenv env blockScope NotReturnable (SpirvConst (SpirvConstInt(index, [])))
         let accessChainPointerId = nextResultId cenv
-        let op = OpAccessChain(resultType, accessChainPointerId, receiverId, [indexId])
-        addInstructions cenv [op]
-        cenv.locals.[accessChainPointerId] <- op
+        let instr = OpAccessChain(resultType, accessChainPointerId, receiverId, [indexId])
+        addInstructions cenv [instr]
+        cenv.locals.[accessChainPointerId] <- instr
         accessChainPointerId
 
     | SpirvIfThenElse(condExpr, trueExpr, falseExpr) ->

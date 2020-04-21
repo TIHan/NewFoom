@@ -297,7 +297,7 @@ let rec CheckExpr env isReturnable expr =
             | Some receiver -> [receiver] @ args
             | _ -> args
         let env, checkedArgs = CheckExprs env args
-        CheckIntrinsicCall env checkedArgs expr
+        CheckCall env checkedArgs (mkSpirvType expr.Type) expr
 
     | NewObject (ctorInfo, args) ->
         let spvTy = mkSpirvType ctorInfo.DeclaringType
@@ -310,7 +310,7 @@ let rec CheckExpr env isReturnable expr =
             let env, spvArgs = CheckExprs env args
             match spvArgs with
             | [spvArg] when spvArg.Type = SpirvTypeVector2 ->
-                env, ConvertAnyFloatToAnySInt spvArg |> SpirvIntrinsicCall
+                env, ConvertAnyFloatToAnySInt spvArg |> SpirvExprOp
             | _ ->
                 env, SpirvNewVector2Int spvArgs
 
@@ -369,113 +369,120 @@ and CheckPropertyGet env receiver propInfo args =
         let env, checkedArgs = CheckExprs env ([receiver] @ args)
         match checkedArgs with
         | [arg] when propInfo.DeclaringType.FullName.StartsWith(typedefof<SampledImage<_, _, _, _, _, _, _, _>>.FullName) && propInfo.Name = "Image" ->
-            env, GetImage arg |> SpirvIntrinsicCall
+            env, GetImage arg |> SpirvExprOp
         | _ ->
             failwithf "Property get '%s' not supported." propInfo.Name
 
-/// Check for intrinsic calls.
-and CheckIntrinsicCall env checkedArgs expr =
+and CheckCall env checkedArgs spvRetTy expr =
+    // TODO: Add ability for custom calls.
+    CheckIntrinsicCall env checkedArgs spvRetTy expr
+
+and CheckIntrinsicCall env checkedArgs checkedRetTy expr =
     let tyArgs =
         match expr with
         | Call (_, methInfo, _) -> methInfo.GetGenericArguments()
         | _ -> failwithf "Expr is not a call: %A" expr
 
     match expr, tyArgs, checkedArgs with
-    | SpecificCall <@ int @> _, _, [arg] 
-    | SpecificCall <@ SpirvInstrinsics.ConvertFloatToInt @> _, _, [arg] ->
-        env, ConvertAnyFloatToAnySInt arg |> SpirvIntrinsicCall
-
-    | SpecificCall <@ float32 @> _, _, [arg] ->
-        env, ConvertSIntToFloat arg |> SpirvIntrinsicCall
-
     | SpecificCall <@ Unchecked.defaultof<_[]>.[0] @> _, _, [receiver;arg] -> 
-        env, SpirvArrayIndexerGet (receiver, arg, mkSpirvType expr.Type)
+        env, SpirvArrayIndexerGet (receiver, arg, checkedRetTy)
 
     | SpecificCall <@ Unchecked.defaultof<_[]>.[0] <- Unchecked.defaultof<_> @> _, _, [receiver;indexArg;valueArg] -> 
         env, SpirvArrayIndexerSet (receiver, indexArg, valueArg)
 
-    | SpecificCall <@ Vector4.Transform(Unchecked.defaultof<Vector4>, Unchecked.defaultof<Matrix4x4>) @> _, _, [arg1;arg2] ->
-        env, Transform__Vector4_Matrix4x4__Vector4 (arg1, arg2) |> SpirvIntrinsicCall
-
-
-    // TODO: Use witness passing for arithmetic.
-    //| SpecificCall <@ (*) : float32 -> float32 -> float32 @> _, _, [arg1;arg2] ->
-    //    env, FloatMultiply(arg1, arg2, mkSpirvType expr.Type) |> SpirvIntrinsicCall
-
-    //| SpecificCall <@ (/) : float32 -> float32 -> float32 @> _, _, [arg1;arg2] ->
-    //    env, FloatDivide(arg1, arg2, mkSpirvType expr.Type) |> SpirvIntrinsicCall
-
-    | SpecificCall <@ (<>) @> (_, tyArgs, _), _, [arg1;arg2] ->
-        match tyArgs with
-        | _ when tyArgs = [typeof<float32>] ->
-            env, CommonInstruction(OpFOrdNotEqual, arg1, arg2, mkSpirvType expr.Type) |> SpirvIntrinsicCall
-        | _ when tyArgs = [typeof<int>] ->
-            env, CommonInstruction(OpINotEqual, arg1, arg2, mkSpirvType expr.Type) |> SpirvIntrinsicCall
-        | _ ->
-            failwithf "Call not supported: %A" expr
-
-    | SpecificCall <@ (=) @> (_, tyArgs, _), _, [arg1;arg2] ->
-        match tyArgs with
-        | _ when tyArgs = [typeof<float32>] ->
-            env, CommonInstruction(OpFOrdEqual, arg1, arg2, mkSpirvType expr.Type) |> SpirvIntrinsicCall
-        | _ when tyArgs = [typeof<int>] ->
-            env, CommonInstruction(OpIEqual, arg1, arg2, mkSpirvType expr.Type) |> SpirvIntrinsicCall
-        | _ ->
-            failwithf "Call not supported: %A" expr
-
-    | SpecificCall <@ (+) @> (_, tyArgs, _), _, [arg1;arg2] ->
-        match tyArgs with
-        | _ when tyArgs = [typeof<float32>;typeof<float32>;typeof<float32>] ->
-            env, FloatAdd(arg1, arg2, mkSpirvType expr.Type) |> SpirvIntrinsicCall
-        | _ ->
-            failwithf "Call not supported: %A" expr
-
-    | SpecificCall <@ (-) @> (_, tyArgs, _), _, [arg1;arg2] ->
-        match tyArgs with
-        | _ when tyArgs = [typeof<float32>;typeof<float32>;typeof<float32>] ->
-            env, FloatSubtract(arg1, arg2, mkSpirvType expr.Type) |> SpirvIntrinsicCall
-        | _ ->
-            failwithf "Call not supported: %A" expr
-
-    | SpecificCall <@ (*) @> (_, tyArgs, _), _, [arg1;arg2] ->
-        match tyArgs with
-        | _ when tyArgs = [typeof<Matrix4x4>;typeof<Matrix4x4>;typeof<Matrix4x4>] ->
-            env, Multiply__Matrix4x4_Matrix4x4__Matrix4x4 (arg1, arg2) |> SpirvIntrinsicCall
-        | _ when tyArgs = [typeof<float32>;typeof<float32>;typeof<float32>] ->
-            env, FloatMultiply(arg1, arg2, mkSpirvType expr.Type) |> SpirvIntrinsicCall
-        | _ ->
-            failwithf "Call not supported: %A" expr
-
-    | SpecificCall <@ (/) @> (_, tyArgs, _), _, [arg1;arg2] ->
-        match tyArgs with
-        | _ when tyArgs = [typeof<float32>;typeof<float32>;typeof<float32>] ->
-            env, FloatDivide(arg1, arg2, mkSpirvType expr.Type) |> SpirvIntrinsicCall
-        | _ ->
-            failwithf "Call not supported: %A" expr
-
-    | Call(_, methInfo, _), _, [arg1;arg2] when methInfo.DeclaringType.FullName.StartsWith(typedefof<Image<_, _, _, _, _, _, _, _>>.FullName) && methInfo.Name = "Fetch" ->
-        env, ImageFetch (arg1, arg2, mkSpirvType expr.Type) |> SpirvIntrinsicCall
-
-    | Call(_, methInfo, _), _, [arg1;arg2;arg3] when methInfo.DeclaringType.FullName.StartsWith(typedefof<SampledImage<_, _, _, _, _, _, _, _>>.FullName) && methInfo.Name = "Gather" ->
-        env, ImageGather (arg1, arg2, arg3, mkSpirvType expr.Type) |> SpirvIntrinsicCall
-
-    | Call(_, methInfo, _), _, [arg1;arg2] when methInfo.DeclaringType.FullName.StartsWith(typedefof<SampledImage<_, _, _, _, _, _, _, _>>.FullName) && methInfo.Name = "ImplicitLod" ->
-        env, ImplicitLod (arg1, arg2, mkSpirvType expr.Type) |> SpirvIntrinsicCall
-
-    | SpecificCall <@ SpirvInstrinsics.VectorShuffle<_> @> _, [|_|], [arg1;arg2] ->
-        env, VectorShuffle(arg1, arg2, [0u;1u], mkSpirvType expr.Type) |> SpirvIntrinsicCall
-
-    | SpecificCall <@ kill @> _, [||], [] ->
-        env, SpirvIntrinsicCall Kill
-
-    | SpecificCall <@ (<) : float32 -> float32 -> bool @> _, _, [arg1;arg2] ->
-        env, FloatUnorderedLessThan(arg1, arg2, mkSpirvType expr.Type) |> SpirvIntrinsicCall
-        
-    | SpecificCall <@ Vector4.Multiply : Vector4 * float32 -> Vector4 @> _, _, [arg1;arg2] ->
-        env, VectorTimesScalar(arg1, arg2, mkSpirvType expr.Type) |> SpirvIntrinsicCall
-
     | _ ->
-        failwithf "Call not supported: %A" expr
+        let env, spvOp =
+            match expr, tyArgs, checkedArgs with
+            | SpecificCall <@ int @> _, _, [arg] 
+            | SpecificCall <@ SpirvInstrinsics.ConvertFloatToInt @> _, _, [arg] ->
+                env, ConvertAnyFloatToAnySInt arg
+
+            | SpecificCall <@ float32 @> _, _, [arg] ->
+                env, ConvertSIntToFloat arg
+
+            | SpecificCall <@ Vector4.Transform(Unchecked.defaultof<Vector4>, Unchecked.defaultof<Matrix4x4>) @> _, _, [arg1;arg2] ->
+                env, Transform__Vector4_Matrix4x4__Vector4 (arg1, arg2)
+
+
+            // TODO: Use witness passing for arithmetic.
+            //| SpecificCall <@ (*) : float32 -> float32 -> float32 @> _, _, [arg1;arg2] ->
+            //    env, FloatMultiply(arg1, arg2, mkSpirvType expr.Type) |> SpirvIntrinsicCall
+
+            //| SpecificCall <@ (/) : float32 -> float32 -> float32 @> _, _, [arg1;arg2] ->
+            //    env, FloatDivide(arg1, arg2, mkSpirvType expr.Type) |> SpirvIntrinsicCall
+
+            | SpecificCall <@ (<>) @> (_, tyArgs, _), _, [arg1;arg2] ->
+                match tyArgs with
+                | _ when tyArgs = [typeof<float32>] ->
+                    env, SpirvExprOp.Create(OpFOrdNotEqual, arg1, arg2, checkedRetTy) 
+                | _ when tyArgs = [typeof<int>] ->
+                    env, SpirvExprOp.Create(OpINotEqual, arg1, arg2, checkedRetTy)
+                | _ ->
+                    failwithf "Call not supported: %A" expr
+
+            | SpecificCall <@ (=) @> (_, tyArgs, _), _, [arg1;arg2] ->
+                match tyArgs with
+                | _ when tyArgs = [typeof<float32>] ->
+                    env, SpirvExprOp.Create(OpFOrdEqual, arg1, arg2, checkedRetTy)
+                | _ when tyArgs = [typeof<int>] ->
+                    env, SpirvExprOp.Create(OpIEqual, arg1, arg2, checkedRetTy)
+                | _ ->
+                    failwithf "Call not supported: %A" expr
+
+            | SpecificCall <@ (+) @> (_, tyArgs, _), _, [arg1;arg2] ->
+                match tyArgs with
+                | _ when tyArgs = [typeof<float32>;typeof<float32>;typeof<float32>] || tyArgs = [typeof<float32>;typeof<float32>;typeof<float32>] ->
+                    env, SpirvExprOp.Create(OpFAdd, arg1, arg2, checkedRetTy)
+                | _ ->
+                    failwithf "Call not supported: %A" expr
+
+            | SpecificCall <@ (-) @> (_, tyArgs, _), _, [arg1;arg2] ->
+                match tyArgs with
+                | _ when tyArgs = [typeof<float32>;typeof<float32>;typeof<float32>] ->
+                    env, SpirvExprOp.Create(OpFSub, arg1, arg2, checkedRetTy)
+                | _ ->
+                    failwithf "Call not supported: %A" expr
+
+            | SpecificCall <@ (*) @> (_, tyArgs, _), _, [arg1;arg2] ->
+                match tyArgs with
+                | _ when tyArgs = [typeof<Matrix4x4>;typeof<Matrix4x4>;typeof<Matrix4x4>] ->
+                    env, Multiply__Matrix4x4_Matrix4x4__Matrix4x4 (arg1, arg2)
+                | _ when tyArgs = [typeof<float32>;typeof<float32>;typeof<float32>] ->
+                    env, FloatMultiply(arg1, arg2, checkedRetTy)
+                | _ ->
+                    failwithf "Call not supported: %A" expr
+
+            | SpecificCall <@ (/) @> (_, tyArgs, _), _, [arg1;arg2] ->
+                match tyArgs with
+                | _ when tyArgs = [typeof<float32>;typeof<float32>;typeof<float32>] ->
+                    env, FloatDivide(arg1, arg2, checkedRetTy)
+                | _ ->
+                    failwithf "Call not supported: %A" expr
+
+            | Call(_, methInfo, _), _, [arg1;arg2] when methInfo.DeclaringType.FullName.StartsWith(typedefof<Image<_, _, _, _, _, _, _, _>>.FullName) && methInfo.Name = "Fetch" ->
+                env, ImageFetch (arg1, arg2, checkedRetTy)
+
+            | Call(_, methInfo, _), _, [arg1;arg2;arg3] when methInfo.DeclaringType.FullName.StartsWith(typedefof<SampledImage<_, _, _, _, _, _, _, _>>.FullName) && methInfo.Name = "Gather" ->
+                env, ImageGather (arg1, arg2, arg3, checkedRetTy)
+
+            | Call(_, methInfo, _), _, [arg1;arg2] when methInfo.DeclaringType.FullName.StartsWith(typedefof<SampledImage<_, _, _, _, _, _, _, _>>.FullName) && methInfo.Name = "ImplicitLod" ->
+                env, ImplicitLod (arg1, arg2, checkedRetTy)
+
+            | SpecificCall <@ SpirvInstrinsics.VectorShuffle<_> @> _, [|_|], [arg1;arg2] ->
+                env, VectorShuffle(arg1, arg2, [0u;1u], checkedRetTy)
+
+            | SpecificCall <@ kill @> _, [||], [] ->
+                env, Kill
+
+            | SpecificCall <@ (<) : float32 -> float32 -> bool @> _, _, [arg1;arg2] ->
+                env, FloatUnorderedLessThan(arg1, arg2, checkedRetTy)
+        
+            | SpecificCall <@ Vector4.Multiply : Vector4 * float32 -> Vector4 @> _, _, [arg1;arg2] ->
+                env, VectorTimesScalar(arg1, arg2, checkedRetTy)
+
+            | _ ->
+                failwithf "Call not supported: %A" expr
+        env, SpirvExprOp spvOp
 
 and CheckIntrinsicField env receiver fieldInfo =
     let env, spvReceiver = CheckExpr env false receiver
