@@ -94,7 +94,12 @@ let nextResultId cenv =
 
 let addInstructions cenv instrs =
     if not cenv.ignoreAddingInstructions then
-        cenv.currentInstructions.AddRange instrs
+        for instr in instrs do
+            match instr with
+            // TODO: Add check that throws an error on OpKill in non-Fragment Execution Models.
+            | OpKill -> cenv.ignoreAddingInstructions <- true
+            | _ -> ()
+            cenv.currentInstructions.Add instr
 
 let addDecorationInstructions cenv instrs =
     cenv.decorationInstructions.AddRange instrs
@@ -613,27 +618,17 @@ let rec GenExpr cenv (env: env) blockScope returnable expr =
     | SpirvExprOp op ->
         let retTy = emitType cenv op.ReturnType
         match op with
-        | SpirvOpKill ->
-            // TODO: Add check that disallows this in non-Fragment Execution Models.
-            addInstructions cenv [OpKill]
-            cenv.ignoreAddingInstructions <- true
-            ZeroResultId
-
-        | FloatUnorderedLessThan(arg1, arg2, _) ->
-            let arg1 = GenExpr cenv env blockScope NotReturnable arg1 |> deref cenv
-            let arg2 = GenExpr cenv env blockScope NotReturnable arg2 |> deref cenv
-
-            let resultId = nextResultId cenv
-            addInstructions cenv [OpFUnordLessThan(retTy, resultId, arg1, arg2)]
-            resultId
-
-        | SpirvOp(op, args, _) ->
+        | SpirvOp(instr, args, _) ->
             let args =
                 args 
                 |> List.map (fun arg -> GenExpr cenv env blockScope NotReturnable arg |> deref cenv)
 
-            let resultId = nextResultId cenv
-            addInstructions cenv [op retTy resultId args]
+            let resultId =
+                if op.ReturnType.IsVoid then
+                    ZeroResultId
+                else
+                    nextResultId cenv
+            addInstructions cenv [instr retTy resultId args]
             resultId
 
     | SpirvIntrinsicFieldGet fieldGet ->

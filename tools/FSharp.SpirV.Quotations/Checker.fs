@@ -511,13 +511,13 @@ and CheckIntrinsicCall env checkedTyArgs checkedArgs checkedRetTy expr =
                     errorNotSupported ()
 
             | SpecificCall <@ (<) : float32 -> float32 -> bool @> _, _, [arg1;arg2] ->
-                env, FloatUnorderedLessThan(arg1, arg2, checkedRetTy)
+                env, SpirvExprOp.Create(OpFOrdLessThan, arg1, arg2, checkedRetTy)
 
             | SpecificCall <@ imageSampleImplicitLod @> _, _, [coordinate;sampledImage] ->
                 env, SpirvExprOp.Create((fun (idResType, idRes, arg1, arg2) -> OpImageSampleImplicitLod(idResType, idRes, arg1, arg2, None)), sampledImage, coordinate, checkedRetTy)
 
             | SpecificCall <@ kill @> _, [], [] ->
-                env, SpirvOpKill
+                env, SpirvExprOp.Create((fun _ -> OpKill), checkedRetTy)
         
             | SpecificCall <@ Vector4.Multiply : Vector4 * float32 -> Vector4 @> _, _, [arg1;arg2] ->
                 env, SpirvExprOp.Create(OpVectorTimesScalar, arg1, arg2, checkedRetTy)

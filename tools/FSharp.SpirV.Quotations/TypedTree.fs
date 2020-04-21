@@ -248,8 +248,6 @@ type SpirvExpr =
         getType x
 
 and SpirvExprOp =
-    | SpirvOpKill
-    | FloatUnorderedLessThan of arg1: SpirvExpr * arg2: SpirvExpr * retTy: SpirvType
     | SpirvOp of (IdResultType -> IdResult -> IdRef list -> Instruction) * args: SpirvExpr list * retTy: SpirvType
 
     static member Create(op, retTy) =
@@ -274,14 +272,10 @@ and SpirvExprOp =
 
     member x.ReturnType =
         match x with
-        | SpirvOpKill -> SpirvType.SpirvTypeVoid
-        | FloatUnorderedLessThan(_, _, retTy) -> retTy
         | SpirvOp(_, _, retTy) -> retTy
 
     member x.Arguments =
         match x with
-        | SpirvOpKill -> []
-        | FloatUnorderedLessThan(arg1, arg2, _) -> [arg1;arg2]
         | SpirvOp(_, args, _) -> args
 
 
