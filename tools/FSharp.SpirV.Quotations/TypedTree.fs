@@ -254,13 +254,17 @@ and SpirvExprOp =
     static member Create(op, arg, retTy) =
         let op = 
             fun idResTy idRes args ->
-                match args with [arg] -> op(idResTy, idRes, [arg]) | _ -> failwith "should not happen"
+                match args with 
+                | [arg] -> op(idResTy, idRes, [arg]) 
+                | _ -> invalidArg "args" "Argument count is not one."
         SpirvOp(op, [arg], retTy)
 
     static member Create(op, arg1, arg2, retTy) =
         let op = 
             fun idResTy idRes args ->
-                match args with [arg1;arg2] -> op(idResTy, idRes, arg1, arg2) | _ -> failwith "should not happen"
+                match args with 
+                | [arg1;arg2] -> op(idResTy, idRes, arg1, arg2) 
+                | _ -> invalidArg "args" "Argument count is not two."
         SpirvOp(op, [arg1;arg2], retTy)
 
     member x.ReturnType =

@@ -342,12 +342,6 @@ let rec CheckExpr env isReturnable expr =
         let env, spvCondExpr = CheckExpr env false condExpr
         let env, spvTrueExpr = CheckExpr env isReturnable trueExpr
         let env, spvFalseExpr = CheckExpr env isReturnable falseExpr
-        //let retTy = expr.Type
-        //if retTy <> typeof<unit> then
-        //    let spvVar = mkSpirvVar(Guid.NewGuid().ToString(), mkSpirvType retTy, [], StorageClass.Function, true)
-        //    let spvReturnExpr = SpirvSequential(SpirvIfThenElse(spvCondExpr, SpirvVarSet(spvVar, spvTrueExpr), SpirvVarSet(spvVar, spvFalseExpr)), SpirvVar spvVar)
-        //    env, SpirvLet(spvVar, )
-        //else
         env, SpirvIfThenElse(spvCondExpr, spvTrueExpr, spvFalseExpr)
 
     | _ ->
@@ -383,6 +377,45 @@ and CheckIntrinsicCall env checkedArgs checkedRetTy expr =
         | Call (_, methInfo, _) -> methInfo.GetGenericArguments()
         | _ -> failwithf "Expr is not a call: %A" expr
 
+    let isSInt ty =
+        ty = typeof<int64> ||
+        ty = typeof<int32> ||
+        ty = typeof<int16> ||
+        ty = typeof<int8>
+
+    let isUInt ty =
+        ty = typeof<uint64> ||
+        ty = typeof<uint32> ||
+        ty = typeof<uint16> ||
+        ty = typeof<uint8>
+
+    let isInt ty =
+        isSInt ty || isUInt ty
+
+    let isFloat ty =
+        ty = typeof<float32> ||
+        ty = typeof<float>
+
+    let isFloat32Vector ty =
+        ty = typeof<Vector2> ||
+        ty = typeof<Vector3> ||
+        ty = typeof<Vector4>
+
+    let isScalarOrVectorSInt ty =
+        isSInt ty // TODO: Add vector2/3/4 int versions if it ever comes available
+
+    let isScalarOrVectorUInt ty =
+        isUInt ty // TODO: Add vector2/3/4 int versions if it ever comes available
+
+    let isScalarOrVectorInt ty =
+        isInt ty // TODO: Add vector2/3/4 int versions if it ever comes available
+
+    let isScalarOrVectorFloat ty =
+        isFloat ty || isFloat32Vector ty
+
+    let errorNotSupported () =
+        failwithf "Call not supported: %A" expr
+
     match expr, tyArgs, checkedArgs with
     | SpecificCall <@ Unchecked.defaultof<_[]>.[0] @> _, _, [receiver;arg] -> 
         env, SpirvArrayIndexerGet (receiver, arg, checkedRetTy)
@@ -403,61 +436,62 @@ and CheckIntrinsicCall env checkedArgs checkedRetTy expr =
             | SpecificCall <@ Vector4.Transform(Unchecked.defaultof<Vector4>, Unchecked.defaultof<Matrix4x4>) @> _, _, [arg1;arg2] ->
                 env, Transform__Vector4_Matrix4x4__Vector4 (arg1, arg2)
 
-
-            // TODO: Use witness passing for arithmetic.
-            //| SpecificCall <@ (*) : float32 -> float32 -> float32 @> _, _, [arg1;arg2] ->
-            //    env, FloatMultiply(arg1, arg2, mkSpirvType expr.Type) |> SpirvIntrinsicCall
-
-            //| SpecificCall <@ (/) : float32 -> float32 -> float32 @> _, _, [arg1;arg2] ->
-            //    env, FloatDivide(arg1, arg2, mkSpirvType expr.Type) |> SpirvIntrinsicCall
-
-            | SpecificCall <@ (<>) @> (_, tyArgs, _), _, [arg1;arg2] ->
-                match tyArgs with
-                | _ when tyArgs = [typeof<float32>] ->
-                    env, SpirvExprOp.Create(OpFOrdNotEqual, arg1, arg2, checkedRetTy) 
-                | _ when tyArgs = [typeof<int>] ->
+            | SpecificCall <@ (<>) @> (_, [tyArg], _), _, [arg1;arg2] ->
+                if isScalarOrVectorInt tyArg then
                     env, SpirvExprOp.Create(OpINotEqual, arg1, arg2, checkedRetTy)
-                | _ ->
-                    failwithf "Call not supported: %A" expr
+                elif isScalarOrVectorFloat tyArg then
+                    env, SpirvExprOp.Create(OpFOrdNotEqual, arg1, arg2, checkedRetTy) 
+                else
+                    errorNotSupported ()
 
-            | SpecificCall <@ (=) @> (_, tyArgs, _), _, [arg1;arg2] ->
-                match tyArgs with
-                | _ when tyArgs = [typeof<float32>] ->
-                    env, SpirvExprOp.Create(OpFOrdEqual, arg1, arg2, checkedRetTy)
-                | _ when tyArgs = [typeof<int>] ->
+            | SpecificCall <@ (=) @> (_, [tyArg], _), _, [arg1;arg2] ->
+                if isScalarOrVectorInt tyArg then
                     env, SpirvExprOp.Create(OpIEqual, arg1, arg2, checkedRetTy)
-                | _ ->
-                    failwithf "Call not supported: %A" expr
+                elif isScalarOrVectorFloat tyArg then
+                    env, SpirvExprOp.Create(OpFOrdEqual, arg1, arg2, checkedRetTy) 
+                else
+                    errorNotSupported ()
 
-            | SpecificCall <@ (+) @> (_, tyArgs, _), _, [arg1;arg2] ->
-                match tyArgs with
-                | _ when tyArgs = [typeof<float32>;typeof<float32>;typeof<float32>] || tyArgs = [typeof<float32>;typeof<float32>;typeof<float32>] ->
-                    env, SpirvExprOp.Create(OpFAdd, arg1, arg2, checkedRetTy)
-                | _ ->
-                    failwithf "Call not supported: %A" expr
+            | SpecificCall <@ (+) @> (_, [tyArg1;tyArg2;tyArg3], _), _, [arg1;arg2] ->
+                if isScalarOrVectorInt tyArg1 && isScalarOrVectorInt tyArg2 && isScalarOrVectorInt tyArg3 then
+                     env, SpirvExprOp.Create(OpIAdd, arg1, arg2, checkedRetTy)
+                elif isScalarOrVectorFloat tyArg1 && isScalarOrVectorFloat tyArg2 && isScalarOrVectorFloat tyArg3 then
+                     env, SpirvExprOp.Create(OpFAdd, arg1, arg2, checkedRetTy)
+                else
+                    errorNotSupported ()
 
-            | SpecificCall <@ (-) @> (_, tyArgs, _), _, [arg1;arg2] ->
-                match tyArgs with
-                | _ when tyArgs = [typeof<float32>;typeof<float32>;typeof<float32>] ->
-                    env, SpirvExprOp.Create(OpFSub, arg1, arg2, checkedRetTy)
-                | _ ->
-                    failwithf "Call not supported: %A" expr
+            | SpecificCall <@ (-) @> (_, [tyArg1;tyArg2;tyArg3], _), _, [arg1;arg2] ->
+                if isScalarOrVectorInt tyArg1 && isScalarOrVectorInt tyArg2 && isScalarOrVectorInt tyArg3 then
+                     env, SpirvExprOp.Create(OpISub, arg1, arg2, checkedRetTy)
+                elif isScalarOrVectorFloat tyArg1 && isScalarOrVectorFloat tyArg2 && isScalarOrVectorFloat tyArg3 then
+                     env, SpirvExprOp.Create(OpFSub, arg1, arg2, checkedRetTy)
+                else
+                    errorNotSupported ()
 
             | SpecificCall <@ (*) @> (_, tyArgs, _), _, [arg1;arg2] ->
                 match tyArgs with
                 | _ when tyArgs = [typeof<Matrix4x4>;typeof<Matrix4x4>;typeof<Matrix4x4>] ->
                     env, Multiply__Matrix4x4_Matrix4x4__Matrix4x4 (arg1, arg2)
-                | _ when tyArgs = [typeof<float32>;typeof<float32>;typeof<float32>] ->
-                    env, FloatMultiply(arg1, arg2, checkedRetTy)
+                | _ when tyArgs = [typeof<float32>;typeof<float32>;typeof<float32>] || 
+                         tyArgs = [typeof<Vector2>;typeof<Vector2>;typeof<Vector2>] ||
+                         tyArgs = [typeof<Vector3>;typeof<Vector3>;typeof<Vector3>] ||
+                         tyArgs = [typeof<Vector4>;typeof<Vector4>;typeof<Vector4>]
+                         ->
+                    env, SpirvExprOp.Create(OpFMul, arg1, arg2, checkedRetTy)
+                | _ when tyArgs = [typeof<int>] ->
+                    env, SpirvExprOp.Create(OpIMul, arg1, arg2, checkedRetTy)
                 | _ ->
                     failwithf "Call not supported: %A" expr
 
-            | SpecificCall <@ (/) @> (_, tyArgs, _), _, [arg1;arg2] ->
-                match tyArgs with
-                | _ when tyArgs = [typeof<float32>;typeof<float32>;typeof<float32>] ->
-                    env, FloatDivide(arg1, arg2, checkedRetTy)
-                | _ ->
-                    failwithf "Call not supported: %A" expr
+            | SpecificCall <@ (/) @> (_, [tyArg1;tyArg2;tyArg3], _), _, [arg1;arg2] ->
+                if isScalarOrVectorSInt tyArg1 && isScalarOrVectorSInt tyArg2 && isScalarOrVectorSInt tyArg3 then
+                     env, SpirvExprOp.Create(OpSDiv, arg1, arg2, checkedRetTy)
+                elif isScalarOrVectorUInt tyArg1 && isScalarOrVectorUInt tyArg2 && isScalarOrVectorUInt tyArg3 then
+                    env, SpirvExprOp.Create(OpUDiv, arg1, arg2, checkedRetTy)
+                elif isScalarOrVectorFloat tyArg1 && isScalarOrVectorFloat tyArg2 && isScalarOrVectorFloat tyArg3 then
+                     env, SpirvExprOp.Create(OpFDiv, arg1, arg2, checkedRetTy)
+                else
+                    errorNotSupported ()
 
             | Call(_, methInfo, _), _, [arg1;arg2] when methInfo.DeclaringType.FullName.StartsWith(typedefof<Image<_, _, _, _, _, _, _, _>>.FullName) && methInfo.Name = "Fetch" ->
                 env, ImageFetch (arg1, arg2, checkedRetTy)
