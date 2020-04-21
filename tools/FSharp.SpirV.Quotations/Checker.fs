@@ -291,13 +291,14 @@ let rec CheckExpr env isReturnable expr =
         let env, spvExpr2 = CheckExpr env true expr2 
         env, SpirvSequential (spvExpr1, spvExpr2)
 
-    | Call (receiver, _, args) ->
+    | Call (receiver, methInfo, args) ->
+        let checkedTyArgs = methInfo.GetGenericArguments() |> Array.map (mkSpirvType) |> List.ofArray
         let args =
             match receiver with
             | Some receiver -> [receiver] @ args
             | _ -> args
         let env, checkedArgs = CheckExprs env args
-        CheckCall env checkedArgs (mkSpirvType expr.Type) expr
+        CheckCall env checkedTyArgs checkedArgs (mkSpirvType expr.Type) expr
 
     | NewObject (ctorInfo, args) ->
         let spvTy = mkSpirvType ctorInfo.DeclaringType
@@ -363,16 +364,11 @@ and CheckPropertyGet env receiver propInfo args =
         | _ ->
             failwithf "Property get '%s' not supported." propInfo.Name
 
-and CheckCall env checkedArgs spvRetTy expr =
+and CheckCall env checkedTyArgs checkedArgs spvRetTy expr =
     // TODO: Add ability for custom calls.
-    CheckIntrinsicCall env checkedArgs spvRetTy expr
+    CheckIntrinsicCall env checkedTyArgs checkedArgs spvRetTy expr
 
-and CheckIntrinsicCall env checkedArgs checkedRetTy expr =
-    let tyArgs =
-        match expr with
-        | Call (_, methInfo, _) -> methInfo.GetGenericArguments()
-        | _ -> failwithf "Expr is not a call: %A" expr
-
+and CheckIntrinsicCall env checkedTyArgs checkedArgs checkedRetTy expr =
     let isScalarSInt ty =
         ty = typeof<int64> ||
         ty = typeof<int32> ||
@@ -415,7 +411,7 @@ and CheckIntrinsicCall env checkedArgs checkedRetTy expr =
     let errorNotSupported () =
         failwithf "Call not supported: %A" expr
 
-    match expr, tyArgs, checkedArgs with
+    match expr, checkedTyArgs, checkedArgs with
     | SpecificCall <@ Unchecked.defaultof<_[]>.[0] @> _, _, [receiver;arg] -> 
         env, SpirvArrayIndexerGet (receiver, arg, checkedRetTy)
 
@@ -424,7 +420,7 @@ and CheckIntrinsicCall env checkedArgs checkedRetTy expr =
 
     | _ ->
         let env, spvOp =
-            match expr, tyArgs, checkedArgs with
+            match expr, checkedTyArgs, checkedArgs with
             | SpecificCall <@ float32 @> _, _, [arg] 
             | SpecificCall <@ float @> _, _, [arg] ->
                 if arg.Type.IsScalarSInt then
@@ -519,7 +515,7 @@ and CheckIntrinsicCall env checkedArgs checkedRetTy expr =
             | Call(_, methInfo, _), _, [arg1;arg2] when methInfo.DeclaringType.FullName.StartsWith(typedefof<SampledImage<_, _, _, _, _, _, _, _>>.FullName) && methInfo.Name = "ImplicitLod" ->
                 env, ImplicitLod (arg1, arg2, checkedRetTy)
 
-            | SpecificCall <@ kill @> _, [||], [] ->
+            | SpecificCall <@ kill @> _, [], [] ->
                 env, SpirvOpKill
         
             | SpecificCall <@ Vector4.Multiply : Vector4 * float32 -> Vector4 @> _, _, [arg1;arg2] ->
