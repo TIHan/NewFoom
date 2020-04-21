@@ -650,14 +650,6 @@ let rec GenExpr cenv (env: env) blockScope returnable expr =
             addInstructions cenv [OpImageGather(retTy, resultId, arg1, arg2, arg3, None)]
             resultId
 
-        | VectorShuffle (arg1, arg2, arg3, _) ->
-            let arg1 = GenExpr cenv env blockScope NotReturnable arg1 |> deref cenv
-            let arg2 = GenExpr cenv env blockScope NotReturnable arg2 |> deref cenv
-
-            let resultId = nextResultId cenv
-            addInstructions cenv [OpVectorShuffle(retTy, resultId, arg1, arg2, arg3)]
-            resultId
-
         | ImplicitLod (arg1, arg2, _) ->
             let arg1 = GenExpr cenv env blockScope NotReturnable arg1 |> deref cenv
             let arg2 = GenExpr cenv env blockScope NotReturnable arg2 |> deref cenv

@@ -507,6 +507,9 @@ and CheckIntrinsicCall env checkedArgs checkedRetTy expr =
                 else
                     errorNotSupported ()
 
+            | SpecificCall <@ (<) : float32 -> float32 -> bool @> _, _, [arg1;arg2] ->
+                env, FloatUnorderedLessThan(arg1, arg2, checkedRetTy)
+
             | Call(_, methInfo, _), _, [arg1;arg2] when methInfo.DeclaringType.FullName.StartsWith(typedefof<Image<_, _, _, _, _, _, _, _>>.FullName) && methInfo.Name = "Fetch" ->
                 env, ImageFetch (arg1, arg2, checkedRetTy)
 
@@ -516,14 +519,8 @@ and CheckIntrinsicCall env checkedArgs checkedRetTy expr =
             | Call(_, methInfo, _), _, [arg1;arg2] when methInfo.DeclaringType.FullName.StartsWith(typedefof<SampledImage<_, _, _, _, _, _, _, _>>.FullName) && methInfo.Name = "ImplicitLod" ->
                 env, ImplicitLod (arg1, arg2, checkedRetTy)
 
-            | SpecificCall <@ SpirvInstrinsics.VectorShuffle<_> @> _, [|_|], [arg1;arg2] ->
-                env, VectorShuffle(arg1, arg2, [0u;1u], checkedRetTy)
-
             | SpecificCall <@ kill @> _, [||], [] ->
                 env, SpirvOpKill
-
-            | SpecificCall <@ (<) : float32 -> float32 -> bool @> _, _, [arg1;arg2] ->
-                env, FloatUnorderedLessThan(arg1, arg2, checkedRetTy)
         
             | SpecificCall <@ Vector4.Multiply : Vector4 * float32 -> Vector4 @> _, _, [arg1;arg2] ->
                 env, SpirvExprOp.Create(OpVectorTimesScalar, arg1, arg2, checkedRetTy)

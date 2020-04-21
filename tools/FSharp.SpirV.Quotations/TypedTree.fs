@@ -263,7 +263,6 @@ and SpirvExprOp =
     | GetImage of arg: SpirvExpr
     | ImageFetch of image: SpirvExpr * coordinate: SpirvExpr * retTy: SpirvType
     | ImageGather of sampledImage: SpirvExpr * coordinate: SpirvExpr * comp: SpirvExpr * retTy: SpirvType
-    | VectorShuffle of arg1: SpirvExpr * arg2: SpirvExpr * arg3: uint32 list * retTy: SpirvType
     | ImplicitLod of arg1: SpirvExpr * arg2: SpirvExpr * retTy: SpirvType
     | SpirvOpKill
     | FloatUnorderedLessThan of arg1: SpirvExpr * arg2: SpirvExpr * retTy: SpirvType
@@ -300,7 +299,6 @@ and SpirvExprOp =
             | SpirvTypeVector4 _ -> retTy
             | _ -> failwith "ImageFetch: Expected SpirvTypeVector4."
         | ImageGather (_, _, _, retTy) -> retTy
-        | VectorShuffle (_, _, _, retTy) -> retTy
         | ImplicitLod (_, _, retTy) -> retTy
         | SpirvOpKill -> SpirvType.SpirvTypeVoid
         | FloatUnorderedLessThan(_, _, retTy) -> retTy
@@ -311,7 +309,6 @@ and SpirvExprOp =
         | GetImage arg -> [arg]
         | ImageFetch (arg1, arg2, _) -> [arg1;arg2]
         | ImageGather (arg1, arg2, arg3, _) -> [arg1;arg2;arg3]
-        | VectorShuffle (arg1, arg2, _, _) -> [arg1;arg2]
         | ImplicitLod (arg1, arg2, _) -> [arg1;arg2]
         | SpirvOpKill -> []
         | FloatUnorderedLessThan(arg1, arg2, _) -> [arg1;arg2]
