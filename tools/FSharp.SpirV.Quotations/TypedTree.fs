@@ -74,6 +74,38 @@ and SpirvType =
 
     member x.IsStruct = match x with SpirvTypeStruct _ -> true | _ -> false
 
+    member x.IsScalarSInt =
+        match x with
+        | SpirvTypeInt(_, true) -> true
+        | _ -> false
+
+    member x.IsScalarUInt =
+        match x with
+        | SpirvTypeInt(_, false) -> true
+        | _ -> false
+
+    member x.IsScalarFloat =
+        match x with
+        | SpirvTypeFloat _ -> true
+        | _ -> false
+
+    member x.IsVectorInt =
+        match x with
+        | SpirvTypeVector2Int -> true
+        | _ -> false
+
+    member x.IsVectorFloat =
+        match x with
+        | SpirvTypeVector2
+        | SpirvTypeVector3
+        | SpirvTypeVector4 -> true
+        | _ -> false
+
+    member x.IsMatrix4x4 =
+        match x with
+        | SpirvTypeMatrix4x4 -> true
+        | _ -> false
+
     member x.IsOpaque =
         match x with
         | SpirvTypeRuntimeArray _
@@ -228,23 +260,13 @@ type SpirvExpr =
         getType x
 
 and SpirvExprOp =
-    // TODO: Fix transform and multiply names
-    | Transform__Vector4_Matrix4x4__Vector4 of vector4: SpirvExpr * matrix4x4: SpirvExpr
-    | Multiply__Matrix4x4_Matrix4x4__Matrix4x4 of matrix4x4_1: SpirvExpr * matrix4x4_2: SpirvExpr
-    | ConvertAnyFloatToAnySInt of arg: SpirvExpr
-    | ConvertSIntToFloat of arg: SpirvExpr
     | GetImage of arg: SpirvExpr
     | ImageFetch of image: SpirvExpr * coordinate: SpirvExpr * retTy: SpirvType
     | ImageGather of sampledImage: SpirvExpr * coordinate: SpirvExpr * comp: SpirvExpr * retTy: SpirvType
     | VectorShuffle of arg1: SpirvExpr * arg2: SpirvExpr * arg3: uint32 list * retTy: SpirvType
     | ImplicitLod of arg1: SpirvExpr * arg2: SpirvExpr * retTy: SpirvType
-    | Kill
+    | SpirvOpKill
     | FloatUnorderedLessThan of arg1: SpirvExpr * arg2: SpirvExpr * retTy: SpirvType
-    | FloatAdd of arg1: SpirvExpr * arg2: SpirvExpr * retTy: SpirvType
-    | FloatSubtract of arg1: SpirvExpr * arg2: SpirvExpr * retTy: SpirvType
-    | FloatMultiply of arg1: SpirvExpr * arg2: SpirvExpr * retTy: SpirvType
-    | FloatDivide of arg1: SpirvExpr * arg2: SpirvExpr * retTy: SpirvType
-    | VectorTimesScalar of arg1: SpirvExpr * arg2: SpirvExpr * retTy: SpirvType
     | SpirvOp of (IdResultType -> IdResult -> IdRef list -> Instruction) * args: SpirvExpr list * retTy: SpirvType
 
     static member Create(op, retTy) =
@@ -255,7 +277,7 @@ and SpirvExprOp =
         let op = 
             fun idResTy idRes args ->
                 match args with 
-                | [arg] -> op(idResTy, idRes, [arg]) 
+                | [arg] -> op(idResTy, idRes, arg) 
                 | _ -> invalidArg "args" "Argument count is not one."
         SpirvOp(op, [arg], retTy)
 
@@ -269,26 +291,6 @@ and SpirvExprOp =
 
     member x.ReturnType =
         match x with
-        | Transform__Vector4_Matrix4x4__Vector4 _ -> SpirvTypeVector4
-        | Multiply__Matrix4x4_Matrix4x4__Matrix4x4 _ -> SpirvTypeMatrix4x4
-        | ConvertAnyFloatToAnySInt arg ->
-            match arg.Type with
-            | SpirvTypeFloat width -> 
-                if width = 32 then
-                    SpirvTypeInt32
-                else
-                    SpirvTypeInt (width, true)
-            | SpirvTypeVector2 -> SpirvTypeVector2Int
-            | _ -> failwith "ConvertAnyFloatToAnySInt: Expected SpirvTypeFloat."
-        | ConvertSIntToFloat arg ->
-            match arg.Type with
-            | SpirvTypeInt (width, true) -> 
-                if width = 32 then
-                    SpirvTypeFloat32
-                else
-                    SpirvTypeFloat width
-            | SpirvTypeVector2Int -> SpirvTypeVector2
-            | _ -> failwith "ConvertAnyFloatToAnySInt: Expected SpirvTypeFloat."
         | GetImage arg ->
             match arg.Type with
             | SpirvTypeSampledImage imageTy -> SpirvTypeImage imageTy
@@ -300,33 +302,19 @@ and SpirvExprOp =
         | ImageGather (_, _, _, retTy) -> retTy
         | VectorShuffle (_, _, _, retTy) -> retTy
         | ImplicitLod (_, _, retTy) -> retTy
-        | Kill -> SpirvType.SpirvTypeVoid
+        | SpirvOpKill -> SpirvType.SpirvTypeVoid
         | FloatUnorderedLessThan(_, _, retTy) -> retTy
-        | FloatAdd(_, _, retTy) -> retTy
-        | FloatSubtract(_, _, retTy) -> retTy
-        | FloatMultiply(_, _, retTy) -> retTy
-        | FloatDivide(_, _, retTy) -> retTy
-        | VectorTimesScalar(_, _, retTy) -> retTy
         | SpirvOp(_, _, retTy) -> retTy
 
     member x.Arguments =
         match x with
-        | Transform__Vector4_Matrix4x4__Vector4 (arg1, arg2)
-        | Multiply__Matrix4x4_Matrix4x4__Matrix4x4 (arg1, arg2) -> [arg1;arg2]
-        | ConvertAnyFloatToAnySInt arg -> [arg]
-        | ConvertSIntToFloat arg -> [arg]
         | GetImage arg -> [arg]
         | ImageFetch (arg1, arg2, _) -> [arg1;arg2]
         | ImageGather (arg1, arg2, arg3, _) -> [arg1;arg2;arg3]
         | VectorShuffle (arg1, arg2, _, _) -> [arg1;arg2]
         | ImplicitLod (arg1, arg2, _) -> [arg1;arg2]
-        | Kill -> []
+        | SpirvOpKill -> []
         | FloatUnorderedLessThan(arg1, arg2, _) -> [arg1;arg2]
-        | FloatAdd(arg1, arg2, _) -> [arg1;arg2]
-        | FloatSubtract(arg1, arg2, _) -> [arg1;arg2]
-        | FloatMultiply(arg1, arg2, _) -> [arg1;arg2]
-        | FloatDivide(arg1, arg2, _) -> [arg1;arg2]
-        | VectorTimesScalar(arg1, arg2, _) -> [arg1;arg2]
         | SpirvOp(_, args, _) -> args
 
 
