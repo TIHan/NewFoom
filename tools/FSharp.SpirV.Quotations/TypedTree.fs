@@ -30,6 +30,7 @@ and SpirvType =
     | SpirvTypeSampler
     | SpirvTypeSampledImage of SpirvImageType
     | SpirvTypeFunction of parameterTypes: SpirvType list * returnType: SpirvType
+    | SpirvTypePointer of SpirvType * StorageClass
 
     member x.Name =
         match x with
@@ -49,6 +50,7 @@ and SpirvType =
         | SpirvTypeSampledImage _ -> "SampledImage"
         | SpirvTypeFunction(parTys, retTy) when parTys.IsEmpty -> "Function [Void -> " + retTy.Name + "]"
         | SpirvTypeFunction(parTys, retTy) -> "Function" + "[" + (parTys |> List.map (fun x -> x.Name) |> List.reduce (fun x y -> x + " -> " + y)) + " -> " + retTy.Name + "]"
+        | SpirvTypePointer(ty, storageClass) -> "Pointer[" + ty.Name + "](" + string storageClass + ")"
 
     member x.SizeHint: int =
         match x with
@@ -64,11 +66,13 @@ and SpirvType =
         | SpirvTypeStruct(_, fields, _) ->
             fields
             |> List.sumBy(fun (field: SpirvField) -> field.Type.SizeHint)
+
+        | SpirvTypePointer _
         | SpirvTypeFunction _
         | SpirvTypeRuntimeArray _
         | SpirvTypeImage _
         | SpirvTypeSampler
-        | SpirvTypeSampledImage _ -> failwith "Unable to get size of opaque type."
+        | SpirvTypeSampledImage _ -> failwith "Unable to get size hint of type."
 
     member x.IsVoid = match x with SpirvTypeVoid -> true | _ -> false
 
@@ -106,10 +110,14 @@ and SpirvType =
 
     member x.IsOpaque =
         match x with
-        | SpirvTypeRuntimeArray _
         | SpirvTypeImage _
         | SpirvTypeSampler
         | SpirvTypeSampledImage _ -> true
+        | _ -> false
+
+    member x.IsRuntimeArray =
+        match x with
+        | SpirvTypeRuntimeArray _ -> true
         | _ -> false
 
 and SpirvField = SpirvField of name: string * fieldType: SpirvType * Decorations with

@@ -173,8 +173,9 @@ let GenTypeAux cenv ty f =
             let mutable offset = 0u
             let mutable hasRuntimeArray = false
             let rec computeFields (fields: SpirvField list) =
+                let fields = fields |> Array.ofList
                 fields
-                |> List.iteri (fun i (SpirvField(_, fieldTy, _)) ->
+                |> Array.iteri (fun i (SpirvField(_, fieldTy, _)) ->
                     let i = uint32 i
                     match fieldTy with
                     | SpirvTypeBool _ -> addDecorationInstructions cenv [OpMemberDecorate(resultId, i, Decoration.Offset offset)]
@@ -190,7 +191,9 @@ let GenTypeAux cenv ty f =
                     | SpirvTypeStruct(_, fields, _) ->
                         computeFields fields
                     | _ -> failwithf "Invalid field type, %A." fieldTy // TODO
-                    if not fieldTy.IsOpaque then
+                    if i = uint32 (fields.Length - 1) then
+                        () // skip offset calcuation on last field
+                    else
                         offset <- offset + uint32 fieldTy.SizeHint)
             computeFields fields
             if isBlock then
@@ -212,7 +215,7 @@ let GenTypeVoid cenv =
 let GenTypeUInt32 cenv =
     GenTypeAux cenv SpirvTypeUInt32 (fun resultId -> OpTypeInt(resultId, 32u, 0u))
 
-let GenTypePointer cenv storageClass typeId =    
+let emitTypePointer cenv storageClass typeId =
     match cenv.typePointersByResultType.TryGetValue ((storageClass, typeId)) with
     | true, resultId -> resultId
     | _ ->
@@ -270,19 +273,24 @@ let rec GenType cenv ty =
     match ty with
     | SpirvTypeVoid -> GenTypeVoid cenv
     | SpirvTypeBool _ -> GenTypeAux cenv ty (fun resultId -> OpTypeBool resultId)
-    | SpirvTypeInt (width, sign) -> GenTypeAux cenv ty (fun resultId -> OpTypeInt(resultId, uint32 width, if sign then 1u else 0u))
+    | SpirvTypeInt(width, sign) -> GenTypeAux cenv ty (fun resultId -> OpTypeInt(resultId, uint32 width, if sign then 1u else 0u))
     | SpirvTypeFloat width -> GenTypeAux cenv ty (fun resultId -> OpTypeFloat(resultId, uint32 width))
     | SpirvTypeVector2 -> GenTypeVector2 cenv
     | SpirvTypeVector3 -> GenTypeVector3 cenv
     | SpirvTypeVector4 -> GenTypeVector4 cenv
     | SpirvTypeMatrix4x4 -> GenTypeMatrix4x4 cenv
-    | SpirvTypeArray (elementTy, length) -> GenTypeArray cenv elementTy length
+    | SpirvTypeArray(elementTy, length) -> GenTypeArray cenv elementTy length
     | SpirvTypeRuntimeArray elementTy -> GenTypeRuntimeArray cenv elementTy
-    | SpirvTypeStruct (_, fields, _) -> GenTypeStruct cenv ty fields
+    | SpirvTypeStruct(_, fields, _) -> GenTypeStruct cenv ty fields
     | SpirvTypeImage imageTy -> GenTypeImage cenv imageTy
     | SpirvTypeSampler -> GenTypeSampler cenv
     | SpirvTypeSampledImage imageTy -> GenTypeSampledImage cenv imageTy
     | SpirvTypeFunction(parTys, retTy) -> GenTypeFunction cenv parTys retTy
+    | SpirvTypePointer(ty, storageClass) -> GenTypePointer cenv ty storageClass 
+
+and GenTypePointer cenv ty storageClass =
+   let tyId = GenType cenv ty
+   GenTypeAux cenv (SpirvTypePointer(ty, storageClass)) (fun resultId -> OpTypePointer(resultId, storageClass, tyId))
 
 and GenTypeVector2 cenv =
     let componentType = GenType cenv SpirvTypeFloat32
@@ -440,7 +448,7 @@ let GenLocalVar cenv var =
     match cenv.localVariablesByVar.TryGetValue var with
     | true, resultId -> resultId
     | _ ->
-        let resultType = GenType cenv var.Type |> GenTypePointer cenv StorageClass.Function
+        let resultType = GenType cenv var.Type |> emitTypePointer cenv StorageClass.Function
         let resultId = nextResultId cenv
         cenv.localVariables.[resultId] <- OpVariable(resultType, resultId, StorageClass.Function, None)
         cenv.localVariablesByVar.[var] <- resultId
@@ -456,7 +464,7 @@ let rec GenGlobalVar cenv spvVar =
         if storageClass = StorageClass.Function then
             failwith "Invalid storage class for global variable."
 
-        let resultType = GenType cenv spvVar.Type |> GenTypePointer cenv storageClass
+        let resultType = GenType cenv spvVar.Type |> emitTypePointer cenv storageClass
         let resultId = nextResultId cenv
         cenv.globalVariables.[resultId] <- (OpVariable(resultType, resultId, storageClass, None), spvVar.Decorations)
         cenv.globalVariablesByVar.[spvVar] <- resultId
@@ -510,7 +518,7 @@ let getAccessChainResultType cenv pointer fieldIndex =
             failwithf "Found type, %A, but unable to get backing pointer type on field index %i." ty fieldIndex
         | _ -> 
             failwith "Unable to get backing type for pointer."
-        |> GenTypePointer cenv storageClass
+        |> emitTypePointer cenv storageClass
     | _ ->
         failwith "Invalid pointer type."
 
