@@ -536,11 +536,11 @@ let load (graphics: FalGraphics) (wad: Wad) (map: Map) (mvpBuffer: VulkanBuffer<
     
                     let mutable outColor = Variable<Vector4> [Decoration.Location 0u] StorageClass.Output []
 
-                    let test fragTexCoord =
+                    let test (sampler: Sampler2d) =
                         imageSampleImplicitLod fragTexCoord sampler
     
                     fun () ->
-                        let color = test fragTexCoord
+                        let color = test sampler
                         if color.W < 0.5f then
                             kill ()
                         outColor <- color //Vector4.Multiply(color, sectorRenderInfo.LightLevel)

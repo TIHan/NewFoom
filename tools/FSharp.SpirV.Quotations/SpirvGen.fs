@@ -33,6 +33,7 @@ type cenv =
         // Functions
 
         functionsByVar: Dictionary<SpirvVar, IdResult>
+        functionParametersByVar: Dictionary<SpirvVar, IdResult>
         mainInitInstructions: ResizeArray<Instruction>
 
         // Local
@@ -67,6 +68,7 @@ type cenv =
             loadedPointers = Dictionary ()
             decorationInstructions = ResizeArray ()
             functionsByVar = Dictionary ()
+            functionParametersByVar = Dictionary ()
             mainInitInstructions = ResizeArray ()
             localVariables = Dictionary ()
             localVariablesByVar = Dictionary ()
@@ -417,24 +419,29 @@ let rec GenConst cenv spvConst =
         emitConstantComposite cenv arrayTyId (elementTy.Name + "[" + string constantIds.Length + "]") constantIds
 
 let GenFunctionParameterVar cenv var =
-    let resultType = emitType cenv var.Type
-    let resultId = nextResultId cenv
-    let instr = OpFunctionParameter(resultType, resultId)
+    match cenv.localVariablesByVar.TryGetValue var with
+    | true, resultId -> resultId
+    | _ ->
+        let resultType = emitType cenv var.Type
+        let resultId = nextResultId cenv
+        let instr = OpFunctionParameter(resultType, resultId)
 
-    addInstructions cenv [instr]
+        addInstructions cenv [instr]
 
-    cenv.localVariables.[resultId] <- instr
-    cenv.localVariablesByVar.[var] <- resultId
-    cenv.debugNames.Add(string resultId + "_" + var.Name, resultId)
-    resultId
+        cenv.localVariablesByVar.[var] <- resultId
+        cenv.debugNames.Add(string resultId + "_" + var.Name, resultId)
+        resultId
 
 let GenLocalVar cenv var =
-    let resultType = emitType cenv var.Type |> emitPointer cenv StorageClass.Function
-    let resultId = nextResultId cenv
-    cenv.localVariables.[resultId] <- OpVariable(resultType, resultId, StorageClass.Function, None)
-    cenv.localVariablesByVar.[var] <- resultId
-    cenv.debugNames.Add(string resultId + "_" + var.Name, resultId)
-    resultId
+    match cenv.localVariablesByVar.TryGetValue var with
+    | true, resultId -> resultId
+    | _ ->
+        let resultType = emitType cenv var.Type |> emitPointer cenv StorageClass.Function
+        let resultId = nextResultId cenv
+        cenv.localVariables.[resultId] <- OpVariable(resultType, resultId, StorageClass.Function, None)
+        cenv.localVariablesByVar.[var] <- resultId
+        cenv.debugNames.Add(string resultId + "_" + var.Name, resultId)
+        resultId
 
 let rec GenGlobalVar cenv spvVar =
     match cenv.globalVariablesByVar.TryGetValue spvVar with
