@@ -28,13 +28,15 @@ type cenv =
 
         //
 
+        labels: HashSet<IdRef>
+
         decorationInstructions: ResizeArray<Instruction>
 
         // Functions
 
         functionsByVar: Dictionary<SpirvVar, IdResult>
         functionParametersByVar: Dictionary<SpirvVar, IdResult>
-        mainInitInstructions: ResizeArray<Instruction>
+        entryPointInstructions: ResizeArray<Instruction>
 
         // Local
 
@@ -56,20 +58,21 @@ type cenv =
     static member Default =
         {
             nextResultId = ref 1u
-            types = Dictionary ()
-            typesByType = Dictionary ()
-            typeFunctions = Dictionary ()
-            typePointers = Dictionary ()
-            typePointersByResultType = Dictionary ()
-            globalVariables = Dictionary ()
-            globalVariablesByVar = Dictionary ()
-            constants = Dictionary ()
-            constantComposites = Dictionary ()
-            loadedPointers = Dictionary ()
+            types = Dictionary()
+            typesByType = Dictionary()
+            typeFunctions = Dictionary()
+            typePointers = Dictionary()
+            typePointersByResultType = Dictionary()
+            globalVariables = Dictionary()
+            globalVariablesByVar = Dictionary()
+            constants = Dictionary()
+            constantComposites = Dictionary()
+            loadedPointers = Dictionary()
+            labels = HashSet()
             decorationInstructions = ResizeArray ()
             functionsByVar = Dictionary ()
             functionParametersByVar = Dictionary ()
-            mainInitInstructions = ResizeArray ()
+            entryPointInstructions = ResizeArray ()
             localVariables = Dictionary ()
             localVariablesByVar = Dictionary ()
             currentInstructions = ResizeArray ()
@@ -82,7 +85,8 @@ type cenv =
 [<NoEquality;NoComparison>]
 type env =
     {
-        dummy: uint32
+        blockScope: int
+        blockLabel: uint32
     }
 
 #nowarn "9" 
@@ -106,8 +110,8 @@ let addInstructions cenv instrs =
 let addDecorationInstructions cenv instrs =
     cenv.decorationInstructions.AddRange instrs
 
-let addMainInitInstructions cenv instrs =
-    cenv.mainInitInstructions.AddRange instrs
+let addEntryPointInstructions cenv instrs =
+    cenv.entryPointInstructions.AddRange instrs
 
 let getTypeInstruction cenv id =
     cenv.types.[id]
@@ -543,10 +547,11 @@ let tryEmitLoad cenv pointer =
     | _ ->
         None
 
-let emitLabel cenv =
-    let resultId = nextResultId cenv
-    addInstructions cenv [OpLabel resultId]
-    resultId
+let emitLabel cenv label =
+    if cenv.labels.Add label then
+        addInstructions cenv [OpLabel label]
+    else
+        failwithf "Label, %i, has already been generated." label
 
 let deref cenv (resultId: IdResult) =
     match tryEmitLoad cenv resultId with
@@ -561,12 +566,17 @@ let emitLoad cenv pointer =
     | Some resultId -> resultId
     | _ -> failwith "Unable to emit load instruction."
 
+let checkValidResultId resultId =
+    if resultId = ZeroResultId then
+        failwith "Unexpected zero result."
+
+let checkZeroResultId resultId =
+    if resultId <> ZeroResultId then
+        failwith "Unexpected result."
+
 type Returnable =
     | BlockReturnable
     | NotReturnable
-
-let onBlockFinished cenv =
-    cenv.ignoreAddingInstructions <- false
 
 let GetVarResult cenv var =
     let id =
@@ -577,7 +587,7 @@ let GetVarResult cenv var =
         failwithf "Invalid id: %i" id
     id
 
-let rec GenExpr cenv (env: env) blockScope returnable expr =
+let rec GenExpr cenv (env: env) returnable expr =
     match expr with
     | SpirvUnreachable ->
         addInstructions cenv [OpUnreachable]
@@ -588,22 +598,22 @@ let rec GenExpr cenv (env: env) blockScope returnable expr =
 
     | SpirvLet(spvVar, rhs, body) ->
         let spvVarId = GenLocalVar cenv spvVar
-        let rhsId = GenExpr cenv env blockScope NotReturnable rhs |> deref cenv
+        let rhsId = GenExpr cenv env NotReturnable rhs |> deref cenv
         addInstructions cenv [OpStore(spvVarId, rhsId, None)]
-        GenExpr cenv env blockScope returnable body
+        GenExpr cenv env returnable body
 
     | SpirvSequential(expr1, expr2) ->
-        GenExpr cenv env blockScope NotReturnable expr1 |> ignore
-        GenExpr cenv env blockScope returnable expr2
+        GenExpr cenv env NotReturnable expr1 |> ignore
+        GenExpr cenv env returnable expr2
 
     | SpirvNewVector2 args
     | SpirvNewVector3 args 
     | SpirvNewVector4 args ->
-        GenVector cenv env blockScope returnable expr.Type args
+        GenVector cenv env returnable expr.Type args
 
-    | SpirvArrayIndexerGet (receiver, arg, retTy) ->
-        let receiverId = GenExpr cenv env blockScope NotReturnable receiver
-        let argId = GenExpr cenv env blockScope NotReturnable arg |> deref cenv
+    | SpirvArrayIndexerGet (receiver, arg, _) ->
+        let receiverId = GenExpr cenv env NotReturnable receiver
+        let argId = GenExpr cenv env NotReturnable arg |> deref cenv
 
         let resultType = getAccessChainResultType cenv receiverId 0
         let resultId = nextResultId cenv
@@ -613,9 +623,9 @@ let rec GenExpr cenv (env: env) blockScope returnable expr =
         resultId
 
     | SpirvArrayIndexerSet (receiver, indexArg, valueArg) ->
-        let receiverId = GenExpr cenv env blockScope NotReturnable receiver
-        let argId = GenExpr cenv env blockScope NotReturnable indexArg |> deref cenv
-        let valueArg = GenExpr cenv env blockScope NotReturnable valueArg |> deref cenv
+        let receiverId = GenExpr cenv env NotReturnable receiver
+        let argId = GenExpr cenv env NotReturnable indexArg |> deref cenv
+        let valueArg = GenExpr cenv env NotReturnable valueArg |> deref cenv
 
         let resultType = getAccessChainResultType cenv receiverId 0
         let resultId = nextResultId cenv
@@ -630,7 +640,7 @@ let rec GenExpr cenv (env: env) blockScope returnable expr =
         if not var.IsMutable then
             failwithf "'%s' is not mutable." var.Name
 
-        let rhsId = GenExpr cenv env blockScope NotReturnable rhs |> deref cenv
+        let rhsId = GenExpr cenv env NotReturnable rhs |> deref cenv
         let id = GetVarResult cenv var
         addInstructions cenv [OpStore(id, rhsId, None)]
         ZeroResultId
@@ -642,7 +652,7 @@ let rec GenExpr cenv (env: env) blockScope returnable expr =
         | SpirvOp(instr, args, _) ->
             let args =
                 args 
-                |> List.map (fun arg -> GenExpr cenv env blockScope NotReturnable arg |> deref cenv)
+                |> List.map (fun arg -> GenExpr cenv env NotReturnable arg |> deref cenv)
 
             let resultId =
                 if op.ReturnType.IsVoid then
@@ -654,7 +664,7 @@ let rec GenExpr cenv (env: env) blockScope returnable expr =
 
     | SpirvIntrinsicFieldGet fieldGet ->
         let getComponent receiver fieldTy n =
-            let receiverId = GenExpr cenv env blockScope NotReturnable receiver |> deref cenv
+            let receiverId = GenExpr cenv env NotReturnable receiver |> deref cenv
             let fieldTyId = GenType cenv fieldTy
             addCompositeExtractInstruction cenv fieldTyId receiverId [n]
             
@@ -676,7 +686,7 @@ let rec GenExpr cenv (env: env) blockScope returnable expr =
             getComponent receiver fieldTy 3u
 
     | SpirvFieldGet (receiver, index) ->
-        let receiverId = GenExpr cenv env blockScope NotReturnable receiver
+        let receiverId = GenExpr cenv env NotReturnable receiver
 
         let resultType = getAccessChainResultType cenv receiverId index
 
@@ -684,7 +694,7 @@ let rec GenExpr cenv (env: env) blockScope returnable expr =
         | OpTypePointer _ -> ()
         | _ -> failwith "Invalid pointer."
 
-        let indexId = GenExpr cenv env blockScope NotReturnable (SpirvConst (SpirvConstInt(index, [])))
+        let indexId = GenExpr cenv env NotReturnable (SpirvConst (SpirvConstInt(index, [])))
         let accessChainPointerId = nextResultId cenv
         let instr = OpAccessChain(resultType, accessChainPointerId, receiverId, [indexId])
         addInstructions cenv [instr]
@@ -692,47 +702,14 @@ let rec GenExpr cenv (env: env) blockScope returnable expr =
         accessChainPointerId
 
     | SpirvIfThenElse(condExpr, trueExpr, falseExpr) ->
-        let resultIdCond = GenExpr cenv env blockScope NotReturnable condExpr
-
-        let contLabel = nextResultId cenv
-        let trueLabel = nextResultId cenv
-        let falseLabel = nextResultId cenv
-
-        addInstructions cenv [OpSelectionMerge(contLabel, SelectionControl.None);OpBranchConditional(resultIdCond, trueLabel, falseLabel, [])]
-
-        addInstructions cenv [OpLabel trueLabel]
-        cenv.lastLabel <- trueLabel
-        let trueResult = GenExpr cenv env (blockScope + 1) BlockReturnable trueExpr |> deref cenv
-        addInstructions cenv [OpBranch contLabel]
-        onBlockFinished cenv
-        let lastTrueLabel = cenv.lastLabel
-
-        addInstructions cenv [OpLabel falseLabel]
-        cenv.lastLabel <- falseLabel
-        let falseResult = GenExpr cenv env (blockScope + 1) BlockReturnable falseExpr |> deref cenv
-        addInstructions cenv [OpBranch contLabel]
-        onBlockFinished cenv
-        let lastFalseLabel = cenv.lastLabel
-
-        addInstructions cenv [OpLabel contLabel]
-        cenv.lastLabel <- contLabel
-
-        let retTy = expr.Type
-        if retTy = SpirvTypeVoid then
-            ZeroResultId
-        else
-            let resultType = GenType cenv retTy
-            let resultId = nextResultId cenv
-            let operands = [PairIdRefIdRef(trueResult, lastTrueLabel);PairIdRefIdRef(falseResult, lastFalseLabel)]
-            addInstructions cenv [OpPhi(resultType, resultId, operands)]
-            resultId
+        GenIfThenElse cenv env returnable condExpr trueExpr falseExpr expr.Type
 
     | SpirvCallFunction(var, args) ->
         let funId = cenv.functionsByVar.[var]
         let argIds = 
             args 
             |> List.choose (fun arg ->
-                let argId = GenExpr cenv env blockScope NotReturnable arg |> deref cenv
+                let argId = GenExpr cenv env NotReturnable arg |> deref cenv
                 if argId = ZeroResultId then None
                 else Some argId)
 
@@ -747,11 +724,111 @@ let rec GenExpr cenv (env: env) blockScope returnable expr =
         addInstructions cenv [OpFunctionCall(retTyId, resId, funId, argIds)]
         resId
 
-and GenVector cenv env blockScope returnable retTy args =
+and GenIfThenElse cenv env returnable condExpr trueExpr falseExpr retTy =
+    let resultIdCond = GenExpr cenv env NotReturnable condExpr
+
+    let contLabel = nextResultId cenv
+    let trueLabel = nextResultId cenv
+    let falseLabel = nextResultId cenv
+
+    addInstructions cenv [OpSelectionMerge(contLabel, SelectionControl.None)]
+    addInstructions cenv [OpBranchConditional(resultIdCond, trueLabel, falseLabel, [])]
+
+    emitLabel cenv trueLabel
+    cenv.lastLabel <- trueLabel
+    let trueResult = GenExprBlockContinue cenv env trueLabel contLabel returnable trueExpr |> deref cenv
+    let trueLabel = cenv.lastLabel
+    emitLabel cenv falseLabel
+    cenv.lastLabel <- falseLabel
+    let falseResult = GenExprBlockContinue cenv env falseLabel contLabel returnable falseExpr |> deref cenv
+    let falseLabel = cenv.lastLabel
+
+    emitLabel cenv contLabel
+    cenv.lastLabel <- contLabel
+
+    let trueResult = deref cenv trueResult
+    let falseResult = deref cenv falseResult
+
+    if retTy = SpirvTypeVoid then
+        checkZeroResultId trueResult
+        checkZeroResultId falseResult
+
+        ZeroResultId
+    else
+        checkValidResultId trueResult
+        checkValidResultId falseResult
+
+        let resultType = GenType cenv retTy
+        let resultId = nextResultId cenv
+        let operands = [PairIdRefIdRef(trueResult, trueLabel);PairIdRefIdRef(falseResult, falseLabel)]
+        addInstructions cenv [OpPhi(resultType, resultId, operands)]
+        resultId
+
+and GenExprBlockAux cenv env blockLabel blockLabelContinue returnable expr =
+    let resultId = GenExpr cenv { env with blockScope = env.blockScope + 1; blockLabel = blockLabel } BlockReturnable expr
+
+    let resultId =
+        if blockLabelContinue > 0u then
+            addInstructions cenv [OpBranch blockLabelContinue]
+            resultId
+        else
+            if returnable = BlockReturnable then
+                let resultId = deref cenv resultId
+                if resultId = ZeroResultId then
+                    addInstructions cenv [OpReturn]
+                else
+                    addInstructions cenv [OpReturnValue resultId]
+                resultId
+            else
+                resultId
+
+    cenv.ignoreAddingInstructions <- false
+    resultId
+
+and GenExprBlock cenv env blockLabel returnable expr =
+    GenExprBlockAux cenv env blockLabel 0u returnable expr
+
+and GenExprBlockContinue cenv env blockLabel blockLabelContinue returnable expr =
+    GenExprBlockAux cenv env blockLabel blockLabelContinue returnable expr
+
+and GenFunction cenv env isEntryPoint (args: SpirvVar list) (body: SpirvExpr) =
+    let argTys = args |> List.map (fun x -> x.Type)
+    let retTy = body.Type
+
+    let functionResultId = nextResultId cenv
+    addInstructions cenv 
+        [ OpFunction(GenType cenv retTy, functionResultId, FunctionControl.None, 
+                     GenTypeFunction cenv argTys retTy) ]
+
+    args
+    |> List.iter (fun arg ->
+        if not arg.Type.IsVoid then
+            GenFunctionParameterVar cenv arg |> ignore)
+
+    let blockLabel = nextResultId cenv
+    let cenvBody = { cenv with currentInstructions = ResizeArray () }
+    GenExprBlock cenvBody env blockLabel BlockReturnable body |> ignore
+
+    emitLabel cenv blockLabel
+    addInstructions cenv cenv.localVariables.Values
+    if isEntryPoint then
+        addInstructions cenv cenv.entryPointInstructions
+
+    cenv.currentInstructions.AddRange cenvBody.currentInstructions
+
+    addInstructions cenv [OpFunctionEnd]
+
+    cenv.locals.Clear()
+    cenv.localVariables.Clear()
+    cenv.localVariablesByVar.Clear()
+
+    functionResultId
+
+and GenVector cenv env returnable retTy args =
     let constituents =
         args
         |> List.map (fun arg ->
-            let id = GenExpr cenv env blockScope returnable arg |> deref cenv
+            let id = GenExpr cenv env returnable arg |> deref cenv
             match tryAddCompositeExtractInstructions cenv arg.Type id with
             | [] -> [id]
             | ids -> ids
@@ -765,19 +842,20 @@ and GenVector cenv env blockScope returnable retTy args =
 let GenDecl cenv decl =
     match decl with
     | SpirvDeclConst (var, constt) ->
+        // Review: Do we need to do all this work for scalar constants?
         let varId = GenGlobalVar cenv var
         let constId = GenConst cenv constt
-        addMainInitInstructions cenv [OpStore(varId, constId, None)]
+        addEntryPointInstructions cenv [OpStore(varId, constId, None)]
         varId
 
     | SpirvDeclVar var ->
         GenGlobalVar cenv var
 
-let rec GenTopLevelExpr cenv env isLastExpr lambdaArgs expr =
+let rec GenTopLevelExpr cenv env isEntryPoint lambdaArgs expr =
     match expr with
     | SpirvTopLevelSequential (expr1, expr2) ->
         GenTopLevelExpr cenv env false [] expr1 |> ignore
-        GenTopLevelExpr cenv env isLastExpr [] expr2
+        GenTopLevelExpr cenv env isEntryPoint [] expr2
 
     | SpirvTopLevelDecl decl ->
         GenDecl cenv decl
@@ -785,57 +863,19 @@ let rec GenTopLevelExpr cenv env isLastExpr lambdaArgs expr =
     | SpirvTopLevelLet(var, rhs, body) ->
         let idRes = GenTopLevelExpr cenv env false [] rhs
         StoreFunctionVar cenv var idRes
-        GenTopLevelExpr cenv env isLastExpr [] body
+        GenTopLevelExpr cenv env isEntryPoint [] body
 
     | SpirvTopLevelLambda (var, body) ->
-        GenTopLevelExpr cenv env isLastExpr (lambdaArgs @ [var]) body
+        GenTopLevelExpr cenv env isEntryPoint (lambdaArgs @ [var]) body
 
     | SpirvTopLevelLambdaBody (var, body) ->
         let lambdaArgs = lambdaArgs @ [var]
-
-        let argTys = lambdaArgs |> List.map (fun x -> x.Type)
-        let retTy = body.Type
-
-        let functionResultId = nextResultId cenv
-        addInstructions cenv 
-            [ OpFunction(GenType cenv retTy, functionResultId, FunctionControl.None, 
-                         GenTypeFunction cenv argTys retTy) ]
-
-        lambdaArgs
-        |> List.iter (fun arg ->
-            if not arg.Type.IsVoid then
-                GenFunctionParameterVar cenv arg |> ignore)
-
-        emitLabel cenv |> ignore
-
-        let cenvBody = { cenv with currentInstructions = ResizeArray () }
-
-        let resultId = GenExpr cenvBody env 1 BlockReturnable body |> deref cenv
-        if resultId = ZeroResultId then
-            addInstructions cenvBody [OpReturn]
-        else
-            addInstructions cenvBody [OpReturnValue resultId]
-
-        onBlockFinished cenvBody
-
-        addInstructions cenv cenv.localVariables.Values
-        if isLastExpr then
-            addInstructions cenv cenv.mainInitInstructions
-
-        cenv.currentInstructions.AddRange cenvBody.currentInstructions
-
-        addInstructions cenv [OpFunctionEnd]
-
-        cenv.locals.Clear()
-        cenv.localVariables.Clear()
-        cenv.localVariablesByVar.Clear()
-
-        functionResultId
+        GenFunction cenv env isEntryPoint lambdaArgs body
 
 let GenModule (info: SpirvGenInfo) expr =
     let cenv = cenv.Default
 
-    let entryPoint = GenTopLevelExpr cenv { dummy = 0u } true [] expr
+    let entryPoint = GenTopLevelExpr cenv { blockScope = 0; blockLabel = 0u } true [] expr
 
     let annotations =
         let annoations = ResizeArray ()
