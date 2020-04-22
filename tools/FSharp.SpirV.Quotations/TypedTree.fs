@@ -29,7 +29,7 @@ and SpirvType =
     | SpirvTypeImage of SpirvImageType
     | SpirvTypeSampler
     | SpirvTypeSampledImage of SpirvImageType
-    | SpirvTypeFunction of returnType: SpirvType * parameterTypes: SpirvType list
+    | SpirvTypeFunction of parameterTypes: SpirvType list * returnType: SpirvType
 
     member x.Name =
         match x with
@@ -47,8 +47,8 @@ and SpirvType =
         | SpirvTypeImage _ -> "Image"
         | SpirvTypeSampler -> "Sampler"
         | SpirvTypeSampledImage _ -> "SampledImage"
-        | SpirvTypeFunction(retTy, parTys) when parTys.IsEmpty -> "Function [Void -> " + retTy.Name + "]"
-        | SpirvTypeFunction(retTy, parTys) -> "Function" + "[" + (parTys |> List.map (fun x -> x.Name) |> List.reduce (fun x y -> x + " -> " + y)) + " -> " + retTy.Name + "]"
+        | SpirvTypeFunction(parTys, retTy) when parTys.IsEmpty -> "Function [Void -> " + retTy.Name + "]"
+        | SpirvTypeFunction(parTys, retTy) -> "Function" + "[" + (parTys |> List.map (fun x -> x.Name) |> List.reduce (fun x y -> x + " -> " + y)) + " -> " + retTy.Name + "]"
 
     member x.SizeHint: int =
         match x with

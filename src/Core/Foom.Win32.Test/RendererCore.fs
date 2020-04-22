@@ -730,8 +730,11 @@ let loadMap mapName (wad: Wad) (graphics: FalGraphics) =
             let lightLevel = Variable<single> [Decoration.Location 1u] StorageClass.Input []
             let mutable outColor = Variable<Vector4> [Decoration.Location 0u] StorageClass.Output []
 
+            let test fragTexCoord (sampler: Sampler2d) =
+                imageSampleImplicitLod fragTexCoord sampler
+
             fun () ->
-                let color = imageSampleImplicitLod fragTexCoord sampler
+                let color = test fragTexCoord sampler
                 if color.W < 0.5f then
                     kill ()
                 outColor <- Vector4.Multiply(color, lightLevel)

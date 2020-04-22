@@ -89,10 +89,17 @@ let rec mkSpirvType ty =
             |> Seq.exists (fun x -> x.AttributeType = typeof<BlockAttribute>)
         SpirvTypeStruct (ty.FullName, fields, isBlock)
     | _ when ty.FullName.StartsWith("Microsoft.FSharp.Core.FSharpFunc") ->
-        let spvTyArgs = ty.GenericTypeArguments |> Array.map mkSpirvType
-        SpirvTypeFunction(spvTyArgs |> Array.last, spvTyArgs |> Array.take (spvTyArgs.Length - 1) |> List.ofArray)
+        let spvArgTys = ty.GenericTypeArguments |> Array.map mkSpirvType
+        SpirvTypeFunction(spvArgTys |> Array.take (spvArgTys.Length - 1) |> List.ofArray, spvArgTys |> Array.last)
+        |> flattenSpirvTypeFunction
     | _ -> 
         failwithf "Unable to make SpirvType from Type: %A" ty
+
+and flattenSpirvTypeFunction (spvTy: SpirvType) =
+    match spvTy with
+    | SpirvTypeFunction(spvParTys, SpirvTypeFunction(spvParTys2, spvRetTy)) ->
+        SpirvTypeFunction(spvParTys @ spvParTys2, spvRetTy) |> flattenSpirvTypeFunction
+    | _ -> spvTy
 
 and mkSpirvImageType (sampledType: Type) (dim: Type) (depth: Type) (arrayed: Type) (multisampled: Type) (sampled: Type) (format: Type) (accessQualifier: Type) =
     let sampledType = mkSpirvType sampledType
@@ -354,7 +361,7 @@ let rec CheckExpr env isReturnable expr =
 and CheckApplication env expr args =
     match expr with
     | Application(expr1, expr2) ->
-        CheckApplication env expr1 (args @ [expr2])
+        CheckApplication env expr1 (expr2 :: args)
     | _ ->
         let env, spvVarExpr = CheckExpr env false expr
         let spvVar =

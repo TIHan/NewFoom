@@ -155,7 +155,7 @@ let tryAddCompositeExtractInstructions cenv ty composite =
     else
         []
 
-let emitTypeAux cenv ty f =
+let GenTypeAux cenv ty f =
     match cenv.typesByType.TryGetValue ty with
     | true, resultType -> resultType
     | _ ->
@@ -202,13 +202,13 @@ let emitTypeAux cenv ty f =
 
         resultId
 
-let emitTypeVoid cenv =
-    emitTypeAux cenv SpirvTypeVoid (fun resultId -> OpTypeVoid resultId)
+let GenTypeVoid cenv =
+    GenTypeAux cenv SpirvTypeVoid (fun resultId -> OpTypeVoid resultId)
 
-let emitTypeUInt32 cenv =
-    emitTypeAux cenv SpirvTypeUInt32 (fun resultId -> OpTypeInt(resultId, 32u, 0u))
+let GenTypeUInt32 cenv =
+    GenTypeAux cenv SpirvTypeUInt32 (fun resultId -> OpTypeInt(resultId, 32u, 0u))
 
-let emitPointer cenv storageClass typeId =    
+let GenTypePointer cenv storageClass typeId =    
     match cenv.typePointersByResultType.TryGetValue ((storageClass, typeId)) with
     | true, resultId -> resultId
     | _ ->
@@ -217,7 +217,7 @@ let emitPointer cenv storageClass typeId =
         cenv.typePointers.[resultId] <- OpTypePointer(resultId, storageClass, typeId)
         resultId
 
-let emitConstantAux cenv resultType debugName literal =
+let GenConstantAux cenv resultType debugName literal =
     match cenv.constants.TryGetValue literal with
     | true, (resultId, _) -> resultId
     | _ ->
@@ -253,7 +253,7 @@ let emitConstantAux cenv resultType debugName literal =
         | SpirvConstBool (value, _, _) -> if value then createBoolTrue () else createBoolFalse ()
         | _ -> failwith "Invalid constant."
 
-let emitConstantComposite cenv resultType debugName constituents =
+let GenConstantComposite cenv resultType debugName constituents =
     match cenv.constantComposites.TryGetValue constituents with
     | true, (resultId, _) -> resultId
     | _ ->
@@ -262,84 +262,84 @@ let emitConstantComposite cenv resultType debugName constituents =
         cenv.debugNames.Add(string resultId + "_const_" + debugName, resultId)
         resultId
 
-let rec emitType cenv ty =
+let rec GenType cenv ty =
     match ty with
-    | SpirvTypeVoid -> emitTypeVoid cenv
-    | SpirvTypeBool _ -> emitTypeAux cenv ty (fun resultId -> OpTypeBool resultId)
-    | SpirvTypeInt (width, sign) -> emitTypeAux cenv ty (fun resultId -> OpTypeInt(resultId, uint32 width, if sign then 1u else 0u))
-    | SpirvTypeFloat width -> emitTypeAux cenv ty (fun resultId -> OpTypeFloat(resultId, uint32 width))
-    | SpirvTypeVector2 -> emitTypeVector2 cenv
-    | SpirvTypeVector3 -> emitTypeVector3 cenv
-    | SpirvTypeVector4 -> emitTypeVector4 cenv
-    | SpirvTypeMatrix4x4 -> emitTypeMatrix4x4 cenv
-    | SpirvTypeArray (elementTy, length) -> emitArrayType cenv elementTy length
-    | SpirvTypeRuntimeArray elementTy -> emitRuntimeArrayType cenv elementTy
-    | SpirvTypeStruct (_, fields, _) -> emitStructType cenv ty fields
-    | SpirvTypeImage imageTy -> emitTypeImage cenv imageTy
-    | SpirvTypeSampler -> emitTypeSampler cenv
-    | SpirvTypeSampledImage imageTy -> emitTypeSampledImage cenv imageTy
-    | SpirvTypeFunction(retTy, parTys) -> emitTypeFunction cenv parTys retTy
+    | SpirvTypeVoid -> GenTypeVoid cenv
+    | SpirvTypeBool _ -> GenTypeAux cenv ty (fun resultId -> OpTypeBool resultId)
+    | SpirvTypeInt (width, sign) -> GenTypeAux cenv ty (fun resultId -> OpTypeInt(resultId, uint32 width, if sign then 1u else 0u))
+    | SpirvTypeFloat width -> GenTypeAux cenv ty (fun resultId -> OpTypeFloat(resultId, uint32 width))
+    | SpirvTypeVector2 -> GenTypeVector2 cenv
+    | SpirvTypeVector3 -> GenTypeVector3 cenv
+    | SpirvTypeVector4 -> GenTypeVector4 cenv
+    | SpirvTypeMatrix4x4 -> GenTypeMatrix4x4 cenv
+    | SpirvTypeArray (elementTy, length) -> GenTypeArray cenv elementTy length
+    | SpirvTypeRuntimeArray elementTy -> GenTypeRuntimeArray cenv elementTy
+    | SpirvTypeStruct (_, fields, _) -> GenTypeStruct cenv ty fields
+    | SpirvTypeImage imageTy -> GenTypeImage cenv imageTy
+    | SpirvTypeSampler -> GenTypeSampler cenv
+    | SpirvTypeSampledImage imageTy -> GenTypeSampledImage cenv imageTy
+    | SpirvTypeFunction(parTys, retTy) -> GenTypeFunction cenv parTys retTy
 
-and emitTypeVector2 cenv =
-    let componentType = emitType cenv SpirvTypeFloat32
-    emitTypeAux cenv SpirvTypeVector2 (fun resultId -> OpTypeVector(resultId, componentType, 2u))
+and GenTypeVector2 cenv =
+    let componentType = GenType cenv SpirvTypeFloat32
+    GenTypeAux cenv SpirvTypeVector2 (fun resultId -> OpTypeVector(resultId, componentType, 2u))
 
-and emitTypeVector3 cenv =
-    let componentType = emitType cenv SpirvTypeFloat32
-    emitTypeAux cenv SpirvTypeVector3 (fun resultId -> OpTypeVector(resultId, componentType, 3u))
+and GenTypeVector3 cenv =
+    let componentType = GenType cenv SpirvTypeFloat32
+    GenTypeAux cenv SpirvTypeVector3 (fun resultId -> OpTypeVector(resultId, componentType, 3u))
 
-and emitTypeVector4 cenv =
-    let componentType = emitType cenv SpirvTypeFloat32
-    emitTypeAux cenv SpirvTypeVector4 (fun resultId -> OpTypeVector(resultId, componentType, 4u))
+and GenTypeVector4 cenv =
+    let componentType = GenType cenv SpirvTypeFloat32
+    GenTypeAux cenv SpirvTypeVector4 (fun resultId -> OpTypeVector(resultId, componentType, 4u))
 
-and emitTypeMatrix4x4 cenv =
-    let columnType = emitTypeVector4 cenv
-    emitTypeAux cenv SpirvTypeMatrix4x4 (fun resultId -> OpTypeMatrix(resultId, columnType, 4u))
+and GenTypeMatrix4x4 cenv =
+    let columnType = GenTypeVector4 cenv
+    GenTypeAux cenv SpirvTypeMatrix4x4 (fun resultId -> OpTypeMatrix(resultId, columnType, 4u))
 
-and emitTypeSampler cenv =
-    emitTypeAux cenv SpirvTypeSampler (fun resultId -> OpTypeSampler resultId)
+and GenTypeSampler cenv =
+    GenTypeAux cenv SpirvTypeSampler (fun resultId -> OpTypeSampler resultId)
 
-and emitArrayType cenv elementTy length =
+and GenTypeArray cenv elementTy length =
     match elementTy with
     | SpirvTypeVoid -> failwithf "Element type, %A, is not valid." elementTy
     | _ ->
-        let elementTyId = emitType cenv elementTy
-        let lengthId = uint32 length |> emitConstantUInt32 cenv
-        emitTypeAux cenv (SpirvTypeArray (elementTy, length)) (fun arrayTyId -> OpTypeArray(arrayTyId, elementTyId, lengthId))
+        let elementTyId = GenType cenv elementTy
+        let lengthId = uint32 length |> GenConstantUInt32 cenv
+        GenTypeAux cenv (SpirvTypeArray (elementTy, length)) (fun arrayTyId -> OpTypeArray(arrayTyId, elementTyId, lengthId))
 
-and emitRuntimeArrayType cenv elementTy =
+and GenTypeRuntimeArray cenv elementTy =
     match elementTy with
     | SpirvTypeVoid -> failwithf "Element type, %A, is not valid." elementTy
     | _ ->
-        let elementTyId = emitType cenv elementTy
-        emitTypeAux cenv (SpirvTypeRuntimeArray elementTy) (fun arrayTyId -> OpTypeRuntimeArray(arrayTyId, elementTyId))
+        let elementTyId = GenType cenv elementTy
+        GenTypeAux cenv (SpirvTypeRuntimeArray elementTy) (fun arrayTyId -> OpTypeRuntimeArray(arrayTyId, elementTyId))
 
-and emitStructType cenv ty fields =
+and GenTypeStruct cenv ty fields =
     let idRefs =
         fields
         |> List.map (fun (SpirvField(_, fieldTy, _)) -> 
-            emitType cenv fieldTy
+            GenType cenv fieldTy
         )
 
-    emitTypeAux cenv ty (fun resultId -> OpTypeStruct(resultId, idRefs))
+    GenTypeAux cenv ty (fun resultId -> OpTypeStruct(resultId, idRefs))
 
-and emitTypeImage cenv imageTy =
+and GenTypeImage cenv imageTy =
     match imageTy with
     | SpirvImageType(sampledType, dim, depth, arrayed, ms, sampled, format, accessQualifier) ->
-        let sampledTypeId = emitType cenv sampledType
-        emitTypeAux cenv (SpirvTypeImage imageTy) (fun resultId ->
+        let sampledTypeId = GenType cenv sampledType
+        GenTypeAux cenv (SpirvTypeImage imageTy) (fun resultId ->
             OpTypeImage(resultId, sampledTypeId, dim, depth, arrayed, ms, sampled, format, accessQualifier))
 
-and emitTypeSampledImage cenv imageTy =
-    let imageTyId = emitTypeImage cenv imageTy
-    emitTypeAux cenv (SpirvTypeSampledImage imageTy) (fun resultId -> OpTypeSampledImage(resultId, imageTyId))
+and GenTypeSampledImage cenv imageTy =
+    let imageTyId = GenTypeImage cenv imageTy
+    GenTypeAux cenv (SpirvTypeSampledImage imageTy) (fun resultId -> OpTypeSampledImage(resultId, imageTyId))
 
-and emitTypeFunction cenv paramTys retTy =
+and GenTypeFunction cenv paramTys retTy =
     let paramTyIds =
         paramTys
         |> List.filter (fun x -> x <> SpirvTypeVoid)
-        |> List.map (emitType cenv)
-    let retTyId = emitType cenv retTy
+        |> List.map (GenType cenv)
+    let retTyId = GenType cenv retTy
 
     let tys = paramTyIds @ [retTyId]
 
@@ -350,29 +350,29 @@ and emitTypeFunction cenv paramTys retTy =
         cenv.typeFunctions.[tys] <- (resultId, [OpTypeFunction(resultId, retTyId, paramTyIds)])
         resultId
 
-and emitConstantBool cenv sizeHint (v: bool) =
-    emitConstantAux cenv (emitType cenv (SpirvTypeBool sizeHint)) "bool" (SpirvConstBool(v, sizeHint, []))
+and GenConstantBool cenv sizeHint (v: bool) =
+    GenConstantAux cenv (GenType cenv (SpirvTypeBool sizeHint)) "bool" (SpirvConstBool(v, sizeHint, []))
 
-and emitConstantInt cenv (n: int) =
-    emitConstantAux cenv (emitType cenv SpirvTypeInt32) "Int32" (SpirvConstInt(n, []))
+and GenConstantInt cenv (n: int) =
+    GenConstantAux cenv (GenType cenv SpirvTypeInt32) "Int32" (SpirvConstInt(n, []))
 
-and emitConstantUInt32 cenv (n: uint32) =
-    emitConstantAux cenv (emitType cenv SpirvTypeInt32) "UInt32" (SpirvConstUInt32(n, []))
+and GenConstantUInt32 cenv (n: uint32) =
+    GenConstantAux cenv (GenType cenv SpirvTypeInt32) "UInt32" (SpirvConstUInt32(n, []))
 
-let emitConstantSingle cenv (n: single) =
-    emitConstantAux cenv (emitType cenv SpirvTypeFloat32) "Float32" (SpirvConstSingle(n, []))
+let GenConstantFloat32 cenv (n: float32) =
+    GenConstantAux cenv (GenType cenv SpirvTypeFloat32) "Float32" (SpirvConstSingle(n, []))
 
-let emitConstantVector2 cenv (constituents: IdRef list) =
-    emitConstantComposite cenv (emitTypeVector2 cenv) "Vector2" constituents
+let GenConstantVector2 cenv (constituents: IdRef list) =
+    GenConstantComposite cenv (GenTypeVector2 cenv) "Vector2" constituents
 
-let emitConstantVector3 cenv (constituents: IdRef list) =
-    emitConstantComposite cenv (emitTypeVector3 cenv) "Vector3" constituents
+let GenConstantVector3 cenv (constituents: IdRef list) =
+    GenConstantComposite cenv (GenTypeVector3 cenv) "Vector3" constituents
 
-let emitConstantVector4 cenv (constituents: IdRef list) =
-    emitConstantComposite cenv (emitTypeVector4 cenv) "Vector4" constituents
+let GenConstantVector4 cenv (constituents: IdRef list) =
+    GenConstantComposite cenv (GenTypeVector4 cenv) "Vector4" constituents
 
-let emitConstantMatrix4x4 cenv (constituents: IdRef list) =
-    emitConstantComposite cenv (emitTypeMatrix4x4 cenv) "Matrix4x4" constituents
+let GenConstantMatrix4x4 cenv (constituents: IdRef list) =
+    GenConstantComposite cenv (GenTypeMatrix4x4 cenv) "Matrix4x4" constituents
 
 let rec isConstant expr =
     match expr with
@@ -382,47 +382,47 @@ let rec isConstant expr =
 let rec GenConst cenv spvConst =
     match spvConst with
     | SpirvConstBool (n, sizeHint, decorations) ->
-        emitConstantBool cenv sizeHint n
+        GenConstantBool cenv sizeHint n
         
     | SpirvConstInt (n, decorations) ->
-        emitConstantInt cenv n
+        GenConstantInt cenv n
 
     | SpirvConstUInt32 (n, decorations) ->
-        emitConstantUInt32 cenv n
+        GenConstantUInt32 cenv n
 
     | SpirvConstSingle (n, docorations) ->
-        emitConstantSingle cenv n
+        GenConstantFloat32 cenv n
 
     | SpirvConstVector2 (n1, n2, decorations) ->
-        emitConstantVector2 cenv ([n1;n2] |> List.map (emitConstantSingle cenv))
+        GenConstantVector2 cenv ([n1;n2] |> List.map (GenConstantFloat32 cenv))
 
     | SpirvConstVector3 (n1, n2, n3, decorations) ->
-        emitConstantVector3 cenv ([n1;n2;n3] |> List.map (emitConstantSingle cenv))
+        GenConstantVector3 cenv ([n1;n2;n3] |> List.map (GenConstantFloat32 cenv))
 
     | SpirvConstVector4 (n1, n2, n3, n4, decorations) ->
-        emitConstantVector4 cenv ([n1;n2;n3;n4] |> List.map (emitConstantSingle cenv))
+        GenConstantVector4 cenv ([n1;n2;n3;n4] |> List.map (GenConstantFloat32 cenv))
 
     | SpirvConstMatrix4x4 (m11, m12, m13, m14,
                            m21, m22, m23, m24,
                            m31, m32, m33, m34,
                            m41, m42, m43, m44, decorations) ->
         let constituents =
-            [ [m11; m12; m13; m14] |> List.map (emitConstantSingle cenv) |> emitConstantVector4 cenv
-              [m21; m22; m23; m24] |> List.map (emitConstantSingle cenv) |> emitConstantVector4 cenv
-              [m31; m32; m33; m34] |> List.map (emitConstantSingle cenv) |> emitConstantVector4 cenv
-              [m41; m42; m43; m44] |> List.map (emitConstantSingle cenv) |> emitConstantVector4 cenv ]
-        emitConstantMatrix4x4 cenv constituents
+            [ [m11; m12; m13; m14] |> List.map (GenConstantFloat32 cenv) |> GenConstantVector4 cenv
+              [m21; m22; m23; m24] |> List.map (GenConstantFloat32 cenv) |> GenConstantVector4 cenv
+              [m31; m32; m33; m34] |> List.map (GenConstantFloat32 cenv) |> GenConstantVector4 cenv
+              [m41; m42; m43; m44] |> List.map (GenConstantFloat32 cenv) |> GenConstantVector4 cenv ]
+        GenConstantMatrix4x4 cenv constituents
 
     | SpirvConstArray (elementTy, constants, decorations) ->
-        let arrayTyId = emitArrayType cenv elementTy constants.Length
+        let arrayTyId = GenTypeArray cenv elementTy constants.Length
         let constantIds = constants |> List.map (GenConst cenv)
-        emitConstantComposite cenv arrayTyId (elementTy.Name + "[" + string constantIds.Length + "]") constantIds
+        GenConstantComposite cenv arrayTyId (elementTy.Name + "[" + string constantIds.Length + "]") constantIds
 
 let GenFunctionParameterVar cenv var =
     match cenv.localVariablesByVar.TryGetValue var with
     | true, resultId -> resultId
     | _ ->
-        let resultType = emitType cenv var.Type
+        let resultType = GenType cenv var.Type
         let resultId = nextResultId cenv
         let instr = OpFunctionParameter(resultType, resultId)
 
@@ -436,7 +436,7 @@ let GenLocalVar cenv var =
     match cenv.localVariablesByVar.TryGetValue var with
     | true, resultId -> resultId
     | _ ->
-        let resultType = emitType cenv var.Type |> emitPointer cenv StorageClass.Function
+        let resultType = GenType cenv var.Type |> GenTypePointer cenv StorageClass.Function
         let resultId = nextResultId cenv
         cenv.localVariables.[resultId] <- OpVariable(resultType, resultId, StorageClass.Function, None)
         cenv.localVariablesByVar.[var] <- resultId
@@ -452,7 +452,7 @@ let rec GenGlobalVar cenv spvVar =
         if storageClass = StorageClass.Function then
             failwith "Invalid storage class for global variable."
 
-        let resultType = emitType cenv spvVar.Type |> emitPointer cenv storageClass
+        let resultType = GenType cenv spvVar.Type |> GenTypePointer cenv storageClass
         let resultId = nextResultId cenv
         cenv.globalVariables.[resultId] <- (OpVariable(resultType, resultId, storageClass, None), spvVar.Decorations)
         cenv.globalVariablesByVar.[spvVar] <- resultId
@@ -506,7 +506,7 @@ let getAccessChainResultType cenv pointer fieldIndex =
             failwithf "Found type, %A, but unable to get backing pointer type on field index %i." ty fieldIndex
         | _ -> 
             failwith "Unable to get backing type for pointer."
-        |> emitPointer cenv storageClass
+        |> GenTypePointer cenv storageClass
     | _ ->
         failwith "Invalid pointer type."
 
@@ -636,7 +636,7 @@ let rec GenExpr cenv (env: env) blockScope returnable expr =
         ZeroResultId
 
     | SpirvExprOp op ->
-        let retTy = emitType cenv op.ReturnType
+        let retTy = GenType cenv op.ReturnType
         match op with
         | SpirvNop -> ZeroResultId
         | SpirvOp(instr, args, _) ->
@@ -655,7 +655,7 @@ let rec GenExpr cenv (env: env) blockScope returnable expr =
     | SpirvIntrinsicFieldGet fieldGet ->
         let getComponent receiver fieldTy n =
             let receiverId = GenExpr cenv env blockScope NotReturnable receiver |> deref cenv
-            let fieldTyId = emitType cenv fieldTy
+            let fieldTyId = GenType cenv fieldTy
             addCompositeExtractInstruction cenv fieldTyId receiverId [n]
             
         match fieldGet with
@@ -721,7 +721,7 @@ let rec GenExpr cenv (env: env) blockScope returnable expr =
         if retTy = SpirvTypeVoid then
             ZeroResultId
         else
-            let resultType = emitType cenv retTy
+            let resultType = GenType cenv retTy
             let resultId = nextResultId cenv
             let operands = [PairIdRefIdRef(trueResult, lastTrueLabel);PairIdRefIdRef(falseResult, lastFalseLabel)]
             addInstructions cenv [OpPhi(resultType, resultId, operands)]
@@ -738,10 +738,10 @@ let rec GenExpr cenv (env: env) blockScope returnable expr =
 
         let retTy =
             match var.Type with
-            | SpirvTypeFunction(retTy, _) -> retTy
+            | SpirvTypeFunction(_, retTy) -> retTy
             | _ -> failwith "Bad function type."
 
-        let retTyId = emitType cenv retTy
+        let retTyId = GenType cenv retTy
 
         let resId = nextResultId cenv
         addInstructions cenv [OpFunctionCall(retTyId, resId, funId, argIds)]
@@ -759,7 +759,7 @@ and GenVector cenv env blockScope returnable retTy args =
         |> List.concat
 
     let resultId = nextResultId cenv
-    addInstructions cenv [OpCompositeConstruct(emitType cenv retTy, resultId, constituents)]
+    addInstructions cenv [OpCompositeConstruct(GenType cenv retTy, resultId, constituents)]
     resultId
 
 let GenDecl cenv decl =
@@ -798,8 +798,8 @@ let rec GenTopLevelExpr cenv env isLastExpr lambdaArgs expr =
 
         let functionResultId = nextResultId cenv
         addInstructions cenv 
-            [ OpFunction(emitType cenv retTy, functionResultId, FunctionControl.None, 
-                         emitTypeFunction cenv argTys retTy) ]
+            [ OpFunction(GenType cenv retTy, functionResultId, FunctionControl.None, 
+                         GenTypeFunction cenv argTys retTy) ]
 
         lambdaArgs
         |> List.iter (fun arg ->
