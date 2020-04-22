@@ -29,6 +29,7 @@ and SpirvType =
     | SpirvTypeImage of SpirvImageType
     | SpirvTypeSampler
     | SpirvTypeSampledImage of SpirvImageType
+    | SpirvTypeFunction of returnType: SpirvType * parameterTypes: SpirvType list
 
     member x.Name =
         match x with
@@ -46,6 +47,8 @@ and SpirvType =
         | SpirvTypeImage _ -> "Image"
         | SpirvTypeSampler -> "Sampler"
         | SpirvTypeSampledImage _ -> "SampledImage"
+        | SpirvTypeFunction(retTy, parTys) when parTys.IsEmpty -> "Function [Void -> " + retTy.Name + "]"
+        | SpirvTypeFunction(retTy, parTys) -> "Function" + "[" + (parTys |> List.map (fun x -> x.Name) |> List.reduce (fun x y -> x + " -> " + y)) + " -> " + retTy.Name + "]"
 
     member x.SizeHint: int =
         match x with
@@ -61,6 +64,7 @@ and SpirvType =
         | SpirvTypeStruct(_, fields, _) ->
             fields
             |> List.sumBy(fun (field: SpirvField) -> field.Type.SizeHint)
+        | SpirvTypeFunction _
         | SpirvTypeRuntimeArray _
         | SpirvTypeImage _
         | SpirvTypeSampler
@@ -178,7 +182,6 @@ type SpirvSelectionControl =
     | DontFlatten
 
 type SpirvExpr =
-    | SpirvNop
     | SpirvUnreachable
     | SpirvConst of SpirvConst
     | SpirvLet of SpirvVar * rhs: SpirvExpr * body: SpirvExpr
@@ -193,6 +196,7 @@ type SpirvExpr =
     | SpirvExprOp of SpirvExprOp
     | SpirvIntrinsicFieldGet of SpirvIntrinsicFieldGet
     | SpirvFieldGet of receiver: SpirvExpr * index: int
+    | SpirvCallFunction of SpirvVar * args: SpirvExpr list
 
     // Control flow
 
@@ -201,8 +205,6 @@ type SpirvExpr =
     member x.Type =
         let rec getType expr =
             match expr with
-            | SpirvNop -> 
-                SpirvTypeVoid
             | SpirvUnreachable ->
                 SpirvTypeVoid
             | SpirvConst spvConst ->
@@ -231,8 +233,8 @@ type SpirvExpr =
                 retTy
             | SpirvArrayIndexerSet _ ->
                 SpirvTypeVoid
-            | SpirvVar spvVar ->
-                spvVar.Type
+            | SpirvVar var ->
+                var.Type
             | SpirvVarSet _ ->
                 SpirvTypeVoid
             | SpirvExprOp call ->
@@ -243,11 +245,14 @@ type SpirvExpr =
                 match receiver.Type with
                 | SpirvTypeStruct (_, fields, _) -> fields.[index].Type
                 | _ -> failwith "Invalid field get."
+            | SpirvCallFunction(var, _) -> 
+                var.Type
             | SpirvIfThenElse(_, trueExpr, _) -> 
                 trueExpr.Type
         getType x
 
 and SpirvExprOp =
+    | SpirvNop
     | SpirvOp of (IdResultType -> IdResult -> IdRef list -> Instruction) * args: SpirvExpr list * retTy: SpirvType
 
     static member Create(op, retTy) =
@@ -272,10 +277,12 @@ and SpirvExprOp =
 
     member x.ReturnType =
         match x with
+        | SpirvNop -> SpirvTypeVoid
         | SpirvOp(_, _, retTy) -> retTy
 
     member x.Arguments =
         match x with
+        | SpirvNop -> []
         | SpirvOp(_, args, _) -> args
 
 
@@ -319,6 +326,7 @@ type SpirvDecl =
 type SpirvTopLevelExpr =
     | SpirvTopLevelSequential of SpirvTopLevelExpr * SpirvTopLevelExpr
     | SpirvTopLevelDecl of SpirvDecl
+    | SpirvTopLevelLet of SpirvVar * rhs: SpirvTopLevelExpr * body: SpirvTopLevelExpr
     | SpirvTopLevelLambda of SpirvVar * SpirvTopLevelExpr
     | SpirvTopLevelLambdaBody of SpirvVar * SpirvExpr
 

@@ -22,6 +22,7 @@ open FSharp.Quotations.DerivedPatterns
 open FSharp.Quotations.ExprShape
 open FSharp.Quotations.Patterns
 open FSharp.Spirv.Quotations.TypedTree
+open FSharp.Spirv.Quotations.Intrinsics
 
 #nowarn "9"
 

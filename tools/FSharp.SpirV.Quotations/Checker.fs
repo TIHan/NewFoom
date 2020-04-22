@@ -60,7 +60,7 @@ let rec mkSpirvType ty =
         SpirvTypeVector3
     | _ when ty = typeof<Vector4> ->
         SpirvTypeVector4
-    | _ when ty = typeof<unit> ->
+    | _ when ty = typeof<unit> || ty = typeof<System.Void> ->
         SpirvTypeVoid
     | _ when ty = typeof<Matrix4x4> ->
         SpirvTypeMatrix4x4
@@ -88,6 +88,9 @@ let rec mkSpirvType ty =
             ty.GetCustomAttributesData()
             |> Seq.exists (fun x -> x.AttributeType = typeof<BlockAttribute>)
         SpirvTypeStruct (ty.FullName, fields, isBlock)
+    | _ when ty.FullName.StartsWith("Microsoft.FSharp.Core.FSharpFunc") ->
+        let spvTyArgs = ty.GenericTypeArguments |> Array.map mkSpirvType
+        SpirvTypeFunction(spvTyArgs |> Array.last, spvTyArgs |> Array.take (spvTyArgs.Length - 1) |> List.ofArray)
     | _ -> 
         failwithf "Unable to make SpirvType from Type: %A" ty
 
@@ -263,18 +266,10 @@ let addSpirvDeclConst env var rhs =
 
     { env with decls = env.decls @ [SpirvDeclConst (spvVar, spvConst)] }, spvVar
 
-let CheckValue expr =
-    mkSpirvConst expr
-    |> SpirvConst
-
 let rec CheckExpr env isReturnable expr =
     match expr with
-
-    | Value (_, ty) when ty = typeof<unit> ->
-        env, SpirvNop
-
     | Value _ ->
-        env, CheckValue expr
+        CheckValue env expr
 
     | Var var ->
         let env, spvVar = mkSpirvVarOfVar env [] StorageClass.Function var
@@ -350,8 +345,42 @@ let rec CheckExpr env isReturnable expr =
         let env, spvFalseExpr = CheckExpr env isReturnable falseExpr
         env, SpirvIfThenElse(spvCondExpr, spvTrueExpr, spvFalseExpr)
 
+    | Application(expr1, expr2) ->
+        CheckApplication env expr1 [expr2]
+
     | _ ->
         failwithf "Expression not supported: %A" expr
+
+and CheckApplication env expr args =
+    match expr with
+    | Application(expr1, expr2) ->
+        CheckApplication env expr1 (args @ [expr2])
+    | _ ->
+        let env, spvVarExpr = CheckExpr env false expr
+        let spvVar =
+            match spvVarExpr with
+            | SpirvVar spvVar -> spvVar
+            | _ -> failwith "Invalid function application."
+
+        let env, spvArgExprs = 
+            ((env, []), args)
+            ||> List.fold (fun (env, acc) argExpr ->
+                let env, spvArgExpr = CheckExpr env false argExpr
+                (env, acc @ [spvArgExpr]))
+
+        env, SpirvCallFunction(spvVar, spvArgExprs)
+
+and CheckValue env expr =
+    match expr with
+    | Value (_, ty) when ty = typeof<unit> ->
+        env, SpirvNop |> SpirvExprOp
+
+    | Value _ ->
+        env,
+        mkSpirvConst expr
+        |> SpirvConst
+
+    | _ -> failwith "Invalid value expression."
 
 and CheckPropertyGet env receiver propInfo args =
     let receiverTy = receiver.Type
@@ -523,8 +552,21 @@ and CheckIntrinsicCall env checkedTyArgs checkedArgs checkedRetTy expr =
                 env, SpirvExprOp.Create(OpVectorTimesScalar, arg1, arg2, checkedRetTy)
 
             | _ ->
-                failwithf "Call not supported: %A" expr
-        env, SpirvExprOp spvOp
+                env, SpirvNop
+
+        match spvOp with
+        | SpirvNop ->
+            match expr with
+            | Call (_, methInfo, _) ->
+                match Expr.TryGetReflectedDefinition methInfo with
+                | Some expr ->
+                    CheckExpr env true expr
+                | _ ->
+                    errorNotSupported ()
+            | _ ->
+                errorNotSupported ()
+        | _ ->
+            env, SpirvExprOp spvOp
 
 and CheckIntrinsicField env receiver fieldInfo =
     let env, spvReceiver = CheckExpr env false receiver
@@ -565,10 +607,22 @@ let rec CheckTopLevelExpr env expr =
         let env, spvExpr1 = CheckTopLevelVariable env var args
         let env, spvExpr2 = CheckTopLevelExpr env body
         env, SpirvTopLevelSequential(spvExpr1, spvExpr2)
+
+    | Let(var, ((Lambda _) as rhs), body) ->
+        let env, spvVar = mkSpirvVarOfVar env [] StorageClass.Function var
+        let env, spvVar = addSpirvDeclVar env spvVar
+        let env, spvRhs = CheckTopLevelExpr env rhs
+        let env, spvBody = CheckTopLevelExpr env body
+        env, SpirvTopLevelLet(spvVar, spvRhs, spvBody)
                 
     | Let(var, rhs, body) ->
         let env, _ = addSpirvDeclConst env var rhs
         CheckTopLevelExpr env body
+
+    | Lambda(var, ((Lambda _) as body)) ->
+        let env, spvVar = mkSpirvVarOfVar env [] StorageClass.Private var
+        let env, spvBody = CheckTopLevelExpr env body
+        env, SpirvTopLevelLambda(spvVar, spvBody)
 
     | Lambda(var, body) ->
         let env, spvVar = mkSpirvVarOfVar env [] StorageClass.Private var
@@ -626,11 +680,5 @@ and CheckVariable var (args: Expr list) =
     spvVar, customAnnoations
 
 let Check expr =
-    let env, checkedExpr = CheckTopLevelExpr env.Default expr
-
-    let declsExpr =
-        env.decls
-        |> List.map SpirvTopLevelDecl
-        |> List.reduce (fun x y -> SpirvTopLevelSequential(x, y))
-
-    SpirvTopLevelSequential(declsExpr, checkedExpr)
+    let _, checkedExpr = CheckTopLevelExpr env.Default expr
+    checkedExpr

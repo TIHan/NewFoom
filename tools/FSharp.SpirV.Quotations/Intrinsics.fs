@@ -212,3 +212,17 @@ let kill () : unit = failwith ErrorMessage
 
 /// Analogous to 'OpImageSampleImplicitLod'.
 let imageSampleImplicitLod (_coordinate: Vector2) (_sampledImage: SampledImage<_, _, _, _, _, _, _, _>) : Vector4 = failwith ErrorMessage
+
+type SampledImage<'SampledType, 'Dim, 'Depth, 'Arrayed, 'Multisampled, 'Sampled, 'Format, 'AccessQualifier
+    when 'Dim :> DimKind
+    and  'Depth :> ImageDepthKind
+    and  'Arrayed :> ImageArrayedKind
+    and  'Multisampled :> ImageMultisampleKind
+    and  'Sampled :> ImageSampleKind
+    and  'Format :> ImageFormatKind
+    and  'AccessQualifier :> AccessQualifierKind
+    > with
+
+    [<ReflectedDefinition>]
+    member this.ImplicitLod coordinate =
+        imageSampleImplicitLod coordinate this
