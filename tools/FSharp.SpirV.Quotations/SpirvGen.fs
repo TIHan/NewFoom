@@ -24,7 +24,6 @@ type cenv =
         globalVariablesByVar: Dictionary<SpirvVar, IdResult>
         constants: Dictionary<SpirvConst, IdResult * Instruction>
         constantComposites: Dictionary<IdRef list, IdResult * Instruction>
-        loadedPointers: Dictionary<IdResult, IdResult>
 
         //
 
@@ -67,7 +66,6 @@ type cenv =
             globalVariablesByVar = Dictionary()
             constants = Dictionary()
             constantComposites = Dictionary()
-            loadedPointers = Dictionary()
             labels = HashSet()
             decorationInstructions = ResizeArray ()
             functionsByVar = Dictionary ()
@@ -543,13 +541,9 @@ let tryEmitLoad cenv pointer =
 
         match baseType with
         | Some baseType ->
-            match cenv.loadedPointers.TryGetValue pointer with
-            | true, resultId -> Some resultId
-            | _ ->
-                let resultId = nextResultId cenv
-                addInstructions cenv [OpLoad(baseType, resultId, pointer, None)]
-                cenv.loadedPointers.[pointer] <- resultId
-                Some resultId
+            let resultId = nextResultId cenv
+            addInstructions cenv [OpLoad(baseType, resultId, pointer, None)]
+            Some resultId
         | _ ->
             failwith "Invalid pointer type."
     | _ ->
