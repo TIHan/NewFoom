@@ -141,7 +141,7 @@ type FalGraphics with
                 |> List.ofSeq
                 |> List.sortBy (fun l -> l.Binding)
 
-            Shader(0, true, layouts, vertexInputs)
+            Shader(layouts, vertexInputs)
 
         this.CreateShader(shaderDesc, ReadOnlySpan vertexBytes, ReadOnlySpan fragmentBytes)
 

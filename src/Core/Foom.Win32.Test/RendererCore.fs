@@ -39,10 +39,7 @@ let createVulkanWin32Window title engineName updateInterval width height (window
     let hinstance = windowState.Hinstance
 
     let device = VulkanDevice.CreateWin32(hwnd, hinstance, title, engineName, [VulkanDeviceLayer.LunarGStandardValidation], [], fun str -> printfn "validation layer: %s" str)
-    let subpasses =
-        [RenderSubpass ColorDepthStencilSubpass]
-
-    let instance = FalGraphics.Create (device, windowState.WindowResized, subpasses)
+    let instance = FalGraphics.Create (device, windowState.WindowResized)
     instance.SetupCommands() // We need to get rid of this thing.
 
     let windowEvents2 = 

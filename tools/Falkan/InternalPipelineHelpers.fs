@@ -157,7 +157,7 @@ type RenderPassCommand =
 type Command =
     | RenderPass of RenderPassInfo
 
-let recordDraw extent (framebuffers: VkFramebuffer []) (commandBuffers: VkCommandBuffer []) (depthStencilImage: VkImage) renderPass (pipelineSets: ResizeArray<ResizeArray<Pipeline>>) =
+let recordDraw extent (framebuffers: VkFramebuffer []) (commandBuffers: VkCommandBuffer []) (depthStencilImage: VkImage) renderPass (pipelines: Pipeline seq) =
     for i = 0 to framebuffers.Length - 1 do
         let framebuffer = framebuffers.[i]
         let commandBuffer = commandBuffers.[i]
@@ -199,49 +199,41 @@ let recordDraw extent (framebuffers: VkFramebuffer []) (commandBuffers: VkComman
 
         vkCmdBeginRenderPass(commandBuffer, &&beginInfo, VkSubpassContents.VK_SUBPASS_CONTENTS_INLINE)
 
-        let mutable subpassIndex = 0
-        for pipelines in pipelineSets do
+        for pipeline in pipelines do
 
-            for pipeline in pipelines do
+            // Bind graphics pipeline
 
-                // Bind graphics pipeline
-
-                vkCmdBindPipeline(commandBuffer, VkPipelineBindPoint.VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.vkPipeline)
+            vkCmdBindPipeline(commandBuffer, VkPipelineBindPoint.VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.vkPipeline)
 
 
-                for draw in pipeline.layout.draws.AsSpan() do
+            for draw in pipeline.layout.draws.AsSpan() do
 
-                    // REVIEW: Might be expensive per draw but it works.
-                    // Bind descriptor sets
+                // REVIEW: Might be expensive per draw but it works.
+                // Bind descriptor sets
 
-                    let sets =
-                        draw.vkDescriptorSets
-                        |> Array.map (fun x -> x.[i])
-                    use pDescriptorSets = fixed sets
-                    vkCmdBindDescriptorSets(commandBuffer, VkPipelineBindPoint.VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.layout.vkPipelineLayout, 0u, uint32 draw.vkDescriptorSets.Length, pDescriptorSets, 0u, vkNullPtr)
+                let sets =
+                    draw.vkDescriptorSets
+                    |> Array.map (fun x -> x.[i])
+                use pDescriptorSets = fixed sets
+                vkCmdBindDescriptorSets(commandBuffer, VkPipelineBindPoint.VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.layout.vkPipelineLayout, 0u, uint32 draw.vkDescriptorSets.Length, pDescriptorSets, 0u, vkNullPtr)
 
-                    // Bind vertex buffers
+                // Bind vertex buffers
         
-                    if draw.vertexVkBuffers |> Array.isEmpty |> not then          
-                        let offsets = draw.vertexVkBuffers |> Array.map (fun _ -> 0UL) // REVIEW: Doesn't allocate much at all, but maybe a way to get rid of it regardless?
-                        use pOffsets = fixed offsets
-                        use pVertexBuffers = fixed draw.vertexVkBuffers
-                        vkCmdBindVertexBuffers(commandBuffer, 0u, uint32 draw.vertexVkBuffers.Length, pVertexBuffers, pOffsets)
+                if draw.vertexVkBuffers |> Array.isEmpty |> not then          
+                    let offsets = draw.vertexVkBuffers |> Array.map (fun _ -> 0UL) // REVIEW: Doesn't allocate much at all, but maybe a way to get rid of it regardless?
+                    use pOffsets = fixed offsets
+                    use pVertexBuffers = fixed draw.vertexVkBuffers
+                    vkCmdBindVertexBuffers(commandBuffer, 0u, uint32 draw.vertexVkBuffers.Length, pVertexBuffers, pOffsets)
 
-                    if draw.instanceVkBuffers |> Array.isEmpty |> not then          
-                        let offsets = draw.instanceVkBuffers |> Array.map (fun _ -> 0UL) // REVIEW: Doesn't allocate much at all, but maybe a way to get rid of it regardless?
-                        use pOffsets = fixed offsets
-                        use pVertexBuffers = fixed draw.instanceVkBuffers
-                        vkCmdBindVertexBuffers(commandBuffer, 1u, uint32 draw.vertexVkBuffers.Length, pVertexBuffers, pOffsets)
+                if draw.instanceVkBuffers |> Array.isEmpty |> not then          
+                    let offsets = draw.instanceVkBuffers |> Array.map (fun _ -> 0UL) // REVIEW: Doesn't allocate much at all, but maybe a way to get rid of it regardless?
+                    use pOffsets = fixed offsets
+                    use pVertexBuffers = fixed draw.instanceVkBuffers
+                    vkCmdBindVertexBuffers(commandBuffer, 1u, uint32 draw.vertexVkBuffers.Length, pVertexBuffers, pOffsets)
 
-                    // Draw
+                // Draw
 
-                    vkCmdDraw(commandBuffer, draw.vertexCount, draw.instanceCount, 0u, 0u)
-
-            subpassIndex <- subpassIndex + 1
-
-            if subpassIndex < pipelineSets.Count then
-                vkCmdNextSubpass(commandBuffer, VkSubpassContents.VK_SUBPASS_CONTENTS_INLINE)
+                vkCmdDraw(commandBuffer, draw.vertexCount, draw.instanceCount, 0u, 0u)
 
         // End render pass
 
@@ -252,7 +244,7 @@ let recordDraw extent (framebuffers: VkFramebuffer []) (commandBuffers: VkComman
         vkEndCommandBuffer(commandBuffer) |> checkResult
 
 
-let recordComputeCommands (commandBuffers: VkCommandBuffer []) (pipelineSets: ResizeArray<ResizeArray<Pipeline>>) =
+let recordComputeCommands (commandBuffers: VkCommandBuffer []) (pipelines: Pipeline seq) =
     for i = 0 to commandBuffers.Length - 1 do
         let commandBuffer = commandBuffers.[i]
 
@@ -267,28 +259,26 @@ let recordComputeCommands (commandBuffers: VkCommandBuffer []) (pipelineSets: Re
 
         vkBeginCommandBuffer(commandBuffer, &&beginInfo) |> checkResult
 
-        for pipelines in pipelineSets do
+        for pipeline in pipelines do
 
-            for pipeline in pipelines do
+            // Bind pipeline
 
-                // Bind pipeline
+            vkCmdBindPipeline(commandBuffer, VkPipelineBindPoint.VK_PIPELINE_BIND_POINT_COMPUTE, pipeline.vkPipeline)
 
-                vkCmdBindPipeline(commandBuffer, VkPipelineBindPoint.VK_PIPELINE_BIND_POINT_COMPUTE, pipeline.vkPipeline)
+            for draw in pipeline.layout.draws.AsSpan() do
 
-                for draw in pipeline.layout.draws.AsSpan() do
+                // REVIEW: Might be expensive per draw but it works.
+                // Bind descriptor sets
 
-                    // REVIEW: Might be expensive per draw but it works.
-                    // Bind descriptor sets
+                let sets =
+                    draw.vkDescriptorSets
+                    |> Array.map (fun x -> x.[i])
+                use pDescriptorSets = fixed sets
+                vkCmdBindDescriptorSets(commandBuffer, VkPipelineBindPoint.VK_PIPELINE_BIND_POINT_COMPUTE, pipeline.layout.vkPipelineLayout, 0u, uint32 draw.vkDescriptorSets.Length, pDescriptorSets, 0u, vkNullPtr)
 
-                    let sets =
-                        draw.vkDescriptorSets
-                        |> Array.map (fun x -> x.[i])
-                    use pDescriptorSets = fixed sets
-                    vkCmdBindDescriptorSets(commandBuffer, VkPipelineBindPoint.VK_PIPELINE_BIND_POINT_COMPUTE, pipeline.layout.vkPipelineLayout, 0u, uint32 draw.vkDescriptorSets.Length, pDescriptorSets, 0u, vkNullPtr)
+                // Bind vertex buffers
 
-                    // Bind vertex buffers
-
-                    vkCmdDispatch(commandBuffer, 1u, 1u, 1u)
+                vkCmdDispatch(commandBuffer, 1u, 1u, 1u)
 
         // Finish recording
 

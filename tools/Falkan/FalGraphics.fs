@@ -88,11 +88,6 @@ type FalGraphics
         fillImage fdevice fdevice.VkCommandPool fdevice.VkTransferQueue image.vkImage image.format image.width image.height data
         image
 
-    member _.AddRenderSubpass renderSubpassDesc =
-        checkDispose ()
-
-        swapChain.AddRenderSubpass renderSubpassDesc
-
     interface IDisposable with
         member x.Dispose () =
             if Interlocked.CompareExchange(&isDisposed, 1, 0) = 1 then
@@ -123,7 +118,7 @@ type FalGraphics
     member this.CreateComputeShader(shaderDesc: VulkanShaderDescription, vertexSpirvSource: ReadOnlySpan<byte>) =
         swapChain.CreateComputeShader(shaderDesc, vertexSpirvSource)
 
-    static member Create(falDevice: VulkanDevice, invalidate, renderSubpassDescs) =
+    static member Create(falDevice: VulkanDevice, invalidate) =
         let indices = falDevice.Indices
         let surface =
             match falDevice.Surface with
@@ -138,7 +133,7 @@ type FalGraphics
         if graphicsFamily <> presentFamily then
             failwith "Currently not able to handle concurrent graphics and present families."
 
-        let swapChain = SwapChain.Create(falDevice, surface, graphicsFamily, presentFamily, invalidate, renderSubpassDescs)
+        let swapChain = SwapChain.Create(falDevice, surface, graphicsFamily, presentFamily, invalidate)
 
         new FalGraphics(falDevice, swapChain)
 

@@ -456,11 +456,11 @@ type VulkanShaderVertexInput = ShaderVertexInput of VulkanShaderVertexInputRate 
             let lastLocation = (vkVertexInputAttributeDescriptions |> Array.last).location
             (vkVertexInputBindingDescription, vkVertexInputAttributeDescriptions), lastLocation
 
-type VulkanShaderDescription = Shader of subpassIndex: int * enableDepth: bool * descriptors: VulkanShaderDescriptorLayout list * vertexInputs: VulkanShaderVertexInput list with
+type VulkanShaderDescription = Shader of descriptors: VulkanShaderDescriptorLayout list * vertexInputs: VulkanShaderVertexInput list with
 
     member this.Build vkDevice =
         match this with
-        | Shader(subpassIndex, enableDepth, descriptors, vertexInputs) ->
+        | Shader(descriptors, vertexInputs) ->
             let descriptors =
                 descriptors
                 |> List.map (fun x -> x.Build vkDevice)
@@ -476,13 +476,10 @@ type VulkanShaderDescription = Shader of subpassIndex: int * enableDepth: bool *
                 |> Array.ofList
                 |> Array.unzip
 
-            let pipelineFlags = PipelineFlags.Default
-            let pipelineFlags = if enableDepth then PipelineFlags.Depth else pipelineFlags
-
-            (subpassIndex, pipelineFlags, descriptors, bindingDescriptions, attributeDescriptions)
+            (descriptors, bindingDescriptions, attributeDescriptions)
 
 [<Struct;NoComparison>]
-type ShaderId = ShaderId of subpassIndex: int * Guid
+type ShaderId = ShaderId of Guid
 
 type ShaderInput =
     | ShaderVertexInputBuffer of VkBuffer * VulkanShaderVertexInputRate
@@ -647,9 +644,8 @@ and [<Sealed>] SwapChain private (fdevice: VulkanDevice, sync, kind: DeviceKind,
     let mutable isDisposed = 0
     let mutable isInvalidated = false
 
-    let renderSubpassDescs = ResizeArray<FalkanRenderSubpassDescription>()
-    let renderSubpassShaders = ResizeArray<Collections.Generic.Dictionary<Guid, struct(int * Shader * PipelineLayout)>>()
-    let renderSubpassPipelines = ResizeArray<ResizeArray<Pipeline>>()
+    let shaders = Collections.Generic.Dictionary<Guid, struct(Shader * PipelineLayout)>()
+    let pipelines = ResizeArray<Pipeline>()
 
     let checkDispose () =       
         if isDisposed <> 0 then
@@ -677,14 +673,10 @@ and [<Sealed>] SwapChain private (fdevice: VulkanDevice, sync, kind: DeviceKind,
 
         currentFrame <- 0
 
-        for pipelines in renderSubpassPipelines do
-            pipelines
-            |> Seq.rev
-            |> Seq.iter (fun pipeline ->
-                vkDestroyPipeline(device, pipeline.vkPipeline, vkNullPtr)
-            )
+        for pipeline in pipelines do
+            vkDestroyPipeline(device, pipeline.vkPipeline, vkNullPtr)
 
-            pipelines.Clear ()
+        pipelines.Clear ()
 
         use pCommandBuffers = fixed commandBuffers
         vkFreeCommandBuffers(device, fdevice.VkCommandPool, uint32 commandBuffers.Length, pCommandBuffers)
@@ -712,17 +704,17 @@ and [<Sealed>] SwapChain private (fdevice: VulkanDevice, sync, kind: DeviceKind,
             
 
 
-    let addPipeline subpassIndex pipelineLayout shader =
+    let addPipeline pipelineLayout shader =
         match state with
         | Some state ->
             let vkPipeline = 
                 match shader.fragment with
                 | ValueSome _ ->
-                    mkGraphicsPipeline device state.extent pipelineLayout.vkPipelineLayout state.renderPass subpassIndex pipelineLayout.pipelineFlags shader
+                    mkGraphicsPipeline device state.extent pipelineLayout.vkPipelineLayout state.renderPass 0 pipelineLayout.pipelineFlags shader
                 | _ ->
                     mkComputePipeline device pipelineLayout.vkPipelineLayout shader
             let pipeline = { layout = pipelineLayout; vkPipeline = vkPipeline }
-            renderSubpassPipelines.[subpassIndex].Add pipeline
+            pipelines.Add pipeline
         | _ ->
             failwith "should not happen"
 
@@ -730,9 +722,9 @@ and [<Sealed>] SwapChain private (fdevice: VulkanDevice, sync, kind: DeviceKind,
         let state = state.Value
         match kind with
         | GraphicsDevice _ ->
-            recordDraw state.extent state.framebuffers state.commandBuffers state.imageDepthAttachment.vkImage state.renderPass renderSubpassPipelines
+            recordDraw state.extent state.framebuffers state.commandBuffers state.imageDepthAttachment.vkImage state.renderPass pipelines
         | ComputeDevice _ ->
-            recordComputeCommands state.commandBuffers renderSubpassPipelines
+            recordComputeCommands state.commandBuffers pipelines
 
     let wait () =
         match kind with
@@ -768,7 +760,7 @@ and [<Sealed>] SwapChain private (fdevice: VulkanDevice, sync, kind: DeviceKind,
                 let swapChain, surfaceFormat, extent, images = mkSwapChain physicalDevice device surface graphicsFamily presentFamily
                 let imageViews = mkImageViews device surfaceFormat.format images
                 let imageDepthAttachment = fdevice.CreateImageDepthAttachment(int extent.width, int extent.height)
-                let renderPass = (RenderPass (renderSubpassDescs |> Seq.toList)).Build(device, surfaceFormat.format)
+                let renderPass = (RenderPass ([RenderSubpass ColorDepthStencilSubpass])).Build(device, surfaceFormat.format)
                 let framebuffers = mkFramebuffers device renderPass extent imageViews (Array.init imageViews.Length (fun _ -> imageDepthAttachment.vkImageView))
                 let commandBuffers = mkCommandBuffers device fdevice.VkCommandPool framebuffers.Length
 
@@ -786,13 +778,6 @@ and [<Sealed>] SwapChain private (fdevice: VulkanDevice, sync, kind: DeviceKind,
                     }
                     |> Some
 
-                for shaders in renderSubpassShaders do
-                    shaders.Values
-                    |> Seq.iter (fun struct(subpassIndex, shader, pipelineLayout) -> 
-                        addPipeline subpassIndex pipelineLayout shader
-                    )
-
-                record ()
             | ComputeDevice(computeFamily, _) ->
                 let commandBuffers = mkCommandBuffers device fdevice.VkCommandPool 1
 
@@ -810,18 +795,15 @@ and [<Sealed>] SwapChain private (fdevice: VulkanDevice, sync, kind: DeviceKind,
                     }
                     |> Some
 
-                for shaders in renderSubpassShaders do
-                    shaders.Values
-                    |> Seq.iter (fun struct(subpassIndex, shader, pipelineLayout) -> 
-                        addPipeline subpassIndex pipelineLayout shader
-                    )
+            for struct(shader, pipelineLayout) in shaders.Values do
+                addPipeline pipelineLayout shader
 
-                record ()
+            record ()
 
         finally
             Monitor.Exit gate
 
-    member x.AddShader (subpassIndex, pipelineFlags, descriptorSetLayouts: struct(VkDescriptorSetLayout * VkDescriptorType) [], vertexBindings, vertexAttributes, vertexBytes: ReadOnlySpan<byte>, fragmentBytes: ReadOnlySpan<byte>) =
+    member x.AddShader (descriptorSetLayouts: struct(VkDescriptorSetLayout * VkDescriptorType) [], vertexBindings, vertexAttributes, vertexBytes: ReadOnlySpan<byte>, fragmentBytes: ReadOnlySpan<byte>) =
         if not (Monitor.IsEntered gate) then
             Monitor.Enter gate
 
@@ -832,7 +814,7 @@ and [<Sealed>] SwapChain private (fdevice: VulkanDevice, sync, kind: DeviceKind,
                 {
                     vkPipelineLayout = mkPipelineLayout device (descriptorSetLayouts |> Array.map (fun struct(x, _) -> x))
                     vkDescriptorSetLayouts = descriptorSetLayouts
-                    pipelineFlags = pipelineFlags
+                    pipelineFlags = PipelineFlags.Depth
                     draws = SparseResizeArray 1
                 }
 
@@ -846,13 +828,13 @@ and [<Sealed>] SwapChain private (fdevice: VulkanDevice, sync, kind: DeviceKind,
                     pFragmentBytes (uint32 fragmentBytes.Length)
 
             let id = Guid.NewGuid()
-            renderSubpassShaders.[subpassIndex].[id] <- struct(subpassIndex, shader, pipelineLayout)
-            addPipeline subpassIndex pipelineLayout shader
-            ShaderId(subpassIndex, id)
+            shaders.[id] <- struct(shader, pipelineLayout)
+            addPipeline pipelineLayout shader
+            ShaderId(id)
         finally 
             Monitor.Exit gate
 
-    member x.AddComputeShader (pipelineFlags, descriptorSetLayouts: struct(VkDescriptorSetLayout * VkDescriptorType) [], vertexBindings, vertexAttributes, vertexBytes: ReadOnlySpan<byte>) =
+    member x.AddComputeShader (descriptorSetLayouts: struct(VkDescriptorSetLayout * VkDescriptorType) [], vertexBindings, vertexAttributes, vertexBytes: ReadOnlySpan<byte>) =
         if not (Monitor.IsEntered gate) then
             Monitor.Enter gate
 
@@ -863,7 +845,7 @@ and [<Sealed>] SwapChain private (fdevice: VulkanDevice, sync, kind: DeviceKind,
                 {
                     vkPipelineLayout = mkPipelineLayout device (descriptorSetLayouts |> Array.map (fun struct(x, _) -> x))
                     vkDescriptorSetLayouts = descriptorSetLayouts
-                    pipelineFlags = pipelineFlags
+                    pipelineFlags = PipelineFlags.Default
                     draws = SparseResizeArray 1
                 }
 
@@ -875,30 +857,30 @@ and [<Sealed>] SwapChain private (fdevice: VulkanDevice, sync, kind: DeviceKind,
                     pVertexBytes (uint32 vertexBytes.Length) 
 
             let id = Guid.NewGuid()
-            renderSubpassShaders.[0].[id] <- struct(0, shader, pipelineLayout)
-            addPipeline 0 pipelineLayout shader
-            ShaderId(0, id)
+            shaders.[id] <- struct(shader, pipelineLayout)
+            addPipeline pipelineLayout shader
+            ShaderId(id)
         finally 
             Monitor.Exit gate
 
-    member x.RecordDraw((ShaderId(subpassIndex, id)): ShaderId, draw: Draw) =
+    member x.RecordDraw((ShaderId id): ShaderId, draw: Draw) =
         lock gate |> fun _ ->
 
         check ()
 
-        match renderSubpassShaders.[subpassIndex].TryGetValue id with
+        match shaders.TryGetValue id with
         | false, _ -> failwith "Unable to find shader."
-        | true, (_, _, pipelineLayout) ->
+        | true, (_, pipelineLayout) ->
             pipelineLayout.draws.Add draw
 
-    member x.RemoveDraw((ShaderId(subpassIndex, id)): ShaderId, drawId: int) =
+    member x.RemoveDraw((ShaderId id): ShaderId, drawId: int) =
         lock gate |> fun _ ->
 
         check ()
 
-        match renderSubpassShaders.[subpassIndex].TryGetValue id with
+        match shaders.TryGetValue id with
         | false, _ -> failwith "Unable to find shader."
-        | true, (_, _, pipelineLayout) ->
+        | true, (_, pipelineLayout) ->
             pipelineLayout.draws.Remove drawId
 
     member x.SetupCommands() =
@@ -909,13 +891,6 @@ and [<Sealed>] SwapChain private (fdevice: VulkanDevice, sync, kind: DeviceKind,
         | ComputeDevice(_, computeQueue) ->
             vkQueueWaitIdle(computeQueue) |> checkResult
         record ()
-
-    member _.AddRenderSubpass(renderSubpassDesc: FalkanRenderSubpassDescription) =
-        lock gate |> fun _ ->
-
-        renderSubpassDescs.Add renderSubpassDesc
-        renderSubpassShaders.Add(System.Collections.Generic.Dictionary())
-        renderSubpassPipelines.Add(ResizeArray())
 
     member x.Run () =
         lock gate |> fun _ ->
@@ -943,13 +918,13 @@ and [<Sealed>] SwapChain private (fdevice: VulkanDevice, sync, kind: DeviceKind,
         wait ()
 
     member this.CreateShader(shaderDesc: VulkanShaderDescription, vertexSpirvSource: ReadOnlySpan<byte>, fragmentSpirvSource: ReadOnlySpan<byte>) =
-        let subpassIndex, pipelineFlags, descriptorSetLayouts, bindingDescriptions, attributeDescriptions = shaderDesc.Build device
-        let id = this.AddShader(subpassIndex, pipelineFlags, descriptorSetLayouts, bindingDescriptions, attributeDescriptions |> Array.concat, vertexSpirvSource, fragmentSpirvSource)
+        let descriptorSetLayouts, bindingDescriptions, attributeDescriptions = shaderDesc.Build device
+        let id = this.AddShader(descriptorSetLayouts, bindingDescriptions, attributeDescriptions |> Array.concat, vertexSpirvSource, fragmentSpirvSource)
         FalkanShader(id, descriptorSetLayouts, this)
 
     member this.CreateComputeShader(shaderDesc: VulkanShaderDescription, vertexSpirvSource: ReadOnlySpan<byte>) =
-        let _subpassIndex, pipelineFlags, descriptorSetLayouts, bindingDescriptions, attributeDescriptions = shaderDesc.Build device
-        let id = this.AddComputeShader(pipelineFlags, descriptorSetLayouts, bindingDescriptions, attributeDescriptions |> Array.concat, vertexSpirvSource)
+        let descriptorSetLayouts, bindingDescriptions, attributeDescriptions = shaderDesc.Build device
+        let id = this.AddComputeShader(descriptorSetLayouts, bindingDescriptions, attributeDescriptions |> Array.concat, vertexSpirvSource)
         FalkanShader(id, descriptorSetLayouts, this)
 
     interface IDisposable with
@@ -963,21 +938,18 @@ and [<Sealed>] SwapChain private (fdevice: VulkanDevice, sync, kind: DeviceKind,
                 wait ()
 
                 lock gate (fun () ->
-                    for shaders in renderSubpassShaders do
-                        shaders.Values
-                        |> Seq.iter (fun struct(_, shader, pipelineLayout) ->
-                            for x in pipelineLayout.draws.AsSpan() do
-                                x.vkDescriptorPools
-                                |> Array.iter (fun descriptorPool -> vkDestroyDescriptorPool(device, descriptorPool, vkNullPtr))
-                            pipelineLayout.vkDescriptorSetLayouts
-                            |> Array.iter (fun struct(descriptorSetLayout, _) -> vkDestroyDescriptorSetLayout(device, descriptorSetLayout, vkNullPtr))
-                            vkDestroyPipelineLayout(device, pipelineLayout.vkPipelineLayout, vkNullPtr)
-                            vkDestroyShaderModule(device, shader.vertex, vkNullPtr)
-                            match shader.fragment with
-                            | ValueSome fragment ->
-                                vkDestroyShaderModule(device, fragment, vkNullPtr)
-                            | _ -> ()
-                        )
+                    for struct(shader, pipelineLayout) in shaders.Values do
+                        for x in pipelineLayout.draws.AsSpan() do
+                            x.vkDescriptorPools
+                            |> Array.iter (fun descriptorPool -> vkDestroyDescriptorPool(device, descriptorPool, vkNullPtr))
+                        pipelineLayout.vkDescriptorSetLayouts
+                        |> Array.iter (fun struct(descriptorSetLayout, _) -> vkDestroyDescriptorSetLayout(device, descriptorSetLayout, vkNullPtr))
+                        vkDestroyPipelineLayout(device, pipelineLayout.vkPipelineLayout, vkNullPtr)
+                        vkDestroyShaderModule(device, shader.vertex, vkNullPtr)
+                        match shader.fragment with
+                        | ValueSome fragment ->
+                            vkDestroyShaderModule(device, fragment, vkNullPtr)
+                        | _ -> ()
 
                     destroy ()
                 )
@@ -1000,12 +972,11 @@ and [<Sealed>] SwapChain private (fdevice: VulkanDevice, sync, kind: DeviceKind,
                     vkDestroySemaphore(device, s, vkNullPtr)
                 )
 
-    static member Create(device: VulkanDevice, surface, graphicsFamily, presentFamily, invalidate, renderSubpassDescs) =
+    static member Create(device: VulkanDevice, surface, graphicsFamily, presentFamily, invalidate) =
         let sync = mkSync device.Device
         let graphicsQueue = mkQueue device.Device graphicsFamily
         let presentQueue = mkQueue device.Device presentFamily
         let swapChain = new SwapChain(device, sync, GraphicsDevice(surface, graphicsFamily, graphicsQueue, presentFamily, presentQueue), invalidate)
-        renderSubpassDescs |> List.iter swapChain.AddRenderSubpass
         swapChain.Recreate ()
         swapChain
 
@@ -1013,6 +984,5 @@ and [<Sealed>] SwapChain private (fdevice: VulkanDevice, sync, kind: DeviceKind,
         let sync = mkSync device.Device
         let computeQueue = mkQueue device.Device computeFamily
         let swapChain = new SwapChain(device, sync, ComputeDevice(computeFamily, computeQueue), invalidate)
-        swapChain.AddRenderSubpass(RenderSubpass(ColorSubpass))
         swapChain.Recreate ()
         swapChain

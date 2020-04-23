@@ -28,7 +28,7 @@ type VulkanShaderVertexInputRate =
 
 type VulkanShaderVertexInput = ShaderVertexInput of VulkanShaderVertexInputRate * Type * binding: uint32
 
-type VulkanShaderDescription = Shader of subpassIndex: int * enableDepth: bool * descriptors: VulkanShaderDescriptorLayout list * vertexInputs: VulkanShaderVertexInput list
+type VulkanShaderDescription = Shader of descriptors: VulkanShaderDescriptorLayout list * vertexInputs: VulkanShaderVertexInput list
 
 type FalkanRenderSubpassKind =
     | ColorSubpass
@@ -78,8 +78,6 @@ type internal SwapChain =
 
     member CreateComputeShader: shaderDesc: VulkanShaderDescription * vertexSpirvSource: ReadOnlySpan<byte> -> FalkanShader
 
-    member AddRenderSubpass : FalkanRenderSubpassDescription -> unit
-
-    static member Create : VulkanDevice * VkSurfaceKHR * graphicsFamily: uint32 * presentFamily: uint32 * invalidate: IEvent<unit> * renderSubpasDescs: FalkanRenderSubpassDescription list -> SwapChain
+    static member Create : VulkanDevice * VkSurfaceKHR * graphicsFamily: uint32 * presentFamily: uint32 * invalidate: IEvent<unit> -> SwapChain
 
     static member CreateCompute : VulkanDevice * computeFamily: uint32 * invalidate: IEvent<unit> -> SwapChain
