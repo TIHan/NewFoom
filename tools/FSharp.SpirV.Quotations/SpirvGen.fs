@@ -744,18 +744,15 @@ and GenIfThenElse cenv env returnable condExpr trueExpr falseExpr retTy =
 
     emitLabel cenv trueLabel
     cenv.lastLabel <- trueLabel
-    let trueResult = GenExprBlockContinue cenv env trueLabel contLabel returnable trueExpr |> deref cenv
+    let trueResult = GenExprBlockContinue cenv env trueLabel contLabel returnable trueExpr
     let trueLabel = cenv.lastLabel
     emitLabel cenv falseLabel
     cenv.lastLabel <- falseLabel
-    let falseResult = GenExprBlockContinue cenv env falseLabel contLabel returnable falseExpr |> deref cenv
+    let falseResult = GenExprBlockContinue cenv env falseLabel contLabel returnable falseExpr
     let falseLabel = cenv.lastLabel
 
     emitLabel cenv contLabel
     cenv.lastLabel <- contLabel
-
-    let trueResult = deref cenv trueResult
-    let falseResult = deref cenv falseResult
 
     if retTy = SpirvTypeVoid then
         checkZeroResultId trueResult
@@ -773,7 +770,7 @@ and GenIfThenElse cenv env returnable condExpr trueExpr falseExpr retTy =
         resultId
 
 and GenExprBlockAux cenv env blockLabel blockLabelContinue returnable expr =
-    let resultId = GenExpr cenv { env with blockScope = env.blockScope + 1; blockLabel = blockLabel } BlockReturnable expr
+    let resultId = GenExpr cenv { env with blockScope = env.blockScope + 1; blockLabel = blockLabel } BlockReturnable expr |> deref cenv
 
     let resultId =
         if blockLabelContinue > 0u then
@@ -781,7 +778,6 @@ and GenExprBlockAux cenv env blockLabel blockLabelContinue returnable expr =
             resultId
         else
             if returnable = BlockReturnable then
-                let resultId = deref cenv resultId
                 if resultId = ZeroResultId then
                     addInstructions cenv [OpReturn]
                 else
