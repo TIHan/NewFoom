@@ -194,8 +194,8 @@ type ExampleWindow() =
     override this.OnInitialized() =
         base.OnInitialized()
 
-    //    this.HideCursor()
-      //  this.ClipCursor()
+        this.HideCursor()
+        this.ClipCursor()
 
         loadMusic wad
 
@@ -250,7 +250,7 @@ type ExampleWindow() =
        // SetWindowPosition(this.Hwnd, x, y)
 
 
-    override this.OnFixedUpdate(_, _) =
+    override this.OnUpdate(_, _) =
         if isClosing then true
         else
 
@@ -292,11 +292,11 @@ type ExampleWindow() =
             else
                 acc
 
-        //if xrel <> 0.f || yrel <> 0.f then
-        //    yaw <- yaw + (xrel) * (MathF.PI / 180.f)
-        //    pitch <- pitch + (yrel) * (MathF.PI / 180.f)
-        //    let rotation = Quaternion.CreateFromAxisAngle (Vector3.UnitX, 90.f * (float32 Math.PI / 180.f))
-        //    setRotation (rotation * Quaternion.CreateFromYawPitchRoll(yaw * 0.25f, pitch * 0.25f, 0.f))
+        if xrel <> 0.f || yrel <> 0.f then
+            yaw <- yaw + (xrel * -0.25f) * (MathF.PI / 180.f)
+            pitch <- pitch + (yrel * -0.25f) * (MathF.PI / 180.f)
+            let rotation = Quaternion.CreateFromAxisAngle (Vector3.UnitX, 90.f * (float32 Math.PI / 180.f))
+            setRotation (rotation * Quaternion.CreateFromYawPitchRoll(yaw * 0.25f, pitch * 0.25f, 0.f))
 
         view.Translation <- view.Translation + acc
         mvp <-
@@ -328,14 +328,15 @@ type ExampleWindow() =
         | _ -> ()
         if not (obj.ReferenceEquals(mvpUniform, null)) then
             mvpUniform.Upload(ReadOnlySpan [|mvp.InvertedView|])
-        false 
-
-    override this.OnUpdate(_, _) =
-        if isClosing then true
-        else
-
         this.VulkanGraphics.DrawFrame()
         false 
+
+    //override this.OnUpdate(_, _) =
+    //    if isClosing then true
+    //    else
+
+    //    this.VulkanGraphics.DrawFrame()
+    //    false 
 
 [<EntryPoint>]
 let main argv =
