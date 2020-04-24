@@ -10,62 +10,26 @@ type MouseButtonType =
     | X1 = 4
     | X2 = 5
 
-type InputEvent =
-    | KeyPressed of char
-    | KeyReleased of char
-    | MouseButtonPressed of MouseButtonType
-    | MouseButtonReleased of MouseButtonType
-    | MouseWheelScrolled of 
-        x: int * y: int
-    | MouseMoved of
-        x: int * y: int * xrel: int * yrel: int
-
 type IWindowEvents =
 
-    abstract OnWindowClosing: unit -> unit
+    abstract OnWin32Initialized: hwnd: nativeint * hinstance: nativeint -> unit
 
-    abstract OnInputEvents: InputEvent list -> unit
+    abstract OnClosing: unit -> unit
 
-    abstract OnUpdateFrame: time: float * interval: float -> bool
+    abstract OnChanged: width: int * height: int * x: int * y: int -> unit
 
-    abstract OnRenderFrame: time: float * delta: float * width: int * height: int -> unit
+    abstract OnKeyPressed: char -> unit
 
-type IWindowState =
+    abstract OnKeyReleased: char -> unit
 
-    abstract WindowClosing: IEvent<unit>
+    abstract OnMouseButtonPressed: MouseButtonType -> unit
 
-    abstract WindowResized: IEvent<unit>
+    abstract OnMouseButtonReleased: MouseButtonType -> unit
 
-    abstract ShowWindow: unit -> unit
+    abstract OnMouseWheelScrolled: x: int * y: int -> unit
 
-    abstract PollInput: unit -> InputEvent list
+    abstract OnMouseMoved: x: int * y: int * xrel: int * yrel: int -> unit
 
-[<Sealed>]
-type CreateStateArgs internal (title: string, width: int, height: int) =
+    abstract OnFixedUpdate: time: TimeSpan * deltaTime: TimeSpan -> bool
 
-    member __.Title = title
-
-    member __.Width = width
-
-    member __.Height = height
-
-[<Sealed>]
-type Window (title: string, updateInterval: float, width: int, height: int, events: IWindowEvents, state: IWindowState) =
-
-    member __.Start () =
-        state.WindowClosing.Add(events.OnWindowClosing)
-        GameLoop.start
-            updateInterval
-            (fun () -> events.OnInputEvents (state.PollInput ()))
-            (fun ticks intervalTicks ->
-                let time = TimeSpan.FromTicks ticks
-                let interval = TimeSpan.FromTicks intervalTicks
-
-                events.OnUpdateFrame (time.TotalMilliseconds, interval.TotalMilliseconds)
-            )
-            (fun ticks delta ->
-                let time = TimeSpan.FromTicks ticks
-
-                events.OnRenderFrame (time.TotalMilliseconds, float delta, width, height)
-            )
-    
+    abstract OnUpdate: time: TimeSpan * deltaTime: TimeSpan -> bool

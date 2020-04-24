@@ -23,53 +23,50 @@ open FsGame.Core.Collections
 #nowarn "51"
 
 type IVulkanWindowEvents =
+    inherit IWindowEvents
 
-    abstract OnWindowClosing: FalGraphics -> unit
+    abstract OnVulkanInitialized: VulkanDevice * FalGraphics -> unit
+    
 
-    abstract OnInputEvents: FalGraphics * InputEvent list -> unit
+type VulkanWin32WindowEvents(title, engineName, events: IVulkanWindowEvents) =
 
-    abstract OnUpdateFrame: FalGraphics * time: float * interval: float -> bool
+    let resized = Event<unit>()
+    let mutable device = Unchecked.defaultof<_>
+    let mutable instance = Unchecked.defaultof<_>
 
-    abstract OnRenderFrame: FalGraphics * time: float * delta: float * width: int * height: int -> unit
+    interface IWindowEvents with
 
-let createVulkanWin32Window title engineName updateInterval width height (windowEvents: IVulkanWindowEvents) =
-    let windowState = Win32WindowState (title, width, height)
-    windowState.Show () // Must show to actually instantiate the state. Maybe we need a better API.
-    let hwnd = windowState.Hwnd
-    let hinstance = windowState.Hinstance
+        member _.OnWin32Initialized(hwnd, hinstance) =
+            device <- VulkanDevice.CreateWin32(hwnd, hinstance, title, engineName, [VulkanDeviceLayer.LunarGStandardValidation], [], fun str -> printfn "validation layer: %s" str)
+            instance <- FalGraphics.Create (device, resized.Publish)
+            instance.SetupCommands() // We need to get rid of this thing.
+            events.OnWin32Initialized(hwnd, hinstance)
+            events.OnVulkanInitialized(device, instance)
 
-    let device = VulkanDevice.CreateWin32(hwnd, hinstance, title, engineName, [VulkanDeviceLayer.LunarGStandardValidation], [], fun str -> printfn "validation layer: %s" str)
-    let instance = FalGraphics.Create (device, windowState.WindowResized)
-    instance.SetupCommands() // We need to get rid of this thing.
+        member this.OnClosing() = events.OnClosing()
 
-    let windowEvents2 = 
-        let gate = obj ()
-        let mutable quit = false
+        member this.OnChanged(width, height, x, y) = events.OnChanged(width, height, x, y)
 
-        { new IWindowEvents with
+        member this.OnKeyPressed key = events.OnKeyPressed key
+          
+        member this.OnKeyReleased key = events.OnKeyReleased key
+         
+        member this.OnMouseButtonPressed button = events.OnMouseButtonPressed button
+        
+        member this.OnMouseButtonReleased button = events.OnMouseButtonReleased button
+         
+        member this.OnMouseWheelScrolled(x, y) = events.OnMouseWheelScrolled(x, y)
+          
+        member this.OnMouseMoved(x, y, xrel, yrel) = events.OnMouseMoved(x, y, xrel, yrel)
+        
+        member this.OnFixedUpdate(time, deltaTime) = events.OnFixedUpdate(time, deltaTime)
+         
+        member this.OnUpdate(time, deltaTime) = events.OnUpdate(time, deltaTime)
 
-            member __.OnWindowClosing () =
-                lock gate (fun () ->
-                    quit <- true
-                    instance.WaitIdle()
-                    windowEvents.OnWindowClosing instance
-                )
-
-            member __.OnInputEvents events = 
-                windowEvents.OnInputEvents(instance, events)
-
-            member __.OnUpdateFrame (time, interval) =
-                quit <- windowEvents.OnUpdateFrame(instance, time, interval) || quit
-                quit
-
-            member __.OnRenderFrame (time, delta, width, height) =
-                lock gate (fun () ->
-                    if not quit then
-                        windowEvents.OnRenderFrame(instance, time, delta, width, height)
-                ) }
-
-    let window = Window (title, updateInterval, width, height, windowEvents2, windowState)
-    window, instance
+let startVulkanWin32Window title engineName updateInterval width height events =
+    let events2 = VulkanWin32WindowEvents(title, engineName, events)
+    let window = Win32Window (title, width, height, updateInterval, events2)
+    window.Start()
 
 //
 

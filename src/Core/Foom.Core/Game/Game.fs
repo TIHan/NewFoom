@@ -36,6 +36,8 @@ type Game(svGame: AbstractServerGame, clGame: AbstractClientGame, interval) =
             )
             (fun time deltaTime ->
                 let time = TimeSpan.FromTicks(time)
+                let deltaTime = TimeSpan.FromTicks(deltaTime)
 
-                clGame.Render(time, deltaTime)
+                clGame.Render(time, single deltaTime.TotalMilliseconds)
+                false
             )

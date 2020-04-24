@@ -115,8 +115,9 @@ type Win32Game (windowTitle: string, svGame: AbstractServerGame, clGame: Abstrac
                     )
                     (fun time deltaTime ->
                         let time = TimeSpan.FromTicks(time)
-
-                        clGame.Render(time, deltaTime)
+                        let deltaTime = TimeSpan.FromTicks(deltaTime)
+                        clGame.Render(time, single deltaTime.TotalMilliseconds)
+                        false
                     )
                     gl
 
@@ -144,18 +145,66 @@ let private tryGetCursorPos hWnd =
         ValueNone
 
 [<Sealed>]
-type Win32WindowState (title: string, width: int, weight: int) as this =
+type Win32Window(title: string, width: int, weight: int, fixedUpdateInterval: float, events: IWindowEvents) as this =
 
     let mutable del = Unchecked.defaultof<_>
     let mutable hwnd = nativeint 0
     let mutable hinstance = nativeint 0
 
-    let windowClosing = Event<unit> ()
-    let windowResized = Event<unit> ()
+    let closing = Event<unit> ()
+    let resized = Event<unit> ()
 
-    let mutable xrel = 0u
-    let mutable yrel = 0u
     let mutable prevPoint = POINT()
+
+    let poll () =
+        let hashKey = HashSet ()
+
+        let mutable msg = MSG ()
+        while PeekMessage(&&msg, nativeint 0, 0u, 0u, PM_REMOVE) <> 0uy do
+            TranslateMessage(&&msg) |> ignore
+            DispatchMessage(&&msg) |> ignore
+
+            match int msg.message with
+            | x when x = WM_KEYDOWN || x = WM_SYSKEYDOWN ->
+                if hashKey.Add(char msg.lParam) then
+                    events.OnKeyPressed(char msg.lParam)
+
+            | x when x = WM_KEYUP || x = WM_SYSKEYUP ->
+                if hashKey.Remove(char msg.lParam) then
+                    events.OnKeyReleased(char msg.lParam)
+
+            | x when int x = WM_MOUSEMOVE ->
+                match tryGetCursorPos hwnd with
+                | ValueSome point ->
+                    let xrel = point.x - prevPoint.x
+                    let yrel = point.y - prevPoint.y
+                    centerCursor hwnd
+                    events.OnMouseMoved(int point.x, int point.y, int xrel, int yrel)
+                | _ ->
+                    ()
+
+            | x when int x = WM_LBUTTONDOWN ->
+                events.OnMouseButtonPressed MouseButtonType.Left
+
+            | x when int x = WM_LBUTTONUP ->
+                events.OnMouseButtonReleased MouseButtonType.Left
+
+            | x when int x = WM_MBUTTONDOWN ->
+                events.OnMouseButtonPressed MouseButtonType.Middle
+
+            | x when int x = WM_MBUTTONUP ->
+                events.OnMouseButtonReleased MouseButtonType.Middle
+
+            | x when int x = WM_RBUTTONDOWN ->
+                events.OnMouseButtonPressed MouseButtonType.Right
+
+            | x when int x = WM_RBUTTONUP ->
+                events.OnMouseButtonReleased MouseButtonType.Right
+
+            | x when int x = WM_QUIT ->
+                CloseWindow(hwnd) |> ignore
+
+            | _ -> ()
 
     member private __.WndProc hWnd msg wParam lParam =
         hideCursor hWnd
@@ -164,12 +213,14 @@ type Win32WindowState (title: string, width: int, weight: int) as this =
             match int wParam with
             | x when x = SC_KEYMENU -> nativeint 0
             | x when x = SC_CLOSE -> 
-                windowClosing.Trigger ()
+                events.OnClosing()
                 DefWindowProc(hWnd, msg, wParam, lParam)
             | _ ->
                 DefWindowProc(hWnd, msg, wParam, lParam)
         | x when x = WM_SIZE ->
-            windowResized.Trigger ()
+            let mutable rect = Unchecked.defaultof<RECT>
+            GetWindowRect(hWnd, &&rect) |> ignore
+            events.OnChanged(int rect.left - int rect.right, int rect.top - int rect.bottom, int rect.top, int rect.left)
             DefWindowProc(hWnd, msg, wParam, lParam)
         | _ ->
             DefWindowProc(hWnd, msg, wParam, lParam)
@@ -177,16 +228,18 @@ type Win32WindowState (title: string, width: int, weight: int) as this =
     // Store this so it doesn't get collected cause a System.ExecutionEngineException.
     member private _.WndProcDelegate = del
 
-    member __.WindowClosing = windowClosing.Publish
+    member __.Closing = closing.Publish
 
-    member __.WindowResized = windowResized.Publish
+    member __.Resized = resized.Publish
 
-    member __.Show () =
+    member __.Start() =
         del <- WndProcDelegate(this.WndProc)
 
         let hwnd2, hinstance2 = createWin32Window title del
         hwnd <- hwnd2
         hinstance <- hinstance2
+
+        events.OnWin32Initialized(hwnd, hinstance)
 
         centerCursor hwnd
         prevPoint <- 
@@ -194,67 +247,22 @@ type Win32WindowState (title: string, width: int, weight: int) as this =
             | ValueSome point -> point
             | _ -> POINT()
 
+        GameLoop.start
+            fixedUpdateInterval
+            poll
+            (fun ticks deltaTicks ->
+                let time = TimeSpan.FromTicks ticks
+                let deltaTime = TimeSpan.FromTicks deltaTicks
+
+                events.OnFixedUpdate(time, deltaTime)
+            )
+            (fun ticks deltaTicks ->
+                let time = TimeSpan.FromTicks ticks
+                let deltaTime = TimeSpan.FromTicks deltaTicks
+
+                events.OnUpdate(time, deltaTime)
+            )
+
     member __.Hwnd = hwnd
 
     member __.Hinstance = hinstance
-
-    interface IWindowState with
-
-        member __.ShowWindow () = () // TODO:
-
-        member this.WindowClosing = this.WindowClosing
-        
-        member this.WindowResized = this.WindowResized
-
-        member __.PollInput () =
-
-            let inputs = ResizeArray ()
-            let hashKey = HashSet ()
-
-            let mutable msg = MSG ()
-            while PeekMessage(&&msg, nativeint 0, 0u, 0u, PM_REMOVE) <> 0uy do
-                TranslateMessage(&&msg) |> ignore
-                DispatchMessage(&&msg) |> ignore
-
-                match int msg.message with
-                | x when x = WM_KEYDOWN || x = WM_SYSKEYDOWN ->
-                    if hashKey.Add(char msg.lParam) then
-                        inputs.Add(KeyPressed(char msg.lParam))
-
-                | x when x = WM_KEYUP || x = WM_SYSKEYUP ->
-                    if hashKey.Remove(char msg.lParam) then
-                        inputs.Add(KeyReleased(char msg.lParam))
-
-                | x when int x = WM_MOUSEMOVE ->
-                    match tryGetCursorPos hwnd with
-                    | ValueSome point ->
-                        let xrel = point.x - prevPoint.x
-                        let yrel = point.y - prevPoint.y
-                        inputs.Add(MouseMoved(int point.x, int point.y, int xrel, int yrel))
-                        centerCursor hwnd
-                    | _ ->
-                        ()
-
-                | x when int x = WM_LBUTTONDOWN ->
-                    inputs.Add(MouseButtonPressed MouseButtonType.Left)
-
-                | x when int x = WM_LBUTTONUP ->
-                    inputs.Add(MouseButtonReleased MouseButtonType.Left)
-
-                | x when int x = WM_MBUTTONDOWN ->
-                    inputs.Add(MouseButtonPressed MouseButtonType.Middle)
-
-                | x when int x = WM_MBUTTONUP ->
-                    inputs.Add(MouseButtonReleased MouseButtonType.Middle)
-
-                | x when int x = WM_RBUTTONDOWN ->
-                    inputs.Add(MouseButtonPressed MouseButtonType.Right)
-
-                | x when int x = WM_RBUTTONUP ->
-                    inputs.Add(MouseButtonReleased MouseButtonType.Right)
-
-                | x when int x = WM_QUIT ->
-                    CloseWindow(hwnd) |> ignore
-
-                | _ -> ()
-            inputs |> List.ofSeq

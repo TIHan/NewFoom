@@ -156,11 +156,14 @@ type FSharpInteractive private (inStream, outStream, errStream) =
 
     static member Initialize(inStream, outStream, errStream) = new FSharpInteractive(inStream, outStream, errStream)
 
-
-type InteractiveCommand =
-    | SubmitInteraction of code: string
-
-let globalCommands = System.Collections.Concurrent.ConcurrentQueue()
+type InputEvent =
+    | KeyPressed of char
+    | KeyReleased of char
+    | MouseButtonPressed of MouseButtonType
+    | MouseButtonReleased of MouseButtonType
+    | MouseMoved of x: int * y: int * xrel: int * yrel: int
+    | MouseWheelScrolled of x: int * y: int
+    
 
 [<EntryPoint>]
 let main argv =
@@ -201,12 +204,41 @@ let main argv =
         loop ()
     } |> Async.Start
 
+    let mutable device = Unchecked.defaultof<_>
+    let mutable graphics = Unchecked.defaultof<_>
+    let mutable isClosing = false
+    let inputs = ResizeArray()
     let windowEvents = 
         { new FsGame.Renderer.Vulkan.IVulkanWindowEvents with
 
-            member __.OnWindowClosing _ = ()
+            member _.OnVulkanInitialized(device2, graphics2) =
+                device <- device2
+                graphics <- graphics2
 
-            member __.OnInputEvents(_, events) = 
+          interface IWindowEvents with
+
+            member _.OnWin32Initialized(_, _) = ()
+
+            member this.OnClosing() = isClosing <- true
+
+            member this.OnChanged(width, height, x, y) = ()
+
+            member this.OnKeyPressed key = inputs.Add(InputEvent.KeyPressed key)
+              
+            member this.OnKeyReleased key = inputs.Add(InputEvent.KeyPressed key)
+             
+            member this.OnMouseButtonPressed button = inputs.Add(InputEvent.MouseButtonPressed button)
+            
+            member this.OnMouseButtonReleased button = inputs.Add(InputEvent.MouseButtonReleased button)
+             
+            member this.OnMouseWheelScrolled(x, y) = inputs.Add(InputEvent.MouseWheelScrolled(x, y))
+              
+            member this.OnMouseMoved(x, y, xrel, yrel) = inputs.Add(InputEvent.MouseMoved(x, y, xrel, yrel))
+            
+            member this.OnFixedUpdate(time, deltaTime) =
+                if isClosing then true
+                else
+
                 let mutable acc = Vector3.Zero
 
                 let mutable view = mvp.view
@@ -223,8 +255,8 @@ let main argv =
 
                 let mutable xrel = 0.f
                 let mutable yrel = 0.f
-                events
-                |> List.iter (fun x ->
+                inputs
+                |> Seq.iter (fun x ->
                     let v =
                         match x with
                         | InputEvent.KeyPressed 'W' -> Vector3.Transform (-Vector3.UnitZ, rotation)
@@ -255,7 +287,7 @@ let main argv =
                 mvp <-
                     { mvp with view = view }               
 
-            member __.OnUpdateFrame (graphics, time, interval) =
+                inputs.Clear()
 
                 let mutable canPrintArrow = false
                 let mutable lineStr = ""
@@ -282,12 +314,17 @@ let main argv =
                 if not (obj.ReferenceEquals(mvpUniform, null)) then
                     mvpUniform.Upload(ReadOnlySpan [|mvp.InvertedView|])
                 false 
-                
-            member _.OnRenderFrame(graphics, _, _, _, _) =
-                graphics.DrawFrame() }
+             
+            member this.OnUpdate(time, deltaTime) =
+                if isClosing then true
+                else
 
-    let window, graphics = FsGame.Renderer.Vulkan.createVulkanWin32Window "F# Vulkan" "HealthyCore" 30. 1280 720 windowEvents
-    use graphics = graphics
-    window.Start()
+                graphics.DrawFrame()
+                false }
+
+    FsGame.Renderer.Vulkan.startVulkanWin32Window "F# Vulkan" "HealthyCore" 30. 1280 720 windowEvents
+
+    (graphics :> IDisposable).Dispose()
+    (device :> IDisposable).Dispose()
     printfn "F# Vulkan ended...."
     0

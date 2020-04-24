@@ -5,19 +5,6 @@ module Foom.Game.GameLoop
     open System.Threading
     open System.Collections.Concurrent
 
-    type private GameLoopSynchronizationContext () =
-        inherit SynchronizationContext ()
-
-        let queue = ConcurrentQueue<unit -> unit> ()
-
-        override this.Post (d, state) =
-            queue.Enqueue (fun () -> d.Invoke (state))
-
-        member this.Process () =
-            let mutable msg = Unchecked.defaultof<unit -> unit>
-            while queue.TryDequeue (&msg) do
-                msg ()
-
     type GameLoop<'T> = 
         private { 
             LastTime: int64
@@ -25,7 +12,6 @@ module Foom.Game.GameLoop
             UpdateAccumulator: int64
             willQuit: bool 
 
-            Context : GameLoopSynchronizationContext
             Stopwatch : Stopwatch
             Skip : int64
             TargetUpdateInterval : int64
@@ -39,24 +25,18 @@ module Foom.Game.GameLoop
 
         let stopwatch = Stopwatch.StartNew ()
 
-        let ctx = GameLoopSynchronizationContext ()
-
-        SynchronizationContext.SetSynchronizationContext ctx
-
         {
             LastTime = 0L
             UpdateTime = 0L
             UpdateAccumulator = targetUpdateInterval
             willQuit = false
 
-            Context = ctx
             Stopwatch = stopwatch
             Skip = skip
             TargetUpdateInterval = targetUpdateInterval
         }
 
-    let tick (alwaysUpdate: unit -> unit) (update: int64 -> int64 -> bool) (render: int64 -> float32 -> unit) gl =
-        let ctx = gl.Context
+    let tick (alwaysUpdate: unit -> unit) (update: int64 -> int64 -> bool) (render: int64 -> int64 -> bool) gl =
         let stopwatch = gl.Stopwatch
         let skip = gl.Skip
         let targetUpdateInterval = gl.TargetUpdateInterval
@@ -74,7 +54,6 @@ module Foom.Game.GameLoop
 
             if gl.UpdateAccumulator >= targetUpdateInterval
             then
-                ctx.Process ()
                 let willQuit = update gl.UpdateTime targetUpdateInterval
 
                 processUpdate
@@ -87,17 +66,18 @@ module Foom.Game.GameLoop
                 gl
 
         let processRender gl =
-            render currentTime (single gl.UpdateAccumulator / single targetUpdateInterval)
+            let willQuit = render currentTime (gl.UpdateAccumulator / targetUpdateInterval)
 
             { gl with 
                 LastTime = currentTime
+                willQuit = willQuit
             }
 
         { gl with UpdateAccumulator = updateAcc }
         |> processUpdate
         |> processRender
 
-    let start updateInterval (alwaysUpdate: unit -> unit) (update: int64 -> int64 -> bool) (render: int64 -> float32 -> unit) : unit =
+    let start updateInterval (alwaysUpdate: unit -> unit) (update: int64 -> int64 -> bool) (render: int64 -> int64 -> bool) : unit =
         let gl = create updateInterval
 
         let rec loop gl =
