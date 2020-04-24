@@ -182,10 +182,16 @@ type Win32Window(title: string, fixedUpdateInterval: float) as this =
                 | ValueSome point ->
                     let xrel = point.x - prevPoint.x
                     let yrel = point.y - prevPoint.y
-                    prevPoint <- point
-                    if isCursorHidden then
-                        centerCursor hwnd
-                    this.OnMouseMoved(int point.x, int point.y, int xrel, int yrel)
+                    if xrel > 0u || yrel > 0u then
+                        prevPoint <- point
+                        this.OnMouseMoved(int point.x, int point.y, int xrel, int yrel)
+                        if isCursorHidden then
+                            centerCursor hwnd
+                            match tryGetCursorPos hwnd with
+                            | ValueSome point ->
+                                prevPoint <- point
+                            | _ ->
+                                ()
                 | _ ->
                     ()
 
@@ -215,9 +221,6 @@ type Win32Window(title: string, fixedUpdateInterval: float) as this =
     member private __.WndProc hWnd msg wParam lParam =
         if isCursorClipped then
             clipCursor hwnd
-
-        if isCursorHidden then
-            hideCursor ()
 
         match int msg with
         | x when x = WM_SYSCOMMAND ->
@@ -252,20 +255,18 @@ type Win32Window(title: string, fixedUpdateInterval: float) as this =
         hinstance <- hinstance2
 
         centerCursor hwnd
+        match tryGetCursorPos hwnd with
+        | ValueSome point ->
+            prevPoint <- point
+        | _ ->
+            ()
 
-        prevPoint <- 
-            match tryGetCursorPos hwnd with
-            | ValueSome point -> point
-            | _ -> POINT()
-
-    override _.ShowCursor() =
-        centerCursor hwnd
+    override this.ShowCursor() =
         if isCursorHidden then
             isCursorHidden <- false
             showCursor ()
 
     override _.HideCursor() =
-        centerCursor hwnd
         if not isCursorHidden then
             isCursorHidden <- true
             hideCursor ()

@@ -174,6 +174,14 @@ type ExampleWindow() =
     let mutable yaw = 0.f
     let mutable pitch = 0.f
 
+    let getRotation view =
+        Quaternion.CreateFromRotationMatrix view
+
+    let setRotation quat (view: Matrix4x4) =
+        let mutable m = Matrix4x4.CreateFromQuaternion quat
+        m.Translation <- view.Translation
+        m
+
     let eventQueue = System.Collections.Generic.Queue<FalGraphics -> unit>()
 
     let mutable mvpUniform = Unchecked.defaultof<_>
@@ -222,6 +230,10 @@ type ExampleWindow() =
     
     override this.OnKeyPressed key = 
         base.OnKeyPressed key
+
+        if key = '\u001b' then
+            this.ShowCursor()
+
         inputs.Add(InputEvent.KeyPressed key)
 
     override this.OnKeyReleased key = 
@@ -242,13 +254,19 @@ type ExampleWindow() =
 
     override this.OnMouseMoved(x, y, xrel, yrel) = 
         base.OnMouseMoved(x, y, xrel, yrel)
-        inputs.Add(InputEvent.MouseMoved(x, y, xrel, yrel))
+
+        let mutable view = mvp.view
+        
+        if xrel <> 0 || yrel <> 0 then
+            yaw <- yaw + (single xrel * -0.25f) * (MathF.PI / 180.f)
+            pitch <- pitch + (single yrel * -0.25f) * (MathF.PI / 180.f)
+            let rotation = Quaternion.CreateFromAxisAngle (Vector3.UnitX, 90.f * (float32 Math.PI / 180.f))
+            view <- setRotation (rotation * Quaternion.CreateFromYawPitchRoll(yaw * 0.25f, pitch * 0.25f, 0.f)) view
+
+        mvp <- { mvp with view = view }
 
     override this.OnMoved(x, y) =
         base.OnMoved(x, y)
-       // SetConsolePosition(x, y)
-       // SetWindowPosition(this.Hwnd, x, y)
-
 
     override this.OnUpdate(_, _) =
         if isClosing then true
@@ -258,19 +276,9 @@ type ExampleWindow() =
 
         let mutable view = mvp.view
 
-        let getRotation () =
-            Quaternion.CreateFromRotationMatrix view
+        let rotation = getRotation view
 
-        let setRotation quat =
-            let mutable m = Matrix4x4.CreateFromQuaternion quat
-            m.Translation <- view.Translation
-            view <- m
-
-        let rotation = getRotation ()
-
-        let mutable xrel = 0.f
-        let mutable yrel = 0.f
-        inputs.ToArray()
+        inputs
         |> Seq.iter (fun x ->
             let v =
                 match x with
@@ -278,10 +286,6 @@ type ExampleWindow() =
                 | InputEvent.KeyPressed 'S' -> Vector3.Transform (Vector3.UnitZ, rotation)
                 | InputEvent.KeyPressed 'A' -> Vector3.Transform (-Vector3.UnitX, rotation)
                 | InputEvent.KeyPressed 'D' -> Vector3.Transform (Vector3.UnitX, rotation)
-                | InputEvent.MouseMoved(_, _, xrel2, yrel2) ->
-                    xrel <- float32 xrel2
-                    yrel <- float32 yrel2
-                    Vector3.Zero
                 | _ -> Vector3.Zero
             acc <- acc + (Vector3(v.X, v.Y, v.Z))
         )
@@ -292,15 +296,8 @@ type ExampleWindow() =
             else
                 acc
 
-        if xrel <> 0.f || yrel <> 0.f then
-            yaw <- yaw + (xrel * -0.25f) * (MathF.PI / 180.f)
-            pitch <- pitch + (yrel * -0.25f) * (MathF.PI / 180.f)
-            let rotation = Quaternion.CreateFromAxisAngle (Vector3.UnitX, 90.f * (float32 Math.PI / 180.f))
-            setRotation (rotation * Quaternion.CreateFromYawPitchRoll(yaw * 0.25f, pitch * 0.25f, 0.f))
-
         view.Translation <- view.Translation + acc
-        mvp <-
-            { mvp with view = view }               
+        mvp <- { mvp with view = view }               
 
         inputs.Clear()
 
@@ -329,14 +326,7 @@ type ExampleWindow() =
         if not (obj.ReferenceEquals(mvpUniform, null)) then
             mvpUniform.Upload(ReadOnlySpan [|mvp.InvertedView|])
         this.VulkanGraphics.DrawFrame()
-        false 
-
-    //override this.OnUpdate(_, _) =
-    //    if isClosing then true
-    //    else
-
-    //    this.VulkanGraphics.DrawFrame()
-    //    false 
+        false  
 
 [<EntryPoint>]
 let main argv =
