@@ -14,6 +14,7 @@ open Foom.Wad
 open FsGame.Graphics.FreeType
 open FsGame.Graphics.Vulkan
 open FsGame.Renderer
+open System.Text
 
 #nowarn "9"
 #nowarn "51"
@@ -119,6 +120,48 @@ let loadMusic (wad: Wad) =
 //        proj = Matrix4x4.CreatePerspectiveFieldOfView(radians 45.f, 1280.f / 720.f, 0.1f, 1000000.f)
 //    }
 
+open FSharp.Compiler.SourceCodeServices
+open FSharp.Compiler.Interactive.Shell
+open System.IO
+
+[<Sealed>]
+type FSharpInteractive private (inStream, outStream, errStream) =
+
+    // Build command line arguments & start FSI session
+    let argv = [| "C:\\fsi.exe" |]
+    #if NETCOREAPP
+    let args = Array.append argv [|"--noninteractive"; "--targetprofile:netcore"|]
+    #else
+    let args = Array.append argv [|"--noninteractive"|]
+    #endif
+    let allArgs = args
+
+    let fsiConfig = FsiEvaluationSession.GetDefaultConfiguration()
+    let fsiSession = FsiEvaluationSession.Create(fsiConfig, allArgs, inStream, outStream, errStream, collectible = true)
+
+    member _.SubmitInteraction code =
+        let _, errors = fsiSession.EvalInteractionNonThrowing(code)
+        if errors.Length = 0 then
+            String.Empty
+        else
+            sprintf "%A" errors
+
+    interface IDisposable with
+
+        member _.Dispose() =
+            (fsiSession :> IDisposable).Dispose()
+            inStream.Dispose()
+            outStream.Dispose()
+            errStream.Dispose()
+
+    static member Initialize(inStream, outStream, errStream) = new FSharpInteractive(inStream, outStream, errStream)
+
+
+type InteractiveCommand =
+    | SubmitInteraction of code: string
+
+let globalCommands = System.Collections.Concurrent.ConcurrentQueue()
+
 [<EntryPoint>]
 let main argv =
     let wad = Wad.FromFile("../../../../../../Foom-deps/testwads/doom1.wad")
@@ -139,6 +182,24 @@ let main argv =
         mvpUniform <- mvpUniform2
         mvp <- mvp2
     )
+
+    let sbOut = new StringBuilder()
+    let sbErr = new StringBuilder()
+    let inStream = new StringReader("")
+    let outStream = new StringWriter(sbOut)
+    let errStream = new StringWriter(sbErr)
+
+    use fsi = FSharpInteractive.Initialize(inStream, outStream, errStream)
+
+    let lineQueue = System.Collections.Concurrent.ConcurrentQueue()
+
+    async {
+        let rec loop () =
+            let lineStr = Console.ReadLine()
+            lineQueue.Enqueue(lineStr)
+            loop ()
+        loop ()
+    } |> Async.Start
 
     let windowEvents = 
         { new FsGame.Renderer.Vulkan.IVulkanWindowEvents with
@@ -195,6 +256,26 @@ let main argv =
                     { mvp with view = view }               
 
             member __.OnUpdateFrame (graphics, time, interval) =
+
+                let mutable canPrintArrow = false
+                let mutable lineStr = ""
+                while lineQueue.TryDequeue &lineStr do
+                    canPrintArrow <- true
+                    let errorString = fsi.SubmitInteraction lineStr
+                    if not (String.IsNullOrWhiteSpace(errorString)) then
+                        Console.ForegroundColor <- ConsoleColor.Red
+                        printfn "%s\n" errorString
+                        Console.ResetColor()
+
+                if sbOut.Length > 0 then
+                    printf "%s" (sbOut.ToString())
+
+                sbOut.Clear() |> ignore
+                sbErr.Clear() |> ignore
+
+                if canPrintArrow then
+                    printf "> "
+
                 match eventQueue.TryDequeue() with
                 | true, f -> f graphics
                 | _ -> ()
