@@ -7,12 +7,15 @@
 
   <ItemGroup>
     <Compile Include="TypedTree.fs" />
-    <Compile Include="SpirvGenInfo.fs" />
+    <Compile Include="ErrorLogger.fs" />
+    <Compile Include="ErrorText.fs" />
     <Compile Include="SpirvGen.fsi" />
     <Compile Include="SpirvGen.fs" />
     <Compile Include="Intrinsics.fs" />
     <Compile Include="Checker.fsi" />
     <Compile Include="Checker.fs" />
+    <Compile Include="Optimizer.fs" />
+    <Compile Include="Compilation.fs" />
   </ItemGroup>
 
   <ItemGroup>

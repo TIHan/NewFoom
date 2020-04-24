@@ -714,7 +714,10 @@ let loadMap mapName (wad: Wad) (graphics: FalGraphics) =
             let mutable fragTexCoord = Variable<Vector2> [Decoration.Location 0u] StorageClass.Output []
             let mutable lightLevelOut = Variable<single> [Decoration.Location 1u] StorageClass.Output []
 
+            let doot (mvp: ModelViewProjection) = mvp
+
             fun () ->
+                let mvp = doot mvp
                 gl_Position <- Vector4.Transform(Vector4(vertex.position, 1.f), mvp.model * mvp.view * mvp.proj)
                 fragTexCoord <- vertex.uv
                 lightLevelOut <- lightLevel
@@ -824,31 +827,3 @@ let loadMap mapName (wad: Wad) (graphics: FalGraphics) =
     )
 
     mvpUniform, mvp
-
-let mkSimpleShader desc vertex fragment (instance: FalGraphics) =
-    let spvVertexInfo = SpirvGenInfo.Create(AddressingModel.Logical, MemoryModel.GLSL450, ExecutionModel.Vertex, [Capability.Shader], [])
-    let spvVertex =
-        Checker.Check vertex
-        |> SpirvGen.GenModule spvVertexInfo
-
-    let spvFragmentInfo = SpirvGenInfo.Create(AddressingModel.Logical, MemoryModel.GLSL450, ExecutionModel.Fragment, [Capability.Shader], ["GLSL.std.450"], ExecutionMode.OriginUpperLeft)
-    let spvFragment = 
-        Checker.Check fragment
-        |> SpirvGen.GenModule spvFragmentInfo
-
-    let vertexBytes =
-        use ms = new System.IO.MemoryStream 100
-        SpirvModule.Serialize (ms, spvVertex)
-        let bytes = Array.zeroCreate (int ms.Length)
-        ms.Position <- 0L
-        ms.Read(bytes, 0, bytes.Length) |> ignore
-        bytes
-    let fragmentBytes =
-        use ms = new System.IO.MemoryStream 100
-        SpirvModule.Serialize (ms, spvFragment)
-        let bytes = Array.zeroCreate (int ms.Length)
-        ms.Position <- 0L
-        ms.Read(bytes, 0, bytes.Length) |> ignore
-        bytes
-
-    instance.CreateShader(desc, ReadOnlySpan vertexBytes, ReadOnlySpan fragmentBytes)

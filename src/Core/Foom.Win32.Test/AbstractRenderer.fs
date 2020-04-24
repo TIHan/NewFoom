@@ -18,96 +18,93 @@ open FSharp.Quotations
 open FSharp.Quotations.DerivedPatterns
 open FSharp.Quotations.ExprShape
 open FSharp.Quotations.Patterns
-open FSharp.Spirv.Quotations.TypedTree
 open FSharp.Spirv.Quotations.Intrinsics
 
 #nowarn "9"
 
-let checkShaderInputs stage (expr: Expr<unit -> unit>) = 
+let checkShaderInputs stage (variables: FSharpSpirvQuotationVariable list) = 
     let layouts = ResizeArray()
     let inputs = ResizeArray()
 
-    let getDescriptorKind (ty: SpirvType) (storageClass: StorageClass) =
-        match ty, storageClass with
-        | _, StorageClass.Uniform -> UniformBufferDescriptor
-        | SpirvTypeSampledImage _, StorageClass.UniformConstant -> CombinedImageSamplerDescriptor
-        | _, StorageClass.StorageBuffer -> StorageBufferDescriptor
+    let getDescriptorKind (ty: FSharpSpirvType) (storageClass: StorageClass) =
+        match storageClass with
+        | StorageClass.Uniform -> UniformBufferDescriptor
+        | StorageClass.UniformConstant when ty.IsSampledImage -> CombinedImageSamplerDescriptor
+        | StorageClass.StorageBuffer -> StorageBufferDescriptor
         | _ -> failwithf "Storage class, %A, not supported yet." storageClass
 
     // TODO: Maybe expose descriptor set number?
     // TODO: Expose 'layout' number instead of the internals determining it, then we can determine the 'layout' number here.
 
-    let rec loop expr =
-        match expr with
-        | Sequential(expr1, expr2) ->
-            loop expr1
-            loop expr2
-        | Let(var, rhs, body) ->
-            match rhs with
-            | SpecificCall <@ Variable<_> @> (None, [_], args) ->
-                let spvVar, customAnnoations = Checker.CheckVariable var args
-                if not spvVar.IsMutable then
-                    match spvVar.Decorations |> List.tryFind (function Decoration.Binding _ -> true | _ -> false) with
-                    | Some(Decoration.Binding n) ->
-                        match spvVar.Decorations |> List.tryFind (function Decoration.DescriptorSet _ -> true | _ -> false) with
-                        | Some _ -> 
-                            let descriptorKind = getDescriptorKind spvVar.Type spvVar.StorageClass
-                            layouts.Add(ShaderDescriptorLayout(descriptorKind, stage, n))
-                        | _ ->
-                            if stage = VertexStage then
-                                let rate =
-                                    customAnnoations
-                                    |> List.tryFind (fun x ->
-                                        match x with
-                                        | Coerce(NewUnionCase(caseInfo, _), _) when caseInfo.DeclaringType = typeof<VulkanShaderVertexInputRate> && caseInfo.Name = "PerInstance" -> true
-                                        | _ -> false)
-                                    |> Option.map (fun _ -> PerInstance)
-                                    |> Option.defaultValue PerVertex
-                                inputs.Add(ShaderVertexInput(rate, var.Type, n))
-                    | _ -> ()
-            | _ -> ()
+    variables
+    |> List.iter (fun var ->
+        if var.StorageClass <> StorageClass.Output then
+            match var.Decorations |> List.tryFind (function Decoration.Binding _ -> true | _ -> false) with
+            | Some(Decoration.Binding n) ->
+                match var.Decorations |> List.tryFind (function Decoration.DescriptorSet _ -> true | _ -> false) with
+                | Some _ -> 
+                    let descriptorKind = getDescriptorKind var.Type var.StorageClass
+                    layouts.Add(ShaderDescriptorLayout(descriptorKind, stage, n))
+                | _ ->
+                    if stage = VertexStage then
+                        let rate =
+                            var.CustomAnnoations
+                            |> List.tryFind (fun x ->
+                                match x with
+                                | Coerce(NewUnionCase(caseInfo, _), _) when caseInfo.DeclaringType = typeof<VulkanShaderVertexInputRate> && caseInfo.Name = "PerInstance" -> true
+                                | _ -> false)
+                            |> Option.map (fun _ -> PerInstance)
+                            |> Option.defaultValue PerVertex
+                        inputs.Add(ShaderVertexInput(rate, var.ClrType, n))
+            | _ -> ())
 
-            loop body
-        | _ ->
-            ()
+    (layouts |> List.ofSeq), (inputs |> List.ofSeq)
 
-    loop expr
+type FSharpSpirvQuotationCompilation with
 
-    expr, (layouts |> List.ofSeq), (inputs |> List.ofSeq)
+    member this.EmitBytes() =
+        use ms = new System.IO.MemoryStream 100
+        if not (this.Emit ms) then
+            failwithf "%A" (this.GetDiagnostics())
+        let bytes = Array.zeroCreate (int ms.Length)
+        ms.Position <- 0L
+        ms.Read(bytes, 0, bytes.Length) |> ignore
+        bytes
 
 type FalGraphics with
 
     member this.CreateShader(vertex: Expr<unit -> unit>, fragment: Expr<unit -> unit>) =
 
-        let vertex, vertexLayouts, vertexInputs = checkShaderInputs VertexStage vertex
-        let fragment, fragmentLayouts, _ = checkShaderInputs FragmentStage fragment
+        let vertexOptions =
+            { 
+                DebugEnabled = true
+                OptimizationsEnabled = false
+                Capabilities = [Capability.Shader]
+                ExtendedInstructionSets = ["GLSL.std.450"]
+                AddressingModel = AddressingModel.Logical
+                MemoryModel = MemoryModel.GLSL450
+                ExecutionModel = ExecutionModel.Vertex
+                ExecutionMode = None
+            }
+        let vertexCompilation = FSharpSpirvQuotationCompilation.Create(vertexOptions, vertex)
+        let vertexBytes = vertexCompilation.EmitBytes()
 
-        // TODO: Maybe the spirv gen info can be placed in the shader itself? Would require changes to quotation translator.
-        let spvVertexInfo = SpirvGenInfo.Create(AddressingModel.Logical, MemoryModel.GLSL450, ExecutionModel.Vertex, [Capability.Shader], [])
-        let spvVertex =
-            Checker.Check vertex
-            |> SpirvGen.GenModule spvVertexInfo
+        let fragmentOptions =
+            { 
+                DebugEnabled = true
+                OptimizationsEnabled = false
+                Capabilities = [Capability.Shader]
+                ExtendedInstructionSets = ["GLSL.std.450"]
+                AddressingModel = AddressingModel.Logical
+                MemoryModel = MemoryModel.GLSL450
+                ExecutionModel = ExecutionModel.Fragment
+                ExecutionMode = Some(ExecutionMode.OriginUpperLeft)
+            }
+        let fragmentCompilation = FSharpSpirvQuotationCompilation.Create(fragmentOptions, fragment)
+        let fragmentBytes = fragmentCompilation.EmitBytes()
 
-        let spvFragmentInfo = SpirvGenInfo.Create(AddressingModel.Logical, MemoryModel.GLSL450, ExecutionModel.Fragment, [Capability.Shader], ["GLSL.std.450"], ExecutionMode.OriginUpperLeft)
-        let spvFragment = 
-            Checker.Check fragment
-            |> SpirvGen.GenModule spvFragmentInfo
-
-        let vertexBytes =
-            use ms = new System.IO.MemoryStream 100
-            SpirvModule.Serialize (ms, spvVertex)
-            let bytes = Array.zeroCreate (int ms.Length)
-            ms.Position <- 0L
-            ms.Read(bytes, 0, bytes.Length) |> ignore
-            bytes
-        let fragmentBytes =
-            use ms = new System.IO.MemoryStream 100
-            SpirvModule.Serialize (ms, spvFragment)
-            let bytes = Array.zeroCreate (int ms.Length)
-            ms.Position <- 0L
-            ms.Read(bytes, 0, bytes.Length) |> ignore
-            bytes
-
+        let vertexLayouts, vertexInputs = checkShaderInputs VertexStage (vertexCompilation.GetVariables())
+        let fragmentLayouts, _ = checkShaderInputs FragmentStage (fragmentCompilation.GetVariables())
 
         let shaderDesc =
             let layoutSet = HashSet()

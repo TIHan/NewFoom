@@ -1,4 +1,4 @@
-﻿module FSharp.Spirv.Quotations.TypedTree
+﻿module internal FSharp.Spirv.Quotations.TypedTree
 
 open System.Numerics
 open FSharp.Spirv
@@ -7,6 +7,15 @@ open System.Reflection.Metadata
 let mutable nextStamp = 0L 
 let newStamp () =
     System.Threading.Interlocked.Increment &nextStamp 
+
+[<Struct>]
+type TextSpan(start: int, length: int) =
+
+    member _.Start = start
+
+    member _.Length = length
+
+    static member Zero = TextSpan(0, 0)
 
 type Decorations = Decoration list
 
@@ -332,6 +341,7 @@ type SpirvDecl =
     | SpirvDeclVar of SpirvVar
 
 type SpirvTopLevelExpr =
+    | SpirvTopLevelError
     | SpirvTopLevelSequential of SpirvTopLevelExpr * SpirvTopLevelExpr
     | SpirvTopLevelDecl of SpirvDecl
     | SpirvTopLevelLet of SpirvVar * rhs: SpirvTopLevelExpr * body: SpirvTopLevelExpr

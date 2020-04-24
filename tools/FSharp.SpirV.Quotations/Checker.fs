@@ -1,5 +1,4 @@
-﻿[<RequireQualifiedAccess>]
-module FSharp.Spirv.Quotations.Checker
+﻿module FSharp.Spirv.Quotations.Checker
 
 open System
 open System.Numerics
@@ -14,18 +13,17 @@ open FSharp.Spirv.Specification
 open FSharp.Reflection
 open TypedTree
 open Intrinsics
+open ErrorLogger
 
 [<NoEquality;NoComparison>]
 type env =
     {
         varCache: Map<Var, SpirvVar>
-        decls: SpirvDecl list
     }
 
     static member Default =
         {
             varCache = Map.empty
-            decls = []
         }
 
 let getFields (ty: Type) =
@@ -258,20 +256,6 @@ let rec mkSpirvConst expr =
 
     | _ ->
         failwithf "Invalid expression for constant: %A" expr
-
-let addSpirvDeclVar env spvVar =
-    { env with decls = env.decls @ [SpirvDeclVar spvVar] }, spvVar
-
-let addSpirvDeclConst env var rhs =
-    let spvConst = mkSpirvConst rhs
-    let env, spvVar =
-        match spvConst with
-        | SpirvConstArray (elementTy, constants, _) -> 
-            mkSpirvVarOfVarWithArrayType env [] StorageClass.Private [] var elementTy constants.Length
-        | _ -> 
-            mkSpirvVarOfVar env [] StorageClass.Private var
-
-    { env with decls = env.decls @ [SpirvDeclConst (spvVar, spvConst)] }, spvVar
 
 let rec CheckExpr env isReturnable expr =
     match expr with
@@ -617,14 +601,23 @@ let rec CheckTopLevelExpr env expr =
 
     | Let(var, ((Lambda _) as rhs), body) ->
         let env, spvVar = mkSpirvVarOfVar env [] StorageClass.Function var
-        let env, spvVar = addSpirvDeclVar env spvVar
         let env, spvRhs = CheckTopLevelExpr env rhs
         let env, spvBody = CheckTopLevelExpr env body
         env, SpirvTopLevelLet(spvVar, spvRhs, spvBody)
                 
     | Let(var, rhs, body) ->
-        let env, _ = addSpirvDeclConst env var rhs
-        CheckTopLevelExpr env body
+        let spvConst = mkSpirvConst rhs
+        let env, spvVar =
+            match spvConst with
+            | SpirvConstArray (elementTy, constants, _) -> 
+                mkSpirvVarOfVarWithArrayType env [] StorageClass.Private [] var elementTy constants.Length
+            | _ -> 
+                mkSpirvVarOfVar env [] StorageClass.Private var
+
+        let spvDecl = SpirvTopLevelDecl(SpirvDeclConst(spvVar, spvConst))
+        
+        let env, spvBody = CheckTopLevelExpr env body
+        env, SpirvTopLevelSequential(spvDecl, spvBody)
 
     | Lambda(var, ((Lambda _) as body)) ->
         let env, spvVar = mkSpirvVarOfVar env [] StorageClass.Private var
@@ -637,7 +630,7 @@ let rec CheckTopLevelExpr env expr =
         env, SpirvTopLevelLambdaBody(spvVar, checkedBody)
                 
     | _ ->
-        failwithf "Top-level expression not supported: %A" expr
+        error(ErrorText.QuotationExpressionNotSupportedAtTopLevel expr, TextSpan.Zero)
 
 and CheckVariableAux env var args =
     let rec flattenList x acc =
@@ -673,7 +666,6 @@ and CheckVariableAux env var args =
         let storageClass = checkStorageClass storageClassArg
         let customAnnotations = flattenList customAnnotationsArg []
         let env, spvVar = mkSpirvVarOfVar env decorations storageClass var
-        let env, spvVar = addSpirvDeclVar env spvVar
         env, spvVar, customAnnotations
     | _ ->
         failwith "Invalid input or output variable."
@@ -687,5 +679,16 @@ and CheckVariable var (args: Expr list) =
     spvVar, customAnnoations
 
 let Check expr =
-    let _, checkedExpr = CheckTopLevelExpr env.Default expr
-    checkedExpr
+    ErrorLogger.Instance.Reset()
+    let checkedExpr, errors =
+        try
+            let _, checkedExpr = CheckTopLevelExpr env.Default expr
+            let errors = ErrorLogger.Instance.Errors
+            checkedExpr, errors
+        with
+        | :? NonRecoverableErrorException ->
+            SpirvTopLevelError, ErrorLogger.Instance.Errors
+        | ex ->
+            ErrorLogger.Instance.Reset()
+            raise ex
+    checkedExpr, errors

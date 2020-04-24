@@ -1,5 +1,4 @@
-﻿[<RequireQualifiedAccess>]
-module FSharp.Spirv.Quotations.SpirvGen
+﻿module FSharp.Spirv.Quotations.SpirvGen
 
 open System
 open System.Collections.Generic
@@ -8,9 +7,22 @@ open FSharp.NativeInterop
 open FSharp.Spirv
 open TypedTree
 
+type SpirvGenOptions = 
+    {
+        CodeGenDebugInformationEnabled: bool
+        Capabilities: Capability list
+        ExtendedInstructionSets: string list
+        AddressingModel: AddressingModel
+        MemoryModel: MemoryModel
+        ExecutionModel: ExecutionModel
+        ExecutionMode: ExecutionMode option
+    }
+
 [<NoEquality;NoComparison>]
 type cenv =
     {
+        genOptions: SpirvGenOptions
+
         nextResultId: IdResult ref
 
         // Types, Variables, Constants
@@ -54,8 +66,9 @@ type cenv =
         mutable ignoreAddingInstructions: bool
     }
 
-    static member Default =
+    static member Create options =
         {
+            genOptions = options
             nextResultId = ref 1u
             types = Dictionary()
             typesByType = Dictionary()
@@ -96,7 +109,7 @@ let nextResultId cenv =
     cenv.nextResultId := !cenv.nextResultId + 1u
     resultId
 
-let addInstructions cenv instrs =
+let emitInstructions cenv instrs =
     if not cenv.ignoreAddingInstructions then
         for instr in instrs do
             match instr with
@@ -105,10 +118,10 @@ let addInstructions cenv instrs =
             | _ -> ()
             cenv.currentInstructions.Add instr
 
-let addDecorationInstructions cenv instrs =
+let emitDecorationInstructions cenv instrs =
     cenv.decorationInstructions.AddRange instrs
 
-let addEntryPointInstructions cenv instrs =
+let emitEntryPointInstructions cenv instrs =
     cenv.entryPointInstructions.AddRange instrs
 
 let getTypeInstruction cenv id =
@@ -119,6 +132,9 @@ let getTypeByTypeInstruction cenv ty : IdRef =
 
 let getTypePointerInstruction cenv id =
     cenv.typePointers.[id]
+
+let canGenDebugInfo cenv =
+    cenv.genOptions.CodeGenDebugInformationEnabled
     
 let isAggregateType ty =
     match ty with
@@ -143,7 +159,7 @@ let getTypeVectorInfo cenv ty =
 
 let addCompositeExtractInstruction cenv componentTypeId compositeId indices  =
     let resultId = nextResultId cenv
-    addInstructions cenv [OpCompositeExtract(componentTypeId, resultId, compositeId, indices)]
+    emitInstructions cenv [OpCompositeExtract(componentTypeId, resultId, compositeId, indices)]
     resultId
 
 let addCompositeExtractInstructions cenv ty composite =
@@ -176,16 +192,16 @@ let GenTypeAux cenv ty f =
                 |> Array.iteri (fun i (SpirvField(_, fieldTy, _)) ->
                     let i = uint32 i
                     match fieldTy with
-                    | SpirvTypeBool _ -> addDecorationInstructions cenv [OpMemberDecorate(resultId, i, Decoration.Offset offset)]
-                    | SpirvTypeInt _ -> addDecorationInstructions cenv [OpMemberDecorate(resultId, i, Decoration.Offset offset)]
-                    | SpirvTypeFloat _ -> addDecorationInstructions cenv [OpMemberDecorate(resultId, i, Decoration.Offset offset)]
-                    | SpirvTypeVector2 -> addDecorationInstructions cenv [OpMemberDecorate(resultId, i, Decoration.Offset offset)]
-                    | SpirvTypeVector3 -> addDecorationInstructions cenv [OpMemberDecorate(resultId, i, Decoration.Offset offset)]
-                    | SpirvTypeVector4 -> addDecorationInstructions cenv [OpMemberDecorate(resultId, i, Decoration.Offset offset)]
-                    | SpirvTypeMatrix4x4 -> addDecorationInstructions cenv [OpMemberDecorate(resultId, i, Decoration.Offset offset)]
+                    | SpirvTypeBool _ -> emitDecorationInstructions cenv [OpMemberDecorate(resultId, i, Decoration.Offset offset)]
+                    | SpirvTypeInt _ -> emitDecorationInstructions cenv [OpMemberDecorate(resultId, i, Decoration.Offset offset)]
+                    | SpirvTypeFloat _ -> emitDecorationInstructions cenv [OpMemberDecorate(resultId, i, Decoration.Offset offset)]
+                    | SpirvTypeVector2 -> emitDecorationInstructions cenv [OpMemberDecorate(resultId, i, Decoration.Offset offset)]
+                    | SpirvTypeVector3 -> emitDecorationInstructions cenv [OpMemberDecorate(resultId, i, Decoration.Offset offset)]
+                    | SpirvTypeVector4 -> emitDecorationInstructions cenv [OpMemberDecorate(resultId, i, Decoration.Offset offset)]
+                    | SpirvTypeMatrix4x4 -> emitDecorationInstructions cenv [OpMemberDecorate(resultId, i, Decoration.Offset offset)]
                     | SpirvTypeRuntimeArray _ -> 
                         hasRuntimeArray <- true
-                        addDecorationInstructions cenv [OpMemberDecorate(resultId, i, Decoration.Offset offset)]
+                        emitDecorationInstructions cenv [OpMemberDecorate(resultId, i, Decoration.Offset offset)]
                     | SpirvTypeStruct(_, fields, _) ->
                         computeFields fields
                     | _ -> failwithf "Invalid field type, %A." fieldTy // TODO
@@ -195,14 +211,14 @@ let GenTypeAux cenv ty f =
                         offset <- offset + uint32 fieldTy.SizeHint)
             computeFields fields
             if isBlock then
-                addDecorationInstructions cenv [OpDecorate(resultId, Decoration.Block)]
+                emitDecorationInstructions cenv [OpDecorate(resultId, Decoration.Block)]
             else
                 if hasRuntimeArray then
                     failwithf "Struct type, %s, must be marked as a block because it contains a runtime array." name
         | SpirvType.SpirvTypeMatrix4x4 ->
-            addDecorationInstructions cenv [OpDecorate(resultId, Decoration.MatrixStride 0u)]
+            emitDecorationInstructions cenv [OpDecorate(resultId, Decoration.MatrixStride 0u)]
         | SpirvType.SpirvTypeRuntimeArray elementTy ->
-            addDecorationInstructions cenv [OpDecorate(resultId, Decoration.ArrayStride(uint32 elementTy.SizeHint))]
+            emitDecorationInstructions cenv [OpDecorate(resultId, Decoration.ArrayStride(uint32 elementTy.SizeHint))]
         | _ -> ()       
 
         resultId
@@ -246,6 +262,11 @@ let GenConstantAux cenv resultType debugName literal =
 
         match literal with
         | SpirvConstInt (value, _) -> 
+            let mutable value = value
+            let valuePtr = &&value |> NativePtr.toVoidPtr
+            BitConverter.ToUInt32(ReadOnlySpan(valuePtr, 4))
+            |> create
+        | SpirvConstUInt32(value, _) ->
             let mutable value = value
             let valuePtr = &&value |> NativePtr.toVoidPtr
             BitConverter.ToUInt32(ReadOnlySpan(valuePtr, 4))
@@ -436,7 +457,7 @@ let GenFunctionParameterVar cenv var =
         let resultId = nextResultId cenv
         let instr = OpFunctionParameter(resultType, resultId)
 
-        addInstructions cenv [instr]
+        emitInstructions cenv [instr]
 
         cenv.localVariablesByVar.[var] <- resultId
         cenv.debugNames.Add(string resultId + "_" + var.Name, resultId)
@@ -542,7 +563,7 @@ let tryEmitLoad cenv pointer =
         match baseType with
         | Some baseType ->
             let resultId = nextResultId cenv
-            addInstructions cenv [OpLoad(baseType, resultId, pointer, None)]
+            emitInstructions cenv [OpLoad(baseType, resultId, pointer, None)]
             Some resultId
         | _ ->
             failwith "Invalid pointer type."
@@ -551,7 +572,7 @@ let tryEmitLoad cenv pointer =
 
 let emitLabel cenv label =
     if cenv.labels.Add label then
-        addInstructions cenv [OpLabel label]
+        emitInstructions cenv [OpLabel label]
     else
         failwithf "Label, %i, has already been generated." label
 
@@ -592,7 +613,7 @@ let GetVarResult cenv var =
 let rec GenExpr cenv (env: env) returnable expr =
     match expr with
     | SpirvUnreachable ->
-        addInstructions cenv [OpUnreachable]
+        emitInstructions cenv [OpUnreachable]
         ZeroResultId
 
     | SpirvConst spvConst ->
@@ -601,7 +622,7 @@ let rec GenExpr cenv (env: env) returnable expr =
     | SpirvLet(spvVar, rhs, body) ->
         let spvVarId = GenLocalVar cenv spvVar
         let rhsId = GenExpr cenv env NotReturnable rhs |> deref cenv
-        addInstructions cenv [OpStore(spvVarId, rhsId, None)]
+        emitInstructions cenv [OpStore(spvVarId, rhsId, None)]
         GenExpr cenv env returnable body
 
     | SpirvSequential(expr1, expr2) ->
@@ -620,7 +641,7 @@ let rec GenExpr cenv (env: env) returnable expr =
         let resultType = getAccessChainResultType cenv receiverId 0
         let resultId = nextResultId cenv
         let instr = OpAccessChain(resultType, resultId, receiverId, [argId])
-        addInstructions cenv [instr]
+        emitInstructions cenv [instr]
         cenv.locals.[resultId] <- instr
         resultId
 
@@ -632,7 +653,7 @@ let rec GenExpr cenv (env: env) returnable expr =
         let resultType = getAccessChainResultType cenv receiverId 0
         let resultId = nextResultId cenv
         let instr = OpAccessChain(resultType, resultId, receiverId, [argId])
-        addInstructions cenv [instr;OpStore(resultId, valueArg, None)]
+        emitInstructions cenv [instr;OpStore(resultId, valueArg, None)]
         ZeroResultId
 
     | SpirvVar var ->
@@ -644,7 +665,7 @@ let rec GenExpr cenv (env: env) returnable expr =
 
         let rhsId = GenExpr cenv env NotReturnable rhs |> deref cenv
         let id = GetVarResult cenv var
-        addInstructions cenv [OpStore(id, rhsId, None)]
+        emitInstructions cenv [OpStore(id, rhsId, None)]
         ZeroResultId
 
     | SpirvExprOp op ->
@@ -661,7 +682,7 @@ let rec GenExpr cenv (env: env) returnable expr =
                     ZeroResultId
                 else
                     nextResultId cenv
-            addInstructions cenv [instr retTy resultId args]
+            emitInstructions cenv [instr retTy resultId args]
             resultId
 
     | SpirvIntrinsicFieldGet fieldGet ->
@@ -699,7 +720,7 @@ let rec GenExpr cenv (env: env) returnable expr =
         let indexId = GenExpr cenv env NotReturnable (SpirvConst (SpirvConstInt(index, [])))
         let accessChainPointerId = nextResultId cenv
         let instr = OpAccessChain(resultType, accessChainPointerId, receiverId, [indexId])
-        addInstructions cenv [instr]
+        emitInstructions cenv [instr]
         cenv.locals.[accessChainPointerId] <- instr
         accessChainPointerId
 
@@ -723,7 +744,7 @@ let rec GenExpr cenv (env: env) returnable expr =
         let retTyId = GenType cenv retTy
 
         let resId = nextResultId cenv
-        addInstructions cenv [OpFunctionCall(retTyId, resId, funId, argIds)]
+        emitInstructions cenv [OpFunctionCall(retTyId, resId, funId, argIds)]
         resId
 
 and GenIfThenElse cenv env returnable condExpr trueExpr falseExpr retTy =
@@ -733,8 +754,8 @@ and GenIfThenElse cenv env returnable condExpr trueExpr falseExpr retTy =
     let trueLabel = nextResultId cenv
     let falseLabel = nextResultId cenv
 
-    addInstructions cenv [OpSelectionMerge(contLabel, SelectionControl.None)]
-    addInstructions cenv [OpBranchConditional(resultIdCond, trueLabel, falseLabel, [])]
+    emitInstructions cenv [OpSelectionMerge(contLabel, SelectionControl.None)]
+    emitInstructions cenv [OpBranchConditional(resultIdCond, trueLabel, falseLabel, [])]
 
     emitLabel cenv trueLabel
     cenv.lastLabel <- trueLabel
@@ -760,7 +781,7 @@ and GenIfThenElse cenv env returnable condExpr trueExpr falseExpr retTy =
         let resultType = GenType cenv retTy
         let resultId = nextResultId cenv
         let operands = [PairIdRefIdRef(trueResult, trueLabel);PairIdRefIdRef(falseResult, falseLabel)]
-        addInstructions cenv [OpPhi(resultType, resultId, operands)]
+        emitInstructions cenv [OpPhi(resultType, resultId, operands)]
         resultId
 
 and GenExprBlockAux cenv env blockLabel blockLabelContinue returnable expr =
@@ -768,14 +789,14 @@ and GenExprBlockAux cenv env blockLabel blockLabelContinue returnable expr =
 
     let resultId =
         if blockLabelContinue > 0u then
-            addInstructions cenv [OpBranch blockLabelContinue]
+            emitInstructions cenv [OpBranch blockLabelContinue]
             resultId
         else
             if returnable = BlockReturnable then
                 if resultId = ZeroResultId then
-                    addInstructions cenv [OpReturn]
+                    emitInstructions cenv [OpReturn]
                 else
-                    addInstructions cenv [OpReturnValue resultId]
+                    emitInstructions cenv [OpReturnValue resultId]
                 resultId
             else
                 resultId
@@ -794,7 +815,7 @@ and GenFunction cenv env isEntryPoint (args: SpirvVar list) (body: SpirvExpr) =
     let retTy = body.Type
 
     let functionResultId = nextResultId cenv
-    addInstructions cenv 
+    emitInstructions cenv 
         [ OpFunction(GenType cenv retTy, functionResultId, FunctionControl.None, 
                      GenTypeFunction cenv argTys retTy) ]
 
@@ -808,13 +829,13 @@ and GenFunction cenv env isEntryPoint (args: SpirvVar list) (body: SpirvExpr) =
     GenExprBlock cenvBody env blockLabel BlockReturnable body |> ignore
 
     emitLabel cenv blockLabel
-    addInstructions cenv cenv.localVariables.Values
+    emitInstructions cenv cenv.localVariables.Values
     if isEntryPoint then
-        addInstructions cenv cenv.entryPointInstructions
+        emitInstructions cenv cenv.entryPointInstructions
 
     cenv.currentInstructions.AddRange cenvBody.currentInstructions
 
-    addInstructions cenv [OpFunctionEnd]
+    emitInstructions cenv [OpFunctionEnd]
 
     cenv.locals.Clear()
     cenv.localVariables.Clear()
@@ -834,7 +855,7 @@ and GenVector cenv env returnable retTy args =
         |> List.concat
 
     let resultId = nextResultId cenv
-    addInstructions cenv [OpCompositeConstruct(GenType cenv retTy, resultId, constituents)]
+    emitInstructions cenv [OpCompositeConstruct(GenType cenv retTy, resultId, constituents)]
     resultId
 
 let GenDecl cenv decl =
@@ -843,7 +864,7 @@ let GenDecl cenv decl =
         // Review: Do we need to do all this work for scalar constants?
         let varId = GenGlobalVar cenv var
         let constId = GenConst cenv constt
-        addEntryPointInstructions cenv [OpStore(varId, constId, None)]
+        emitEntryPointInstructions cenv [OpStore(varId, constId, None)]
         varId
 
     | SpirvDeclVar var ->
@@ -851,6 +872,9 @@ let GenDecl cenv decl =
 
 let rec GenTopLevelExpr cenv env isEntryPoint lambdaArgs expr =
     match expr with
+    | SpirvTopLevelError _ ->
+        failwith "Top-level error expression."
+
     | SpirvTopLevelSequential (expr1, expr2) ->
         GenTopLevelExpr cenv env false [] expr1 |> ignore
         GenTopLevelExpr cenv env isEntryPoint [] expr2
@@ -870,8 +894,8 @@ let rec GenTopLevelExpr cenv env isEntryPoint lambdaArgs expr =
         let lambdaArgs = lambdaArgs @ [var]
         GenFunction cenv env isEntryPoint lambdaArgs body
 
-let GenModule (info: SpirvGenInfo) expr =
-    let cenv = cenv.Default
+let GenModule options expr =
+    let cenv = cenv.Create options
 
     let entryPoint = GenTopLevelExpr cenv { blockScope = 0; blockLabel = 0u } true [] expr
 
@@ -941,17 +965,17 @@ let GenModule (info: SpirvGenInfo) expr =
         |> List.ofSeq
 
     let instrs = 
-        (info.Capabilities
+        (options.Capabilities
          |> List.map OpCapability)
         @
-        (info.ExtendedInstructionSets
+        (options.ExtendedInstructionSets
          |> List.map (fun x -> OpExtInstImport (nextResultId cenv, x)))
         @
-        [OpMemoryModel (info.AddressingModel, info.MemoryModel)]
+        [OpMemoryModel (options.AddressingModel, options.MemoryModel)]
         @
-        [OpEntryPoint (info.ExecutionModel, entryPoint, "main", interfaces)]
+        [OpEntryPoint (options.ExecutionModel, entryPoint, "main", interfaces)]
         @
-        (info.ExecutionMode
+        (options.ExecutionMode
          |> Option.map (fun executionMode -> OpExecutionMode (entryPoint, executionMode))
          |> Option.toList)
         @
