@@ -119,14 +119,10 @@ type Win32Game (windowTitle: string, svGame: AbstractServerGame, clGame: Abstrac
 
 open FSharp.Window
 
-let private hideCursor hWnd =
-    let mutable rect = Unchecked.defaultof<RECT>
-    GetWindowRect(hWnd, &&rect) |> ignore
+let private hideCursor () =
     ShowCursor(0uy) |> ignore
 
-let private showCursor hWnd =
-    let mutable rect = Unchecked.defaultof<RECT>
-    GetWindowRect(hWnd, &&rect) |> ignore
+let private showCursor () =
     ShowCursor(1uy) |> ignore
 
 let private clipCursor hWnd =
@@ -186,6 +182,7 @@ type Win32Window(title: string, fixedUpdateInterval: float) as this =
                 | ValueSome point ->
                     let xrel = point.x - prevPoint.x
                     let yrel = point.y - prevPoint.y
+                    prevPoint <- point
                     if isCursorHidden then
                         centerCursor hwnd
                     this.OnMouseMoved(int point.x, int point.y, int xrel, int yrel)
@@ -216,10 +213,12 @@ type Win32Window(title: string, fixedUpdateInterval: float) as this =
             | _ -> ()
 
     member private __.WndProc hWnd msg wParam lParam =
-        if isCursorHidden then
-            hideCursor hWnd
         if isCursorClipped then
-            clipCursor hWnd
+            clipCursor hwnd
+
+        if isCursorHidden then
+            hideCursor ()
+
         match int msg with
         | x when x = WM_SYSCOMMAND ->
             match int wParam with
@@ -252,20 +251,24 @@ type Win32Window(title: string, fixedUpdateInterval: float) as this =
         hwnd <- hwnd2
         hinstance <- hinstance2
 
+        centerCursor hwnd
+
         prevPoint <- 
             match tryGetCursorPos hwnd with
             | ValueSome point -> point
             | _ -> POINT()
 
     override _.ShowCursor() =
+        centerCursor hwnd
         if isCursorHidden then
             isCursorHidden <- false
-            showCursor hwnd
+            showCursor ()
 
     override _.HideCursor() =
+        centerCursor hwnd
         if not isCursorHidden then
             isCursorHidden <- true
-            hideCursor hwnd
+            hideCursor ()
 
     override _.ClipCursor() =
         if not isCursorClipped then
@@ -299,6 +302,9 @@ type Win32Window(title: string, fixedUpdateInterval: float) as this =
 
     member __.Hinstance = hinstance
 
+let SetWindowPosition(hWnd: nativeint, x: int, y: int) =
+    SetWindowPos(hWnd, nativeint 0, x, y, 0, 0, 0x0001 ||| 0x0010) |> ignore
+
 let SetConsolePosition(x: int, y: int) =
     let ptr = GetConsoleWindow()
-    SetWindowPos(ptr, nativeint 0, x, y, 0, 0, 0x0001 ||| 0x0010) |> ignore
+    SetWindowPosition(ptr, x, y)

@@ -191,8 +191,11 @@ type ExampleWindow() =
     let mutable isClosing = false
     let inputs = ResizeArray()
 
-    override _.OnInitialized() =
+    override this.OnInitialized() =
         base.OnInitialized()
+
+    //    this.HideCursor()
+      //  this.ClipCursor()
 
         loadMusic wad
 
@@ -241,6 +244,11 @@ type ExampleWindow() =
         base.OnMouseMoved(x, y, xrel, yrel)
         inputs.Add(InputEvent.MouseMoved(x, y, xrel, yrel))
 
+    override this.OnMoved(x, y) =
+        base.OnMoved(x, y)
+       // SetConsolePosition(x, y)
+       // SetWindowPosition(this.Hwnd, x, y)
+
 
     override this.OnFixedUpdate(_, _) =
         if isClosing then true
@@ -262,7 +270,7 @@ type ExampleWindow() =
 
         let mutable xrel = 0.f
         let mutable yrel = 0.f
-        inputs
+        inputs.ToArray()
         |> Seq.iter (fun x ->
             let v =
                 match x with
@@ -284,11 +292,11 @@ type ExampleWindow() =
             else
                 acc
 
-        if xrel <> 0.f || yrel <> 0.f then
-            yaw <- yaw + (xrel * -0.25f) * (MathF.PI / 180.f)
-            pitch <- pitch + (yrel * -0.25f) * (MathF.PI / 180.f)
-            let rotation = Quaternion.CreateFromAxisAngle (Vector3.UnitX, 90.f * (float32 Math.PI / 180.f))
-            setRotation (rotation * Quaternion.CreateFromYawPitchRoll(yaw * 0.25f, pitch * 0.25f, 0.f))
+        //if xrel <> 0.f || yrel <> 0.f then
+        //    yaw <- yaw + (xrel) * (MathF.PI / 180.f)
+        //    pitch <- pitch + (yrel) * (MathF.PI / 180.f)
+        //    let rotation = Quaternion.CreateFromAxisAngle (Vector3.UnitX, 90.f * (float32 Math.PI / 180.f))
+        //    setRotation (rotation * Quaternion.CreateFromYawPitchRoll(yaw * 0.25f, pitch * 0.25f, 0.f))
 
         view.Translation <- view.Translation + acc
         mvp <-
