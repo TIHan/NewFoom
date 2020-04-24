@@ -22,51 +22,27 @@ open FsGame.Core.Collections
 #nowarn "9"
 #nowarn "51"
 
-type IVulkanWindowEvents =
-    inherit IWindowEvents
-
-    abstract OnVulkanInitialized: VulkanDevice * FalGraphics -> unit
-    
-
-type VulkanWin32WindowEvents(title, engineName, events: IVulkanWindowEvents) =
+type Win32VulkanWindow(title, engineName, fixedUpdateInterval) =
+    inherit Win32Window(title, fixedUpdateInterval)
 
     let resized = Event<unit>()
     let mutable device = Unchecked.defaultof<_>
     let mutable instance = Unchecked.defaultof<_>
 
-    interface IWindowEvents with
+    override this.OnInitialized() =
+        base.OnInitialized()
+        device <- VulkanDevice.CreateWin32(this.Hwnd, this.Hinstance, title, engineName, [VulkanDeviceLayer.LunarGStandardValidation], [], fun str -> printfn "validation layer: %s" str)
+        instance <- FalGraphics.Create (device, resized.Publish)
+        instance.SetupCommands() // We need to get rid of this thing.
 
-        member _.OnWin32Initialized(hwnd, hinstance) =
-            device <- VulkanDevice.CreateWin32(hwnd, hinstance, title, engineName, [VulkanDeviceLayer.LunarGStandardValidation], [], fun str -> printfn "validation layer: %s" str)
-            instance <- FalGraphics.Create (device, resized.Publish)
-            instance.SetupCommands() // We need to get rid of this thing.
-            events.OnWin32Initialized(hwnd, hinstance)
-            events.OnVulkanInitialized(device, instance)
+    override this.OnClosing() =
+        base.OnClosing()
+        (instance :> IDisposable).Dispose()
+        (device :> IDisposable).Dispose()
 
-        member this.OnClosing() = events.OnClosing()
+    member _.VulkanDevice = device
 
-        member this.OnChanged(width, height, x, y) = events.OnChanged(width, height, x, y)
-
-        member this.OnKeyPressed key = events.OnKeyPressed key
-          
-        member this.OnKeyReleased key = events.OnKeyReleased key
-         
-        member this.OnMouseButtonPressed button = events.OnMouseButtonPressed button
-        
-        member this.OnMouseButtonReleased button = events.OnMouseButtonReleased button
-         
-        member this.OnMouseWheelScrolled(x, y) = events.OnMouseWheelScrolled(x, y)
-          
-        member this.OnMouseMoved(x, y, xrel, yrel) = events.OnMouseMoved(x, y, xrel, yrel)
-        
-        member this.OnFixedUpdate(time, deltaTime) = events.OnFixedUpdate(time, deltaTime)
-         
-        member this.OnUpdate(time, deltaTime) = events.OnUpdate(time, deltaTime)
-
-let startVulkanWin32Window title engineName updateInterval width height events =
-    let events2 = VulkanWin32WindowEvents(title, engineName, events)
-    let window = Win32Window (title, width, height, updateInterval, events2)
-    window.Start()
+    member _.VulkanGraphics = instance
 
 //
 

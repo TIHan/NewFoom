@@ -30,8 +30,6 @@ let private createWin32Window (windowTitle: string) (del: WndProcDelegate) =
         IntPtr.Zero, IntPtr.Zero
     else
 
-    printfn "- Window Class Registered"
-
     let hwnd =
         CreateWindowExW(
             0u,
@@ -53,10 +51,8 @@ let private createWin32Window (windowTitle: string) (del: WndProcDelegate) =
         IntPtr.Zero, IntPtr.Zero
     else
 
-    printfn "- Created Window"
-
-    printfn "ShowWindow Result: %A" <| ShowWindow(hwnd, 1)
-    printfn "UpdateWindow Result: %A" <| UpdateWindow(hwnd)
+    ShowWindow(hwnd, 1) |> ignore
+    UpdateWindow(hwnd) |> ignore
     hwnd, hInstance
 
 [<Sealed>]
@@ -126,8 +122,20 @@ open FSharp.Window
 let private hideCursor hWnd =
     let mutable rect = Unchecked.defaultof<RECT>
     GetWindowRect(hWnd, &&rect) |> ignore
-    ClipCursor(&&rect) |> ignore
     ShowCursor(0uy) |> ignore
+
+let private showCursor hWnd =
+    let mutable rect = Unchecked.defaultof<RECT>
+    GetWindowRect(hWnd, &&rect) |> ignore
+    ShowCursor(1uy) |> ignore
+
+let private clipCursor hWnd =
+    let mutable rect = Unchecked.defaultof<RECT>
+    GetWindowRect(hWnd, &&rect) |> ignore
+    ClipCursor(&&rect) |> ignore
+
+let private unclipCursor () =
+    ClipCursor(nativeint 0 |> NativePtr.ofNativeInt) |> ignore
 
 let private centerCursor hWnd =
     let mutable rect = Unchecked.defaultof<RECT>
@@ -144,15 +152,15 @@ let private tryGetCursorPos hWnd =
     else
         ValueNone
 
-[<Sealed>]
-type Win32Window(title: string, width: int, weight: int, fixedUpdateInterval: float, events: IWindowEvents) as this =
+type Win32Window(title: string, fixedUpdateInterval: float) as this =
+    inherit AbstractWindow()
 
     let mutable del = Unchecked.defaultof<_>
     let mutable hwnd = nativeint 0
     let mutable hinstance = nativeint 0
 
-    let closing = Event<unit> ()
-    let resized = Event<unit> ()
+    let mutable isCursorHidden = false
+    let mutable isCursorClipped = false
 
     let mutable prevPoint = POINT()
 
@@ -167,39 +175,40 @@ type Win32Window(title: string, width: int, weight: int, fixedUpdateInterval: fl
             match int msg.message with
             | x when x = WM_KEYDOWN || x = WM_SYSKEYDOWN ->
                 if hashKey.Add(char msg.lParam) then
-                    events.OnKeyPressed(char msg.lParam)
+                    this.OnKeyPressed(char msg.lParam)
 
             | x when x = WM_KEYUP || x = WM_SYSKEYUP ->
                 if hashKey.Remove(char msg.lParam) then
-                    events.OnKeyReleased(char msg.lParam)
+                    this.OnKeyReleased(char msg.lParam)
 
             | x when int x = WM_MOUSEMOVE ->
                 match tryGetCursorPos hwnd with
                 | ValueSome point ->
                     let xrel = point.x - prevPoint.x
                     let yrel = point.y - prevPoint.y
-                    centerCursor hwnd
-                    events.OnMouseMoved(int point.x, int point.y, int xrel, int yrel)
+                    if isCursorHidden then
+                        centerCursor hwnd
+                    this.OnMouseMoved(int point.x, int point.y, int xrel, int yrel)
                 | _ ->
                     ()
 
             | x when int x = WM_LBUTTONDOWN ->
-                events.OnMouseButtonPressed MouseButtonType.Left
+                this.OnMouseButtonPressed MouseButtonType.Left
 
             | x when int x = WM_LBUTTONUP ->
-                events.OnMouseButtonReleased MouseButtonType.Left
+                this.OnMouseButtonReleased MouseButtonType.Left
 
             | x when int x = WM_MBUTTONDOWN ->
-                events.OnMouseButtonPressed MouseButtonType.Middle
+                this.OnMouseButtonPressed MouseButtonType.Middle
 
             | x when int x = WM_MBUTTONUP ->
-                events.OnMouseButtonReleased MouseButtonType.Middle
+                this.OnMouseButtonReleased MouseButtonType.Middle
 
             | x when int x = WM_RBUTTONDOWN ->
-                events.OnMouseButtonPressed MouseButtonType.Right
+                this.OnMouseButtonPressed MouseButtonType.Right
 
             | x when int x = WM_RBUTTONUP ->
-                events.OnMouseButtonReleased MouseButtonType.Right
+                this.OnMouseButtonReleased MouseButtonType.Right
 
             | x when int x = WM_QUIT ->
                 CloseWindow(hwnd) |> ignore
@@ -207,20 +216,28 @@ type Win32Window(title: string, width: int, weight: int, fixedUpdateInterval: fl
             | _ -> ()
 
     member private __.WndProc hWnd msg wParam lParam =
-        hideCursor hWnd
+        if isCursorHidden then
+            hideCursor hWnd
+        if isCursorClipped then
+            clipCursor hWnd
         match int msg with
         | x when x = WM_SYSCOMMAND ->
             match int wParam with
             | x when x = SC_KEYMENU -> nativeint 0
             | x when x = SC_CLOSE -> 
-                events.OnClosing()
+                this.OnClosing()
                 DefWindowProc(hWnd, msg, wParam, lParam)
             | _ ->
                 DefWindowProc(hWnd, msg, wParam, lParam)
         | x when x = WM_SIZE ->
             let mutable rect = Unchecked.defaultof<RECT>
             GetWindowRect(hWnd, &&rect) |> ignore
-            events.OnChanged(int rect.left - int rect.right, int rect.top - int rect.bottom, int rect.top, int rect.left)
+            this.OnSized(int rect.right - int rect.left, int rect.bottom - int rect.top)
+            DefWindowProc(hWnd, msg, wParam, lParam)
+        | x when x = WM_MOVE ->
+            let mutable rect = Unchecked.defaultof<RECT>
+            GetWindowRect(hWnd, &&rect) |> ignore
+            this.OnMoved(int rect.left, int rect.top)
             DefWindowProc(hWnd, msg, wParam, lParam)
         | _ ->
             DefWindowProc(hWnd, msg, wParam, lParam)
@@ -228,25 +245,40 @@ type Win32Window(title: string, width: int, weight: int, fixedUpdateInterval: fl
     // Store this so it doesn't get collected cause a System.ExecutionEngineException.
     member private _.WndProcDelegate = del
 
-    member __.Closing = closing.Publish
-
-    member __.Resized = resized.Publish
-
-    member __.Start() =
+    override _.OnInitialized() =
         del <- WndProcDelegate(this.WndProc)
 
         let hwnd2, hinstance2 = createWin32Window title del
         hwnd <- hwnd2
         hinstance <- hinstance2
 
-        events.OnWin32Initialized(hwnd, hinstance)
-
-        centerCursor hwnd
         prevPoint <- 
             match tryGetCursorPos hwnd with
             | ValueSome point -> point
             | _ -> POINT()
 
+    override _.ShowCursor() =
+        if isCursorHidden then
+            isCursorHidden <- false
+            showCursor hwnd
+
+    override _.HideCursor() =
+        if not isCursorHidden then
+            isCursorHidden <- true
+            hideCursor hwnd
+
+    override _.ClipCursor() =
+        if not isCursorClipped then
+            isCursorClipped <- true
+            clipCursor hwnd
+
+    override _.UnclipCursor() =
+        if isCursorClipped then
+            isCursorClipped <- false
+            unclipCursor ()
+
+    member this.Start() =
+        this.OnInitialized()
         GameLoop.start
             fixedUpdateInterval
             poll
@@ -254,15 +286,19 @@ type Win32Window(title: string, width: int, weight: int, fixedUpdateInterval: fl
                 let time = TimeSpan.FromTicks ticks
                 let deltaTime = TimeSpan.FromTicks deltaTicks
 
-                events.OnFixedUpdate(time, deltaTime)
+                this.OnFixedUpdate(time, deltaTime)
             )
             (fun ticks deltaTicks ->
                 let time = TimeSpan.FromTicks ticks
                 let deltaTime = TimeSpan.FromTicks deltaTicks
 
-                events.OnUpdate(time, deltaTime)
+                this.OnUpdate(time, deltaTime)
             )
 
     member __.Hwnd = hwnd
 
     member __.Hinstance = hinstance
+
+let SetConsolePosition(x: int, y: int) =
+    let ptr = GetConsoleWindow()
+    SetWindowPos(ptr, nativeint 0, x, y, 0, 0, 0x0001 ||| 0x0010) |> ignore

@@ -230,6 +230,9 @@ type LPSECURITY_ATTRIBUTES = nativeptr<SECURITY_ATTRIBUTES>
 [<DllImport("kernel32.dll")>]
 extern HANDLE CreateEventW(LPSECURITY_ATTRIBUTES lpEventAttributes, BOOL bManualReset, BOOL bInitialState, LPCWSTR lpName)
 
+[<DllImport("kernel32.dll")>]
+extern nativeint GetConsoleWindow()
+
 [<UnmanagedFunctionPointer(CallingConvention.Cdecl)>]
 type WndProcDelegate = delegate of HWND * UINT * nativeint * nativeint -> nativeint
 
@@ -250,3 +253,6 @@ extern BOOL GetWindowRect(HWND hWnd, RECT* lpRect)
 
 [<DllImport("user32.dll")>]
 extern BOOL SetCursorPos(int x, int y)
+
+[<DllImport("user32.dll")>]
+extern nativeint SetWindowPos(HWND hWnd, HWND hWndInsertAfter, int x, int Y, int cx, int cy, int wFlags);

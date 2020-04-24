@@ -164,11 +164,10 @@ type InputEvent =
     | MouseMoved of x: int * y: int * xrel: int * yrel: int
     | MouseWheelScrolled of x: int * y: int
     
+type ExampleWindow() =
+    inherit FsGame.Renderer.Vulkan.Win32VulkanWindow("Example", "forward 1.0", 30.)
 
-[<EntryPoint>]
-let main argv =
     let wad = Wad.FromFile("../../../../../../Foom-deps/testwads/doom1.wad")
-    loadMusic wad
 
     let mutable mvp = Unchecked.defaultof<_>
 
@@ -179,152 +178,159 @@ let main argv =
 
     let mutable mvpUniform = Unchecked.defaultof<_>
 
-    eventQueue.Enqueue(fun graphics ->
-        let mvpUniform2, mvp2 = FsGame.Renderer.Vulkan.loadMap "e1m1" wad graphics
-        graphics.SetupCommands()
-        mvpUniform <- mvpUniform2
-        mvp <- mvp2
-    )
-
     let sbOut = new StringBuilder()
     let sbErr = new StringBuilder()
     let inStream = new StringReader("")
     let outStream = new StringWriter(sbOut)
     let errStream = new StringWriter(sbErr)
 
-    use fsi = FSharpInteractive.Initialize(inStream, outStream, errStream)
+    let fsi = FSharpInteractive.Initialize(inStream, outStream, errStream)
 
     let lineQueue = System.Collections.Concurrent.ConcurrentQueue()
 
-    async {
-        let rec loop () =
-            let lineStr = Console.ReadLine()
-            lineQueue.Enqueue(lineStr)
-            loop ()
-        loop ()
-    } |> Async.Start
-
-    let mutable device = Unchecked.defaultof<_>
-    let mutable graphics = Unchecked.defaultof<_>
     let mutable isClosing = false
     let inputs = ResizeArray()
-    let windowEvents = 
-        { new FsGame.Renderer.Vulkan.IVulkanWindowEvents with
 
-            member _.OnVulkanInitialized(device2, graphics2) =
-                device <- device2
-                graphics <- graphics2
+    override _.OnInitialized() =
+        base.OnInitialized()
 
-          interface IWindowEvents with
+        loadMusic wad
 
-            member _.OnWin32Initialized(_, _) = ()
+        eventQueue.Enqueue(fun graphics ->
+            let mvpUniform2, mvp2 = FsGame.Renderer.Vulkan.loadMap "e1m1" wad graphics
+            graphics.SetupCommands()
+            mvpUniform <- mvpUniform2
+            mvp <- mvp2
+        )
 
-            member this.OnClosing() = isClosing <- true
+        async {
+            let rec loop () =
+                let lineStr = Console.ReadLine()
+                lineQueue.Enqueue(lineStr)
+                loop ()
+            loop ()
+        } |> Async.Start
 
-            member this.OnChanged(width, height, x, y) = ()
+    override _.OnClosing() =
+        base.OnClosing()
+        isClosing <- true
 
-            member this.OnKeyPressed key = inputs.Add(InputEvent.KeyPressed key)
-              
-            member this.OnKeyReleased key = inputs.Add(InputEvent.KeyPressed key)
-             
-            member this.OnMouseButtonPressed button = inputs.Add(InputEvent.MouseButtonPressed button)
-            
-            member this.OnMouseButtonReleased button = inputs.Add(InputEvent.MouseButtonReleased button)
-             
-            member this.OnMouseWheelScrolled(x, y) = inputs.Add(InputEvent.MouseWheelScrolled(x, y))
-              
-            member this.OnMouseMoved(x, y, xrel, yrel) = inputs.Add(InputEvent.MouseMoved(x, y, xrel, yrel))
-            
-            member this.OnFixedUpdate(time, deltaTime) =
-                if isClosing then true
-                else
+        (fsi :> IDisposable).Dispose()
+    
+    override this.OnKeyPressed key = 
+        base.OnKeyPressed key
+        inputs.Add(InputEvent.KeyPressed key)
 
-                let mutable acc = Vector3.Zero
+    override this.OnKeyReleased key = 
+        base.OnKeyReleased key
+        inputs.Add(InputEvent.KeyPressed key)
 
-                let mutable view = mvp.view
+    override this.OnMouseButtonPressed button = 
+        base.OnMouseButtonPressed button
+        inputs.Add(InputEvent.MouseButtonPressed button)
 
-                let getRotation () =
-                    Quaternion.CreateFromRotationMatrix view
+    override this.OnMouseButtonReleased button = 
+        base.OnMouseButtonReleased button
+        inputs.Add(InputEvent.MouseButtonReleased button)
 
-                let setRotation quat =
-                    let mutable m = Matrix4x4.CreateFromQuaternion quat
-                    m.Translation <- view.Translation
-                    view <- m
+    override this.OnMouseWheelScrolled(x, y) = 
+        base.OnMouseWheelScrolled(x, y)
+        inputs.Add(InputEvent.MouseWheelScrolled(x, y))
 
-                let rotation = getRotation ()
+    override this.OnMouseMoved(x, y, xrel, yrel) = 
+        base.OnMouseMoved(x, y, xrel, yrel)
+        inputs.Add(InputEvent.MouseMoved(x, y, xrel, yrel))
 
-                let mutable xrel = 0.f
-                let mutable yrel = 0.f
-                inputs
-                |> Seq.iter (fun x ->
-                    let v =
-                        match x with
-                        | InputEvent.KeyPressed 'W' -> Vector3.Transform (-Vector3.UnitZ, rotation)
-                        | InputEvent.KeyPressed 'S' -> Vector3.Transform (Vector3.UnitZ, rotation)
-                        | InputEvent.KeyPressed 'A' -> Vector3.Transform (-Vector3.UnitX, rotation)
-                        | InputEvent.KeyPressed 'D' -> Vector3.Transform (Vector3.UnitX, rotation)
-                        | InputEvent.MouseMoved(_, _, xrel2, yrel2) ->
-                            xrel <- float32 xrel2
-                            yrel <- float32 yrel2
-                            Vector3.Zero
-                        | _ -> Vector3.Zero
-                    acc <- acc + (Vector3(v.X, v.Y, v.Z))
-                )
 
-                acc <-
-                    if acc <> Vector3.Zero then
-                        (acc |> Vector3.Normalize) * 50.f
-                    else
-                        acc
+    override this.OnFixedUpdate(_, _) =
+        if isClosing then true
+        else
 
-                if xrel <> 0.f || yrel <> 0.f then
-                    yaw <- yaw + (xrel * -0.25f) * (MathF.PI / 180.f)
-                    pitch <- pitch + (yrel * -0.25f) * (MathF.PI / 180.f)
-                    let rotation = Quaternion.CreateFromAxisAngle (Vector3.UnitX, 90.f * (float32 Math.PI / 180.f))
-                    setRotation (rotation * Quaternion.CreateFromYawPitchRoll(yaw * 0.25f, pitch * 0.25f, 0.f))
+        let mutable acc = Vector3.Zero
 
-                view.Translation <- view.Translation + acc
-                mvp <-
-                    { mvp with view = view }               
+        let mutable view = mvp.view
 
-                inputs.Clear()
+        let getRotation () =
+            Quaternion.CreateFromRotationMatrix view
 
-                let mutable canPrintArrow = false
-                let mutable lineStr = ""
-                while lineQueue.TryDequeue &lineStr do
-                    canPrintArrow <- true
-                    let errorString = fsi.SubmitInteraction lineStr
-                    if not (String.IsNullOrWhiteSpace(errorString)) then
-                        Console.ForegroundColor <- ConsoleColor.Red
-                        printfn "%s\n" errorString
-                        Console.ResetColor()
+        let setRotation quat =
+            let mutable m = Matrix4x4.CreateFromQuaternion quat
+            m.Translation <- view.Translation
+            view <- m
 
-                if sbOut.Length > 0 then
-                    printf "%s" (sbOut.ToString())
+        let rotation = getRotation ()
 
-                sbOut.Clear() |> ignore
-                sbErr.Clear() |> ignore
+        let mutable xrel = 0.f
+        let mutable yrel = 0.f
+        inputs
+        |> Seq.iter (fun x ->
+            let v =
+                match x with
+                | InputEvent.KeyPressed 'W' -> Vector3.Transform (-Vector3.UnitZ, rotation)
+                | InputEvent.KeyPressed 'S' -> Vector3.Transform (Vector3.UnitZ, rotation)
+                | InputEvent.KeyPressed 'A' -> Vector3.Transform (-Vector3.UnitX, rotation)
+                | InputEvent.KeyPressed 'D' -> Vector3.Transform (Vector3.UnitX, rotation)
+                | InputEvent.MouseMoved(_, _, xrel2, yrel2) ->
+                    xrel <- float32 xrel2
+                    yrel <- float32 yrel2
+                    Vector3.Zero
+                | _ -> Vector3.Zero
+            acc <- acc + (Vector3(v.X, v.Y, v.Z))
+        )
 
-                if canPrintArrow then
-                    printf "> "
+        acc <-
+            if acc <> Vector3.Zero then
+                (acc |> Vector3.Normalize) * 50.f
+            else
+                acc
 
-                match eventQueue.TryDequeue() with
-                | true, f -> f graphics
-                | _ -> ()
-                if not (obj.ReferenceEquals(mvpUniform, null)) then
-                    mvpUniform.Upload(ReadOnlySpan [|mvp.InvertedView|])
-                false 
-             
-            member this.OnUpdate(time, deltaTime) =
-                if isClosing then true
-                else
+        if xrel <> 0.f || yrel <> 0.f then
+            yaw <- yaw + (xrel * -0.25f) * (MathF.PI / 180.f)
+            pitch <- pitch + (yrel * -0.25f) * (MathF.PI / 180.f)
+            let rotation = Quaternion.CreateFromAxisAngle (Vector3.UnitX, 90.f * (float32 Math.PI / 180.f))
+            setRotation (rotation * Quaternion.CreateFromYawPitchRoll(yaw * 0.25f, pitch * 0.25f, 0.f))
 
-                graphics.DrawFrame()
-                false }
+        view.Translation <- view.Translation + acc
+        mvp <-
+            { mvp with view = view }               
 
-    FsGame.Renderer.Vulkan.startVulkanWin32Window "F# Vulkan" "HealthyCore" 30. 1280 720 windowEvents
+        inputs.Clear()
 
-    (graphics :> IDisposable).Dispose()
-    (device :> IDisposable).Dispose()
-    printfn "F# Vulkan ended...."
+        let mutable canPrintArrow = false
+        let mutable lineStr = ""
+        while lineQueue.TryDequeue &lineStr do
+            canPrintArrow <- true
+            let errorString = fsi.SubmitInteraction lineStr
+            if not (String.IsNullOrWhiteSpace(errorString)) then
+                Console.ForegroundColor <- ConsoleColor.Red
+                printfn "%s\n" errorString
+                Console.ResetColor()
+
+        if sbOut.Length > 0 then
+            printf "%s" (sbOut.ToString())
+
+        sbOut.Clear() |> ignore
+        sbErr.Clear() |> ignore
+
+        if canPrintArrow then
+            printf "> "
+
+        match eventQueue.TryDequeue() with
+        | true, f -> f this.VulkanGraphics
+        | _ -> ()
+        if not (obj.ReferenceEquals(mvpUniform, null)) then
+            mvpUniform.Upload(ReadOnlySpan [|mvp.InvertedView|])
+        false 
+
+    override this.OnUpdate(_, _) =
+        if isClosing then true
+        else
+
+        this.VulkanGraphics.DrawFrame()
+        false 
+
+[<EntryPoint>]
+let main argv =
+    let window = ExampleWindow()
+    window.Start()
     0
