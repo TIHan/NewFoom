@@ -160,6 +160,14 @@ type Win32Window(title: string, fixedUpdateInterval: float) as this =
 
     let mutable prevPoint = POINT()
 
+    let center () =
+        centerCursor hwnd
+        match tryGetCursorPos hwnd with
+        | ValueSome point ->
+            prevPoint <- point
+        | _ ->
+            ()
+
     let poll () =
         let hashKey = HashSet ()
 
@@ -185,13 +193,7 @@ type Win32Window(title: string, fixedUpdateInterval: float) as this =
                     if xrel > 0u || yrel > 0u then
                         prevPoint <- point
                         this.OnMouseMoved(int point.x, int point.y, int xrel, int yrel)
-                        if isCursorHidden then
-                            centerCursor hwnd
-                            match tryGetCursorPos hwnd with
-                            | ValueSome point ->
-                                prevPoint <- point
-                            | _ ->
-                                ()
+                        if isCursorHidden then center ()
                 | _ ->
                     ()
 
@@ -254,21 +256,16 @@ type Win32Window(title: string, fixedUpdateInterval: float) as this =
         hwnd <- hwnd2
         hinstance <- hinstance2
 
-        centerCursor hwnd
-        match tryGetCursorPos hwnd with
-        | ValueSome point ->
-            prevPoint <- point
-        | _ ->
-            ()
-
-    override this.ShowCursor() =
+    override _.ShowCursor() =
         if isCursorHidden then
             isCursorHidden <- false
+            center ()
             showCursor ()
 
     override _.HideCursor() =
         if not isCursorHidden then
             isCursorHidden <- true
+            center ()
             hideCursor ()
 
     override _.ClipCursor() =
@@ -280,6 +277,10 @@ type Win32Window(title: string, fixedUpdateInterval: float) as this =
         if isCursorClipped then
             isCursorClipped <- false
             unclipCursor ()
+
+    member _.IsCursorHidden = isCursorHidden
+
+    member _.IsCursorClipped = isCursorClipped
 
     member this.Start() =
         this.OnInitialized()

@@ -232,7 +232,10 @@ type ExampleWindow() =
         base.OnKeyPressed key
 
         if key = '\u001b' then
-            this.ShowCursor()
+            if this.IsCursorHidden then
+                this.ShowCursor()
+            else
+                this.HideCursor()
 
         inputs.Add(InputEvent.KeyPressed key)
 
